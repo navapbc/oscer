@@ -24,11 +24,6 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
   validates :due_period_days, presence: true, on: :use, if: Proc.new { |params| params.due_date.blank? }
   validates :due_date, presence: true, on: :use, if: Proc.new { |params| params.due_period_days.blank? }
 
-  def self.new_filtered(hash)
-    possible_param_names = Certifications::RequirementParams.attribute_names.map(&:to_sym)
-    Certifications::RequirementParams.new(hash.slice(*possible_param_names))
-  end
-
   def with_type_params(requirement_type_params)
     self.lookback_period = requirement_type_params.lookback_period
     self.number_of_months_to_certify = requirement_type_params.number_of_months_to_certify
@@ -54,8 +49,7 @@ class Certifications::RequirementParamsType < ActiveRecord::Type::Json
 
     case value
     when Hash
-      hash = value.with_indifferent_access
-      Certifications::RequirementParams.new_filtered(hash)
+      Certifications::RequirementParams.new_filtered(value)
     else
       nil
     end

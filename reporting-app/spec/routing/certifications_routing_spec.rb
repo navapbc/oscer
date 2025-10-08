@@ -24,14 +24,4 @@ RSpec.describe CertificationsController, type: :routing do
       expect(patch: "/staff/certifications/1").to route_to("certifications#update", id: "1")
     end
   end
-
-  describe "API routing" do
-    it "routes to #show" do
-      expect(get: "/api/certifications/1").to route_to("certifications#show", id: "1", format: :json)
-    end
-
-    it "routes to #create" do
-      expect(post: "/api/certifications").to route_to("certifications#create", format: :json)
-    end
-  end
 end

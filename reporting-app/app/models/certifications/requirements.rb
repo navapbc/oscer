@@ -6,6 +6,7 @@ class Certifications::Requirements
   include ActiveModel::Model
   include ActiveModel::Attributes
   include ActiveModel::Serializers::JSON
+  include ActiveModel::NewFiltered
 
   CERTIFICATION_TYPE_OPTIONS = [ "new_application", "recertification" ].freeze
 
@@ -29,11 +30,6 @@ class Certifications::Requirements
   validates :months_that_can_be_certified, presence: true
   validates :number_of_months_to_certify, presence: true
   validates :due_date, presence: true
-
-  def self.new_filtered(hash)
-    possible_param_names = Certifications::Requirements.attribute_names.map(&:to_sym)
-    Certifications::Requirements.new(hash.slice(*possible_param_names))
-  end
 end
 
 class Certifications::RequirementsType < ActiveRecord::Type::Json
@@ -44,8 +40,7 @@ class Certifications::RequirementsType < ActiveRecord::Type::Json
 
     case value
     when Hash
-      hash = value.with_indifferent_access
-      Certifications::Requirements.new(hash)
+      Certifications::Requirements.new(value)
     else
       nil
     end
