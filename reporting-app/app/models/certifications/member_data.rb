@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 
-class Certifications::MemberDataContactData
-  include ActiveModel::Model
-  include ActiveModel::Attributes
-  include ActiveModel::Serializers::JSON
-  include ActiveModel::NewFiltered
-
+class Certifications::MemberDataContactData < ValueObject
   attribute :email, :string
   attribute :phone, :string
 end
@@ -25,12 +20,7 @@ class Certifications::MemberDataContactDataType < ActiveRecord::Type::Json
   end
 end
 
-class Certifications::MemberData
-  include ActiveModel::Model
-  include ActiveModel::Attributes
-  include ActiveModel::Serializers::JSON
-  include ActiveModel::NewFiltered
-
+class Certifications::MemberData < ValueObject
   attribute :account_email, :string
   attribute :contact, Certifications::MemberDataContactDataType.new
 end

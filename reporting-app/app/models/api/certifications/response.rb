@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 
-class Api::Certifications::Response
-  include ActiveModel::Model
-  include ActiveModel::Attributes
-  include ActiveModel::Serializers::JSON
-  include ActiveModel::NewFiltered
-
+class Api::Certifications::Response < ValueObject
   attribute :id, :string
   attribute :member_id, :string
   attribute :case_number, :string

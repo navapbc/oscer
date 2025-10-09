@@ -14,8 +14,6 @@ class Certification < ApplicationRecord
   # validates :member_id, presence: true
   validates :certification_requirements, presence: true
 
-  # TODO: add validation for JSON columns (they should be hashes, etc)
-
   scope :by_member_id, ->(member_id) { where(member_id:) }
 
   after_create_commit do
