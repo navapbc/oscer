@@ -5,8 +5,8 @@ class Api::Certifications::Response < ValueObject
   attribute :member_id, :string
   attribute :case_number, :string
 
-  attribute :certification_requirements, Certifications::RequirementsType.new
-  attribute :member_data, Certifications::MemberDataType.new
+  attribute :certification_requirements, Certifications::Requirements.to_type
+  attribute :member_data, Certifications::MemberData.to_type
 
   attribute :created_at, :datetime
   attribute :updated_at, :datetime

@@ -4,8 +4,8 @@ class Api::Certifications::CreateRequest < ValueObject
   attribute :member_id, :string
   attribute :case_number, :string
 
-  attribute :certification_requirements, Certifications::RequirementParamsType.new
-  attribute :member_data, Certifications::MemberDataType.new
+  attribute :certification_requirements, Certifications::RequirementParams.to_type
+  attribute :member_data, Certifications::MemberData.to_type
 
   validates :certification_requirements, presence: true
 

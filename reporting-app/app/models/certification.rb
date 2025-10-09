@@ -7,8 +7,8 @@ class Certification < ApplicationRecord
   attribute :member_id, :string
   attribute :case_number, :string
 
-  attribute :certification_requirements, Certifications::RequirementsType.new
-  attribute :member_data, Certifications::MemberDataType.new
+  attribute :certification_requirements, Certifications::Requirements.to_type
+  attribute :member_data, Certifications::MemberData.to_type
 
   # TODO: some of this should be required, but leaving it open at the moment
   # validates :member_id, presence: true

@@ -3,6 +3,8 @@
 require_relative "requirement_params"
 
 class Certifications::Requirements < ValueObject
+  include ::JsonHash
+
   CERTIFICATION_TYPE_OPTIONS = [ "new_application", "recertification" ].freeze
 
   attribute :certification_date, :date
@@ -19,25 +21,10 @@ class Certifications::Requirements < ValueObject
   attribute :due_date, :date
 
   # input params
-  attribute :params, Certifications::RequirementParamsType.new
+  attribute :params, Certifications::RequirementParams.to_type
 
   validates :certification_date, presence: true
   validates :months_that_can_be_certified, presence: true
   validates :number_of_months_to_certify, presence: true
   validates :due_date, presence: true
-end
-
-class Certifications::RequirementsType < ActiveRecord::Type::Json
-  def cast(value)
-    return nil if value.nil?
-
-    return value if value.is_a?(Certifications::Requirements)
-
-    case value
-    when Hash
-      Certifications::Requirements.new(value)
-    else
-      nil
-    end
-  end
 end

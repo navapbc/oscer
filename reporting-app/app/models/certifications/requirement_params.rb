@@ -40,18 +40,3 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
     false
   end
 end
-
-class Certifications::RequirementParamsType < ActiveRecord::Type::Json
-  def cast(value)
-    return nil if value.nil?
-
-    return value if value.is_a?(Certifications::RequirementParams)
-
-    case value
-    when Hash
-      Certifications::RequirementParams.new_filtered(value)
-    else
-      nil
-    end
-  end
-end
