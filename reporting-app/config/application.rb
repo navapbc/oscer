@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "boot"
+require_relative "../lib/middleware/api_error_response.rb"
 
 require "rails/all"
 
@@ -76,5 +77,7 @@ module TemplateApplicationRails
 
     # Show a 403 Forbidden error page when Pundit raises a NotAuthorizedError
     config.action_dispatch.rescue_responses["Pundit::NotAuthorizedError"] = :forbidden
+
+    config.exceptions_app = ->(env) { Middleware::ApiErrorResponse.new(Rails.public_path).call(env) }
   end
 end

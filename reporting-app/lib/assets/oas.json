@@ -225,24 +225,15 @@
       "ErrorResponseBody": {
         "type": "object",
         "properties": {
-          "status": {
-            "type": "integer"
-          },
           "errors": {
             "type": "array",
             "items": {
               "type": "string"
             }
-          },
-          "error": {
-            "type": "string"
           }
         },
-        "required": [
-          "status"
-        ],
         "example": {
-          "status": 400
+          "errors": ["Not found"]
         }
       }
     }

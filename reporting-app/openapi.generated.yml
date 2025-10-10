@@ -181,29 +181,20 @@ components:
     ErrorResponseBody:
       type: object
       properties:
-        status:
-          type: integer
         errors:
           type: array
           items:
             type: string
-        error:
-          type: string
-      required:
-      - status
       example:
-        status: 400
+        errors:
+        - Not found
     bf2b49f733c3ee403393efcf6916e8be:
       type: object
       properties:
-        status:
-          type: integer
         errors:
           type: array
           items:
             type: string
-      required:
-      - status
     ece4f2c15f241af4536e1132d15a279a:
       type: object
       properties:

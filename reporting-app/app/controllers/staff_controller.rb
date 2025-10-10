@@ -39,4 +39,8 @@ class StaffController < Strata::StaffController
   def certification_service
     CertificationService.new
   end
+
+  def show_detailed_exceptions?
+    Rails.application.config.respond_to?(:consider_all_non_api_requests_local) && Rails.application.config.consider_all_non_api_requests_local
+  end
 end
