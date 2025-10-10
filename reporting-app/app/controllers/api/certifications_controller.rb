@@ -8,7 +8,7 @@ class Api::CertificationsController < ApiController
   #
   # @response A Certification(200) [Reference:#/components/schemas/CertificationResponseBody]
   def show
-    render json: Api::Certifications::Response.from_certification(@certification)
+    render_data(Api::Certifications::Response.from_certification(@certification))
   end
 
   # @summary Create a Certification record
@@ -23,7 +23,7 @@ class Api::CertificationsController < ApiController
     create_request = Api::Certifications::CreateRequest.from_request_params(params)
 
     if !create_request.valid?
-      render json: create_request.errors, status: :unprocessable_entity
+      return render_errors(create_request)
     end
 
     # TODO: handle this better here?
@@ -35,8 +35,7 @@ class Api::CertificationsController < ApiController
     begin
       certification_requirements = certification_service.certification_requirements_from_input(create_request.certification_requirements.attributes)
     rescue ActiveModel::ValidationError => e
-      render json: { certification_requirements: e.model.errors }, status: :unprocessable_entity
-      return
+      return render_errors({ certification_requirements: e.model.errors })
     end
 
     cert_attrs = create_request.attributes.merge({ certification_requirements: certification_requirements })
@@ -45,9 +44,12 @@ class Api::CertificationsController < ApiController
     authorize @certification
 
     if certification_service.save_new(@certification)
-      render json: Api::Certifications::Response.from_certification(@certification), status: :created
+      render_data(
+        Api::Certifications::Response.from_certification(@certification),
+        status: :created
+      )
     else
-      render json: @certification.errors, status: :unprocessable_entity
+      render_errors(@certification.errors)
     end
   end
 
