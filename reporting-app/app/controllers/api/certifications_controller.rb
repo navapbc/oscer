@@ -29,15 +29,14 @@ class Api::CertificationsController < ApiController
     end
 
     # TODO: handle this better here?
-    # case create_request.certification_requirements
-    # when Certifications::Requirements
-    #   # we are good to go
-    # when Certifications::RequirementParams
-    # end
-    begin
-      certification_requirements = certification_service.certification_requirements_from_input(create_request.certification_requirements.attributes)
-    rescue ActiveModel::ValidationError => e
-      return render_errors({ certification_requirements: e.model.errors })
+    case create_request.certification_requirements
+    when Certifications::Requirements
+      # we are good to go
+      certification_requirements = create_request.certification_requirements
+    when Api::Certifications::RequirementParamsInput
+      certification_requirements = certification_service.certification_requirements_from_params(create_request.certification_requirements)
+    when Api::Certifications::RequirementsOrParamsInput
+      raise TypeError
     end
 
     cert_attrs = create_request.attributes.merge({ certification_requirements: certification_requirements })

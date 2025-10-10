@@ -57,11 +57,21 @@ class CertificationService
     self.calculate_certification_requirements(requirement_params)
   end
 
+  def certification_requirements_from_params(requirement_params)
+    if requirement_params.certification_type.present?
+      requirement_params.with_type_params(
+        self.certification_type_requirement_params(requirement_params.certification_type)
+      )
+    end
+
+    self.calculate_certification_requirements(Certifications::RequirementParams.new_filtered(requirement_params))
+  end
+
   def calculate_certification_requirements(requirement_params)
     return unless requirement_params.present?
     raise TypeError, "Expected instance of Certifications::RequirementParams" unless requirement_params.is_a?(Certifications::RequirementParams)
 
-    if !requirement_params.valid?(:use)
+    if !requirement_params.valid?
       raise ArgumentError, "Certifications::RequirementParams instance is not valid for use: #{requirement_params.errors.full_messages}"
     end
 

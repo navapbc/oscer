@@ -108,6 +108,16 @@ RSpec.describe "/api/certifications", type: :request do
       end
     end
 
+    context "with direct certification requirements" do
+      it "creates a new Certification" do
+        expect {
+          post api_certifications_url,
+              params: valid_json_request_attributes.merge({ certification_requirements: build(:certification_certification_requirements).attributes.compact }),
+              headers: valid_headers
+        }.to change(Certification, :count).by(1)
+      end
+    end
+
     context "with invalid parameters" do
       it "does not create a new Certification" do
         expect {
