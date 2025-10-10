@@ -7,6 +7,7 @@ class Api::CertificationsController < ApiController
   # @tags certifications
   #
   # @response A Certification(200) [Reference:#/components/schemas/CertificationResponseBody]
+  # @response Not found.(404) [Reference:#/components/schemas/ErrorResponseBody]
   def show
     render_data(Api::Certifications::Response.from_certification(@certification))
   end
@@ -19,6 +20,7 @@ class Api::CertificationsController < ApiController
   # @request_body_example Certification type [Reference:#/components/schemas/CertificationCreateRequestBody/examples/certification_type]
   # @response Created Certification.(201) [Reference:#/components/schemas/CertificationResponseBody]
   # @response User error.(400) [Reference:#/components/schemas/ErrorResponseBody]
+  # @response User error.(422) [Reference:#/components/schemas/ErrorResponseBody]
   def create
     create_request = Api::Certifications::CreateRequest.from_request_params(params)
 

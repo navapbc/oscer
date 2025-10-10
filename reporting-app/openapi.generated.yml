@@ -184,17 +184,12 @@ components:
         errors:
           type: array
           items:
-            type: string
+            oneOf:
+            - type: string
+            - type: object
       example:
         errors:
         - Not found
-    bf2b49f733c3ee403393efcf6916e8be:
-      type: object
-      properties:
-        errors:
-          type: array
-          items:
-            type: string
     ece4f2c15f241af4536e1132d15a279a:
       type: object
       properties:
@@ -203,44 +198,43 @@ components:
       required:
       - status
   responses:
-    73df50a224b8b21226f3273c40ba2cca:
+    e0fec3ce491e03b0d2f165e51fe53045:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    c4fefd2153de631e96063d2c00561b75:
+    9344d62901d19d44a3081e670ede89d5:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    252c7b1ba4f512ca84ef27fd8a923595:
-      description: The server could not process the request due to semantic errors.
-        Please check your input and try again.
+    a1ba9c6659724e47882231e17c5ba9c8:
+      description: User error.
       content:
         application/json:
           schema:
-            "$ref": "#/components/schemas/bf2b49f733c3ee403393efcf6916e8be"
-    a6e65b069fadca7641504828064856a6:
+            "$ref": "#/components/schemas/ErrorResponseBody"
+    2855e3afe50e40571cd50a32a600a442:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    471ce6c40c81880d273bbdc61f264b52:
-      description: The requested resource could not be found.
+    7264102827ae7c31183895656f9c8e54:
+      description: Not found.
       content:
         application/json:
           schema:
-            "$ref": "#/components/schemas/bf2b49f733c3ee403393efcf6916e8be"
-    c51bbc0cd3e11c38c8e207774897e965:
+            "$ref": "#/components/schemas/ErrorResponseBody"
+    c36cf290ef53fdcc17b51c38d5dd6949:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    d7e53d9f5df4cf658e73cac12eff7925:
+    b1a8f0f60c27014214650117f9932997:
       description: Response
       content:
         application/json:
@@ -256,7 +250,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    bbf45f4c2d571a05e21db35464e1b05a:
+    9a20e257a408f2d1144fe4cd8a2bcea4:
       description: The Certification data.
       content:
         application/json:
@@ -309,14 +303,14 @@ paths:
       description: "#"
       operationId: POST__api_certifications
       requestBody:
-        "$ref": "#/components/requestBodies/bbf45f4c2d571a05e21db35464e1b05a"
+        "$ref": "#/components/requestBodies/9a20e257a408f2d1144fe4cd8a2bcea4"
       responses:
         '201':
-          "$ref": "#/components/responses/73df50a224b8b21226f3273c40ba2cca"
+          "$ref": "#/components/responses/e0fec3ce491e03b0d2f165e51fe53045"
         '400':
-          "$ref": "#/components/responses/c4fefd2153de631e96063d2c00561b75"
+          "$ref": "#/components/responses/9344d62901d19d44a3081e670ede89d5"
         '422':
-          "$ref": "#/components/responses/252c7b1ba4f512ca84ef27fd8a923595"
+          "$ref": "#/components/responses/a1ba9c6659724e47882231e17c5ba9c8"
   "/api/certifications/{id}":
     get:
       tags:
@@ -328,9 +322,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/a6e65b069fadca7641504828064856a6"
+          "$ref": "#/components/responses/2855e3afe50e40571cd50a32a600a442"
         '404':
-          "$ref": "#/components/responses/471ce6c40c81880d273bbdc61f264b52"
+          "$ref": "#/components/responses/7264102827ae7c31183895656f9c8e54"
   "/api/health":
     get:
       tags:
@@ -340,6 +334,6 @@ paths:
       operationId: GET__api_health
       responses:
         '200':
-          "$ref": "#/components/responses/c51bbc0cd3e11c38c8e207774897e965"
+          "$ref": "#/components/responses/c36cf290ef53fdcc17b51c38d5dd6949"
         '503':
-          "$ref": "#/components/responses/d7e53d9f5df4cf658e73cac12eff7925"
+          "$ref": "#/components/responses/b1a8f0f60c27014214650117f9932997"

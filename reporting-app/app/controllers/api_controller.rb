@@ -24,13 +24,13 @@ class ApiController < ActionController::Metal
     # then handle rendering the errors themselves
     case errors
     when ActiveModel::Errors
-      msgs = errors.details
+      msgs = errors.details.reduce([]) { |a, (k, v)| v.map { |e| e.merge({ field: k }) } }
     when Array
       msgs = errors
     when String
       msgs = [ errors ]
     else
-      raise TypeError, "Unexpected errors type"
+      raise TypeError, "Unexpected errors type: #{errors.class}"
     end
     render json: { errors: msgs }, status: status
   end
