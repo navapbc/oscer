@@ -28,7 +28,6 @@ class Api::CertificationsController < ApiController
       return render_errors(create_request)
     end
 
-    # TODO: handle this better here?
     case create_request.certification_requirements
     when Certifications::Requirements
       # we are good to go

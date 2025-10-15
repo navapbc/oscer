@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class ApiController < ActionController::Metal
+  # Skip StrongParameters as the API endpoints should be using dedicated I/O
+  # models.
   ActionController::API.without_modules(:StrongParameters).each do |left|
     include left
   end
@@ -34,6 +36,7 @@ class ApiController < ActionController::Metal
     end
     render json: { errors: msgs }, status: status
   end
+
   def render_data(data, status: :ok)
     render json: data, status: status
   end

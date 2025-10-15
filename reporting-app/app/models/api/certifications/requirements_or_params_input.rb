@@ -69,7 +69,7 @@ class Api::Certifications::RequirementsOrParamsInput < ValueObject
     obj = super(attributes)
     obj.set_union_errors(requirements, requirement_params_input)
 
-    return obj
+    obj
   end
 
   def set_union_errors(*args)
@@ -77,7 +77,6 @@ class Api::Certifications::RequirementsOrParamsInput < ValueObject
   end
 
   validate do |input|
-    puts "Validating Api::Certifications::RequirementsOrParamsInput: #{self.inspect}"
     # TODO: provide clearer message that you must fufill either set of properties
     for union_model in @union_models
       for error in union_model.errors
