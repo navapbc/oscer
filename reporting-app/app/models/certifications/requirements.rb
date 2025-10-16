@@ -16,7 +16,7 @@ class Certifications::Requirements < ValueObject
   #   "end": requirement_params.certification_date.beginning_of_month << 1
   # },
   # but a list of the months feels potentially more usable, alt name "months_to_consider"?
-  attribute :months_that_can_be_certified, :array
+  attribute :months_that_can_be_certified, :array, of: ActiveModel::Type::Date.new
   attribute :number_of_months_to_certify, :integer
   attribute :due_date, :date
 

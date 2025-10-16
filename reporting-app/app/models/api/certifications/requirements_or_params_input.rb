@@ -52,7 +52,7 @@ class Api::Certifications::RequirementsOrParamsInput < ValueObject
   attribute :due_date, :date
   attribute :due_period_days, :integer
   attribute :certification_type, :string, default: nil
-  attribute :months_that_can_be_certified, :array
+  attribute :months_that_can_be_certified, :array, of: ActiveModel::Type::Date.new
   attribute :number_of_months_to_certify, :integer
 
   def self.new(attributes = {})
