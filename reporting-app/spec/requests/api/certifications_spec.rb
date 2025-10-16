@@ -137,9 +137,19 @@ RSpec.describe "/api/certifications", type: :request do
         expect(response).to match_openapi_doc(OPENAPI_DOC)
       end
 
-      it "invalid cert requirements" do
+      it "invalid cert requirements - lookback_period" do
         post api_certifications_url,
              params: valid_json_request_attributes.merge({ certification_requirements: { "lookback_period": 2 } }),
+             headers: valid_headers,
+             as: :json
+        expect(response).to be_client_error
+        expect(response.content_type).to match(a_string_including("application/json"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "invalid cert requirements - array" do
+        post api_certifications_url,
+             params: valid_json_request_attributes.merge({ certification_requirements: { "months_to_be_certified": [ "2025-10-16", "FOOBAR" ] } }),
              headers: valid_headers,
              as: :json
         expect(response).to be_client_error
