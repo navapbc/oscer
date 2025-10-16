@@ -43,7 +43,7 @@ class Api::CertificationsController < ApiController
 
     authorize @certification
 
-    if certification_service.save_new(@certification)
+    if @certification.save
       render_data(
         Api::Certifications::Response.from_certification(@certification),
         status: :created

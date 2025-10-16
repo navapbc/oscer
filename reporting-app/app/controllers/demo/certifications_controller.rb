@@ -47,7 +47,7 @@ class Demo::CertificationsController < ApplicationController
       certification_requirements: certification_requirements,
     )
 
-    if certification_service.save_new(@certification, current_user)
+    if @certification.save
       redirect_to certification_path(@certification)
     else
       flash.now[:errors] = @certification.errors.full_messages

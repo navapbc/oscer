@@ -46,7 +46,7 @@ class CertificationsController < StaffController
       return
     end
 
-    if certification_service.save_new(@certification)
+    if @certification.save
       render :show, status: :created, location: @certification
     else
       render json: @certification.errors, status: :unprocessable_entity

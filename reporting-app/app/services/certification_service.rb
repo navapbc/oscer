@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
 class CertificationService
-  def save_new(certification, current_user = nil)
-    certification.save
-  end
-
   def find_cases_by_member_id(member_id)
     certifications_by_id = Certification.by_member_id(member_id).index_by(&:id)
     certification_cases = CertificationCase.where(certification_id: certifications_by_id.keys)
