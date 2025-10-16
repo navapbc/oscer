@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
 FactoryBot.define do
-  factory :certification_member_data, class: Hash do
+  factory :certification_member_data, class: Certifications::MemberData do
     skip_create
-    initialize_with { attributes }
 
     transient do
       cert_date { Date.today }
@@ -22,6 +21,9 @@ FactoryBot.define do
       name { attributes_for(:name, :base, :with_middle) }
     end
 
+    trait :with_account_email do
+      account_email { Faker::Internet.email }
+    end
 
     trait :partially_met_work_hours_requirement do
       payroll_accounts {

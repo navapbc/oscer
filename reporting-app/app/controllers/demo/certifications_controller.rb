@@ -30,9 +30,9 @@ class Demo::CertificationsController < ApplicationController
 
     case @form.ex_parte_scenario
     when "Partially met work hours requirement"
-      member_data.merge!(FactoryBot.build(:certification_member_data, :partially_met_work_hours_requirement, cert_date: @form.certification_date))
+      member_data.merge!(FactoryBot.build(:certification_member_data, :partially_met_work_hours_requirement, cert_date: @form.certification_date).attributes)
     when "Fully met work hours requirement"
-      member_data.merge!(FactoryBot.build(:certification_member_data, :fully_met_work_hours_requirement, cert_date: @form.certification_date, num_months: @form.number_of_months_to_certify))
+      member_data.merge!(FactoryBot.build(:certification_member_data, :fully_met_work_hours_requirement, cert_date: @form.certification_date, num_months: @form.number_of_months_to_certify).attributes)
     else
       # nothing
     end
@@ -41,7 +41,7 @@ class Demo::CertificationsController < ApplicationController
       :certification,
       :with_member_data_base,
       :connected_to_email,
-      member_data_base: member_data,
+      member_data_base: Certifications::MemberData.new_filtered(member_data),
       email: @form.member_email,
       case_number: @form.case_number,
       certification_requirements: certification_requirements,
