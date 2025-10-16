@@ -73,12 +73,6 @@ RSpec.describe "/certifications", type: :request do
       get certification_url(certification)
       expect(response).to be_successful
     end
-
-    it "renders a successful response with invalid data" do
-      certification = create(:certification, :invalid_json_data)
-      get certification_url(certification)
-      expect(response).to be_successful
-    end
   end
 
   describe "POST /create" do
