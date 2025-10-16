@@ -39,49 +39,11 @@ end
 #
 #  Certifications::Requirements | Certification::RequirementParams
 #
-# But Ruby makes that union awkward/impossible to model directly.
-class Api::Certifications::RequirementsOrParamsInput < ValueObject
+# But Ruby/Rails makes that union awkward to model directly.
+class Api::Certifications::RequirementsOrParamsInput < UnionObject
   include ::JsonHash
-  # TODO: check if valid Certifications::Requirements or Api::Certifications::RequirementParamsInput
 
-  # TODO: just include Certifications::RequirementParams::Attrs or something
-  # TODO: just include Certifications::Requirements::Attrs or something?
-  attribute :certification_date, :date
-  attribute :certification_type, :string
-  attribute :lookback_period, :integer
-  attribute :due_date, :date
-  attribute :due_period_days, :integer
-  attribute :certification_type, :string, default: nil
-  attribute :months_that_can_be_certified, :array, of: ActiveModel::Type::Date.new
-  attribute :number_of_months_to_certify, :integer
-
-  def self.new(attributes = {})
-    requirements = Certifications::Requirements.new_filtered(attributes)
-    if requirements.valid?
-      return requirements
-    end
-
-    requirement_params_input = Api::Certifications::RequirementParamsInput.new_filtered(attributes)
-    if requirement_params_input.valid?
-      return requirement_params_input
-    end
-
-    obj = super(attributes)
-    obj.set_union_errors(requirements, requirement_params_input)
-
-    obj
-  end
-
-  def set_union_errors(*args)
-    @union_models = args
-  end
-
-  validate do |input|
-    # TODO: provide clearer message that you must fufill either set of properties
-    for union_model in @union_models
-      for error in union_model.errors
-        errors.add(error.attribute, error.type, **error.options)
-      end
-    end
+  def self.union_types
+    [ Certifications::Requirements, Api::Certifications::RequirementParamsInput ]
   end
 end
