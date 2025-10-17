@@ -1,7 +1,7 @@
 <%= us_form_with(model: certification_form, data: { turbo: false, controller: "certification" }) do |f| %>
   <%= f.text_field :member_id, label: t("certifications.member_id") %>
   <%= f.text_field :case_number, label: t("certifications.case_number") %>
-  <%= f.text_area :certification_requirements, value: JSON.pretty_generate(certification_form.certification_requirements), label: t("certifications.certification_requirements") %>
-  <%= f.text_area :member_data, value: JSON.pretty_generate(certification_form.member_data), label: t("certifications.member_data") %>
+  <%= f.text_area :certification_requirements, value: JSON.pretty_generate(certification_form.certification_requirements.as_json), label: t("certifications.certification_requirements") %>
+  <%= f.text_area :member_data, value: JSON.pretty_generate(certification_form.member_data.as_json), label: t("certifications.member_data") %>
   <%= f.submit (submit_text || "Save") %>
 <% end %>

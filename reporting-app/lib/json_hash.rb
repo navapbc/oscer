@@ -31,4 +31,8 @@ class JsonType < ActiveRecord::Type::Json
       nil
     end
   end
+
+  def deserialize(value)
+    self.cast(super(value))
+  end
 end
