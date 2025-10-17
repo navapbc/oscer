@@ -30,7 +30,7 @@ RSpec.describe Certification, type: :model do
       end
 
       it 'returns full name from structured data' do
-        expect(certification.member_name.full_name).to eq("Jane Q Public Jr")
+        expect(certification.member_name_strata.full_name).to eq("Jane Q Public Jr")
       end
     end
 
@@ -38,7 +38,7 @@ RSpec.describe Certification, type: :model do
       let(:certification) { build(:certification, member_data: nil) }
 
       it 'returns nil for full name' do
-        expect(certification.member_name).to be_nil
+        expect(certification.member_name_strata).to be_nil
       end
     end
   end

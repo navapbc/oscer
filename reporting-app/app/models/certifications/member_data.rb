@@ -31,6 +31,15 @@ class Certifications::MemberDataName < ValueObject
   attribute :middle, :string
   attribute :last, :string
   attribute :suffix, :string
+
+  def self.from_strata(strata_name)
+    raise TypeError, "expected a Strata::Name instance" unless strata_name.is_a?(Strata::Name)
+    self.new(strata_name.attributes)
+  end
+
+  def to_strata
+    Strata::Name.new(self.attributes)
+  end
 end
 
 class Certifications::MemberData < ValueObject

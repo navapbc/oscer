@@ -8,7 +8,7 @@ class CertificationCases::CaseRowComponent < Strata::Cases::CaseRowComponent
   protected
 
   def name
-    link_to @case.certification.member_name&.full_name, member_path(@case.certification.member_id)
+    link_to @case.certification.member_name_strata&.full_name, member_path(@case.certification.member_id)
   end
 
   # Override default behavior to show the case number from the

@@ -27,4 +27,35 @@ class Certifications::Requirements < ValueObject
   validates :months_that_can_be_certified, presence: true
   validates :number_of_months_to_certify, presence: true
   validates :due_date, presence: true
+
+  def continuous_lookback_period?
+    months_that_can_be_certified = self.months_that_can_be_certified
+    range = self.certification_lookback_date_range
+
+    num_months_that_can_be_certified = months_that_can_be_certified.length
+    # +1 to the difference since this list is inclusive
+    num_months_in_range = DateUtils.month_difference(range.start, range.end) + 1
+
+    num_months_that_can_be_certified == num_months_in_range
+  end
+
+  def continuous_lookback_period
+    return nil unless self.continuous_lookback_period?
+
+    self.certification_lookback_date_range
+  end
+
+  private
+
+  def certification_lookback_date_range
+    months_that_can_be_certified = self.months_that_can_be_certified
+    return Strata::DateRange.new(start: nil, end: nil) if months_that_can_be_certified.blank?
+
+    sorted_months = months_that_can_be_certified.sort
+
+    Strata::DateRange.new(
+      start: sorted_months.first,
+      end: sorted_months.last
+    )
+  end
 end

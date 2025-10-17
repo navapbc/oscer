@@ -15,7 +15,7 @@ class Member < Strata::ValueObject
     Member.new(
       member_id: certification.member_id,
       email: certification.member_email,
-      name: certification.member_name
+      name: certification.member_name_strata
     )
   end
 

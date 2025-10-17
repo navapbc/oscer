@@ -25,7 +25,7 @@ class Demo::CertificationsController < ApplicationController
     # TODO: Eventually create a Service to handle member data construction
 
     member_data = {
-      "name": @form.member_name.as_json
+      "name": Certifications::MemberDataName.from_strata(@form.member_name)
     }
 
     case @form.ex_parte_scenario
