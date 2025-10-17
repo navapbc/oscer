@@ -39,12 +39,11 @@ class Demo::CertificationsController < ApplicationController
 
     @certification = FactoryBot.build(
       :certification,
-      :with_member_data_base,
       :connected_to_email,
-      member_data_base: Certifications::MemberData.new_filtered(member_data),
       email: @form.member_email,
       case_number: @form.case_number,
       certification_requirements: certification_requirements,
+      member_data: Certifications::MemberData.new_filtered(member_data),
     )
 
     if @certification.save

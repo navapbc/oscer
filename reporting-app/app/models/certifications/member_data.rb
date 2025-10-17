@@ -4,7 +4,7 @@ class Certifications::MemberDataContactData < ValueObject
   include ::JsonHash
 
   attribute :email, :string
-  attribute :phone, :string
+  attribute :phone, :string # TODO: E.164 format, eventually would probably be more than one field, cell_phone, home_phone, etc
 end
 
 class Certifications::MemberDataPaycheck < ValueObject
@@ -12,7 +12,7 @@ class Certifications::MemberDataPaycheck < ValueObject
 
   attribute :period_start, :date
   attribute :period_end, :date
-  attribute :gross, :decimal # TODO more like Strata:;Money right?
+  attribute :gross, :decimal # TODO more like Strata::Money right?
   attribute :net, :decimal # TODO more like Strata::Money right?
   attribute :hours_worked, :decimal
 end

@@ -9,11 +9,10 @@ RSpec.describe Member, type: :model do
     end
     let(:certification) do
       create(:certification,
-        :with_member_data_base,
         :connected_to_email,
         member_id: "MEMBER123",
         email: "test@example.com",
-        member_data_base: member_data
+        member_data: member_data
       )
     end
 
@@ -35,11 +34,10 @@ RSpec.describe Member, type: :model do
 
     before do
       create(:certification,
-        :with_member_data_base,
         :connected_to_email,
         member_id: "MEMBER123",
         email: "test@example.com",
-        member_data_base: member_data
+        member_data: member_data
       )
     end
 
@@ -59,19 +57,17 @@ RSpec.describe Member, type: :model do
 
     before do
       create(:certification,
-        :with_member_data_base,
         :connected_to_email,
         member_id: "MEMBER1",
         email: "test@example.com",
-        member_data_base: member_data_one
+        member_data: member_data_one
       )
 
       create(:certification,
-        :with_member_data_base,
         :connected_to_email,
         member_id: "MEMBER2",
         email: "test@example.com",
-        member_data_base: member_data_two
+        member_data: member_data_two
       )
     end
 

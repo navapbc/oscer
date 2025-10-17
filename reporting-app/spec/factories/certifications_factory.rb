@@ -13,18 +13,6 @@ FactoryBot.define do
       member_data { "()" }
     end
 
-    trait :with_member_data_base do
-      transient do
-        member_data_base { nil }
-      end
-
-      after(:build) do |cert, context|
-        if member_data_base
-          cert.member_data = Certifications::MemberData.new_filtered(cert.member_data.attributes.deep_merge(context.member_data_base.attributes))
-        end
-      end
-    end
-
     trait :connected_to_email do
       transient do
         email { nil }
