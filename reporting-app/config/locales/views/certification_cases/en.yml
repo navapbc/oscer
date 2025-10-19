@@ -14,6 +14,8 @@ en:
       certification_details: "Certification Details"
       certification_due_date: "Certification due date:"
       last_updated: "Last updated:"
+      activity_report: "Activity Report"
+      no_activity_report: "No activity report submitted"
       ex_parte_data: "Ex parte data"
       lookback_period: "Lookback period:"
       member_name: "Member name:"

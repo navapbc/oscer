@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class CertificationCasesController < StaffController
+  helper Strata::DateHelper
+
   before_action :set_case, only: %i[ show tasks documents notes ]
   before_action :set_certification, only: %i[ show tasks documents notes ]
 
@@ -15,6 +17,7 @@ class CertificationCasesController < StaffController
 
   def show
     @certification_service = certification_service
+    @activity_report = ActivityReportApplicationForm.find_by(certification_case_id: @case.id)
   end
 
   private

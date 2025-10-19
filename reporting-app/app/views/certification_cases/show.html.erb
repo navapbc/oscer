@@ -58,20 +58,20 @@
   
   <% component.with_heading { t(".tasks") } %>
   <% component.with_body do %>
-    <ul>
-      <% @case.tasks.each do |task| %>  
-        <li>
-          <%= link_to task.class.name.humanize, task_path(task), class: "usa-link" %>
-        </li>
-      <% end %>
-    </ul>
-    <% if @case.tasks.empty? %>
-      <p><%= t(".no_tasks") %></p>
-    <% end %>
+    <%= render partial: 'tasks_section', locals: { tasks: @case.tasks } %>
   <% end %>
   
   <% component.with_heading { t(".ex_parte_data") } %>
   <% component.with_body do %>
     <p><%= t(".none") %></p>
+  <% end %>
+  
+  <% component.with_heading { t(".activity_report") } %>
+  <% component.with_body do %>
+    <% if @activity_report %>
+      <%= render partial: 'activity_report_application_forms/staff_activity_report', locals: { activity_report: @activity_report } %>
+    <% else %>
+      <p><%= t(".no_activity_report") %></p>
+    <% end %>
   <% end %>
 <% end %>
