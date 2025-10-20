@@ -23,6 +23,9 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :activity_report_information_requests, only: [ :edit, :update ]
+  resources :exemption_information_requests, only: [ :edit, :update ]
+
   get "/dashboard", to: "dashboard#index"
 
   scope path: "/api", as: :api, defaults: { format: :json } do

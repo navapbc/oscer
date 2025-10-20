@@ -9,7 +9,7 @@ class ReviewExemptionClaimTasksController < TasksController
       notice = t("tasks.details.approved_message")
     elsif denying?
       kase.deny_exemption_request
-      notice = t("tasks.details.denied_message")
+      notice = t("details.review_exemption_claim_task.denied_message")
     elsif requesting_information?
       # Redirect to new information request form. Task will be marked as "on hold" when
       # the information request is created.
