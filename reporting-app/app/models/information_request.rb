@@ -10,7 +10,6 @@ class InformationRequest < ApplicationRecord
   strata_attribute :due_date, :date
   strata_attribute :member_comment, :text
   strata_attribute :staff_comment, :text
-  strata_attribute :task_id, :uuid
 
   before_create :set_due_date
 

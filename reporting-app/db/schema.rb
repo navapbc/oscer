@@ -103,7 +103,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_14_151917) do
     t.string "type", null: false
     t.uuid "application_form_id", null: false
     t.string "application_form_type", null: false
-    t.uuid "task_id"
     t.text "staff_comment", null: false
     t.text "member_comment"
     t.date "due_date", null: false

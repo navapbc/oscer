@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class TasksController < Strata::TasksController
+  before_action :set_certification, only: [ :show ]
+  before_action :set_member, only: [ :show ]
+
   def assign
     set_task
     @task.assign(current_user.id)
@@ -45,5 +48,17 @@ class TasksController < Strata::TasksController
     # We do not want to grab the application form class from Certification Case
     # because it can be tied to multiple application form types
     @application_form = @task.class.application_form_class.find_by(certification_case_id: @task.case_id)
+  end
+
+  def set_certification
+    @certification = Certification.find(@case.certification_id)
+  end
+
+  def set_member
+    @member = Member.from_certification(@certification)
+  end
+
+  def information_request_params
+    raise NotImplementedError, "Subclasses must implement information_request_params"
   end
 end

@@ -15,5 +15,22 @@
       label: @assignee.present? ? t("strata.tasks.show.details.assigned_to") : "",
       value: @assignee.try(:email) || button_to("Assign to me", assign_task_path(@task), method: :patch, class: "usa-button")
     }
+  ],
+  breadcrumbs: [
+    {
+      text: t("strata.tasks.breadcrumbs.home"),
+      link: staff_path
+    },
+    {
+      text: @member.name,
+      link: member_path(@member.member_id)
+    },
+    {
+      text: @certification.case_number,
+      link: certification_case_path(@case)
+    },
+    {
+      text: t("tasks.types.#{@task.type.underscore}")
+    }
   ]
 } %>

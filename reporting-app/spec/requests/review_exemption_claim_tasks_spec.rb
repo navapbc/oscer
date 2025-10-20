@@ -19,7 +19,7 @@ RSpec.describe "/review_exemption_claim_tasks", type: :request do
 
   describe "PATCH /update" do
     context "with approve action" do
-      before { patch review_exemption_claim_task_url(task), params: { commit: I18n.t("tasks.details.approve_button") } }
+      before { patch review_exemption_claim_task_url(task), params: { review_exemption_claim_task: { exemption_decision: "yes" } } }
 
       it "marks task as completed" do
         task.reload
@@ -39,7 +39,7 @@ RSpec.describe "/review_exemption_claim_tasks", type: :request do
     end
 
     context "with deny action" do
-      before { patch review_exemption_claim_task_url(task), params: { commit: I18n.t("tasks.details.deny_button") } }
+      before { patch review_exemption_claim_task_url(task), params: { review_exemption_claim_task: { exemption_decision: "no-not-acceptable" } } }
 
       it "marks task as completed" do
         task.reload
@@ -62,7 +62,7 @@ RSpec.describe "/review_exemption_claim_tasks", type: :request do
     end
 
     context "with request information action" do
-      before { patch review_exemption_claim_task_url(task), params: { commit: I18n.t("tasks.details.request_for_information_button") } }
+      before { patch review_exemption_claim_task_url(task), params: { review_exemption_claim_task: { exemption_decision: "no-additional-info" } } }
 
       it "redirects to the new information request form" do
         expect(response).to have_http_status(:found)

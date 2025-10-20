@@ -10,12 +10,26 @@ en:
       denied: "Denied"
       on_hold: "On Hold"
     details:
-      approve_button: "Approve"
-      deny_button: "Deny"
-      request_for_information_button: "Request more information"
       approved_message: "Task approved!"
       denied_message: "Task denied!"
+      no_decision_made_message: "Please select a decision before submitting."
   details:
     review_activity_report_task:
       intro: Review the activity report form
       instructions: "Ensure the hours reported align with the correct certification month(s) as listed in the system. Only hours from approved months count toward compliance."
+      activity_report_decision:
+        heading: "Did the member provide a valid activity report?"
+        options:
+          yes_acceptable: "Yes, the documentation provided is acceptable"
+          no_additional_info: "No, additional information is needed"
+          no_not_acceptable: "No, the documentation is not acceptable"
+        submit_button: "Submit"
+    review_exemption_claim_task:
+      intro: Review the exemption form
+      exemption_decision:
+        heading: "Did the member provide a valid exemption?"
+        options:
+          yes_acceptable: "Yes, the documentation provided is acceptable"
+          no_additional_info: "No, additional information is needed"
+          no_not_acceptable: "No, the documentation is not acceptable"
+        submit_button: "Submit"

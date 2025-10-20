@@ -19,7 +19,7 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
 
   describe "PATCH /update" do
     context "with approve action" do
-      before { patch review_activity_report_task_url(task), params: { commit: I18n.t("tasks.details.approve_button") } }
+      before { patch review_activity_report_task_url(task), params: { review_activity_report_task: { activity_report_decision: "yes" } } }
 
       it "marks task as completed" do
         task.reload
@@ -40,8 +40,8 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
       end
     end
 
-    context "with deny action" do
-      before { patch review_activity_report_task_url(task), params: { commit: I18n.t("tasks.details.deny_button") } }
+    context "with not acceptable action" do
+      before { patch review_activity_report_task_url(task), params: { review_activity_report_task: { activity_report_decision: "no-not-acceptable" } } }
 
       it "marks task as completed" do
         task.reload
@@ -62,14 +62,25 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
       end
     end
 
-    context "with request information action" do
-      before { patch review_activity_report_task_url(task), params: { commit: I18n.t("tasks.details.request_for_information_button") } }
+    context "with needs more info action" do
+      before { patch review_activity_report_task_url(task), params: { review_activity_report_task: { activity_report_decision: "no-additional-info" } } }
 
-      it "redirects to the new information request form" do
-        expect(response).to have_http_status(:found)
+      it "marks task as pending" do
+        task.reload
+
+        expect(task).to be_pending
+      end
+
+      it "does not update the activity report approval status" do
+        kase.reload
+
+        expect(kase.activity_report_approval_status).to be_nil
+        expect(kase.business_process_instance.current_step).to eq("review_activity_report")
+        expect(kase).to be_open
+      end
+
+      it "redirects to the task" do
         expect(response).to redirect_to(request_information_review_activity_report_task_path(task))
-        # Verify that the task is still pending
-        expect(task.reload).to be_pending
       end
     end
   end

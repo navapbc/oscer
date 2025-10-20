@@ -6,7 +6,8 @@ RSpec.describe "/staff/tasks", type: :request do
   include Warden::Test::Helpers
 
   let(:user) { User.create!(email: "test@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
-  let(:certification_case) { create(:certification_case) }
+  let(:certification) { create(:certification) }
+  let(:certification_case) { create(:certification_case, certification_id: certification.id) }
 
   before do
     login_as user
@@ -18,8 +19,8 @@ RSpec.describe "/staff/tasks", type: :request do
 
   describe "GET /show" do
     context "with ActivityReportApplicationForm" do
+      let(:activity_report_application_form) { create(:activity_report_application_form, certification_case_id: certification_case.id, user_id: user.id) }
       let(:activity_report_task) { create(:review_activity_report_task, case: certification_case) }
-      let(:activity_report_application_form) { build(:activity_report_application_form, certification_case_id: certification_case.id) }
 
       before { activity_report_application_form.save! }
 
@@ -31,8 +32,8 @@ RSpec.describe "/staff/tasks", type: :request do
     end
 
     context "with ExemptionApplicationForm" do
+      let(:exemption_application_form) { create(:exemption_application_form, certification_case_id: certification_case.id, user_id: user.id) }
       let(:exemption_task) { create(:review_exemption_claim_task, case: certification_case) }
-      let(:exemption_application_form) { build(:exemption_application_form, certification_case_id: certification_case.id) }
 
       before { exemption_application_form.save! }
 

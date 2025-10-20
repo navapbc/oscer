@@ -1,3 +1,11 @@
 <%= render partial: 'application/flash' %>
 <%= render partial: 'exemption_application_forms/exemption_application_form', locals: { exemption_application_form: application_form } %>
-<%= render partial: 'task_actions', locals: { task: task, kase: kase } %>
+<% if task.pending? %>
+  <h2><%= t(".exemption_decision.heading") %></h2>
+  <%= strata_form_with(model: task) do |f| %>
+    <%= f.radio_button :exemption_decision, "yes", { label: t(".exemption_decision.options.yes_acceptable"), tile: false } %>
+    <%= f.radio_button :exemption_decision, "no-additional-info", { label: t(".exemption_decision.options.no_additional_info"), tile: false } %>
+    <%= f.radio_button :exemption_report_decision, "no-not-acceptable", { label: t(".exemption_decision.options.no_not_acceptable"), tile: false } %>
+    <%= f.submit t(".exemption_decision.submit_button") %>
+  <% end %>
+<% end %>

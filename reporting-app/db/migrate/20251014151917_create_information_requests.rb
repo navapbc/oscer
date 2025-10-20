@@ -6,7 +6,6 @@ class CreateInformationRequests < ActiveRecord::Migration[7.2]
       t.string :type, null: false
       t.uuid :application_form_id, null: false
       t.string :application_form_type, null: false
-      t.uuid :task_id
       t.text :staff_comment, null: false
       t.text :member_comment
       t.date :due_date, null: false
