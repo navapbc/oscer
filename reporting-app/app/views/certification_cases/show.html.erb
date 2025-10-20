@@ -55,7 +55,7 @@
     <ul>
       <% @case.tasks.each do |task| %>
         <li>
-          <%= link_to task.class.name.humanize, task_path(task), class: "usa-link" %>
+          <%= link_to task.class.name.underscore.humanize.delete_suffix(" task"), task_path(task), class: "usa-link" %>
         </li>
       <% end %>
     </ul>
