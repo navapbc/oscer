@@ -87,11 +87,13 @@ RSpec.describe "/exemption_application_forms", type: :request do
         }.not_to change(ExemptionApplicationForm, :count)
       end
 
-      it "returns unprocessable entity when attempting to create duplicate by certification_case_id" do
+      it "redirects to dashboard with notice when attempting to create duplicate by certification_case_id" do
         create(:exemption_application_form, certification_case_id: valid_attributes[:certification_case_id], user_id: user.id)
 
         post exemption_application_forms_url, params: { exemption_application_form: valid_attributes }
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to redirect_to(dashboard_path)
+        follow_redirect!
+        expect(response.body).to include("An exemption application already exists for this certification case")
       end
     end
   end

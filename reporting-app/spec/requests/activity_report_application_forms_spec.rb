@@ -109,11 +109,13 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
         }.not_to change(ActivityReportApplicationForm, :count)
       end
 
-      it "returns unprocessable entity when attempting to create duplicate by certification_case_id" do
+      it "redirects to dashboard with notice when attempting to create duplicate by certification_case_id" do
         create(:activity_report_application_form, certification_case_id: certification_case.id, user_id: user.id)
 
         get new_activity_report_application_form_url(certification_case_id: certification_case.id)
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to redirect_to(dashboard_path)
+        follow_redirect!
+        expect(response.body).to include("An activity report already exists for this certification case")
       end
     end
 

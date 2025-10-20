@@ -32,8 +32,13 @@ class ExemptionApplicationFormsController < ApplicationController
         format.html { redirect_to edit_exemption_application_form_path(@exemption_application_form) }
         format.json { render :show, status: :created, location: @exemption_application_form }
       else
-        format.html { render :new, status: :unprocessable_entity }
-        format.json { render json: @exemption_application_form.errors, status: :unprocessable_entity }
+        if @exemption_application_form.errors[:certification_case_id].include?("has already been taken")
+          format.html { redirect_to dashboard_path, notice: "An exemption application already exists for this certification case" }
+          format.json { render json: @exemption_application_form.errors, status: :unprocessable_entity }
+        else
+          format.html { render :new, status: :unprocessable_entity }
+          format.json { render json: @exemption_application_form.errors, status: :unprocessable_entity }
+        end
       end
     end
   end
