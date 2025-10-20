@@ -13,12 +13,10 @@
           <%= t(".income_earned") %><sup>2</sup>
         </div>
       </div>
-  
       <%= render partial: "activity_report_application_forms/activity_row",
           collection: activities,
           as: :activity,
           locals: { activity_report_application_form: activity_report_application_form } %>
-
       <%= render "activity_report_application_forms/month_total_row", activities: activities %>
       <%# Required hours row %>
       <div class="grid-row">
@@ -52,6 +50,6 @@
       </div>
     </div>
   <% end %>
-  <div class="font-body-sm text-italic margin-top-2"><%= t(".asterisk_note_1") %></div>
-  <div class="font-body-sm text-italic"><%= t(".asterisk_note_2") %></div>
+  <div class="font-body-xs text-italic margin-top-2"><%= raw t(".asterisk_note_1") %></div>
+  <div class="font-body-xs text-italic"><%= raw t(".asterisk_note_2") %></div>
 </div>
