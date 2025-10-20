@@ -52,8 +52,4 @@ class ReviewExemptionClaimTasksController < TasksController
   def information_request_params
     params.require(:exemption_information_request).permit(:staff_comment)
   end
-
-  def information_request_action?
-    params[:commit] == t("tasks.details.request_for_information_button")
-  end
 end
