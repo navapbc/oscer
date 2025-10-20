@@ -27,10 +27,10 @@ class UnionObject
       end
     end
 
-    obj = super({})
-    obj.set_union_errors(*objs)
+    union_obj = super({})
+    union_obj.set_union_errors(*objs)
 
-    obj
+    union_obj
   end
 
   def set_union_errors(*args)
@@ -38,10 +38,10 @@ class UnionObject
   end
 
   validate do |input|
-    # TODO: possible provide clearer message that you must fufill either set of properties?
+    # TODO: possible to provide clearer message that you must fufill either set of properties?
     for union_model in @union_models
       for error in union_model.errors
-        errors.add(error.attribute, error.type, **error.options)
+        errors.add(error.attribute, error.type, **error.options) unless errors.added?(error.attribute, error.type)
       end
     end
   end

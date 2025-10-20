@@ -21,10 +21,14 @@ module ActiveModel
           if value.respond_to?(:invalid?) && value.invalid?
             value.errors.each do |error|
               if error.attribute == :base
-                record.errors.add(name, error.type)
+                attr_name = attribute
+                err_options = {}
               else
-                record.errors.add("#{attribute}.#{error.attribute}", error.type, **error.options)
+                attr_name = "#{attribute}.#{error.attribute}"
+                err_options = error.options
               end
+
+              record.errors.add(attr_name, error.type, **err_options) unless record.errors.added?(attr_name, error.type)
             end
           end
         end
@@ -32,7 +36,6 @@ module ActiveModel
 
       class NestedAttributeValidator < ActiveModel::Validator
         def validate(record)
-          AttributeValidator.new(options.merge({ attributes: record.attributes.keys })).validate(record)
           if !record.attributes.empty?
             AttributeValidator.new(options.merge({ attributes: record.attributes.keys })).validate(record)
           end

@@ -26,7 +26,7 @@ class ApiController < ActionController::Metal
     # then handle rendering the errors themselves
     case errors
     when ActiveModel::Errors
-      msgs = errors.details.reduce([]) { |a, (k, v)| v.map { |e| e.merge({ field: k }) } }
+      msgs = self.format_active_model_errors(errors)
     when Array
       msgs = errors
     when String
@@ -39,5 +39,19 @@ class ApiController < ActionController::Metal
 
   def render_data(data, status: :ok)
     render json: data, status: status
+  end
+
+  private
+
+  def format_active_model_errors(errors)
+    msgs = []
+
+    errors.details.each do |field_name, field_errs|
+      for err in field_errs
+        msgs.push(err.merge({ field: field_name }))
+      end
+    end
+
+    msgs
   end
 end
