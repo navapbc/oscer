@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddUniqueIndicesOnApplicationForms < ActiveRecord::Migration[7.2]
   def change
     remove_index :activity_report_application_forms, :certification_case_id
