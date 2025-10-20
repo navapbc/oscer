@@ -3,6 +3,7 @@
 class ExemptionApplicationFormsController < ApplicationController
   before_action :set_exemption_application_form, only: %i[ show edit update destroy review submit documents upload_documents ]
   before_action :set_certification_case, only: %i[ show ]
+  before_action :create_exemption_application_form, only: %i[ create ]
 
   # GET /exemption_application_forms/1 or /exemption_application_forms/1.json
   def show
@@ -22,23 +23,13 @@ class ExemptionApplicationFormsController < ApplicationController
 
   # POST /exemption_application_forms or /exemption_application_forms.json
   def create
-    @exemption_application_form = ExemptionApplicationForm.new(exemption_application_form_params)
-    @exemption_application_form.user_id = current_user.id
-
-    authorize @exemption_application_form
-
     respond_to do |format|
-      if @exemption_application_form.save
+      if @exemption_application_form.valid?
         format.html { redirect_to edit_exemption_application_form_path(@exemption_application_form) }
         format.json { render :show, status: :created, location: @exemption_application_form }
       else
-        if @exemption_application_form.errors[:certification_case_id].include?("has already been taken")
-          format.html { redirect_to dashboard_path, notice: "An exemption application already exists for this certification case" }
-          format.json { render json: @exemption_application_form.errors, status: :unprocessable_entity }
-        else
-          format.html { render :new, status: :unprocessable_entity }
-          format.json { render json: @exemption_application_form.errors, status: :unprocessable_entity }
-        end
+        format.html { render :new, status: :unprocessable_entity }
+        format.json { render json: @exemption_application_form.errors, status: :unprocessable_entity }
       end
     end
   end
@@ -114,5 +105,18 @@ class ExemptionApplicationFormsController < ApplicationController
 
     def set_certification_case
       @certification_case = CertificationCase.find_by(id: @exemption_application_form.certification_case_id)
+    end
+
+    def create_exemption_application_form
+      @exemption_application_form = ExemptionApplicationForm.new(exemption_application_form_params)
+      @exemption_application_form.user_id = current_user.id
+      authorize @exemption_application_form
+      @exemption_application_form.save!
+    rescue ActiveRecord::RecordInvalid => e
+      if e.record.errors[:certification_case_id].include?("has already been taken")
+        redirect_to dashboard_path, notice: "An exemption application already exists for this certification case"
+      else
+        raise
+      end
     end
 end
