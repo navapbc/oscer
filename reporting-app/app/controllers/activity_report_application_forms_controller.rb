@@ -100,7 +100,6 @@ class ActivityReportApplicationFormsController < ApplicationController
   def create_activity_report
     activity_report_application_form = ActivityReportApplicationForm.find_or_create_by(certification_case_id: @certification_case.id)
     activity_report_application_form.user_id = current_user.id
-    activity_report_application_form.certification = Certification.find(@certification_case.certification_id) # TODO: to be removed in future PR, leaving for compatibility
     activity_report_application_form.save!
     @activity_report_application_form = authorize activity_report_application_form
   end

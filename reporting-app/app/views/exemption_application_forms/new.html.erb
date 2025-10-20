@@ -14,7 +14,6 @@
 <p><%= t(".save_info") %></p>
 
 <%= form_with(url: exemption_application_forms_path, method: :post, scope: :exemption_application_form) do |f| %>
-  <%= f.hidden_field :certification_id, value: params[:certification_id] %>
   <%= f.hidden_field :certification_case_id, value: params[:certification_case_id] %>
   <%= f.submit t(".start_button"), class: "usa-button" %>
 <% end %>
