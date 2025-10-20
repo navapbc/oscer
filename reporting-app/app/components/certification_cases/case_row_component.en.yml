@@ -1,6 +1,7 @@
 ---
 en:
   name: Name
+  created_at: Created
   steps:
     exemption_check: System exemption check
     ex_parte_determination: System ex parte determination
