@@ -16,6 +16,15 @@ en:
           submitted: "Your activity report is being reviewed"
           approved: "Your activity report has been approved"
           denied: "Your activity report has been denied"
+    activity_report_application_form:
+      activity: Activity
+      income_earned: "Income earned"
+      hours: "Hours"
+      total_reported: "Total reported"
+      required: "Required"
+      additional_needed: "Additional hours/income needed"
+    month_total_row:
+      total_reported: "Total reported"
     staff_activity_report:
       activity_type: Type
       organization_name: Org name

@@ -13,4 +13,8 @@ class Activity < ApplicationRecord
 
   validates :name, presence: true
   validates :hours, presence: true, numericality: { greater_than: 0 }
+
+  def income_earned
+    hours * 7.25
+  end
 end
