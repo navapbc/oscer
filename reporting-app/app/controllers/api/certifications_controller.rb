@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-# TODO: move class to expected location
-require_relative "../../models/api/certifications/requirements_or_params_input.rb"
-
 class Api::CertificationsController < ApiController
   before_action :set_certification, only: %i[ show ]
 
@@ -31,22 +28,7 @@ class Api::CertificationsController < ApiController
       return render_errors(create_request)
     end
 
-    case create_request.certification_requirements
-    when Certifications::Requirements
-      # we are good to go
-      certification_requirements = create_request.certification_requirements
-    when Certifications::RequirementParams
-      certification_requirements = create_request.certification_requirements.to_requirements
-    when Api::Certifications::RequirementTypeInput
-      certification_requirements = certification_service.calculate_certification_requirements_for_type_input(create_request.certification_requirements)
-    else
-      # this should never be reached, something in the code is wrong
-      raise TypeError
-    end
-
-    cert_attrs = create_request.attributes.merge({ certification_requirements: certification_requirements })
-    @certification = Certification.new(cert_attrs)
-
+    @certification = create_request.to_certification(certification_service)
     authorize @certification
 
     if @certification.save

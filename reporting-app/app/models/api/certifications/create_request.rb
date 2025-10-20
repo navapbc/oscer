@@ -12,4 +12,22 @@ class Api::Certifications::CreateRequest < ValueObject
   def self.from_request_params(params)
     self.new_filtered(params)
   end
+
+  def to_certification(certification_service)
+    case self.certification_requirements
+    when Certifications::Requirements
+      # we are good to go
+      certification_requirements = self.certification_requirements
+    when Certifications::RequirementParams
+      certification_requirements = self.certification_requirements.to_requirements
+    when Api::Certifications::RequirementTypeInput
+      certification_requirements = certification_service.calculate_certification_requirements_for_type_input(self.certification_requirements)
+    else
+      # this should never be reached, something in the code is wrong
+      raise TypeError
+    end
+
+    cert_attrs = self.attributes.merge({ certification_requirements: certification_requirements })
+    Certification.new(cert_attrs)
+  end
 end
