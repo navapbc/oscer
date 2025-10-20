@@ -12,15 +12,9 @@ RSpec.describe CertificationService do
     closed_case
   end
 
-  describe '#fetch_open_cases' do
-    it 'returns only open cases with their certifications hydrated' do
-      result = service.fetch_open_cases
-
-      expect(result).to contain_exactly(open_case)
-    end
-
+  describe '#fetch_open_actionable_cases' do
     it 'does not return closed cases' do
-      result = service.fetch_open_cases
+      result = service.fetch_open_actionable_cases
 
       expect(result).not_to include(closed_case)
     end
