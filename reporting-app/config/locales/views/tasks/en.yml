@@ -13,6 +13,16 @@ en:
       approved_message: "Task approved!"
       denied_message: "Task denied!"
       no_decision_made_message: "Please select a decision before submitting."
+    request_information:
+      information_requests:
+        new:
+          title: "Request for more information"
+          instructions: "Provide more details about what information is required to
+            make a determination. We will send a notice to the member once all
+            documents for this case have been reviewed."
+          label: "Provide instructions on what the member needs to do"
+          submit_button: "Submit"
+          cancel_button: "Cancel"
   details:
     review_activity_report_task:
       intro: Review the activity report form

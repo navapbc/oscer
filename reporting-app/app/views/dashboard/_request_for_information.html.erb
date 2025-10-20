@@ -1,0 +1,15 @@
+<div class="usa-alert usa-alert--warning margin-bottom-3" role="status">
+  <div class="usa-alert__body">
+    <h3 class="usa-alert__heading"><%= t('.heading') %></h3>
+    <p class="usa-alert__text">
+      <%= t('.intro_html', due_date: information_request.due_date&.strftime('%B %d, %Y') || '<date due>') %>
+    </p>
+    <div class="margin-top-2">
+      <% if information_request.application_form_type.constantize == ActivityReportApplicationForm %>
+        <%= link_to t('.cta_button'), edit_activity_report_information_request_path(information_request), class: 'usa-button display-inline-block' %>
+      <% elsif information_request.application_form_type.constantize == ExemptionApplicationForm %>
+        <%= link_to t('.cta_button'), edit_exemption_information_request_path(information_request), class: 'usa-button display-inline-block' %>
+      <% end %>
+    </div>
+  </div>
+</div>
