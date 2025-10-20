@@ -7,10 +7,10 @@
           <%= t(".activity") %>
         </div>
         <div class="grid-col-2 text-right border-bottom-1px">
-          <%= t(".income_earned") %>
+          <%= t(".hours") %><sup>1</sup>
         </div>
         <div class="grid-col-2 text-right border-bottom-1px">
-          <%= t(".hours") %>
+          <%= t(".income_earned") %><sup>2</sup>
         </div>
       </div>
   
@@ -26,10 +26,13 @@
           <%= t(".required") %>
         </div>
         <div class="grid-col-2 text-right">
-          <%= number_to_currency(580.0) %>
-        </div>
-        <div class="grid-col-2 text-right">
           80.0
+        </div>
+        <div class="grid-col-1 text-center">
+          or
+        </div>
+        <div class="grid-col-1 text-right">
+          <%= number_to_currency(580.0) %>
         </div>
       </div>
       <%# Additional hours needed row %>
@@ -38,12 +41,17 @@
           <%= t(".additional_needed") %>
         </div>
         <div class="grid-col-2 border-top-1px text-right">
-          <%= number_to_currency([0.0, 580.0 - activities.sum(&:income_earned)].max) %>
-        </div>
-        <div class="grid-col-2 border-top-1px text-right">
           <%= [0.0, 80.0 - activities.sum(&:hours)].max %>
+        </div>
+        <div class="grid-col-1 border-top-1px text-center">
+          or
+        </div>
+        <div class="grid-col-1 border-top-1px text-right">
+          <%= number_to_currency([0.0, 580.0 - activities.sum(&:income_earned)].max) %>
         </div>
       </div>
     </div>
   <% end %>
+  <div class="font-body-sm text-italic margin-top-2"><%= t(".asterisk_note_1") %></div>
+  <div class="font-body-sm text-italic"><%= t(".asterisk_note_2") %></div>
 </div>

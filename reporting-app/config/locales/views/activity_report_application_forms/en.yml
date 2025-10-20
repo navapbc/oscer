@@ -23,6 +23,8 @@ en:
       total_reported: "Total reported"
       required: "Required"
       additional_needed: "Additional hours/income needed"
+      asterisk_note_1: "1 Hours reported or equivalent hours of work assuming income earned at federal minimum wage of $7.25 per hour"
+      asterisk_note_2: "2 Income earned or equivalent income earned assuming hours performed were work hours earning federal minimum wage of $7.25 per hour"
     month_total_row:
       total_reported: "Total reported"
     staff_activity_report:
