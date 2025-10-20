@@ -41,42 +41,10 @@ class CertificationService
 
     # otherwise they've specified some combo of parameters we need to derive the
     # final Certification requirements from
-    cert_type = requirements_input.fetch(:certification_type, nil)
-    if cert_type
-      type_params = self.certification_type_requirement_params(requirements_input.fetch(cert_type))
-    end
-    requirement_params = Certifications::RequirementParams.new_filtered(requirements_input.merge(type_params || {}))
+    requirement_params = Certifications::RequirementParams.new_filtered(requirements_input)
     requirement_params.validate!
 
     requirement_params.to_requirements
-  end
-
-  def calculate_certification_requirements_for_type_input(certification_type_input)
-    raise TypeError, "Expected instance of Api::Certifications::RequirementTypeInput" unless certification_type_input.is_a?(Api::Certifications::RequirementTypeInput)
-
-    Certifications::RequirementParams.new_filtered(
-      certification_type_input.attributes.merge(
-        self.certification_type_requirement_params(certification_type_input.certification_type).attributes
-      )
-    ).to_requirements
-  end
-
-  def certification_type_requirement_params(certification_type)
-    # TODO: can be updated to load from some config, the DB, etc.
-    case certification_type
-    when "new_application"
-      Certifications::RequirementTypeParams.new({
-        lookback_period: 1,
-        number_of_months_to_certify: 1,
-        due_period_days: 30
-      })
-    when "recertification"
-      Certifications::RequirementTypeParams.new({
-        lookback_period: 6,
-        number_of_months_to_certify: 3,
-        due_period_days: 30
-      })
-    end
   end
 
   private

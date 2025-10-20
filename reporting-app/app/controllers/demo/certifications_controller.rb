@@ -8,7 +8,7 @@ class Demo::CertificationsController < ApplicationController
 
   def new
     certification_type = params.fetch(:certification_type, nil)
-    certification_requirement_params = certification_service.certification_type_requirement_params(certification_type) || {}
+    certification_requirement_params = Certifications::RequirementTypeParams.cert_type_params_for(certification_type) || {}
     @form = Demo::Certifications::CreateForm.new({ certification_type: certification_type }.merge(certification_requirement_params.as_json))
   end
 

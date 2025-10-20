@@ -14,6 +14,18 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
   validates :due_date, presence: true, if: Proc.new { |params| params.due_period_days.blank? }
   after_validation :set_due_date_from_period
 
+  before_validation :set_type_params
+
+  def set_type_params
+    if self.certification_type.blank?
+      return
+    end
+
+    self.set_params_for_type(certification_type)
+    # unset any existing explicit due_date
+    self.due_date = nil
+  end
+
   def to_requirements
     Certifications::Requirements.new({
       "certification_date": self.certification_date,

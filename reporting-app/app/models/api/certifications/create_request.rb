@@ -20,8 +20,6 @@ class Api::Certifications::CreateRequest < ValueObject
       certification_requirements = self.certification_requirements
     when Certifications::RequirementParams
       certification_requirements = self.certification_requirements.to_requirements
-    when Api::Certifications::RequirementTypeInput
-      certification_requirements = certification_service.calculate_certification_requirements_for_type_input(self.certification_requirements)
     else
       # this should never be reached, something in the code is wrong
       raise TypeError
