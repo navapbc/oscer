@@ -6,6 +6,6 @@
     <%= activities.sum(&:hours) %>
   </div>
   <div class="grid-col-2 border-top-1px text-right">
-    <%= number_to_currency(activities.sum(&:income_earned)) %>
+    <%# TODO: number_to_currency(activities.sum(&:income_earned)) %>
   </div>
 </div>

@@ -10,11 +10,8 @@ class Activity < ApplicationRecord
   strata_attribute :month, :date
   strata_attribute :hours, :decimal
   strata_attribute :name, :string
+  strata_attribute :income_earned, :decimal
 
   validates :name, presence: true
   validates :hours, presence: true, numericality: { greater_than: 0 }
-
-  def income_earned
-    hours * 7.25
-  end
 end

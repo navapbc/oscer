@@ -6,7 +6,7 @@ en:
       edit: "Edit activity report"
       submitted_on: "Submitted on"
       intro:
-        in_progress: "Complete and submit your activity report"
+        in_progress: "Complete and submit your activity report. Add activities for each month that you are reporting."
         submitted: "Your activity report is being reviewed"
         approved: "Your activity report has been approved"
         denied: "Your activity report has been denied"
@@ -23,8 +23,6 @@ en:
       total_reported: "Total reported"
       required: "Required"
       additional_needed: "Additional hours/income needed"
-      asterisk_note_1: "<strong><sup>1</sup></strong>Hours reported or equivalent hours of work assuming income earned at federal minimum wage of $7.25 per hour"
-      asterisk_note_2: "<strong><sup>2</sup></strong>Income earned or equivalent income earned assuming hours performed were work hours earning federal minimum wage of $7.25 per hour"
     month_total_row:
       total_reported: "Total reported"
     staff_activity_report:
