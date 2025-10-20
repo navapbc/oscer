@@ -53,16 +53,6 @@ class CertificationService
     self.calculate_certification_requirements(requirement_params)
   end
 
-  def certification_requirements_from_params(requirement_params)
-    if requirement_params.certification_type.present?
-      requirement_params.with_type_params(
-        self.certification_type_requirement_params(requirement_params.certification_type)
-      )
-    end
-
-    self.calculate_certification_requirements(Certifications::RequirementParams.new_filtered(requirement_params))
-  end
-
   def calculate_certification_requirements(requirement_params)
     return unless requirement_params.present?
     raise TypeError, "Expected instance of Certifications::RequirementParams" unless requirement_params.is_a?(Certifications::RequirementParams)
@@ -78,6 +68,18 @@ class CertificationService
       "due_date": requirement_params.due_date.present? ? requirement_params.due_date : requirement_params.certification_date + requirement_params.due_period_days.days,
       "params": requirement_params.as_json
     })
+  end
+
+  def calculate_certification_requirements_for_type_input(certification_type_input)
+    raise TypeError, "Expected instance of Api::Certifications::RequirementTypeInput" unless certification_type_input.is_a?(Api::Certifications::RequirementTypeInput)
+
+    self.calculate_certification_requirements(
+      Certifications::RequirementParams.new_filtered(
+        certification_type_input.attributes.merge(
+          self.certification_type_requirement_params(certification_type_input.certification_type).attributes
+        )
+      )
+    )
   end
 
   def certification_type_requirement_params(certification_type)

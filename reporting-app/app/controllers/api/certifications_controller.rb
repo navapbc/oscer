@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+# TODO: move class to expected location
+require_relative "../../models/api/certifications/requirements_or_params_input.rb"
+
 class Api::CertificationsController < ApiController
   before_action :set_certification, only: %i[ show ]
 
@@ -32,9 +35,12 @@ class Api::CertificationsController < ApiController
     when Certifications::Requirements
       # we are good to go
       certification_requirements = create_request.certification_requirements
-    when Api::Certifications::RequirementParamsInput
-      certification_requirements = certification_service.certification_requirements_from_params(create_request.certification_requirements)
-    when Api::Certifications::RequirementsOrParamsInput
+    when Certifications::RequirementParams
+      certification_requirements = certification_service.calculate_certification_requirements(create_request.certification_requirements)
+    when Api::Certifications::RequirementTypeInput
+      certification_requirements = certification_service.calculate_certification_requirements_for_type_input(create_request.certification_requirements)
+    else
+      # this should never be reached, something in the code is wrong
       raise TypeError
     end
 
@@ -49,7 +55,7 @@ class Api::CertificationsController < ApiController
         status: :created
       )
     else
-      render_errors(@certification.errors)
+      render_errors(@certification)
     end
   end
 
