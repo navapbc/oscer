@@ -13,7 +13,15 @@ class ExemptionApplicationForm < Strata::ApplicationForm
 
   strata_attribute :exemption_type, :string
 
+  def self.find_by_certification_case_id(certification_case_id)
+    find_by(certification_case_id:)
+  end
+
   def event_payload
     super.merge(case_id: certification_case_id)
+  end
+
+  def self.information_request_class
+    ExemptionInformationRequest
   end
 end

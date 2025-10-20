@@ -18,8 +18,16 @@ class ActivityReportApplicationForm < Strata::ApplicationForm
 
   accepts_nested_attributes_for :activities, allow_destroy: true
 
+  def self.find_by_certification_case_id(certification_case_id)
+    find_by(certification_case_id:)
+  end
+
   # Include the case id
   def event_payload
     super.merge(case_id: certification_case_id)
+  end
+
+  def self.information_request_class
+    ActivityReportInformationRequest
   end
 end

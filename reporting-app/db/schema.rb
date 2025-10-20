@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_10_10_203944) do
+ActiveRecord::Schema[7.2].define(version: 2025_10_14_151917) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -97,6 +97,17 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_10_203944) do
     t.uuid "certification_case_id"
     t.index ["certification_case_id"], name: "index_exemption_application_forms_on_certification_case_id"
     t.index ["certification_id"], name: "index_exemption_application_forms_on_certification_id"
+  end
+
+  create_table "information_requests", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "type", null: false
+    t.uuid "application_form_id", null: false
+    t.string "application_form_type", null: false
+    t.text "staff_comment", null: false
+    t.text "member_comment"
+    t.date "due_date", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "strata_tasks", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

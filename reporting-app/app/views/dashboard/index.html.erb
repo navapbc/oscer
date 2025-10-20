@@ -1,4 +1,7 @@
 <h1><%= t(".title") %></h1>
+<% if @information_request %>
+  <%= render "dashboard/request_for_information", information_request: @information_request %>
+<% end %>
 <%= render determine_dashboard_view, activity_report: @activity_report_application_form, exemption_application: @exemption_application_form, certification_case: @certification_case, certification: @certification %>
 <!-- Previous Certifications -->
 <% if @all_certifications.length > 1 %>

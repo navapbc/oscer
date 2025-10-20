@@ -9,7 +9,12 @@ class ReviewActivityReportTasksController < TasksController
       notice = t("tasks.details.approved_message")
     elsif denying?
       kase.deny_activity_report
-      notice = t("tasks.details.denied_message")
+      notice = t("details.review_activity_report_task.denied_message")
+    elsif requesting_information?
+      # Redirect to new information request form. Task will be marked as "on hold" when
+      # the information request is created.
+      redirect_to(action: :request_information)
+      return
     else
       notice = t("tasks.details.no_decision_made_message")
     end
@@ -29,12 +34,22 @@ class ReviewActivityReportTasksController < TasksController
   end
 
   def denying?
-    # only temporarily changed this to work with the current approve/deny setup, so that the functionality wouldn't be broken when updating the UI.
-    # Other work to handle RFI should address this functionality.
-    activity_report_decision == "no-not-acceptable" || activity_report_decision == "no-additional-info"
+    activity_report_decision == "no-not-acceptable"
+  end
+
+  def requesting_information?
+    activity_report_decision == "no-additional-info"
   end
 
   def activity_report_decision
     params.dig(:review_activity_report_task, :activity_report_decision)
+  end
+
+  def set_create_path
+    @create_path = create_information_request_review_activity_report_task_path
+  end
+
+  def information_request_params
+    params.require(:activity_report_information_request).permit(:staff_comment)
   end
 end
