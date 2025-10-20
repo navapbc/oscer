@@ -1,13 +1,13 @@
 en:
   information_requests:
-    new:
-      title: "Request for more information"
-      instructions: "Provide more details about what information is required to
-        make a determination. We will send a notice to the member once all
-        documents for this case have been reviewed."
-      label: "Provide instructions on what the member needs to do"
-      submit_button: "Submit"
-      cancel_button: "Cancel"
+    edit:
+      title: "Provide additional information"
+      instructions_heading: "Instructions"
+      instructions_html: "Read through the information needed. If applicable, upload your supporting documentation and/or write a response in the text box below. If you need help, call the call center at XXX-XXX-XXXX"
+      due_by: "You have until %{due_date} to provide this information."
+      upload_documents: "Upload your documents"
+      comments_label: "Comments"
+      submit_button: "Submit additional information"
     show:
       due_date: "Due Date:"
       member_comment: "Member Comment:"

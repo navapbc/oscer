@@ -32,7 +32,7 @@ module StaffHelper
   def task_breadcrumbs(member, certification_case, task)
     case_breadcrumbs(member, certification_case) + [
       {
-        text: task.class.name.humanize,
+        text: task.class.name.underscore.humanize,
         link: task_path(task)
       }
     ]
