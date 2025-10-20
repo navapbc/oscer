@@ -15,8 +15,10 @@ en:
       back: "Back to dashboard"
       edit: "Edit activity report"
       submitted_on: "Submitted on"
+      info_heading: "Two ways to meet your requirement"
+      info_text: "For each month, report 80 hours of qualifying activities, show $580 of earnings, or a combination of the two."
       intro:
-        in_progress: "Complete and submit your activity report"
+        in_progress: "Complete and submit your activity report. Add activities for each month that you are reporting."
         submitted: "Your activity report is being reviewed"
         approved: "Your activity report has been approved"
         denied: "Your activity report has been denied"
@@ -26,6 +28,15 @@ en:
           submitted: "Your activity report is being reviewed"
           approved: "Your activity report has been approved"
           denied: "Your activity report has been denied"
+    activity_report_application_form:
+      activity: Activity
+      income_earned: "Income earned"
+      hours: "Hours"
+      total_reported: "Total reported"
+      required: "Required"
+      additional_needed: "Additional hours/income needed"
+    month_total_row:
+      total_reported: "Total reported"
     staff_activity_report:
       activity_type: Type
       organization_name: Org name
