@@ -46,7 +46,7 @@ RSpec.describe CertificationService do
 
   describe '#fetch_closed_cases' do
     let(:open_case) { create(:certification_case) }
-    
+
     before do
       open_case
     end
