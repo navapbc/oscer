@@ -5,7 +5,7 @@ module ActiveModel
       class AttributeValidator < ActiveModel::EachValidator
         def validate_each(record, attribute, value)
           if value
-            if value.is_a?(Array)
+            if value.is_a?(Enumerable)
               value.each_with_index do |item, index|
                 validate_value(record, attribute + "[#{index}]", value)
               end
