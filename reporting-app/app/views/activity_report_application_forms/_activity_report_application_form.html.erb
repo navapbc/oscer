@@ -1,12 +1,3 @@
-<div class="usa-alert usa-alert--info margin-bottom-4" role="alert">
-  <div class="usa-alert__body">
-    <p class="usa-alert__heading">Two ways to meet your requirement</p>
-    <p class="usa-alert__text">
-      For each month, report 80 hours of qualifying activity, show $580 of earnings, or a combination of the two.
-    </p>
-  </div>
-</div>
-
 <div id="<%= dom_id activity_report_application_form %>">
   <% for month, activities in activity_report_application_form.activities_by_month do %>
     <h2><%= month.strftime("%B %Y") %></h2>

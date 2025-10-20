@@ -5,6 +5,8 @@ en:
       back: "Back to dashboard"
       edit: "Edit activity report"
       submitted_on: "Submitted on"
+      info_heading: "Two ways to meet your requirement"
+      info_text: "For each month, report 80 hours of qualifying activities, show $580 of earnings, or a combination of the two."
       intro:
         in_progress: "Complete and submit your activity report. Add activities for each month that you are reporting."
         submitted: "Your activity report is being reviewed"
