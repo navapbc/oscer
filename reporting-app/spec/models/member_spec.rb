@@ -18,7 +18,7 @@ RSpec.describe Member, type: :model do
     end
 
     it 'creates a Member from a Certification' do
-      member = Member.from_certification(certification)
+      member = described_class.from_certification(certification)
 
       expect(member.member_id).to eq("MEMBER123")
       expect(member.email).to eq("test@example.com")
@@ -28,7 +28,8 @@ RSpec.describe Member, type: :model do
 
   describe '.find_by_member_id' do
     let(:member_data) { build(:certification_member_data, :with_full_name) }
-    let!(:certification) do
+
+    before do
       create(:certification,
         :with_member_data_base,
         :connected_to_email,
@@ -39,7 +40,7 @@ RSpec.describe Member, type: :model do
     end
 
     it 'finds a member by member_id' do
-      member = Member.find_by_member_id("MEMBER123")
+      member = described_class.find_by_member_id("MEMBER123")
 
       expect(member.member_id).to eq("MEMBER123")
       expect(member.email).to eq("test@example.com")
@@ -48,26 +49,24 @@ RSpec.describe Member, type: :model do
   end
 
   describe '.search_by_email' do
-    let(:member_data1) { build(:certification_member_data, :with_full_name) }
-    let(:member_data2) { build(:certification_member_data, :with_name_parts) }
+    let(:member_data_one) { build(:certification_member_data, :with_full_name) }
+    let(:member_data_two) { build(:certification_member_data, :with_name_parts) }
 
-    let!(:certification1) do
+    before do
       create(:certification,
         :with_member_data_base,
         :connected_to_email,
         member_id: "MEMBER1",
         email: "test@example.com",
-        member_data_base: member_data1
+        member_data_base: member_data_one
       )
-    end
 
-    let!(:certification2) do
       create(:certification,
         :with_member_data_base,
         :connected_to_email,
         member_id: "MEMBER2",
         email: "test@example.com",
-        member_data_base: member_data2
+        member_data_base: member_data_two
       )
     end
 
