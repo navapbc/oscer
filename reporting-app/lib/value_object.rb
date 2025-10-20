@@ -7,6 +7,7 @@ class ValueObject
   include ActiveModel::Attributes
   include ActiveModel::Serializers::JSON
   include ActiveModel::NewFiltered
+  include ActiveModel::Validations::Callbacks
 
   validates_with ActiveModel::Validations::NestedAttributeValidator
 end

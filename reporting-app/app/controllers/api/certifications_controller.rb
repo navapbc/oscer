@@ -36,7 +36,7 @@ class Api::CertificationsController < ApiController
       # we are good to go
       certification_requirements = create_request.certification_requirements
     when Certifications::RequirementParams
-      certification_requirements = certification_service.calculate_certification_requirements(create_request.certification_requirements)
+      certification_requirements = create_request.certification_requirements.to_requirements
     when Api::Certifications::RequirementTypeInput
       certification_requirements = certification_service.calculate_certification_requirements_for_type_input(create_request.certification_requirements)
     else
