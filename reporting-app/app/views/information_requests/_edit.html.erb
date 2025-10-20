@@ -1,0 +1,20 @@
+<h1><%= t('information_requests.edit.title') %></h1>
+
+<h2><%= t('information_requests.edit.instructions_heading') %></h2>
+<p class="font-serif-md"><%= t('information_requests.edit.instructions_html') %></p>
+
+<div class="usa-alert usa-alert--info margin-top-3" role="status">
+  <div class="usa-alert__body">
+    <p class="usa-alert__text">
+      <%= @information_request.staff_comment %>
+      <p class="margin-top-2"></p>
+      <%= t('information_requests.edit.due_by', due_date: @information_request.due_date.strftime('%B %d, %Y')) %>
+    </p>
+  </div>
+</div>
+
+<%= strata_form_with(model: @information_request) do |f| %>
+  <%= f.file_field :supporting_documents, label: t('information_requests.edit.upload_documents'), multiple: true %>
+  <%= f.text_area :member_comment, label: t('information_requests.edit.comments_label') %>
+  <%= f.submit t('information_requests.edit.submit_button'), big: true %>
+<% end %>
