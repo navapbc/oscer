@@ -10,6 +10,10 @@ class Certifications::RequirementTypeParams < ValueObject
   def set_params_for_type(certification_type)
     type_params = self.class.cert_type_params_for(certification_type)
 
+    if type_params.blank?
+      return
+    end
+
     self.lookback_period = type_params.lookback_period
     self.number_of_months_to_certify = type_params.number_of_months_to_certify
 
@@ -31,6 +35,10 @@ class Certifications::RequirementTypeParams < ValueObject
         number_of_months_to_certify: 3,
         due_period_days: 30
       })
+    else
+      nil
+      # TODO: Or?
+      # raise ArgumentError, "Unknown certification type"
     end
   end
 end

@@ -8,7 +8,8 @@ class Certifications::Requirements < ValueObject
   CERTIFICATION_TYPE_OPTIONS = [ "new_application", "recertification" ].freeze
 
   attribute :certification_date, :date
-  attribute :certification_type, :enum, options: CERTIFICATION_TYPE_OPTIONS, default: nil
+  attribute :certification_type, :enum, options: CERTIFICATION_TYPE_OPTIONS
+  validates :certification_type, inclusion: { in: CERTIFICATION_TYPE_OPTIONS, message: "is not a valid option" }, allow_blank: true
 
   # TODO: could do something like
   # "lookback": {

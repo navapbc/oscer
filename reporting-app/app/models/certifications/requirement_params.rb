@@ -17,7 +17,7 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
   before_validation :set_type_params
 
   def set_type_params
-    if self.certification_type.blank?
+    if self.certification_type.blank? || !Certifications::Requirements::CERTIFICATION_TYPE_OPTIONS.include?(self.certification_type)
       return
     end
 
