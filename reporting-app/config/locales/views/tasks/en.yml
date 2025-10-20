@@ -11,7 +11,6 @@ en:
       on_hold: "On Hold"
     details:
       approved_message: "Task completed!"
-      denied_message: "Task denied!"
       no_decision_made_message: "Please select a decision before submitting."
     request_information:
       information_requests:
