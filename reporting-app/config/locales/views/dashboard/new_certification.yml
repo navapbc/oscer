@@ -8,8 +8,6 @@ en:
         in_progress_message: "You have an activity report in progress."
         continue_report_button: "Continue report"
         report_activities_button: "Report activities"
-        continue_report_ivaas_button: "Continue report (IVaaS)"
-        report_activities_ivaas_button: "Report activities (IVaaS)"
       exemption_request:
         title: "Apply for an exemption"
         intro: "If you have certain conditions, you may not need to report activities."

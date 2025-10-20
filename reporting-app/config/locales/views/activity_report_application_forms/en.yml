@@ -1,5 +1,15 @@
 en:
   activity_report_application_forms:
+    new:
+      title: "Before you start"
+      time_to_complete_description: "Estimated time to complete:"
+      time_to_complete: "Less than 30 minutes"
+      instructions: "Before you begin, please have the following ready:"
+      what_you_need:
+        item_1: "Details about your work, educational programs, community service, or work programs"
+        item_2: "Supporting documentation"
+      save_info: "You can save your progress and return anytime"
+      start_button: "Start"
     show:
       title: "Activity Report"
       back: "Back to dashboard"
