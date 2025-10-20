@@ -8,19 +8,9 @@ en:
       upload_documents: "Upload your documents"
       comments_label: "Comments"
       submit_button: "Submit additional information"
-  staff:
-    information_requests:
-      new:
-        title: "Request for more information"
-        instructions: "Provide more details about what information is required to
-          make a determination. We will send a notice to the member once all
-          documents for this case have been reviewed."
-        label: "Provide instructions on what the member needs to do"
-        submit_button: "Submit"
-        cancel_button: "Cancel"
-      show:
-        due_date: "Due Date:"
-        member_comment: "Member Comment:"
-        staff_comment: "Staff Comment:"
-        supporting_documents: "Supporting documents:"
-        title: "Information Request"
+    show:
+      due_date: "Due Date:"
+      member_comment: "Member Comment:"
+      staff_comment: "Staff Comment:"
+      supporting_documents: "Supporting documents:"
+      title: "Information Request"
