@@ -35,8 +35,8 @@ class ActivitiesController < ApplicationController
 
     respond_to do |format|
       if @activity_report_application_form.save
-        format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity) }
-        format.json { render :show, status: :ok, location: @activity }
+        format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity.becomes(Activity)) }
+        format.json { render :show, status: :ok, location: @activity.becomes(Activity) }
       else
         format.html { render :edit, status: :unprocessable_entity }
         format.json { render json: @activity.errors, status: :unprocessable_entity }
@@ -54,8 +54,8 @@ class ActivitiesController < ApplicationController
     respond_to do |format|
       if @activity_report_application_form.save
         @activity.reload
-        format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity) }
-        format.json { render :show, status: :created, location: @activity }
+        format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity.becomes(Activity)) }
+        format.json { render :show, status: :created, location: @activity.becomes(Activity) }
       else
         format.html { render :new, status: :unprocessable_entity }
         format.json { render json: @activity.errors, status: :unprocessable_entity }
@@ -71,8 +71,8 @@ class ActivitiesController < ApplicationController
 
     respond_to do |format|
       if @activity_report_application_form.save
-        format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity) }
-        format.json { render :show, status: :ok, location: @activity }
+        format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity.becomes(Activity)) }
+        format.json { render :show, status: :ok, location: @activity.becomes(Activity) }
       else
         format.html { render :edit, status: :unprocessable_entity }
         format.json { render json: @activity.errors, status: :unprocessable_entity }
@@ -125,7 +125,7 @@ class ActivitiesController < ApplicationController
         activity_report_application_form_id: @activity_report_application_form.id
       }
       attributes[:hours] = activity_params[:input] if activity_params[:type] == "work_activity"
-      attributes[:earned_income] = activity_params[:input] if activity_params[:type] == "earned_income_activity"
+      attributes[:earned_income] = activity_params[:input].to_i * 100 if activity_params[:type] == "earned_income_activity"
       attributes
     end
 end
