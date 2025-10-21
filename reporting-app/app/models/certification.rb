@@ -88,11 +88,6 @@ class Certification < ApplicationRecord
     return unless self.member_data
 
     name_data = self.member_data.fetch("name", {})
-    Strata::Name.new(
-      first: name_data["first"],
-      middle: name_data["middle"],
-      last: name_data["last"],
-      suffix: name_data["suffix"]
-    )
+    Strata::Name.new(**name_data)
   end
 end
