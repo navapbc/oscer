@@ -7,11 +7,8 @@ RSpec.describe CertificationCase, type: :model do
 
   describe '#member_status' do
     context 'when on report_activities step' do
-      before do
-        certification_case.update!(business_process_current_step: "report_activities")
-      end
-
       it 'returns awaiting_report' do
+        # Default factory step is "report_activities"
         expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:awaiting_report])
       end
     end
