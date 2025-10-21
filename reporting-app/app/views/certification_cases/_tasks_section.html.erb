@@ -1,0 +1,39 @@
+<%# 
+  Renders the tasks section for a certification case
+  TODO: Remove this partial and move this to the Strata SDK with optional columns 
+  this way it can be used in other parts of the application like the staff tasks index
+  an example of optional columns would be the task status and case id
+%>
+<% if tasks.any? %>
+  <table class="usa-table usa-table--borderless width-full">
+    <thead>
+      <tr>
+        <th scope="col"><%= t("strata.tasks.index.columns.col_due_date") %></th>
+        <th scope="col"><%= t("strata.tasks.index.columns.col_type") %></th>
+        <th scope="col"><%= t("strata.tasks.index.columns.col_case_id") %></th>
+        <th scope="col"><%= t("strata.tasks.index.columns.col_created_date") %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% tasks.each do |task| %>
+        <tr>
+          <td>
+            <%= local_en_us task.due_on %>
+          </td>
+          <td>
+            <%= link_to t("tasks.types.#{task.type.underscore}"), task_path(task.id) %>
+          </td>
+          <td>
+            <%= task.case_id %>
+          </td>
+          <td>
+            <%= local_en_us task.created_at.to_date %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p><%= t("certification_cases.show.no_tasks") %></p>
+<% end %>
+
