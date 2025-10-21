@@ -200,16 +200,19 @@ components:
           format: date
         gross:
           type:
-          - number
+          - string
           - 'null'
+          format: decimal
         net:
           type:
-          - number
+          - string
           - 'null'
+          format: decimal
         hours_worked:
           type:
-          - number
+          - string
           - 'null'
+          format: decimal
       required:
       - period_start
       - period_end
@@ -289,43 +292,43 @@ components:
       required:
       - status
   responses:
-    983746971d8667b8382fec0c0e84dbdf:
+    2a02b6b9f2bf8af2f69dc1b305fd2ea1:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    51f26980d9fdd74f6703c927c176de84:
+    6a42a42fa0c1cf33a5f054f4227f54d2:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    ca1b6242721ad878d45767953e188ebd:
+    38188a97a450b2b1b918bdc340abcde3:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    e797f2400c41fa11c543a4ffb1c804ab:
+    9698be85435e0bbc1a043ce1a4ef1523:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    0c2913616107a2489f2216e3941f94e1:
+    1720e8d4272c47d808ae092e196a7ab7:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    84a78ddeb119033bbac2acc4d880e08b:
+    84d98a6bd862cc8319624388a6a874e4:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    d7e0eeff2322d415475c9428f12aeb01:
+    e17ffcaa22d966f8d8fb6d62bd597c98:
       description: Response
       content:
         application/json:
@@ -341,7 +344,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    df0d31c4c16360d2aad570c26a05974e:
+    a9c14ab9cae8249365a3dcbb916b7dec:
       description: The Certification data.
       content:
         application/json:
@@ -394,14 +397,14 @@ paths:
       description: "#"
       operationId: POST__api_certifications
       requestBody:
-        "$ref": "#/components/requestBodies/df0d31c4c16360d2aad570c26a05974e"
+        "$ref": "#/components/requestBodies/a9c14ab9cae8249365a3dcbb916b7dec"
       responses:
         '201':
-          "$ref": "#/components/responses/983746971d8667b8382fec0c0e84dbdf"
+          "$ref": "#/components/responses/2a02b6b9f2bf8af2f69dc1b305fd2ea1"
         '400':
-          "$ref": "#/components/responses/51f26980d9fdd74f6703c927c176de84"
+          "$ref": "#/components/responses/6a42a42fa0c1cf33a5f054f4227f54d2"
         '422':
-          "$ref": "#/components/responses/ca1b6242721ad878d45767953e188ebd"
+          "$ref": "#/components/responses/38188a97a450b2b1b918bdc340abcde3"
   "/api/certifications/{id}":
     get:
       tags:
@@ -413,9 +416,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/e797f2400c41fa11c543a4ffb1c804ab"
+          "$ref": "#/components/responses/9698be85435e0bbc1a043ce1a4ef1523"
         '404':
-          "$ref": "#/components/responses/0c2913616107a2489f2216e3941f94e1"
+          "$ref": "#/components/responses/1720e8d4272c47d808ae092e196a7ab7"
   "/api/health":
     get:
       tags:
@@ -425,6 +428,6 @@ paths:
       operationId: GET__api_health
       responses:
         '200':
-          "$ref": "#/components/responses/84a78ddeb119033bbac2acc4d880e08b"
+          "$ref": "#/components/responses/84d98a6bd862cc8319624388a6a874e4"
         '503':
-          "$ref": "#/components/responses/d7e0eeff2322d415475c9428f12aeb01"
+          "$ref": "#/components/responses/e17ffcaa22d966f8d8fb6d62bd597c98"

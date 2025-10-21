@@ -231,13 +231,16 @@
             "format": "date"
           },
           "gross": {
-            "type": ["number", "null"]
+            "type": ["string", "null"],
+            "format": "decimal"
           },
           "net": {
-            "type": ["number", "null"]
+            "type": ["string", "null"],
+            "format": "decimal"
           },
           "hours_worked": {
-            "type": ["number", "null"]
+            "type": ["string", "null"],
+            "format": "decimal"
           }
         },
         "required": [

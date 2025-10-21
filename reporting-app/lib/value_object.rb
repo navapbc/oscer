@@ -10,4 +10,9 @@ class ValueObject
   include ActiveModel::Validations::Callbacks
 
   validates_with ActiveModel::Validations::NestedAttributeValidator
+
+  def ==(other)
+    return false if self.class != other.class
+    self.as_json == other.as_json
+  end
 end

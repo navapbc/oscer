@@ -35,9 +35,9 @@ FactoryBot.define do
                 {
                   "period_start": cert_date.beginning_of_month,
                   "period_end": cert_date.end_of_month,
-                  "gross": "123.45",
-                  "net": "50.00",
-                  "hours_worked": "10"
+                  "gross": 123.45,
+                  "net": 50.00,
+                  "hours_worked": 10
                 }
               ]
           }
@@ -54,9 +54,9 @@ FactoryBot.define do
               {
                 "period_start": cert_date.beginning_of_month << i,
                 "period_end": cert_date.end_of_month << i,
-                "gross": "2000.00",
-                "net": "1000.00",
-                "hours_worked": "80"
+                "gross": 2000.00,
+                "net": 1000.00,
+                "hours_worked": 80
               }
             }
           }
