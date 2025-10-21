@@ -9,7 +9,7 @@ module Middleware
         super
 
         @default_exceptions_app = ::ActionDispatch::PublicExceptions.new(@public_path)
-        @api_path_prefix = "/api/"
+        @api_path_prefix = "/api"
       end
 
       def call(env)
@@ -26,7 +26,8 @@ module Middleware
 
         path = ::Rack::Utils.clean_path_info(raw_path_info)
 
-        if /^#{Regexp.escape(@api_path_prefix)}/.match?(path)
+        # match any subpath (/api/.*) or root (/api$) of the prefix
+        if /^#{Regexp.escape(@api_path_prefix)}(\/|$)/.match?(path)
           return true
         end
 
