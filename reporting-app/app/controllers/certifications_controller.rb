@@ -2,7 +2,6 @@
 
 class CertificationsController < StaffController
   before_action :set_certification, only: %i[ show update ]
-  before_action :set_activity_report_application_forms, only: %i[ show create update ]
 
   # for API endpoints
   skip_before_action :authenticate_user!, only: %i[ create show]
@@ -67,10 +66,6 @@ class CertificationsController < StaffController
   private
     def set_certification
       @certification = authorize Certification.find(params[:id])
-    end
-
-    def set_activity_report_application_forms
-      @activity_report_application_forms = ActivityReportApplicationForm.where(certification_id: @certification&.id)
     end
 
     def certification_service

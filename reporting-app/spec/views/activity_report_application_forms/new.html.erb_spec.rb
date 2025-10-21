@@ -18,8 +18,8 @@ RSpec.describe "activity_report_application_forms/new", type: :view do
 
   it "renders time to complete text" do
     render
-    expect(rendered).to have_selector("p strong", text: "Estimated time to complete:")
-    expect(rendered).to have_selector("p", text: "About 1 hour")
+    expect(rendered).to have_selector("dt strong", text: "Estimated time to complete:")
+    expect(rendered).to have_selector("dd", text: "Less than 30 minutes")
   end
 
   it "renders materials list" do
@@ -32,10 +32,6 @@ RSpec.describe "activity_report_application_forms/new", type: :view do
     expect(rendered).to have_selector(
       "ul li",
       text: "Supporting documentation"
-    )
-    expect(rendered).to have_selector(
-      "ul li",
-      text: "If you believe you qualify for an exemption, you will need to provide supporting documentation"
     )
     expect(rendered).to have_selector("p", text: "You can save your progress and return anytime")
   end

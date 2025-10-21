@@ -14,8 +14,8 @@ class CertificationService
     certification_cases
   end
 
-  def fetch_open_cases
-    hydrate_cases_with_certifications!(CertificationCase.open)
+  def fetch_open_actionable_cases
+    hydrate_cases_with_certifications!(CertificationCase.open.actionable)
   end
 
   def fetch_closed_cases

@@ -14,5 +14,12 @@ FactoryBot.define do
         case_obj.close
       end
     end
+
+    trait :actionable do
+      business_process_current_step { "review_activity_report" }
+      after(:create) do |case_obj|
+        create(:review_activity_report_task, case: case_obj)
+      end
+    end
   end
 end
