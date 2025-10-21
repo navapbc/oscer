@@ -1,5 +1,7 @@
 <div id="<%= dom_id activity_report_application_form %>">
   <% for month, activities in activity_report_application_form.activities_by_month do %>
+    <% summed_hours = activities.map { |act| act.try(:hours) || 0 }.sum %>
+    <% max_summed_hours = [0, 80.0 - summed_hours].max %>
     <h2><%= month.strftime("%B %Y") %></h2>
     <div class="grid-container font-body-md">
       <div class="grid-row text-bold">
@@ -39,13 +41,13 @@
           <%= t(".additional_needed") %>
         </div>
         <div class="grid-col-2 border-top-1px text-right">
-          <%= [0.0, 80.0 - activities.sum(&:hours)].max %>
+          <%= max_summed_hours %>
         </div>
         <div class="grid-col-1 border-top-1px text-center">
           or
         </div>
         <div class="grid-col-1 border-top-1px text-right">
-          <%= number_to_currency([0.0, 80.0 - activities.sum(&:hours)].max * 7.25) %>
+          <%= number_to_currency(max_summed_hours * 7.25) %>
         </div>
       </div>
     </div>
