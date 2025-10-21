@@ -3,9 +3,9 @@
     <%= link_to "Work for #{activity.name}", [activity_report_application_form, activity.becomes(Activity)] %>
   </div>
   <div class="grid-col-2 text-right">
-    <%= activity.hours %>
+    <%= activity.try(:hours) %>
   </div>
   <div class="grid-col-2 text-right">
-    <%# TODO: activity.income_earned %>
+    <%= number_to_currency(activity.try(:earned_income)&.cents_amount) %>
   </div>
 </div>

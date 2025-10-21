@@ -6,6 +6,6 @@
     <%= activities.map { |act| act.try(:hours) || 0 }.sum %>
   </div>
   <div class="grid-col-2 border-top-1px text-right">
-    <%= number_to_currency(activities.map { |act| act.try(:earned_income) || 0 }.sum) %>
+    <%= number_to_currency(activities.map { |act| act.try(:earned_income)&.cents_amount || 0 }.sum) %>
   </div>
 </div>
