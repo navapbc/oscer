@@ -29,4 +29,8 @@ class EnumType < ActiveModel::Type::Value
   def options
     @options
   end
+
+  def underlying_types
+    [ String ]
+  end
 end

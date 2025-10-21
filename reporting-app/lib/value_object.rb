@@ -8,8 +8,10 @@ class ValueObject
   include ActiveModel::Serializers::JSON
   include ActiveModel::NewFiltered
   include ActiveModel::Validations::Callbacks
+  include ActiveRecord::AttributeMethods::BeforeTypeCast
 
   validates_with ActiveModel::Validations::NestedAttributeValidator
+  validates_with ActiveModel::Validations::AttributesTypeValidator
 
   def ==(other)
     return false if self.class != other.class
