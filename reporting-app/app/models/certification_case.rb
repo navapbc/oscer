@@ -24,9 +24,12 @@ class CertificationCase < Strata::Case
   MEMBER_STATUS_NOT_MET_REQUIREMENTS = "not_met_requirements"
 
   def accept_activity_report
-    self.activity_report_approval_status = "approved"
-    self.activity_report_approval_status_updated_at = Time.current
-    close # call Strata::Case#close to set status to closed and save
+    transaction do
+      self.activity_report_approval_status = "approved"
+      self.activity_report_approval_status_updated_at = Time.current
+      save!
+      close
+    end
 
     Strata::EventManager.publish("DeterminedRequirementsMet", { case_id: id })
   end
@@ -40,9 +43,12 @@ class CertificationCase < Strata::Case
   end
 
   def accept_exemption_request
-    self.exemption_request_approval_status = "approved"
-    self.exemption_request_approval_status_updated_at = Time.current
-    close # call Strata::Case#close to set status to closed and save
+    transaction do
+      self.exemption_request_approval_status = "approved"
+      self.exemption_request_approval_status_updated_at = Time.current
+      save!
+      close
+    end
 
     Strata::EventManager.publish("DeterminedExempt", { case_id: id })
   end
