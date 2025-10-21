@@ -48,10 +48,12 @@ class ActivitiesController < ApplicationController
   def create
     authorize @activity_report_application_form, :update?
 
-    @activity = @activity_report_application_form.activities.build(activity_params)
+    @activity = build_activity_from_params
+    @activity_report_application_form.activities << @activity
 
     respond_to do |format|
       if @activity_report_application_form.save
+        @activity.reload
         format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity) }
         format.json { render :show, status: :created, location: @activity }
       else
@@ -65,7 +67,7 @@ class ActivitiesController < ApplicationController
   def update
     authorize @activity_report_application_form, :update?
 
-    @activity.attributes = activity_params
+    @activity.attributes = activity_params_as_attributes
 
     respond_to do |format|
       if @activity_report_application_form.save
@@ -103,6 +105,27 @@ class ActivitiesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def activity_params
-      params.require(:activity).permit(:month, :hours, :name)
+      params.require(:activity).permit(
+        :month,
+        :name,
+        :input,
+        :type,
+        { type: [:work_activity, :earned_income_activity] }
+      )
+    end
+
+    def build_activity_from_params
+      activity_params[:type].to_s.camelize.constantize.new(activity_params_as_attributes)
+    end
+
+    def activity_params_as_attributes
+      attributes = {
+        month: activity_params[:month],
+        name: activity_params[:name],
+        activity_report_application_form_id: @activity_report_application_form.id
+      }
+      attributes[:hours] = activity_params[:input] if activity_params[:type] == "work_activity"
+      attributes[:earned_income] = activity_params[:input] if activity_params[:type] == "earned_income_activity"
+      attributes
     end
 end
