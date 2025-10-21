@@ -11,32 +11,15 @@ FactoryBot.define do
     end
 
     trait :with_full_name do
-      name {
-        {
-          "first" => "Jane",
-          "middle" => "Q",
-          "last" => "Public"
-        }
-      }
+      name { attributes_for(:name, :base, :with_middle) }
     end
 
     trait :with_name_parts do
-      name {
-        {
-          "first" => "John",
-          "last" => "Doe"
-        }
-      }
+      name { attributes_for(:name, :base) }
     end
 
     trait :with_middle_name do
-      name {
-        {
-          "first" => "John",
-          "middle" => "Q",
-          "last" => "Doe"
-        }
-      }
+      name { attributes_for(:name, :base, :with_middle) }
     end
 
 

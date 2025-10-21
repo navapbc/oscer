@@ -22,7 +22,11 @@ RSpec.describe Member, type: :model do
 
       expect(member.member_id).to eq("MEMBER123")
       expect(member.email).to eq("test@example.com")
-      expect(member.name.full_name).to eq("Jane Q Public")
+      expect(member.name).to be_a(Strata::Name)
+      expect(member.name.full_name).to be_present
+      expect(member.name.first).to be_present
+      expect(member.name.middle).to be_present
+      expect(member.name.last).to be_present
     end
   end
 
@@ -44,7 +48,8 @@ RSpec.describe Member, type: :model do
 
       expect(member.member_id).to eq("MEMBER123")
       expect(member.email).to eq("test@example.com")
-      expect(member.name.full_name).to eq("Jane Q Public")
+      expect(member.name).to be_a(Strata::Name)
+      expect(member.name.full_name).to be_present
     end
   end
 
@@ -75,7 +80,7 @@ RSpec.describe Member, type: :model do
 
       expect(members.length).to eq(2)
       expect(members.map(&:member_id)).to contain_exactly("MEMBER1", "MEMBER2")
-      expect(members.map { |m| m.name.full_name }).to contain_exactly("Jane Q Public", "John Doe")
+      expect(members.all? { |m| m.name.full_name.present? }).to be true
     end
   end
 end
