@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe CertificationCase, type: :model do
   let(:certification) { create(:certification) }
-  let(:certification_case) { CertificationCase.find_by(certification_id: certification.id) }
+  let(:certification_case) { described_class.find_by(certification_id: certification.id) }
 
   describe '#member_status' do
     context 'when on report_activities step' do
