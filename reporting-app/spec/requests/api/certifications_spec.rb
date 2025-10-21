@@ -200,23 +200,48 @@ RSpec.describe "/api/certifications", type: :request do
         expect(response).to match_openapi_doc(OPENAPI_DOC)
       end
 
-      it "invalid cert requirements - lookback_period" do
+      it "invalid member_id" do
         post api_certifications_url,
              params: valid_json_request_attributes.merge({
-               certification_requirements: { "lookback_period": 2 }
-             }),
+              "member_id": []
+            }),
              headers: valid_headers,
              as: :json
 
         expect(response).to be_client_error
         expect(response.content_type).to match(a_string_including("application/json"))
         expect(response).to match_openapi_doc(OPENAPI_DOC)
+
+        expect(response.parsed_body[:errors]).to include(
+          { "field": "member_id", "error": "invalid_value" }
+        )
+      end
+
+      it "invalid cert requirements - lookback_period" do
+        cert_params = build(:certification_certification_requirement_params, :with_direct_params)
+
+        post api_certifications_url,
+             params: valid_json_request_attributes.merge({
+              certification_requirements: cert_params.attributes.merge({ "lookback_period": [] }).as_json
+            }),
+             headers: valid_headers,
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.content_type).to match(a_string_including("application/json"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+
+        expect(response.parsed_body[:errors]).to include(
+          { "field": "certification_requirements.lookback_period", "error": "invalid_value" }
+        )
       end
 
       it "invalid cert requirements - array" do
+        cert_requirements = build(:certification_certification_requirements)
+
         post api_certifications_url,
              params: valid_json_request_attributes.merge({
-               certification_requirements: { "months_to_be_certified": [ "2025-10-16", "FOOBAR" ] }
+               certification_requirements: cert_requirements.attributes.merge({ "months_that_can_be_certified": [ "2025-10-16", "FOOBAR" ] }).as_json
              }),
              headers: valid_headers,
              as: :json
@@ -224,6 +249,10 @@ RSpec.describe "/api/certifications", type: :request do
         expect(response).to be_client_error
         expect(response.content_type).to match(a_string_including("application/json"))
         expect(response).to match_openapi_doc(OPENAPI_DOC)
+
+        expect(response.parsed_body[:errors]).to include(
+          { "field": "certification_requirements.months_that_can_be_certified[1]", "error": "invalid_value" }
+        )
       end
     end
   end

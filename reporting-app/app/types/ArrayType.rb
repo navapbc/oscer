@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class ArrayType < ActiveModel::Type::Value
+  attr_reader :of
+
   def type = :array
 
   def initialize(of:)
