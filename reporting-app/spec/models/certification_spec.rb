@@ -24,8 +24,7 @@ RSpec.describe Certification, type: :model do
             "first" => "Jane",
             "middle" => "Q",
             "last" => "Public",
-            "suffix" => "Jr",
-            "full" => "Jane Q Public Jr"
+            "suffix" => "Jr"
           }
         })
       end

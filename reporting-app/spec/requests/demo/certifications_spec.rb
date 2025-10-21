@@ -76,5 +76,41 @@ RSpec.describe "/demo/certifications", type: :request do
              params: { demo_certifications_create_form: valid_request_attributes.merge({ certification_type: "recertification" }) }
       }.to change(Certification, :count).by(1)
     end
+
+    context "with validation errors" do
+      it "renders form with errors when certification_date is missing" do
+        post demo_certifications_url,
+             params: {
+               demo_certifications_create_form:
+                 valid_request_attributes.except(:certification_date).merge(
+                   member_name_first: "Jane",
+                   member_name_last: "Doe"
+                 )
+             }
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+
+      it "renders form with errors when member_name_first is missing" do
+        post demo_certifications_url,
+             params: {
+               demo_certifications_create_form:
+                 valid_request_attributes.except(:member_name_first).merge(
+                   certification_date: "09/25/2025"
+                 )
+             }
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+
+      it "renders form with errors when member_name_last is missing" do
+        post demo_certifications_url,
+             params: {
+               demo_certifications_create_form:
+                 valid_request_attributes.except(:member_name_last).merge(
+                   certification_date: "09/25/2025"
+                 )
+             }
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    end
   end
 end
