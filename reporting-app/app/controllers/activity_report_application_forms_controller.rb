@@ -76,10 +76,6 @@ class ActivityReportApplicationFormsController < ApplicationController
   end
 
   def set_certification_case
-    @certification_case = CertificationCase.find_by(id: params[:certification_case_id])
-  end
-
-  def set_certification_case
     if params[:certification_case_id].blank?
       redirect_to dashboard_path, alert: "Cannot create activity report without a certification case"
       return
@@ -98,11 +94,16 @@ class ActivityReportApplicationFormsController < ApplicationController
   end
 
   def create_activity_report
-    activity_report_application_form = ActivityReportApplicationForm.find_or_create_by(certification_case_id: @certification_case.id)
+    activity_report_application_form = ActivityReportApplicationForm.create(certification_case_id: @certification_case.id)
     activity_report_application_form.user_id = current_user.id
-    activity_report_application_form.certification = Certification.find(@certification_case.certification_id) # TODO: to be removed in future PR, leaving for compatibility
     activity_report_application_form.save!
     @activity_report_application_form = authorize activity_report_application_form
+  rescue ActiveRecord::RecordInvalid => e
+    if e.record.errors[:certification_case_id].include?("has already been taken")
+      redirect_to dashboard_path, notice: "An activity report already exists for this certification case"
+    else
+      raise
+    end
   end
 
   def redirect_to_ivaas

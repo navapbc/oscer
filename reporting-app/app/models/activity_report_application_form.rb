@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 class ActivityReportApplicationForm < Strata::ApplicationForm
-  belongs_to :certification, optional: true
   has_many :activities, strict_loading: true, autosave: true, dependent: :destroy
+
+  validates :certification_case_id, uniqueness: true
 
   strata_attribute :reporting_periods, :year_month, array: true
 
@@ -14,7 +15,7 @@ class ActivityReportApplicationForm < Strata::ApplicationForm
     @activities_by_month ||= activities.group_by(&:month)
   end
 
-  default_scope { includes(:activities, :certification) }
+  default_scope { includes(:activities) }
 
   accepts_nested_attributes_for :activities, allow_destroy: true
 

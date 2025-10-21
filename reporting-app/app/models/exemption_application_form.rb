@@ -6,6 +6,7 @@ class ExemptionApplicationForm < Strata::ApplicationForm
     incarceration: "incarceration"
   }
   validates :exemption_type, inclusion: { in: exemption_types.values }, allow_nil: true
+  validates :certification_case_id, uniqueness: true
 
   has_many_attached :supporting_documents
 
