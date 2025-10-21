@@ -15,9 +15,7 @@ FactoryBot.define do
         {
           "first" => "Jane",
           "middle" => "Q",
-          "last" => "Public",
-          "suffix" => "Jr",
-          "full" => "Jane Q Public Jr"
+          "last" => "Public"
         }
       }
     end
@@ -41,15 +39,6 @@ FactoryBot.define do
       }
     end
 
-    trait :with_suffix do
-      name {
-        {
-          "first" => "John",
-          "last" => "Doe",
-          "suffix" => "Jr"
-        }
-      }
-    end
 
     trait :partially_met_work_hours_requirement do
       payroll_accounts {

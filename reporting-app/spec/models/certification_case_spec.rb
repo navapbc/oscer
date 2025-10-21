@@ -3,13 +3,12 @@
 require 'rails_helper'
 
 RSpec.describe CertificationCase, type: :model do
-  let(:certification) { create(:certification) }
-  let(:certification_case) { described_class.find_by(certification_id: certification.id) }
+  let(:certification_case) { create(:certification_case) }
 
   describe '#member_status' do
     context 'when on report_activities step' do
       before do
-        certification_case.business_process_instance.instance_variable_set(:@current_step, "report_activities")
+        certification_case.update!(business_process_current_step: "report_activities")
       end
 
       it 'returns awaiting_report' do
@@ -19,7 +18,7 @@ RSpec.describe CertificationCase, type: :model do
 
     context 'when on review_activity_report step' do
       before do
-        certification_case.business_process_instance.instance_variable_set(:@current_step, "review_activity_report")
+        certification_case.update!(business_process_current_step: "review_activity_report")
       end
 
       it 'returns pending_review' do
@@ -29,7 +28,7 @@ RSpec.describe CertificationCase, type: :model do
 
     context 'when on review_exemption_claim step' do
       before do
-        certification_case.business_process_instance.instance_variable_set(:@current_step, "review_exemption_claim")
+        certification_case.update!(business_process_current_step: "review_exemption_claim")
       end
 
       it 'returns pending_review' do
@@ -39,8 +38,10 @@ RSpec.describe CertificationCase, type: :model do
 
     context 'when on end step with approved exemption' do
       before do
-        certification_case.business_process_instance.instance_variable_set(:@current_step, "end")
-        certification_case.update!(exemption_request_approval_status: "approved")
+        certification_case.update!(
+          business_process_current_step: "end",
+          exemption_request_approval_status: "approved"
+        )
       end
 
       it 'returns exempt' do
@@ -50,8 +51,10 @@ RSpec.describe CertificationCase, type: :model do
 
     context 'when on end step with approved activity report' do
       before do
-        certification_case.business_process_instance.instance_variable_set(:@current_step, "end")
-        certification_case.update!(activity_report_approval_status: "approved")
+        certification_case.update!(
+          business_process_current_step: "end",
+          activity_report_approval_status: "approved"
+        )
       end
 
       it 'returns met_requirements' do
@@ -61,8 +64,10 @@ RSpec.describe CertificationCase, type: :model do
 
     context 'when on end step with denied activity report' do
       before do
-        certification_case.business_process_instance.instance_variable_set(:@current_step, "end")
-        certification_case.update!(activity_report_approval_status: "denied")
+        certification_case.update!(
+          business_process_current_step: "end",
+          activity_report_approval_status: "denied"
+        )
       end
 
       it 'returns not_met_requirements' do
@@ -72,8 +77,8 @@ RSpec.describe CertificationCase, type: :model do
 
     context 'when on end step prioritizes exemption over activity report' do
       before do
-        certification_case.business_process_instance.instance_variable_set(:@current_step, "end")
         certification_case.update!(
+          business_process_current_step: "end",
           exemption_request_approval_status: "approved",
           activity_report_approval_status: "approved"
         )
@@ -86,7 +91,7 @@ RSpec.describe CertificationCase, type: :model do
 
     context 'when on system process steps' do
       before do
-        certification_case.business_process_instance.instance_variable_set(:@current_step, "exemption_check")
+        certification_case.update!(business_process_current_step: "exemption_check")
       end
 
       it 'returns awaiting_report' do
@@ -100,10 +105,11 @@ RSpec.describe CertificationCase, type: :model do
       allow(Strata::EventManager).to receive(:publish)
 
       certification_case.accept_activity_report
+      certification_case.reload
 
       expect(certification_case.activity_report_approval_status).to eq("approved")
       expect(certification_case.activity_report_approval_status_updated_at).to be_present
-      expect(certification_case.status).to eq("closed")
+      expect(certification_case).to be_closed
     end
 
     it 'publishes DeterminedRequirementsMet event' do
@@ -123,6 +129,7 @@ RSpec.describe CertificationCase, type: :model do
       allow(Strata::EventManager).to receive(:publish)
 
       certification_case.deny_activity_report
+      certification_case.reload
 
       expect(certification_case.activity_report_approval_status).to eq("denied")
       expect(certification_case.activity_report_approval_status_updated_at).to be_present
@@ -145,10 +152,11 @@ RSpec.describe CertificationCase, type: :model do
       allow(Strata::EventManager).to receive(:publish)
 
       certification_case.accept_exemption_request
+      certification_case.reload
 
       expect(certification_case.exemption_request_approval_status).to eq("approved")
       expect(certification_case.exemption_request_approval_status_updated_at).to be_present
-      expect(certification_case.status).to eq("closed")
+      expect(certification_case).to be_closed
     end
 
     it 'publishes DeterminedExempt event' do
@@ -168,6 +176,7 @@ RSpec.describe CertificationCase, type: :model do
       allow(Strata::EventManager).to receive(:publish)
 
       certification_case.deny_exemption_request
+      certification_case.reload
 
       expect(certification_case.exemption_request_approval_status).to eq("denied")
       expect(certification_case.exemption_request_approval_status_updated_at).to be_present

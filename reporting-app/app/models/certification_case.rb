@@ -26,8 +26,7 @@ class CertificationCase < Strata::Case
   def accept_activity_report
     self.activity_report_approval_status = "approved"
     self.activity_report_approval_status_updated_at = Time.current
-    self.status = :closed
-    save!
+    close # call Strata::Case#close to set status to closed and save
 
     Strata::EventManager.publish("DeterminedRequirementsMet", { case_id: id })
   end
@@ -43,8 +42,7 @@ class CertificationCase < Strata::Case
   def accept_exemption_request
     self.exemption_request_approval_status = "approved"
     self.exemption_request_approval_status_updated_at = Time.current
-    self.status = :closed
-    save!
+    close # call Strata::Case#close to set status to closed and save
 
     Strata::EventManager.publish("DeterminedExempt", { case_id: id })
   end
