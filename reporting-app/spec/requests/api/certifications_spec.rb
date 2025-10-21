@@ -43,15 +43,13 @@ RSpec.describe "/api/certifications", type: :request do
       expect(response).to match_openapi_doc(OPENAPI_DOC)
     end
 
-    # TODO
-    # it "renders a successful response with invalid data" do
-    #   certification = create(:certification, :invalid_json_data)
-    #   get api_certification_url(certification)
-    #   expect(response).to be_successful
-    #   # it won't necessarily match all of the spec, as the spec expects valid
-    #   # data, so be more lenient here
-    #   # expect(response).to match_openapi_doc(OPENAPI_DOC)
-    # end
+    it "renders a successful response with invalid data" do
+      certification = create(:certification)
+      certification.update_column("certification_requirements", "()")
+      get api_certification_url(certification)
+      expect(response).to be_successful
+      expect(response).to match_openapi_doc(OPENAPI_DOC)
+    end
   end
 
   describe "POST /" do

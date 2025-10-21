@@ -138,7 +138,9 @@ components:
           - 'null'
           description: An identifier for the case associated with the certification
         certification_requirements:
-          "$ref": "#/components/schemas/CertificationRequirements"
+          oneOf:
+          - "$ref": "#/components/schemas/CertificationRequirements"
+          - type: 'null'
         member_data:
           type:
           - object
