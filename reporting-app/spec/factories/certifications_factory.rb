@@ -8,11 +8,6 @@ FactoryBot.define do
     certification_requirements { build(:certification_certification_requirements) }
     member_data { build(:certification_member_data) }
 
-    trait :invalid_json_data do
-      certification_requirements { "()" }
-      member_data { "()" }
-    end
-
     trait :connected_to_email do
       transient do
         email { nil }
