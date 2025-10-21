@@ -18,6 +18,9 @@ class Certifications::MemberData < ValueObject
     attribute :gross, :decimal # TODO more like Strata::Money right?
     attribute :net, :decimal # TODO more like Strata::Money right?
     attribute :hours_worked, :decimal
+
+    validates :period_start, presence: true
+    validates :period_end, presence: true
   end
 
   class PayrollAccount < ValueObject

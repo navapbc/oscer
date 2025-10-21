@@ -122,6 +122,97 @@ components:
       required:
       - certification_date
       - certification_type
+    CertificationMemberData:
+      type: object
+      description: Description of member
+      properties:
+        account_email:
+          type:
+          - string
+          - 'null'
+          format: email
+          description: The email of the Medicare account for the member
+        contact:
+          type:
+          - object
+          - 'null'
+          description: Contact information of the member
+          properties:
+            email:
+              type:
+              - string
+              - 'null'
+              format: email
+            phone:
+              type:
+              - string
+              - 'null'
+              pattern: "^\\+\\d{1,3}\\s\\d{1,14}(\\s\\d{1,13})?$"
+        name:
+          type:
+          - object
+          - 'null'
+          description: The name of the member
+          properties:
+            first:
+              type:
+              - string
+              - 'null'
+            middle:
+              type:
+              - string
+              - 'null'
+            last:
+              type:
+              - string
+              - 'null'
+            suffix:
+              type:
+              - string
+              - 'null'
+        payroll_accounts:
+          type:
+          - array
+          - 'null'
+          items:
+            "$ref": "#/components/schemas/CertificationMemberDataPayrollAccount"
+    CertificationMemberDataPayrollAccount:
+      type: object
+      description: Description of a payroll
+      properties:
+        company_name:
+          type: string
+        paychecks:
+          type:
+          - array
+          - 'null'
+          items:
+            "$ref": "#/components/schemas/CertificationMemberDataPayrollAccountPaycheck"
+    CertificationMemberDataPayrollAccountPaycheck:
+      type: object
+      description: Description of a paycheck
+      properties:
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        gross:
+          type:
+          - number
+          - 'null'
+        net:
+          type:
+          - number
+          - 'null'
+        hours_worked:
+          type:
+          - number
+          - 'null'
+      required:
+      - period_start
+      - period_end
     CertificationResponseBody:
       type: object
       properties:
@@ -142,11 +233,9 @@ components:
           - "$ref": "#/components/schemas/CertificationRequirements"
           - type: 'null'
         member_data:
-          type:
-          - object
-          - 'null'
-          description: Description of beneficiary
-          properties: {}
+          oneOf:
+          - "$ref": "#/components/schemas/CertificationMemberData"
+          - type: 'null'
         created_at:
           type: string
           format: date-time
@@ -200,43 +289,43 @@ components:
       required:
       - status
   responses:
-    e0fec3ce491e03b0d2f165e51fe53045:
+    983746971d8667b8382fec0c0e84dbdf:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    9344d62901d19d44a3081e670ede89d5:
+    51f26980d9fdd74f6703c927c176de84:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    a1ba9c6659724e47882231e17c5ba9c8:
+    ca1b6242721ad878d45767953e188ebd:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    2855e3afe50e40571cd50a32a600a442:
+    e797f2400c41fa11c543a4ffb1c804ab:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    7264102827ae7c31183895656f9c8e54:
+    0c2913616107a2489f2216e3941f94e1:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    c36cf290ef53fdcc17b51c38d5dd6949:
+    84a78ddeb119033bbac2acc4d880e08b:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    b1a8f0f60c27014214650117f9932997:
+    d7e0eeff2322d415475c9428f12aeb01:
       description: Response
       content:
         application/json:
@@ -252,7 +341,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    9a20e257a408f2d1144fe4cd8a2bcea4:
+    df0d31c4c16360d2aad570c26a05974e:
       description: The Certification data.
       content:
         application/json:
@@ -305,14 +394,14 @@ paths:
       description: "#"
       operationId: POST__api_certifications
       requestBody:
-        "$ref": "#/components/requestBodies/9a20e257a408f2d1144fe4cd8a2bcea4"
+        "$ref": "#/components/requestBodies/df0d31c4c16360d2aad570c26a05974e"
       responses:
         '201':
-          "$ref": "#/components/responses/e0fec3ce491e03b0d2f165e51fe53045"
+          "$ref": "#/components/responses/983746971d8667b8382fec0c0e84dbdf"
         '400':
-          "$ref": "#/components/responses/9344d62901d19d44a3081e670ede89d5"
+          "$ref": "#/components/responses/51f26980d9fdd74f6703c927c176de84"
         '422':
-          "$ref": "#/components/responses/a1ba9c6659724e47882231e17c5ba9c8"
+          "$ref": "#/components/responses/ca1b6242721ad878d45767953e188ebd"
   "/api/certifications/{id}":
     get:
       tags:
@@ -324,9 +413,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/2855e3afe50e40571cd50a32a600a442"
+          "$ref": "#/components/responses/e797f2400c41fa11c543a4ffb1c804ab"
         '404':
-          "$ref": "#/components/responses/7264102827ae7c31183895656f9c8e54"
+          "$ref": "#/components/responses/0c2913616107a2489f2216e3941f94e1"
   "/api/health":
     get:
       tags:
@@ -336,6 +425,6 @@ paths:
       operationId: GET__api_health
       responses:
         '200':
-          "$ref": "#/components/responses/c36cf290ef53fdcc17b51c38d5dd6949"
+          "$ref": "#/components/responses/84a78ddeb119033bbac2acc4d880e08b"
         '503':
-          "$ref": "#/components/responses/b1a8f0f60c27014214650117f9932997"
+          "$ref": "#/components/responses/d7e0eeff2322d415475c9428f12aeb01"
