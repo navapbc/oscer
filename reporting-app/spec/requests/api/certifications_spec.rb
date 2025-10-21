@@ -78,7 +78,9 @@ RSpec.describe "/api/certifications", type: :request do
       it "creates a new Certification" do
         expect {
           post api_certifications_url,
-              params: valid_json_request_attributes.deep_merge({ member_id: "no_user" }),
+              params: valid_json_request_attributes.deep_merge({
+                member_id: "no_user"
+              }),
               headers: valid_headers,
               as: :json
         }.to change(Certification, :count).by(1)
@@ -89,7 +91,10 @@ RSpec.describe "/api/certifications", type: :request do
       it "creates a new Certification" do
         expect {
           post api_certifications_url,
-              params: valid_json_request_attributes.deep_merge({ member_id: "no_user", member_data: { account_email: "neverfound@foo.com" } }),
+              params: valid_json_request_attributes.deep_merge({
+                member_id: "no_user",
+                member_data: { account_email: "neverfound@foo.com" }
+              }),
               headers: valid_headers,
               as: :json
         }.to change(Certification, :count).by(1)
@@ -100,7 +105,9 @@ RSpec.describe "/api/certifications", type: :request do
       it "creates a new Certification" do
         expect {
           post api_certifications_url,
-              params: valid_json_request_attributes.merge({ certification_requirements: build(:certification_certification_requirement_params, :with_certification_type).attributes.compact }),
+              params: valid_json_request_attributes.merge({
+                certification_requirements: build(:certification_certification_requirement_params, :with_certification_type).attributes.compact
+              }),
               headers: valid_headers
         }.to change(Certification, :count).by(1)
       end
@@ -110,7 +117,9 @@ RSpec.describe "/api/certifications", type: :request do
       it "creates a new Certification" do
         expect {
           post api_certifications_url,
-              params: valid_json_request_attributes.merge({ certification_requirements: build(:certification_certification_requirements).attributes.compact }),
+              params: valid_json_request_attributes.merge({
+                certification_requirements: build(:certification_certification_requirements).attributes.compact
+              }),
               headers: valid_headers
         }.to change(Certification, :count).by(1)
       end
@@ -137,7 +146,9 @@ RSpec.describe "/api/certifications", type: :request do
 
       it "invalid cert requirements - lookback_period" do
         post api_certifications_url,
-             params: valid_json_request_attributes.merge({ certification_requirements: { "lookback_period": 2 } }),
+             params: valid_json_request_attributes.merge({
+               certification_requirements: { "lookback_period": 2 }
+             }),
              headers: valid_headers,
              as: :json
         expect(response).to be_client_error
@@ -147,7 +158,9 @@ RSpec.describe "/api/certifications", type: :request do
 
       it "invalid cert requirements - array" do
         post api_certifications_url,
-             params: valid_json_request_attributes.merge({ certification_requirements: { "months_to_be_certified": [ "2025-10-16", "FOOBAR" ] } }),
+             params: valid_json_request_attributes.merge({
+               certification_requirements: { "months_to_be_certified": [ "2025-10-16", "FOOBAR" ] }
+             }),
              headers: valid_headers,
              as: :json
         expect(response).to be_client_error
