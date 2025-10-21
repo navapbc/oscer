@@ -36,8 +36,4 @@ module StaffHelper
       }
     ]
   end
-
-  def member_certification_status(certification_case, certification_service)
-    certification_service.calculate_member_certification_status(certification_case)
-  end
 end

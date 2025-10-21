@@ -69,3 +69,4 @@ en:
     exempt: "Exempt"
     pending_review: "Pending review"
     awaiting_report: "Awaiting report"
+    not_met_requirements: "Not met requirements"
