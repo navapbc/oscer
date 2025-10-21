@@ -5,27 +5,27 @@
 module ActiveModel
   module Type
     class Json < ActiveRecord::Type::Json
-      attr_reader :klass
+      attr_reader :underlying_type
 
-      def initialize(klass = HashWithIndifferentAccess)
-        @klass = klass
+      def initialize(underlying_type = HashWithIndifferentAccess)
+        @underlying_type = underlying_type
       end
 
       def cast(value)
         return nil if value.nil?
 
-        return value if value.is_a?(@klass)
+        return value if value.is_a?(@underlying_type)
 
         case value
         when Hash
           val = value.with_indifferent_access
 
           # use the less-error prone filtered create if available
-          if @klass.respond_to?(:new_filtered)
-            @klass.new_filtered(val)
+          if @underlying_type.respond_to?(:new_filtered)
+            @underlying_type.new_filtered(val)
           else
             # otherwise fallback to plain `new`
-            @klass.new(val)
+            @underlying_type.new(val)
           end
         else
           nil
