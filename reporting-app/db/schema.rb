@@ -50,7 +50,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_21_141138) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "type"
-    t.integer "income_earned"
+    t.integer "earned_income"
     t.index ["activity_report_application_form_id"], name: "index_activities_on_activity_report_application_form_id"
   end
 
