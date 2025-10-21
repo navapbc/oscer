@@ -59,7 +59,6 @@ class CertificationCase < Strata::Case
 
   # Determines the member's certification status based on business process state
   # Uses the workflow's current_step as the source of truth
-  # @return [String] One of the MEMBER_STATUS_* constants
   def member_status
     case business_process_instance.current_step
     when "report_activities"
@@ -71,7 +70,7 @@ class CertificationCase < Strata::Case
       return MEMBER_STATUS_MET_REQUIREMENTS if activity_report_approval_status == "approved"
       MEMBER_STATUS_NOT_MET_REQUIREMENTS
     else
-      # System process steps (exemption_check, ex_parte_determination) default to awaiting
+      # default to awaiting
       MEMBER_STATUS_AWAITING_REPORT
     end
   end
