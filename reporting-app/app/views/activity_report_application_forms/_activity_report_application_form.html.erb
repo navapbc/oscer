@@ -3,11 +3,14 @@
     <% hourly_activities = activities.select { |act| act.type == "WorkActivity" } %>
     <% income_activities = activities.select { |act| act.type == "EarnedIncomeActivity" } %>
     <% summed_hours = activities.map { |act| act.try(:hours) || 0 }.sum %>
+    <% summed_income = income_activities.map { |act| act.earned_income.dollar_amount || 0 }.sum %>
     <% max_summed_hours = [0, 80.0 - summed_hours].max %>
+    <% hours_equivalent_of_earnings = (summed_income / 7.25).round(2) %>
+    <% earned_income_equivalent_of_hours = (summed_hours * 7.25).round(2) %>
     <h2><%= month.strftime("%B %Y") %></h2>
     <div class="grid-container font-body-md">
-      <!-- Earned income activities -->
       <% if income_activities.any? %>
+        <%# Earned income activities %>
         <div class="grid-row">
           <div class="grid-col-11 grid-offset-1 text-bold">
             <%= t(".earned_income_activities") %>
@@ -22,12 +25,12 @@
             <%= t(".total_earnings") %>
           </div>
           <div class="grid-col-2 border-top-1px text-right">
-            <%= number_to_currency(income_activities.map { |act| act.earned_income.cents_amount || 0 }.sum, precision: 0) %>
+            <%= number_to_currency(summed_income, precision: 0) %>
           </div>
         </div>
       <% end %>
-      <!-- Hourly activities -->
       <% if hourly_activities.any? %>
+        <%# Hourly activities %>
         <div class="grid-row">
           <div class="grid-col-11 grid-offset-1 text-bold">
             <%= t(".hourly_activities") %>
@@ -42,12 +45,11 @@
             <%= t(".total_hours_reported") %>
           </div>
           <div class="grid-col-2 border-top-1px text-right">
-            <%= hourly_activities.map { |act| act.hours || 0 }.sum %>
+            <%= summed_hours %>
           </div>
         </div>
       <% end %>
       <% if income_activities.any? %>
-        <% hours_equivalent_of_earnings = (income_activities.map { |act| act.earned_income.cents_amount || 0 }.sum / 7.25).round(2) %>
         <%# Hours equivalent of earnings row %>
         <div class="grid-row">
           <div class="grid-col-8 grid-offset-2">
@@ -63,7 +65,7 @@
             <%= t(".total_hours_contributing_to_requirement") %>
           </div>
           <div class="grid-col-2 text-right border-top-1px">
-            <%= hours_equivalent_of_earnings + hourly_activities.map { |act| act.hours || 0 }.sum %>
+            <%= hours_equivalent_of_earnings + summed_hours %>
           </div>
         </div>
       <% end %>
@@ -82,13 +84,13 @@
           <%= t(".remaining_income_or_hours_needed") %>
         </div>
         <div class="grid-col-2 border-top-1px text-right">
-          <%= max_summed_hours %>hrs<sup>**</sup> <%= t(".or") %> <%= number_to_currency(max_summed_hours * 7.25, precision: 0) %>
+          <%= max_summed_hours %>hrs<sup>**</sup> <%= t(".or") %> <%= number_to_currency(earned_income_equivalent_of_hours, precision: 0) %>
         </div>
       </div>
     </div>
   <% end %>
   <p class="maxw-full full-width font-sans-xs">
     <sup>*</sup><%= t(".federal_minimum_wage_note") %><br />
-    <sup>**</sup><%= t(".hours_equivalent_note", amount: number_to_currency(max_summed_hours * 7.25, precision: 0), hours: max_summed_hours) %>
+    <sup>**</sup><%= t(".hours_equivalent_note", amount: number_to_currency(earned_income_equivalent_of_hours, precision: 0), hours: max_summed_hours) %>
   </p>
 </div>
