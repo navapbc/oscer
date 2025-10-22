@@ -32,7 +32,7 @@ class Certifications::MemberData < ValueObject
 
   attribute :account_email, :string
   attribute :contact, ContactData.to_type
-  attribute :name, JsonType.new.set_type(Strata::Name)
+  attribute :name, ActiveModel::Type::Json.new(Strata::Name)
 
   attribute :payroll_accounts, :array, of: PayrollAccount.to_type
 end
