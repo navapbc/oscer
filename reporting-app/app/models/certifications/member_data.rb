@@ -1,17 +1,17 @@
 # frozen_string_literal: true
 
-class Certifications::MemberData < ValueObject
+class Certifications::MemberData < Strata::ValueObject
   include ActiveModel::AsJsonAttributeType
   include Strata::Attributes
 
-  class ContactData < ValueObject
+  class ContactData < Strata::ValueObject
     include ActiveModel::AsJsonAttributeType
 
     attribute :email, :string
     attribute :phone, :string # TODO: E.164 format, eventually would probably be more than one field, cell_phone, home_phone, etc
   end
 
-  class Paycheck < ValueObject
+  class Paycheck < Strata::ValueObject
     include ActiveModel::AsJsonAttributeType
 
     attribute :period_start, :date # TODO: use Strata::DateRange?
@@ -24,7 +24,7 @@ class Certifications::MemberData < ValueObject
     validates :period_end, presence: true
   end
 
-  class PayrollAccount < ValueObject
+  class PayrollAccount < Strata::ValueObject
     include ActiveModel::AsJsonAttributeType
 
     attribute :company_name, :string

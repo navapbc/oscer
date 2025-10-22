@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Api::Certifications::CreateRequest < ValueObject
+class Api::Certifications::CreateRequest < Api::RequestBody::Model
   attribute :member_id, :string
   attribute :case_number, :string
 
