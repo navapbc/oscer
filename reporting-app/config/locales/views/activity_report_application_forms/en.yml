@@ -29,9 +29,6 @@ en:
           approved: "Your activity report has been approved"
           denied: "Your activity report has been denied"
     activity_report_application_form:
-      activity: Activity
-      income_earned: "Income earned"
-      hours: "Hours"
       earned_income_activities: "Earned income activities"
       hourly_activities: "Hourly activities"
       total_earnings: "Total earnings"
@@ -46,8 +43,6 @@ en:
     activity_row:
       income_earned_from: "Income earned from %{organization_name}"
       hours_worked_for: "Hours worked for %{organization_name}"
-    month_total_row:
-      total_reported: "Total reported"
     staff_activity_report:
       activity_type: Type
       organization_name: Org name
