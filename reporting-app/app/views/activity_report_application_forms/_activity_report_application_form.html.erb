@@ -1,8 +1,8 @@
 <div id="<%= dom_id activity_report_application_form %>">
   <% activities_by_month = activity_report_application_form.activities_by_month %>
   <% activities_by_month.each_with_index do |(month, activities), index| %>
-    <% hourly_activities = activities.select { |act| act.type == "WorkActivity" } %>
-    <% income_activities = activities.select { |act| act.type == "EarnedIncomeActivity" } %>
+    <% hourly_activities = activities.select { |act| act.is_a?(WorkActivity) } %>
+    <% income_activities = activities.select { |act| act.is_a?(EarnedIncomeActivity) } %>
     <% summed_hours = hourly_activities.map { |act| act.hours || 0 }.sum.round(1) %>
     <% summed_income = income_activities.map { |act| act.earned_income.dollar_amount || 0 }.sum.round(0) %>
     <% max_summed_hours = [0, 80.0 - summed_hours].max %>
