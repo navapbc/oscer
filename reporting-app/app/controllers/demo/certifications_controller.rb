@@ -55,10 +55,6 @@ class Demo::CertificationsController < ApplicationController
   end
 
   private
-    def certification_service
-      CertificationService.new
-    end
-
     def form_params
       params.require(:demo_certifications_create_form)
             .permit(

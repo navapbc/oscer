@@ -24,11 +24,11 @@ class Api::CertificationsController < ApiController
   def create
     create_request = Api::Certifications::CreateRequest.from_request_params(params)
 
-    if !create_request.valid?
+    if create_request.invalid?
       return render_errors(create_request)
     end
 
-    @certification = create_request.to_certification(certification_service)
+    @certification = create_request.to_certification
     authorize @certification
 
     if @certification.save
@@ -45,9 +45,5 @@ class Api::CertificationsController < ApiController
     # Use callbacks to share common setup or constraints between actions.
     def set_certification
       @certification = authorize Certification.find(params[:id])
-    end
-
-    def certification_service
-      CertificationService.new
     end
 end

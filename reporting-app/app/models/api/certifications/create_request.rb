@@ -13,7 +13,7 @@ class Api::Certifications::CreateRequest < ValueObject
     self.new_filtered(params)
   end
 
-  def to_certification(certification_service)
+  def to_certification
     case self.certification_requirements
     when Certifications::Requirements
       # we are good to go

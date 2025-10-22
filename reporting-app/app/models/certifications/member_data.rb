@@ -13,10 +13,10 @@ class Certifications::MemberData < ValueObject
   class Paycheck < ValueObject
     include ::JsonHash
 
-    attribute :period_start, :date
+    attribute :period_start, :date # TODO: use Strata::DateRange?
     attribute :period_end, :date
-    attribute :gross, :decimal # TODO more like Strata::Money right?
-    attribute :net, :decimal # TODO more like Strata::Money right?
+    attribute :gross, :decimal # TODO: more like Strata::Money right?
+    attribute :net, :decimal # TODO: more like Strata::Money right?
     attribute :hours_worked, :decimal
 
     validates :period_start, presence: true

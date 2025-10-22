@@ -44,14 +44,8 @@ class ApiController < ActionController::Metal
   private
 
   def format_active_model_errors(errors)
-    msgs = []
-
-    errors.details.each do |field_name, field_errs|
-      for err in field_errs
-        msgs.push(err.merge({ field: field_name }))
-      end
+    errors.details.flat_map do |field_name, field_errs|
+      field_errs.map { |err| err.merge(field: field_name) }
     end
-
-    msgs
   end
 end
