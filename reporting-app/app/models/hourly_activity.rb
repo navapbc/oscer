@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class HourlyActivity < Activity
   include Strata::Attributes
 

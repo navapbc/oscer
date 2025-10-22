@@ -110,7 +110,7 @@ class ActivitiesController < ApplicationController
         :name,
         :input,
         :type,
-        { type: [:work_activity, :earned_income_activity] }
+        { type: [ :work_activity, :earned_income_activity ] }
       )
     end
 

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class ConvertActivityToSti < ActiveRecord::Migration[7.2]
   def up
     add_column :activities, :type, :string
