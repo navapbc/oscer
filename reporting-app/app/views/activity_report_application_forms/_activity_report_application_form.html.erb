@@ -1,28 +1,54 @@
 <div id="<%= dom_id activity_report_application_form %>">
   <% for month, activities in activity_report_application_form.activities_by_month do %>
+    <% hourly_activities = activities.select { |act| act.type == "WorkActivity" } %>
+    <% income_activities = activities.select { |act| act.type == "EarnedIncomeActivity" } %>
     <% summed_hours = activities.map { |act| act.try(:hours) || 0 }.sum %>
     <% max_summed_hours = [0, 80.0 - summed_hours].max %>
     <h2><%= month.strftime("%B %Y") %></h2>
     <div class="grid-container font-body-md">
-      <div class="grid-row text-bold">
-        <div class="grid-col-7 grid-offset-1 border-bottom-1px">
-          <%= t(".activity") %>
+      <!-- Earned income activities -->
+      <% if income_activities.any? %>
+        <div class="grid-row">
+          <div class="grid-col-11 grid-offset-1 text-bold">
+            Earned income activities
+          </div>
         </div>
-        <div class="grid-col-2 text-right border-bottom-1px">
-          <%= t(".hours") %>
-        </div>
-        <div class="grid-col-2 text-right border-bottom-1px">
-          <%= t(".income_earned") %>
-        </div>
-      </div>
-      <%= render partial: "activity_report_application_forms/activity_row",
-          collection: activities,
+        <%= render partial: "activity_report_application_forms/activity_row",
+          collection: income_activities,
           as: :activity,
           locals: { activity_report_application_form: activity_report_application_form } %>
-      <%= render "activity_report_application_forms/month_total_row", activities: activities %>
+        <div class="grid-row">
+          <div class="grid-col-8 grid-offset-2">
+            <%= t(".total_reported") %>
+          </div>
+          <div class="grid-col-2 border-top-1px text-right">
+            <%= number_to_currency(income_activities.map { |act| act.earned_income.cents_amount || 0 }.sum) %>
+          </div>
+        </div>
+      <% end %>
+      <!-- Hourly activities -->
+      <% if hourly_activities.any? %>
+        <div class="grid-row">
+          <div class="grid-col-11 grid-offset-1 text-bold">
+            Hourly activities
+          </div>
+        </div>
+        <%= render partial: "activity_report_application_forms/activity_row",
+          collection: hourly_activities,
+          as: :activity,
+          locals: { activity_report_application_form: activity_report_application_form } %>
+        <div class="grid-row">
+          <div class="grid-col-8 grid-offset-2">
+            <%= t(".total_reported") %>
+          </div>
+          <div class="grid-col-2 border-top-1px text-right">
+            <%= hourly_activities.map { |act| act.hours || 0 }.sum %>
+          </div>
+        </div>
+      <% end %>
       <%# Required hours row %>
       <div class="grid-row">
-        <div class="grid-col-7 grid-offset-1">
+        <div class="grid-col-6 grid-offset-2">
           <%= t(".required") %>
         </div>
         <div class="grid-col-2 text-right">
@@ -37,7 +63,7 @@
       </div>
       <%# Additional hours needed row %>
       <div class="grid-row text-bold">
-        <div class="grid-col-7 grid-offset-1">
+        <div class="grid-col-6 grid-offset-2">
           <%= t(".additional_needed") %>
         </div>
         <div class="grid-col-2 border-top-1px text-right">
