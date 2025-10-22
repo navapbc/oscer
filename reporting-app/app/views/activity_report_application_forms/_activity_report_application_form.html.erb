@@ -46,34 +46,42 @@
           </div>
         </div>
       <% end %>
+      <% if income_activities.any? %>
+        <%# Hours equivalent of earnings row %>
+        <div class="grid-row">
+          <div class="grid-col-8 grid-offset-2">
+            <%= t(".hours_equivalent_of_total_earnings") %>
+          </div>
+          <div class="grid-col-2 text-right">
+            <%= (income_activities.map { |act| act.earned_income.cents_amount || 0 }.sum / 7.25).round(2) %>
+          </div>
+        </div>
+        <%# Hours contributing to requirement row %>
+        <div class="grid-row">
+          <div class="grid-col-8 grid-offset-2">
+            <%= t(".total_hours_contributing_to_requirement") %>
+          </div>
+          <div class="grid-col-2 text-right border-top-1px">
+            <%= (income_activities.map { |act| act.earned_income.cents_amount || 0 }.sum / 7.25).round(2) + hourly_activities.map { |act| act.hours || 0 }.sum %>
+          </div>
+        </div>
+      <% end %>
       <%# Required hours row %>
       <div class="grid-row">
-        <div class="grid-col-6 grid-offset-2">
-          <%= t(".required") %>
+        <div class="grid-col-8 grid-offset-2">
+          <%= t(".total_required_hours") %>
         </div>
         <div class="grid-col-2 text-right">
           80.0
         </div>
-        <div class="grid-col-1 text-center">
-          or
-        </div>
-        <div class="grid-col-1 text-right">
-          <%= number_to_currency(580.0) %>
-        </div>
       </div>
       <%# Additional hours needed row %>
       <div class="grid-row text-bold">
-        <div class="grid-col-6 grid-offset-2">
-          <%= t(".additional_needed") %>
+        <div class="grid-col-8 grid-offset-2">
+          <%= t(".remaining_income_or_hours_needed") %>
         </div>
         <div class="grid-col-2 border-top-1px text-right">
-          <%= max_summed_hours %>
-        </div>
-        <div class="grid-col-1 border-top-1px text-center">
-          or
-        </div>
-        <div class="grid-col-1 border-top-1px text-right">
-          <%= number_to_currency(max_summed_hours * 7.25) %>
+          <%= max_summed_hours %><sup>*</sup> <%= t(".or") %> <%= number_to_currency(max_summed_hours * 7.25) %>
         </div>
       </div>
     </div>

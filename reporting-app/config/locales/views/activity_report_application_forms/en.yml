@@ -32,12 +32,15 @@ en:
       activity: Activity
       income_earned: "Income earned"
       hours: "Hours"
-      required: "Required"
-      additional_needed: "Additional hours/income needed"
       earned_income_activities: "Earned income activities"
       hourly_activities: "Hourly activities"
       total_earnings: "Total earnings"
       total_hours_reported: "Total hours reported"
+      hours_equivalent_of_total_earnings: "Hours equivalent of total earnings (at federal minimum wage*)"
+      total_hours_contributing_to_requirement: "Total hours contributing to requirement"
+      total_required_hours: "Total required hours"
+      remaining_income_or_hours_needed: "Remaining income or hours needed"
+      or: "or"
     activity_row:
       income_earned_from: "Income earned from %{organization_name}"
       hours_worked_for: "Hours worked for %{organization_name}"
