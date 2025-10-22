@@ -13,7 +13,8 @@ RSpec.describe "/demo/certifications", type: :request do
       member_name_first: "Jane",
       member_name_last: "Doe",
       case_number: "C-123",
-      certification_date: "09/25/2025"
+      certification_date: "09/25/2025",
+      date_of_birth: "01/15/1990"
     }
   }
 
@@ -77,6 +78,35 @@ RSpec.describe "/demo/certifications", type: :request do
       }.to change(Certification, :count).by(1)
     end
 
+    it "creates a new Certification with 'Meets age-based exemption requirement' scenario and uses scenario DOB" do
+      expect {
+        post demo_certifications_url,
+             params: {
+               demo_certifications_create_form:
+                 valid_request_attributes.except(:date_of_birth).deep_merge(
+                   build(:certification_certification_requirement_params, :with_direct_params).attributes.compact
+                 ).merge(
+                   ex_parte_scenario: "Meets age-based exemption requirement"
+                 )
+             }
+      }.to change(Certification, :count).by(1)
+
+      certification = Certification.last
+      expect(certification.member_data["date_of_birth"]).to be_present
+    end
+
+    it "creates a new Certification with 'Meets age-based exemption requirement' scenario and uses form DOB over scenario DOB" do
+      expect {
+        post demo_certifications_url,
+             params: {
+               demo_certifications_create_form:
+                 valid_request_attributes.merge(date_of_birth: "01/15/1900").merge(ex_parte_scenario: "Meets age-based exemption requirement")
+             }
+      }.to change(Certification, :count).by(1)
+      certification = Certification.last
+      expect(certification.member_data["date_of_birth"]).to eq("1900-01-15")
+    end
+
     context "with validation errors" do
       it "renders form with errors when certification_date is missing" do
         post demo_certifications_url,
@@ -107,6 +137,17 @@ RSpec.describe "/demo/certifications", type: :request do
                demo_certifications_create_form:
                  valid_request_attributes.except(:member_name_last).merge(
                    certification_date: "09/25/2025"
+                 )
+             }
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+
+      it "renders form with errors when date_of_birth is in the future" do
+        post demo_certifications_url,
+             params: {
+               demo_certifications_create_form:
+                 valid_request_attributes.merge(
+                   date_of_birth: (Date.current + 1.day).strftime("%m/%d/%Y")
                  )
              }
         expect(response).to have_http_status(:unprocessable_entity)
