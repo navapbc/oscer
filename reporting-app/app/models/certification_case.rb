@@ -37,9 +37,12 @@ class CertificationCase < Strata::Case
   end
 
   def deny_activity_report
-    self.activity_report_approval_status = "denied"
-    self.activity_report_approval_status_updated_at = Time.current
-    save!
+    transaction do
+      self.activity_report_approval_status = "denied"
+      self.activity_report_approval_status_updated_at = Time.current
+      save!
+      close
+    end
 
     Strata::EventManager.publish("DeterminedRequirementsNotMet", { case_id: id })
   end
@@ -56,9 +59,9 @@ class CertificationCase < Strata::Case
   end
 
   def deny_exemption_request
-    self.exemption_request_approval_status = "denied"
-    self.exemption_request_approval_status_updated_at = Time.current
-    save!
+      self.exemption_request_approval_status = "denied"
+      self.exemption_request_approval_status_updated_at = Time.current
+      save!
 
     Strata::EventManager.publish("DeterminedNotExempt", { case_id: id })
   end
