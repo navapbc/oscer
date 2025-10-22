@@ -84,7 +84,7 @@
           <%= t(".remaining_income_or_hours_needed") %>
         </div>
         <div class="grid-col-2 border-top-1px text-right">
-          <%= max_summed_hours %>hrs<sup>**</sup> <%= t(".or") %> <%= number_to_currency(earned_income_equivalent_of_hours, precision: 0) %>
+          <%= max_summed_hours %>hrs<sup>**</sup> <%= t(".or") %> <%= number_to_currency(580.0 - earned_income_equivalent_of_hours, precision: 0) %>
         </div>
       </div>
     </div>
