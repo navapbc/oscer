@@ -1,8 +1,17 @@
 <div id="<%= dom_id activity %>" class="grid-row">
-  <div class="grid-col-8 grid-offset-2">
-    <%= link_to "Work for #{activity.name}", [activity_report_application_form, activity.becomes(Activity)] %>
-  </div>
-  <div class="grid-col-2 text-right">
-    <%= activity.try(:hours) || number_to_currency(activity.try(:earned_income)&.cents_amount) %>
-  </div>
+  <% if activity.type == "EarnedIncomeActivity" %>
+    <div class="grid-col-8 grid-offset-2">
+      <%= link_to t(".income_earned_from", organization_name: activity.name), [activity_report_application_form, activity.becomes(Activity)] %>
+    </div>
+    <div class="grid-col-2 text-right">
+      <%= number_to_currency(activity.earned_income&.cents_amount) %>
+    </div>
+  <% else %>
+    <div class="grid-col-8 grid-offset-2">
+      <%= link_to t(".hours_worked_for", organization_name: activity.name), [activity_report_application_form, activity.becomes(Activity)] %>
+    </div>
+    <div class="grid-col-2 text-right">
+      <%= activity.hours %>
+    </div>
+  <% end %>
 </div>

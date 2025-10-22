@@ -35,6 +35,9 @@ en:
       total_reported: "Total reported"
       required: "Required"
       additional_needed: "Additional hours/income needed"
+    activity_row:
+      income_earned_from: "Income earned from %{organization_name}"
+      hours_worked_for: "Hours worked for %{organization_name}"
     month_total_row:
       total_reported: "Total reported"
     staff_activity_report:
