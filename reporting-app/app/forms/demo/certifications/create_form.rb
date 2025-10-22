@@ -13,7 +13,7 @@ module Demo
       end
 
       def to_certification
-        certification_requirements = ::Certifications::RequirementParams.new_filtered(self.attributes.with_indifferent_access).to_requirements
+        certification_requirements = ::Api::Certifications::RequirementParams.new_filtered(self.attributes.with_indifferent_access).to_requirements
 
         member_data = {
           "name": self.member_name
@@ -34,7 +34,7 @@ module Demo
           email: self.member_email,
           case_number: self.case_number,
           certification_requirements: certification_requirements,
-          member_data: ::Certifications::MemberData.new_filtered(member_data),
+          member_data: ::Api::Certifications::MemberData.new_filtered(member_data),
         )
       end
     end

@@ -23,6 +23,7 @@ class UnionObject
     objs = []
 
     for t in self.union_types
+      # TODO: put requirement on implementing this, or begin/rescue errors here
       obj = t.new_filtered(attributes)
       if obj.valid?
         return obj
