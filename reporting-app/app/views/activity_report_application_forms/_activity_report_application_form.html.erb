@@ -3,8 +3,8 @@
   <% activities_by_month.each_with_index do |(month, activities), index| %>
     <% hourly_activities = activities.select { |act| act.is_a?(WorkActivity) } %>
     <% income_activities = activities.select { |act| act.is_a?(EarnedIncomeActivity) } %>
-    <% summed_hours = hourly_activities.map { |act| act.hours || 0 }.sum.round(1) %>
-    <% summed_income = income_activities.map { |act| act.earned_income.dollar_amount || 0 }.sum.round(0) %>
+    <% summed_hours = hourly_activities.sum(&:hours).round(1) %>
+    <% summed_income = income_activities.map { |act| act.earned_income.dollar_amount }.sum.round(0) %>
     <% max_summed_hours = [0, 80.0 - summed_hours].max %>
     <% hours_equivalent_of_earnings = (summed_income / 7.25).round(1) %>
     <% earned_income_equivalent_of_hours = (summed_hours * 7.25).round(0) %>
