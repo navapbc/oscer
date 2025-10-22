@@ -5,7 +5,7 @@
     <% summed_hours = hourly_activities.map { |act| act.try(:hours) || 0 }.sum %>
     <% summed_income = income_activities.map { |act| act.earned_income.dollar_amount || 0 }.sum %>
     <% max_summed_hours = [0, 80.0 - summed_hours].max %>
-    <% hours_equivalent_of_earnings = (summed_income / 7.25).round(2) %>
+    <% hours_equivalent_of_earnings = (summed_income / 7.25).round(1) %>
     <% earned_income_equivalent_of_hours = (summed_hours * 7.25).round(2) %>
     <h2><%= month.strftime("%B %Y") %></h2>
     <div class="grid-container font-body-md">
