@@ -10,7 +10,7 @@
       <% if income_activities.any? %>
         <div class="grid-row">
           <div class="grid-col-11 grid-offset-1 text-bold">
-            Earned income activities
+            <%= t(".earned_income_activities") %>
           </div>
         </div>
         <%= render partial: "activity_report_application_forms/activity_row",
@@ -30,7 +30,7 @@
       <% if hourly_activities.any? %>
         <div class="grid-row">
           <div class="grid-col-11 grid-offset-1 text-bold">
-            Hourly activities
+            <%= t(".hourly_activities") %>
           </div>
         </div>
         <%= render partial: "activity_report_application_forms/activity_row",
