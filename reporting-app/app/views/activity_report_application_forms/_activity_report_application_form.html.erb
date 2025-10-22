@@ -22,7 +22,7 @@
             <%= t(".total_earnings") %>
           </div>
           <div class="grid-col-2 border-top-1px text-right">
-            <%= number_to_currency(income_activities.map { |act| act.earned_income.cents_amount || 0 }.sum) %>
+            <%= number_to_currency(income_activities.map { |act| act.earned_income.cents_amount || 0 }.sum, precision: 0) %>
           </div>
         </div>
       <% end %>
@@ -82,9 +82,13 @@
           <%= t(".remaining_income_or_hours_needed") %>
         </div>
         <div class="grid-col-2 border-top-1px text-right">
-          <%= max_summed_hours %><sup>*</sup> <%= t(".or") %> <%= number_to_currency(max_summed_hours * 7.25) %>
+          <%= max_summed_hours %>hrs<sup>**</sup> <%= t(".or") %> <%= number_to_currency(max_summed_hours * 7.25, precision: 0) %>
         </div>
       </div>
     </div>
   <% end %>
+  <p class="maxw-full full-width font-sans-xs">
+    <sup>*</sup><%= t(".federal_minimum_wage_note") %><br />
+    <sup>**</sup><%= t(".hours_equivalent_note", amount: number_to_currency(max_summed_hours * 7.25, precision: 0), hours: max_summed_hours) %>
+  </p>
 </div>

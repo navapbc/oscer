@@ -41,6 +41,8 @@ en:
       total_required_hours: "Total required hours"
       remaining_income_or_hours_needed: "Remaining income or hours needed"
       or: "or"
+      federal_minimum_wage_note: "Federal minimum wage is $7.25 per hour"
+      hours_equivalent_note: "%{amount} is the equivalent of %{hours} hours worked at the federal minimum wage of $7.25 per hour"
     activity_row:
       income_earned_from: "Income earned from %{organization_name}"
       hours_worked_for: "Hours worked for %{organization_name}"
