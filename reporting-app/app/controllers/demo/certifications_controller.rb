@@ -33,9 +33,14 @@ class Demo::CertificationsController < ApplicationController
       member_data.merge!(FactoryBot.build(:certification_member_data, :partially_met_work_hours_requirement, cert_date: @form.certification_date))
     when "Fully met work hours requirement"
       member_data.merge!(FactoryBot.build(:certification_member_data, :fully_met_work_hours_requirement, cert_date: @form.certification_date, num_months: @form.number_of_months_to_certify))
+    when "Meets age-based exemption requirement"
+      member_data.merge!(FactoryBot.build(:certification_member_data, :meets_age_based_exemption_requirement, cert_date: @form.certification_date))
     else
       # nothing
     end
+
+    # Ensure form DOB always takes precedence over scenario DOB
+    member_data["date_of_birth"] = @form.date_of_birth.as_json if @form.date_of_birth.present?
 
     @certification = FactoryBot.build(
       :certification,
@@ -65,7 +70,8 @@ class Demo::CertificationsController < ApplicationController
             .permit(
               :member_email, :case_number, :certification_type, :certification_date, :lookback_period,
               :number_of_months_to_certify, :due_period_days, :ex_parte_scenario,
-              :member_name_first, :member_name_middle, :member_name_last, :member_name_suffix
+              :member_name_first, :member_name_middle, :member_name_last, :member_name_suffix,
+              :date_of_birth
             )
     end
 end
