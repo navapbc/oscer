@@ -11,7 +11,7 @@
       <%= link_to t(".hours_worked_for", organization_name: activity.name), [activity_report_application_form, activity.becomes(Activity)] %>
     </div>
     <div class="grid-col-2 text-right">
-      <%= activity.hours %>
+      <%= activity.hours.round(1) %>
     </div>
   <% end %>
 </div>
