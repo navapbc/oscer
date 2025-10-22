@@ -26,7 +26,13 @@ class JsonType < ActiveRecord::Type::Json
 
     case value
     when Hash
-      @klass.new_filtered(value)
+      # use the less-error prone filtered create if available
+      if @klass.respond_to?(:new_filtered)
+        @klass.new_filtered(value)
+      else
+        # otherwise fallback to plain `new`
+        @klass.new(value)
+      end
     else
       nil
     end

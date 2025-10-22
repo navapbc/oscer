@@ -25,7 +25,7 @@
   <% component.with_body do %>
     <p>
       <span class="text-bold"><%= t(".member_name") %></span>
-      <span><%= @certification&.member_name_strata&.full_name %></span>
+      <span><%= @certification&.member_name&.full_name %></span>
     </p>
     <p>
       <span class="text-bold"><%= t(".member_email") %></span>

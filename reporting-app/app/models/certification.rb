@@ -44,9 +44,7 @@ class Certification < ApplicationRecord
     self.find_by_member_account_email(email).or(self.find_by_member_contact_email(email))
   end
 
-  # utilities derived from underlying data
-
-  def member_name_strata
-    self&.member_data&.name&.to_strata
+  def member_name
+    self&.member_data&.name
   end
 end
