@@ -2,7 +2,7 @@
 
 require_relative "requirement_params"
 
-class Certifications::Requirements < ValueObject
+class Certifications::Requirements < Strata::ValueObject
   include ActiveModel::AsJsonAttributeType
 
   CERTIFICATION_TYPE_OPTIONS = [ "new_application", "recertification" ].freeze

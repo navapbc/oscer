@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
-class Api::Certifications::Response < ValueObject
+class Api::Certifications::Response < Strata::ValueObject
+  # TODO: Or include Api::RequestBody::ExtendedBehavior/move that to a general api/model module?
+  include ActiveModel::NewFiltered
+
   attribute :id, :string
   attribute :member_id, :string
   attribute :case_number, :string

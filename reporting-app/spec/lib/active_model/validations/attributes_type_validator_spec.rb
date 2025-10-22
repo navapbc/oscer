@@ -2,16 +2,18 @@
 
 require 'rails_helper'
 
-class ModelToTestAttrsOne < ValueObject
+class ModelToTestAttrsOne < Strata::ValueObject
   include ActiveModel::AsJsonAttributeType
+  include ActiveModel::NewFiltered
 
   attribute :one, :integer
 
   validates :one, presence: true
 end
 
-class ModelToTestAttrsOther < ValueObject
+class ModelToTestAttrsOther < Strata::ValueObject
   include ActiveModel::AsJsonAttributeType
+  include ActiveModel::NewFiltered
 
   attribute :two, :string
 

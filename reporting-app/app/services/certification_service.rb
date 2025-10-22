@@ -46,14 +46,14 @@ class CertificationService
 
   def certification_requirements_from_input(requirements_input)
     # if they've directly provided in a valid Certifications::Requirements, use it
-    requirements = Certifications::Requirements.new_filtered(requirements_input)
+    requirements = Api::Certifications::Requirements.new_filtered(requirements_input)
     if requirements.valid?
       return requirements
     end
 
     # otherwise they've specified some combo of parameters we need to derive the
     # final Certification requirements from
-    requirement_params = Certifications::RequirementParams.new_filtered(requirements_input)
+    requirement_params = Api::Certifications::RequirementParams.new_filtered(requirements_input)
     requirement_params.validate!
 
     requirement_params.to_requirements

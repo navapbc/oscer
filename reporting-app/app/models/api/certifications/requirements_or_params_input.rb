@@ -4,8 +4,8 @@ class Api::Certifications::RequirementsOrParamsInput < UnionObject
   include ActiveModel::AsJsonAttributeType
 
   def self.union_types
-    [ Certifications::Requirements,
-      Certifications::RequirementParams
+    [ Api::Certifications::Requirements,
+      Api::Certifications::RequirementParams
     ]
   end
 end

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Certifications::RequirementParams < Certifications::RequirementTypeParams
+  include ActiveModel::Validations::Callbacks
+
   attribute :certification_date, :date
   attribute :certification_type, :string, default: nil
 

@@ -16,7 +16,7 @@ module Demo
       end
 
       def to_certification
-        certification_requirement_params = ::Certifications::RequirementParams.new_filtered(self.attributes.with_indifferent_access)
+        certification_requirement_params = ::Api::Certifications::RequirementParams.new_filtered(self.attributes.with_indifferent_access)
         # shouldn't be possible, but we need to ensure the params are valid in
         # order to construct the requirements next
         if certification_requirement_params.invalid?

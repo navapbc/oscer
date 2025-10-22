@@ -15,7 +15,7 @@ FactoryBot.define do
 
       after(:build) do |cert, context|
         if not context.email.blank?
-          cert.member_data = Certifications::MemberData.new_filtered(cert.member_data.attributes.deep_merge({
+          cert.member_data = Certifications::MemberData.new(cert.member_data.attributes.deep_merge({
             "account_email": context.email,
             "contact": {
               "email": context.email,

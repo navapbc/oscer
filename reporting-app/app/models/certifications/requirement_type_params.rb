@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Certifications::RequirementTypeParams < ValueObject
+class Certifications::RequirementTypeParams < Strata::ValueObject
   include ActiveModel::AsJsonAttributeType
 
   attribute :lookback_period, :integer
