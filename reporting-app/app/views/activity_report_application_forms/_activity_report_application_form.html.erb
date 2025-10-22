@@ -2,7 +2,7 @@
   <% for month, activities in activity_report_application_form.activities_by_month do %>
     <% hourly_activities = activities.select { |act| act.type == "WorkActivity" } %>
     <% income_activities = activities.select { |act| act.type == "EarnedIncomeActivity" } %>
-    <% summed_hours = activities.map { |act| act.try(:hours) || 0 }.sum %>
+    <% summed_hours = hourly_activities.map { |act| act.try(:hours) || 0 }.sum %>
     <% summed_income = income_activities.map { |act| act.earned_income.dollar_amount || 0 }.sum %>
     <% max_summed_hours = [0, 80.0 - summed_hours].max %>
     <% hours_equivalent_of_earnings = (summed_income / 7.25).round(2) %>
