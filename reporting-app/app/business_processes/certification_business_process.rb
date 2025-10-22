@@ -5,9 +5,8 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   system_process("exemption_check", ->(kase) {
     Strata::EventManager.publish("DeterminedNotExempt", { case_id: kase.id })
   })
-  # TODO: system process for Ex Parte Determination
   system_process("ex_parte_determination", ->(kase) {
-    Strata::EventManager.publish("DeterminedRequirementsNotMet", { case_id: kase.id })
+    ExemptionDeterminationService.determine!(kase)
   })
 
   applicant_task("report_activities")
@@ -24,7 +23,7 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   transition("exemption_check", "DeterminedNotExempt", "ex_parte_determination")
   transition("exemption_check", "DeterminedExempt", "end")
   transition("ex_parte_determination", "DeterminedRequirementsNotMet", "report_activities")
-  transition("ex_parte_determination", "DeterminedRequirementsMet", "end")
+  transition("ex_parte_determination", "DeterminedExempt", "end")
 
   transition("report_activities", "ActivityReportApplicationFormSubmitted", "review_activity_report")
   transition("review_activity_report", "DeterminedRequirementsMet", "end")
