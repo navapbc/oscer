@@ -19,7 +19,7 @@
           locals: { activity_report_application_form: activity_report_application_form } %>
         <div class="grid-row">
           <div class="grid-col-8 grid-offset-2">
-            <%= t(".total_reported") %>
+            <%= t(".total_earnings") %>
           </div>
           <div class="grid-col-2 border-top-1px text-right">
             <%= number_to_currency(income_activities.map { |act| act.earned_income.cents_amount || 0 }.sum) %>
@@ -39,7 +39,7 @@
           locals: { activity_report_application_form: activity_report_application_form } %>
         <div class="grid-row">
           <div class="grid-col-8 grid-offset-2">
-            <%= t(".total_reported") %>
+            <%= t(".total_hours_reported") %>
           </div>
           <div class="grid-col-2 border-top-1px text-right">
             <%= hourly_activities.map { |act| act.hours || 0 }.sum %>
