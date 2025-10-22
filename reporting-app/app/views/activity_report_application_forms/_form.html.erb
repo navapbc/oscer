@@ -3,6 +3,9 @@
     <legend class="usa-legend">Select reporting period(s)</legend>
 
     <%# Get currently selected reporting periods as JSON strings for comparison %>
+    <%# TODO: Update strata-sdk to support setting strata array attributes from date strings (e.g. "2024-01"). %>
+    <%# Linear Issue: TSS-375(https://linear.app/nava-platform/issue/TSS-375/add-ability-to-set-array-attributes) %>
+    <%# Use datestring when supported: [date.strftime("%B %Y"), date.strftime("%Y-%m")] %>
     <% selected_values = activity_report_application_form.reporting_periods.map do |rp|
          { year: rp.year, month: rp.month }.to_json
        end
@@ -19,6 +22,7 @@
        end
      %>
 
+    <%# TODO: Add collection_check_boxes to strata-sdk form builder %>
     <%= f.collection_check_boxes :reporting_periods, dates, :last, :first,
         { checked: selected_values },
         { class: "usa-checkbox__input" } do |builder| %>
