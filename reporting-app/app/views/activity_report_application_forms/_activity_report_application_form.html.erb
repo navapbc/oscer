@@ -111,11 +111,9 @@
         </div>
       </div>
     </div>
-    <% if index == activities_by_month.size - 1 %>
-      <p class="maxw-full full-width font-sans-xs">
-        <sup>*</sup><%= t(".federal_minimum_wage_note") %><br />
-        <sup>**</sup><%= t(".hours_equivalent_note", amount: number_to_currency(remaining_income, precision: 0), hours: remaining_hours) %>
-      </p>
-    <% end %>
+    <p class="maxw-full full-width font-sans-xs">
+      <sup>*</sup><%= t(".federal_minimum_wage_note") %><br />
+      <sup>**</sup><%= t(".hours_equivalent_note", amount: number_to_currency(remaining_income, precision: 0), hours: remaining_hours) %>
+    </p>
   <% end %>
 </div>
