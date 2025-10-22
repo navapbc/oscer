@@ -1,22 +1,36 @@
 <%= strata_form_with(model: activity_report_application_form, data: { turbo: false }) do |f| %>
-  <p>
-    TODO: Add ability to select multiple months
-  </p>
+  <fieldset class="usa-fieldset">
+    <legend class="usa-legend">Select reporting period(s)</legend>
 
-  <% current_selection = activity_report_application_form.reporting_periods&.first %>
-  <% selected_value = current_selection ? { year: current_selection.year, month: current_selection.month }.to_json : nil %>
+    <%# Get currently selected reporting periods as JSON strings for comparison %>
+    <%# TODO: Update strata-sdk to support setting strata array attributes from date strings (e.g. "2024-01"). %>
+    <%# Linear Issue: TSS-375(https://linear.app/nava-platform/issue/TSS-375/add-ability-to-set-array-attributes) %>
+    <%# Use datestring when supported: [date.strftime("%B %Y"), date.strftime("%Y-%m")] %>
+    <% selected_values = activity_report_application_form.reporting_periods.map do |rp|
+         { year: rp.year, month: rp.month }.to_json
+       end
+     %>
 
-  <%= f.select :reporting_periods,
-    6.times.map { |i|
-      date = (Date.today - i.months).beginning_of_month
-      # TODO: Update strata-sdk to support setting strata array attributes from date strings (e.g. "2023-01").
-      # Linear Issue: TSS-375(https://linear.app/nava-platform/issue/TSS-375/add-ability-to-set-array-attributes)
-      # Use datestring when supported: [date.strftime("%B %Y"), date.strftime("%Y-%m")]
-      hash_value = { year: date.year, month: date.month }.to_json
-      [date.strftime("%B %Y"), hash_value]
-    },
-    { prompt: "- Select -", selected: selected_value },
-    { name: "activity_report_application_form[reporting_periods][]" }
-  %>
+    <%# Generate the last 6 months of options %>
+    <%# TODO: Update strata-sdk to support setting strata array attributes from date strings (e.g. "2024-01"). %>
+    <%# Linear Issue: TSS-375(https://linear.app/nava-platform/issue/TSS-375/add-ability-to-set-array-attributes) %>
+    <%# Use datestring when supported: [date.strftime("%B %Y"), date.strftime("%Y-%m")] %>
+    <% dates = 6.times.map do |i|
+         date = (Date.today - i.months).beginning_of_month
+         # Return array of [label, value]
+         [date.strftime("%B %Y"), { year: date.year, month: date.month }.to_json]
+       end
+     %>
+
+    <%# TODO: Add collection_check_boxes to strata-sdk form builder %>
+    <%= f.collection_check_boxes :reporting_periods, dates, :last, :first,
+        { checked: selected_values },
+        { class: "usa-checkbox__input" } do |builder| %>
+      <div class="usa-checkbox">
+        <%= builder.check_box(class: "usa-checkbox__input") %>
+        <%= builder.label(class: "usa-checkbox__label") %>
+      </div>
+    <% end %>
+  </fieldset>
   <%= f.submit "Save", big: true %>
 <% end %>
