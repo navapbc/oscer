@@ -10,6 +10,19 @@ FactoryBot.define do
       num_months { 1 }
     end
 
+    trait :with_full_name do
+      name { attributes_for(:name, :base, :with_middle) }
+    end
+
+    trait :with_name_parts do
+      name { attributes_for(:name, :base) }
+    end
+
+    trait :with_middle_name do
+      name { attributes_for(:name, :base, :with_middle) }
+    end
+
+
     trait :partially_met_work_hours_requirement do
       payroll_accounts {
         [

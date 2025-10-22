@@ -100,6 +100,23 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
         get new_activity_report_application_form_url(certification_case_id: certification_case.id)
         expect(response).to be_successful
       end
+
+      it "does not create a duplicate exemption form with the same certification_case_id" do
+        create(:activity_report_application_form, certification_case_id: certification_case.id, user_id: user.id)
+
+        expect {
+          get new_activity_report_application_form_url(certification_case_id: certification_case.id)
+        }.not_to change(ActivityReportApplicationForm, :count)
+      end
+
+      it "redirects to dashboard with notice when attempting to create duplicate by certification_case_id" do
+        create(:activity_report_application_form, certification_case_id: certification_case.id, user_id: user.id)
+
+        get new_activity_report_application_form_url(certification_case_id: certification_case.id)
+        expect(response).to redirect_to(dashboard_path)
+        follow_redirect!
+        expect(response.body).to include("An activity report already exists for this certification case")
+      end
     end
 
     context "with reporting source set to 'income_verification_service'" do
