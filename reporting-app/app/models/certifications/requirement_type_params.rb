@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Certifications::RequirementTypeParams < ValueObject
-  include ::JsonHash
+  include ActiveModel::AsJsonAttributeType
 
   attribute :lookback_period, :integer
   attribute :number_of_months_to_certify, :integer

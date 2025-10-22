@@ -3,7 +3,7 @@
 require_relative "requirement_params"
 
 class Certifications::Requirements < ValueObject
-  include ::JsonHash
+  include ActiveModel::AsJsonAttributeType
 
   CERTIFICATION_TYPE_OPTIONS = [ "new_application", "recertification" ].freeze
 
