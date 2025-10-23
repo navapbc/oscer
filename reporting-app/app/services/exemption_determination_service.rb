@@ -2,7 +2,7 @@
 
 class ExemptionDeterminationService
   class << self
-    def determine!(kase)
+    def determine(kase)
       certification = Certification.find(kase.certification_id)
       date_of_birth = extract_date_of_birth(certification)
 
@@ -47,7 +47,8 @@ class ExemptionDeterminationService
       return nil if dob_string.blank?
 
       Date.parse(dob_string)
-    rescue Date::Error
+    rescue Date::Error => e
+      Rails.logger.warn("Failed to parse date of birth for certification #{certification.id}: #{dob_string.inspect}. Error: #{e.message}")
       nil
     end
   end

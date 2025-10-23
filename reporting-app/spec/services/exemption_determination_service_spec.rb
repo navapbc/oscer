@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe ExemptionDeterminationService do
   let(:service) { described_class }
 
-  describe '#determine!' do
+  describe '#determine' do
     let(:certification) { create(:certification, :with_member_data_base) }
     let(:kase) { create(:certification_case, certification_id: certification.id) }
 
@@ -22,24 +22,24 @@ RSpec.describe ExemptionDeterminationService do
       end
 
       it 'publishes DeterminedExempt event' do
-        service.determine!(kase)
+        service.determine(kase)
         expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id })
       end
 
       it 'closes the case' do
-        service.determine!(kase)
+        service.determine(kase)
         kase.reload
         expect(kase.status).to eq("closed")
       end
 
       it 'sets exemption_request_approval_status to approved' do
-        service.determine!(kase)
+        service.determine(kase)
         kase.reload
         expect(kase.exemption_request_approval_status).to eq("approved")
       end
 
       it 'sets exemption_request_approval_status_updated_at' do
-        service.determine!(kase)
+        service.determine(kase)
         kase.reload
         expect(kase.exemption_request_approval_status_updated_at).to be_present
       end
@@ -53,24 +53,24 @@ RSpec.describe ExemptionDeterminationService do
       end
 
       it 'publishes DeterminedExempt event' do
-        service.determine!(kase)
+        service.determine(kase)
         expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id })
       end
 
       it 'closes the case' do
-        service.determine!(kase)
+        service.determine(kase)
         kase.reload
         expect(kase.status).to eq("closed")
       end
 
       it 'sets exemption_request_approval_status to approved' do
-        service.determine!(kase)
+        service.determine(kase)
         kase.reload
         expect(kase.exemption_request_approval_status).to eq("approved")
       end
 
       it 'sets exemption_request_approval_status_updated_at' do
-        service.determine!(kase)
+        service.determine(kase)
         kase.reload
         expect(kase.exemption_request_approval_status_updated_at).to be_present
       end
@@ -84,18 +84,18 @@ RSpec.describe ExemptionDeterminationService do
       end
 
       it 'publishes DeterminedRequirementsNotMet event' do
-        service.determine!(kase)
+        service.determine(kase)
         expect(Strata::EventManager).to have_received(:publish).with('DeterminedRequirementsNotMet', { case_id: kase.id })
       end
 
       it 'does not close the case' do
-        service.determine!(kase)
+        service.determine(kase)
         kase.reload
         expect(kase.status).to eq("open")
       end
 
       it 'does not set exemption_request_approval_status' do
-        service.determine!(kase)
+        service.determine(kase)
         kase.reload
         expect(kase.exemption_request_approval_status).to be_nil
       end
@@ -109,18 +109,18 @@ RSpec.describe ExemptionDeterminationService do
       end
 
       it 'publishes DeterminedRequirementsNotMet event' do
-        service.determine!(kase)
+        service.determine(kase)
         expect(Strata::EventManager).to have_received(:publish).with('DeterminedRequirementsNotMet', { case_id: kase.id })
       end
 
       it 'does not close the case' do
-        service.determine!(kase)
+        service.determine(kase)
         kase.reload
         expect(kase.status).to eq("open")
       end
 
       it 'does not set exemption_request_approval_status' do
-        service.determine!(kase)
+        service.determine(kase)
         kase.reload
         expect(kase.exemption_request_approval_status).to be_nil
       end
@@ -133,20 +133,40 @@ RSpec.describe ExemptionDeterminationService do
       end
 
       it 'publishes DeterminedRequirementsNotMet event' do
-        service.determine!(kase)
+        service.determine(kase)
         expect(Strata::EventManager).to have_received(:publish).with('DeterminedRequirementsNotMet', { case_id: kase.id })
       end
 
       it 'does not close the case' do
-        service.determine!(kase)
+        service.determine(kase)
         kase.reload
         expect(kase.status).to eq("open")
       end
 
       it 'does not set exemption_request_approval_status' do
-        service.determine!(kase)
+        service.determine(kase)
         kase.reload
         expect(kase.exemption_request_approval_status).to be_nil
+      end
+    end
+
+    context 'when date_of_birth is invalid format' do
+      let(:certification) do
+        create(:certification, :with_member_data_base,
+               member_data_base: { "name" => {}, "date_of_birth" => "invalid-date-format" })
+      end
+
+      it 'publishes DeterminedRequirementsNotMet event' do
+        allow(Rails.logger).to receive(:warn)
+        service.determine(kase)
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedRequirementsNotMet', { case_id: kase.id })
+      end
+
+      it 'does not close the case' do
+        allow(Rails.logger).to receive(:warn)
+        service.determine(kase)
+        kase.reload
+        expect(kase.status).to eq("open")
       end
     end
   end

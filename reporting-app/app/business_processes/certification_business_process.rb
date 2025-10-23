@@ -6,7 +6,7 @@ class CertificationBusinessProcess < Strata::BusinessProcess
     Strata::EventManager.publish("DeterminedNotExempt", { case_id: kase.id })
   })
   system_process("ex_parte_determination", ->(kase) {
-    ExemptionDeterminationService.determine!(kase)
+    ExemptionDeterminationService.determine(kase)
   })
 
   applicant_task("report_activities")
