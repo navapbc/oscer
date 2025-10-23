@@ -7,6 +7,21 @@ class UnionObject
   include ActiveModel::Serializers::JSON
   include ActiveModel::NewFiltered
 
+  def self.build(types)
+    union_class_name = types.map { |type| type.name.to_s.split("::").join("") }.join("Or")
+
+    klass = Object.const_set(union_class_name, Class.new(self) do
+      def self.union_types
+        self.class_variable_get(:@@union_types)
+      end
+    end
+    )
+
+    klass.class_variable_set(:@@union_types, types)
+
+    klass
+  end
+
   def self.union_types
     raise "this method should be overriden and return classes of the union"
   end
