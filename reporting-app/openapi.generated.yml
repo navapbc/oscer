@@ -122,6 +122,100 @@ components:
       required:
       - certification_date
       - certification_type
+    CertificationMemberData:
+      type: object
+      description: Description of member
+      properties:
+        account_email:
+          type:
+          - string
+          - 'null'
+          format: email
+          description: The email of the Medicare account for the member
+        contact:
+          type:
+          - object
+          - 'null'
+          description: Contact information of the member
+          properties:
+            email:
+              type:
+              - string
+              - 'null'
+              format: email
+            phone:
+              type:
+              - string
+              - 'null'
+              pattern: "^\\+\\d{1,3}\\s\\d{1,14}(\\s\\d{1,13})?$"
+        name:
+          type:
+          - object
+          - 'null'
+          description: The name of the member
+          properties:
+            first:
+              type:
+              - string
+              - 'null'
+            middle:
+              type:
+              - string
+              - 'null'
+            last:
+              type:
+              - string
+              - 'null'
+            suffix:
+              type:
+              - string
+              - 'null'
+        payroll_accounts:
+          type:
+          - array
+          - 'null'
+          items:
+            "$ref": "#/components/schemas/CertificationMemberDataPayrollAccount"
+    CertificationMemberDataPayrollAccount:
+      type: object
+      description: Description of a payroll
+      properties:
+        company_name:
+          type: string
+        paychecks:
+          type:
+          - array
+          - 'null'
+          items:
+            "$ref": "#/components/schemas/CertificationMemberDataPayrollAccountPaycheck"
+    CertificationMemberDataPayrollAccountPaycheck:
+      type: object
+      description: Description of a paycheck
+      properties:
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        gross:
+          type:
+          - string
+          - 'null'
+          format: decimal
+        net:
+          type:
+          - string
+          - 'null'
+          format: decimal
+        hours_worked:
+          type:
+          - string
+          - 'null'
+          format: decimal
+      required:
+      - period_start
+      - period_end
     CertificationResponseBody:
       type: object
       properties:
@@ -138,13 +232,13 @@ components:
           - 'null'
           description: An identifier for the case associated with the certification
         certification_requirements:
-          "$ref": "#/components/schemas/CertificationRequirements"
+          oneOf:
+          - "$ref": "#/components/schemas/CertificationRequirements"
+          - type: 'null'
         member_data:
-          type:
-          - object
-          - 'null'
-          description: Description of beneficiary
-          properties: {}
+          oneOf:
+          - "$ref": "#/components/schemas/CertificationMemberData"
+          - type: 'null'
         created_at:
           type: string
           format: date-time
@@ -181,29 +275,15 @@ components:
     ErrorResponseBody:
       type: object
       properties:
-        status:
-          type: integer
         errors:
           type: array
           items:
-            type: string
-        error:
-          type: string
-      required:
-      - status
+            oneOf:
+            - type: string
+            - type: object
       example:
-        status: 400
-    bf2b49f733c3ee403393efcf6916e8be:
-      type: object
-      properties:
-        status:
-          type: integer
         errors:
-          type: array
-          items:
-            type: string
-      required:
-      - status
+        - Not found
     ece4f2c15f241af4536e1132d15a279a:
       type: object
       properties:
@@ -212,44 +292,43 @@ components:
       required:
       - status
   responses:
-    73df50a224b8b21226f3273c40ba2cca:
+    2a02b6b9f2bf8af2f69dc1b305fd2ea1:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    c4fefd2153de631e96063d2c00561b75:
+    6a42a42fa0c1cf33a5f054f4227f54d2:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    252c7b1ba4f512ca84ef27fd8a923595:
-      description: The server could not process the request due to semantic errors.
-        Please check your input and try again.
+    38188a97a450b2b1b918bdc340abcde3:
+      description: User error.
       content:
         application/json:
           schema:
-            "$ref": "#/components/schemas/bf2b49f733c3ee403393efcf6916e8be"
-    a6e65b069fadca7641504828064856a6:
+            "$ref": "#/components/schemas/ErrorResponseBody"
+    9698be85435e0bbc1a043ce1a4ef1523:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    471ce6c40c81880d273bbdc61f264b52:
-      description: The requested resource could not be found.
+    1720e8d4272c47d808ae092e196a7ab7:
+      description: Not found.
       content:
         application/json:
           schema:
-            "$ref": "#/components/schemas/bf2b49f733c3ee403393efcf6916e8be"
-    c51bbc0cd3e11c38c8e207774897e965:
+            "$ref": "#/components/schemas/ErrorResponseBody"
+    84d98a6bd862cc8319624388a6a874e4:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    d7e53d9f5df4cf658e73cac12eff7925:
+    e17ffcaa22d966f8d8fb6d62bd597c98:
       description: Response
       content:
         application/json:
@@ -265,7 +344,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    bbf45f4c2d571a05e21db35464e1b05a:
+    a9c14ab9cae8249365a3dcbb916b7dec:
       description: The Certification data.
       content:
         application/json:
@@ -318,14 +397,14 @@ paths:
       description: "#"
       operationId: POST__api_certifications
       requestBody:
-        "$ref": "#/components/requestBodies/bbf45f4c2d571a05e21db35464e1b05a"
+        "$ref": "#/components/requestBodies/a9c14ab9cae8249365a3dcbb916b7dec"
       responses:
         '201':
-          "$ref": "#/components/responses/73df50a224b8b21226f3273c40ba2cca"
+          "$ref": "#/components/responses/2a02b6b9f2bf8af2f69dc1b305fd2ea1"
         '400':
-          "$ref": "#/components/responses/c4fefd2153de631e96063d2c00561b75"
+          "$ref": "#/components/responses/6a42a42fa0c1cf33a5f054f4227f54d2"
         '422':
-          "$ref": "#/components/responses/252c7b1ba4f512ca84ef27fd8a923595"
+          "$ref": "#/components/responses/38188a97a450b2b1b918bdc340abcde3"
   "/api/certifications/{id}":
     get:
       tags:
@@ -337,9 +416,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/a6e65b069fadca7641504828064856a6"
+          "$ref": "#/components/responses/9698be85435e0bbc1a043ce1a4ef1523"
         '404':
-          "$ref": "#/components/responses/471ce6c40c81880d273bbdc61f264b52"
+          "$ref": "#/components/responses/1720e8d4272c47d808ae092e196a7ab7"
   "/api/health":
     get:
       tags:
@@ -349,6 +428,6 @@ paths:
       operationId: GET__api_health
       responses:
         '200':
-          "$ref": "#/components/responses/c51bbc0cd3e11c38c8e207774897e965"
+          "$ref": "#/components/responses/84d98a6bd862cc8319624388a6a874e4"
         '503':
-          "$ref": "#/components/responses/d7e53d9f5df4cf658e73cac12eff7925"
+          "$ref": "#/components/responses/e17ffcaa22d966f8d8fb6d62bd597c98"

@@ -7,57 +7,45 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
   attribute :due_date, :date
 
   validates :certification_date, presence: true
-
-  # either :certification_type or all type params are required
-  validates :certification_type, presence: true, on: :input, if: Proc.new { |params| params.has_missing_type_params? }
-  validates :lookback_period, presence: true, on: :input, if: Proc.new { |params| params.certification_type.blank? }
-  validates :number_of_months_to_certify, presence: true, on: :input, if: Proc.new { |params| params.certification_type.blank? }
-
-  # either :due_date or :due_period_days is required, if :certification_type not specified
-  validates :due_period_days, presence: true, on: :input, if: Proc.new { |params| params.certification_type.blank? && params.due_date.blank? }
-  validates :due_date, presence: true, on: :input, if: Proc.new { |params| params.certification_type.blank? && params.due_period_days.blank? }
-
-  # ultimately before being used, we should have these
-  validates :lookback_period, presence: true, on: :use
-  validates :number_of_months_to_certify, presence: true, on: :use
+  validates :lookback_period, presence: true
+  validates :number_of_months_to_certify, presence: true
   # one or the other
-  validates :due_period_days, presence: true, on: :use, if: Proc.new { |params| params.due_date.blank? }
-  validates :due_date, presence: true, on: :use, if: Proc.new { |params| params.due_period_days.blank? }
+  validates :due_period_days, presence: true, if: Proc.new { |params| params.due_date.blank? }
+  validates :due_date, presence: true, if: Proc.new { |params| params.due_period_days.blank? }
+  after_validation :set_due_date_from_period
 
-  def self.new_filtered(hash)
-    possible_param_names = Certifications::RequirementParams.attribute_names.map(&:to_sym)
-    Certifications::RequirementParams.new(hash.slice(*possible_param_names))
-  end
+  before_validation :set_type_params
 
-  def with_type_params(requirement_type_params)
-    self.lookback_period = requirement_type_params.lookback_period
-    self.number_of_months_to_certify = requirement_type_params.number_of_months_to_certify
-    self.due_period_days = requirement_type_params.due_period_days
-  end
-
-  def has_missing_type_params?
-    for type_param in Certifications::RequirementTypeParams.attribute_names
-      if self.attributes[type_param].blank?
-        return true
-      end
+  def set_type_params
+    if self.certification_type.blank? || !Certifications::Requirements::CERTIFICATION_TYPE_OPTIONS.include?(self.certification_type)
+      return
     end
 
-    false
+    self.set_params_for_type(certification_type)
+    # unset any existing explicit due_date
+    self.due_date = nil
   end
-end
 
-class Certifications::RequirementParamsType < ActiveRecord::Type::Json
-  def cast(value)
-    return nil if value.nil?
+  def to_requirements
+    Certifications::Requirements.new({
+      "certification_date": self.certification_date,
+      "certification_type": self.certification_type,
+      "months_that_can_be_certified": self.months_that_can_be_certified,
+      "number_of_months_to_certify": self.number_of_months_to_certify,
+      "due_date": self.due_date,
+      "params": self.as_json
+    })
+  end
 
-    return value if value.is_a?(Certifications::RequirementParams)
+  def months_that_can_be_certified
+    self.lookback_period.times.map { |i| self.certification_date.beginning_of_month << i }
+  end
 
-    case value
-    when Hash
-      hash = value.with_indifferent_access
-      Certifications::RequirementParams.new_filtered(hash)
-    else
-      nil
+  private
+
+  def set_due_date_from_period
+    if self.due_period_days
+      self.due_date ||= self.certification_date + self.due_period_days.days
     end
   end
 end

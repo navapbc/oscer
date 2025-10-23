@@ -1,5 +1,5 @@
 <tr>
   <td><%= link_to certification_case_row.certification.case_number, certification_case_path(certification_case_row) %></td>
-  <td><%= certification_case_row.certification.certification_requirements.dig("certification_date") %></td>
+  <td><%= certification_case_row.certification.certification_requirements&.certification_date %></td>
   <td><%= certification_case_row.status.titleize %></td>
 </tr>
