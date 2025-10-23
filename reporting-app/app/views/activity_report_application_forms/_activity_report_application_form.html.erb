@@ -10,13 +10,28 @@
     <% earned_income_equivalent_of_hours = (summed_hours * 7.25).round(0) %>
     <% remaining_income = 580 - (earned_income_equivalent_of_hours + summed_income) %>
     <% remaining_hours = 80.0 - summed_hours - hours_equivalent_of_earnings %>
-    <h2><%= month.strftime("%B %Y") %></h2>
+    <h2 class="margin-bottom-2"><%= month.strftime("%B %Y") %></h2>
+    <%# Top summary %>
+    <% if income_activities.any? %>
+      <p class="margin-top-1px">
+        <%= t(".total_income_reported") %> <strong><%= number_to_currency(summed_income, precision: 0) %></strong>
+      </p>
+    <% end %>
+    <% if hourly_activities.any? %>
+      <p class="margin-top-1px">
+        <%= t(".total_hours_reported") %> <strong><%= summed_hours %> hrs</strong>
+      </p>
+    <% end %>
+    <p class="margin-top-1px">
+      <%= raw t(".additional_hours_income_needed", hours: remaining_hours, income: number_to_currency(remaining_income, precision: 0)) %>
+    </p>
+    <%# Breakdown of activities for month %>
     <div class="grid-container font-body-md">
       <% if income_activities.any? %>
         <%# Earned income activities %>
         <div class="grid-row">
           <div class="grid-col-11 grid-offset-1 text-bold">
-            <%= t(".earned_income_activities") %>
+            <%= t(".income_reported") %>
           </div>
         </div>
         <%= render partial: "activity_report_application_forms/activity_row",
@@ -25,28 +40,18 @@
           locals: { activity_report_application_form: activity_report_application_form } %>
         <div class="grid-row">
           <div class="grid-col-8 grid-offset-2">
-            <%= t(".total_earnings") %>
+            <%= t(".total_income") %>
           </div>
           <div class="grid-col-2 border-top-1px text-right">
             <%= number_to_currency(summed_income, precision: 0) %>
           </div>
         </div>
-        <% if !hourly_activities.any? %>
-          <div class="grid-row">
-            <div class="grid-col-8 grid-offset-2">
-              <%= t(".required_income") %>
-            </div>
-            <div class="grid-col-2 text-right">
-              <%= number_to_currency(580, precision: 0) %>
-            </div>
-          </div>
-        <% end %>
       <% end %>
       <% if hourly_activities.any? %>
         <%# Hourly activities %>
         <div class="grid-row">
           <div class="grid-col-11 grid-offset-1 text-bold">
-            <%= t(".hourly_activities") %>
+            <%= t(".hours_reported") %>
           </div>
         </div>
         <%= render partial: "activity_report_application_forms/activity_row",
@@ -55,65 +60,13 @@
           locals: { activity_report_application_form: activity_report_application_form } %>
         <div class="grid-row">
           <div class="grid-col-8 grid-offset-2">
-            <%= t(".total_hours_reported") %>
+            <%= t(".total_hours") %>
           </div>
           <div class="grid-col-2 border-top-1px text-right">
             <%= summed_hours %>
           </div>
         </div>
-        <% if !income_activities.any? %>
-          <div class="grid-row">
-            <div class="grid-col-8 grid-offset-2">
-              <%= t(".required_hours") %>
-            </div>
-            <div class="grid-col-2 text-right">
-              80.0
-            </div>
-          </div>
-        <% end %>
       <% end %>
-      <% if income_activities.any? && hourly_activities.any? %>
-        <%# Hours equivalent of earnings row %>
-        <div class="grid-row">
-          <div class="grid-col-8 grid-offset-2">
-            <%= t(".hours_equivalent_of_total_earnings") %>
-          </div>
-          <div class="grid-col-2 text-right">
-            <%= hours_equivalent_of_earnings %>
-          </div>
-        </div>
-        <%# Hours contributing to requirement row %>
-        <div class="grid-row">
-          <div class="grid-col-8 grid-offset-2">
-            <%= t(".total_hours_contributing_to_requirement") %>
-          </div>
-          <div class="grid-col-2 text-right border-top-1px">
-            <%= hours_equivalent_of_earnings + summed_hours %>
-          </div>
-        </div>
-        <%# Required hours row %>
-        <div class="grid-row">
-          <div class="grid-col-8 grid-offset-2">
-            <%= t(".total_required_hours") %>
-          </div>
-          <div class="grid-col-2 text-right">
-            80.0
-          </div>
-        </div>
-      <% end %>
-      <%# Additional hours needed row %>
-      <div class="grid-row text-bold">
-        <div class="grid-col-8 grid-offset-2">
-          <%= t(".remaining_income_or_hours_needed") %>
-        </div>
-        <div class="grid-col-2 border-top-1px text-right">
-          <%= remaining_hours %>hrs<sup>**</sup> <%= t(".or") %> <%= number_to_currency(remaining_income, precision: 0) %>
-        </div>
-      </div>
     </div>
-    <p class="maxw-full full-width font-sans-xs">
-      <sup>*</sup><%= t(".federal_minimum_wage_note") %><br />
-      <sup>**</sup><%= t(".hours_equivalent_note", amount: number_to_currency(remaining_income, precision: 0), hours: remaining_hours) %>
-    </p>
   <% end %>
 </div>
