@@ -4,12 +4,12 @@
     6.times.map { |i|
       date = (Date.today - i.months).beginning_of_month
       [date.strftime("%B %Y"), date]
-    }, { prompt: "- Select -" }
+    }, { prompt: t(".select_prompt") }
   %>
-  <%= f.fieldset "Type" do %>
-    <%= f.radio_button :type, :work_activity, label: "Hours", tile: false, checked: (activity.type == "WorkActivity") %>
-    <%= f.radio_button :type, :earned_income_activity, label: "Earned Income", tile: false, checked: (activity.type == "EarnedIncomeActivity") %>
+  <%= f.fieldset t(".type_label") do %>
+    <%= f.radio_button :type, :work_activity, label: t(".hours_label"), tile: false, checked: (activity.type == "WorkActivity") %>
+    <%= f.radio_button :type, :earned_income_activity, label: t(".income_label"), tile: false, checked: (activity.type == "EarnedIncomeActivity") %>
   <% end %>
-  <%= f.text_field :input, inputmode: "decimal", id: "activities-hours-input", label: "How many hours? / How much earned income?", value: activity.try(:hours) || activity.try(:earned_income)&.dollar_amount %>
+  <%= f.text_field :input, inputmode: "decimal", id: "activities-hours-input", label: t(".input_label"), value: activity.try(:hours) || activity.try(:earned_income)&.dollar_amount %>
   <%= f.submit t(".continue"), big: true %>
 <% end %>
