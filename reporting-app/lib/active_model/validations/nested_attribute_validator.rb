@@ -18,6 +18,7 @@ module ActiveModel
       private
 
       def validate_value(record, attribute, attribute_name_for_error, value)
+        # Related https://linear.app/nava-platform/issue/TSS-147/handle-validation-of-native-ruby-objects-in-array-class
         if value.respond_to?(:invalid?) && value.invalid?
           value.errors.each do |error|
             if error.attribute == :base
@@ -28,7 +29,7 @@ module ActiveModel
               err_options = error.options
             end
 
-            record.errors.add(attr_name, error.type, **err_options) unless record.errors.added?(attr_name, error.type)
+            record.errors.import(error, { attribute: attr_name })
           end
         end
       end
