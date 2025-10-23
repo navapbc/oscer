@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# similar to Strata::Validations.strata_validates_nested
+# TODO: migrate to Strata
 module ActiveModel
   module Validations
     class AttributeValidator < ActiveModel::EachValidator
@@ -18,6 +20,7 @@ module ActiveModel
       private
 
       def validate_value(record, attribute, attribute_name_for_error, value)
+        # Related https://linear.app/nava-platform/issue/TSS-147/handle-validation-of-native-ruby-objects-in-array-class
         if value.respond_to?(:invalid?) && value.invalid?
           value.errors.each do |error|
             if error.attribute == :base
@@ -28,7 +31,7 @@ module ActiveModel
               err_options = error.options
             end
 
-            # TODO: deduple message here?
+            # TODO: dedupe message here?
             record.errors.import(error, { attribute: attr_name })
           end
         end
