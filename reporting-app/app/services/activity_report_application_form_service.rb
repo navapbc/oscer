@@ -10,7 +10,7 @@ class ActivityReportApplicationFormService
     @application_form.assign_attributes(params)
 
     @allowed_months = parse_allowed_months(certification)
-    @required_count = certification.certification_requirements["number_of_months_to_certify"]
+    @required_count = certification.certification_requirements.number_of_months_to_certify
   end
 
   def call
@@ -43,9 +43,8 @@ class ActivityReportApplicationFormService
   end
 
   def parse_allowed_months(certification)
-    certification.certification_requirements["months_that_can_be_certified"].map do |date_string|
-      year, month, _day = date_string.split("-")
-      Strata::YearMonth.new(year:, month:).to_s
+    certification.certification_requirements.months_that_can_be_certified.map do |date|
+      Strata::YearMonth.new(year: date.year, month: date.month).to_s
     end
   end
 end

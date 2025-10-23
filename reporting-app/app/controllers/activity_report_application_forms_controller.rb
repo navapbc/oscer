@@ -93,7 +93,7 @@ class ActivityReportApplicationFormsController < ApplicationController
       return
     end
 
-    @certification_case = CertificationCase.find_by(id: params[:certification_case_id])
+    @certification_case = certification_service.find(params[:certification_case_id])
   end
 
   def default_reporting_source
@@ -126,12 +126,15 @@ class ActivityReportApplicationFormsController < ApplicationController
   end
 
   def fetch_certification
-    certification_case = CertificationCase.find(@activity_report_application_form.certification_case_id)
-    Certification.find(certification_case.certification_id)
+    certification_service.find(@activity_report_application_form.certification_case_id).certification
   end
 
   def certification_requirements
     fetch_certification.certification_requirements
+  end
+
+  def certification_service
+    @certification_service ||= CertificationService.new
   end
 
   def activity_report_application_form_params

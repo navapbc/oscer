@@ -6,11 +6,11 @@
 
   <p>
     <%= t( ".instructions_html",
-        number_of_months: @certification_requirements["number_of_months_to_certify"],
-        pluralized_month: "month".pluralize(@certification_requirements["number_of_months_to_certify"])
+        number_of_months: @certification_requirements.number_of_months_to_certify,
+        pluralized_month: "month".pluralize(@certification_requirements.number_of_months_to_certify)
       ) %>
   </p>
 <%= render "form",
   activity_report_application_form: @activity_report_application_form,
-  months: @certification_requirements["months_that_can_be_certified"]
+  months: @certification_requirements.months_that_can_be_certified
 %>
