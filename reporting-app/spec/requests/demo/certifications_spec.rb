@@ -40,15 +40,22 @@ RSpec.describe "/demo/certifications", type: :request do
 
   describe "POST /create" do
     it "creates a new Certification" do
+      create_attrs = build(:certification_certification_requirement_params, :with_direct_params).attributes.compact.deep_merge(valid_request_attributes)
+
       expect {
         post demo_certifications_url,
              params: {
-               demo_certifications_create_form:
-                 valid_request_attributes.deep_merge(
-                   build(:certification_certification_requirement_params, :with_direct_params).attributes.compact
-                 )
+               demo_certifications_create_form: create_attrs
              }
       }.to change(Certification, :count).by(1)
+
+      cert = Certification.order(created_at: :desc).last
+      expect(cert.case_number).to eq(create_attrs[:case_number])
+      expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+      expect(cert.member_name).to eq(Strata::Name.new({
+        "first": create_attrs[:member_name_first],
+        "last": create_attrs[:member_name_last]
+      }))
     end
 
     it "creates a new Certification with empty string certification_type" do
@@ -64,10 +71,21 @@ RSpec.describe "/demo/certifications", type: :request do
     end
 
     it "creates a new 'new_application' Certification" do
+      create_attrs = valid_request_attributes.merge({ certification_type: "new_application" })
+
       expect {
         post demo_certifications_url,
-             params: { demo_certifications_create_form: valid_request_attributes.merge({ certification_type: "new_application" }) }
+             params: { demo_certifications_create_form: create_attrs }
       }.to change(Certification, :count).by(1)
+
+      cert = Certification.order(created_at: :desc).last
+      expect(cert.case_number).to eq(create_attrs[:case_number])
+      expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+      expect(cert.certification_requirements.certification_type).to eq("new_application")
+      expect(cert.member_name).to eq(Strata::Name.new({
+        "first": create_attrs[:member_name_first],
+        "last": create_attrs[:member_name_last]
+      }))
     end
 
     it "creates a new 'recertification' Certification" do
@@ -75,6 +93,42 @@ RSpec.describe "/demo/certifications", type: :request do
         post demo_certifications_url,
              params: { demo_certifications_create_form: valid_request_attributes.merge({ certification_type: "recertification" }) }
       }.to change(Certification, :count).by(1)
+    end
+
+    context "when using ex parte scenarios" do
+      it "creates Certification with 'Partially met work hours requirement'" do
+        create_attrs = valid_request_attributes.merge({ ex_parte_scenario: "Partially met work hours requirement" })
+
+        expect {
+          post demo_certifications_url,
+              params: { demo_certifications_create_form: create_attrs }
+        }.to change(Certification, :count).by(1)
+
+        cert = Certification.order(created_at: :desc).last
+        expect(cert.case_number).to eq(create_attrs[:case_number])
+        expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+        expect(cert.member_name).to eq(Strata::Name.new({
+          "first": create_attrs[:member_name_first],
+          "last": create_attrs[:member_name_last]
+        }))
+      end
+
+      it "creates Certification with 'Fully met work hours requirement'" do
+        create_attrs = valid_request_attributes.merge({ ex_parte_scenario: "Fully met work hours requirement" })
+
+        expect {
+          post demo_certifications_url,
+              params: { demo_certifications_create_form: create_attrs }
+        }.to change(Certification, :count).by(1)
+
+        cert = Certification.order(created_at: :desc).last
+        expect(cert.case_number).to eq(create_attrs[:case_number])
+        expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+        expect(cert.member_name).to eq(Strata::Name.new({
+          "first": create_attrs[:member_name_first],
+          "last": create_attrs[:member_name_last]
+        }))
+      end
     end
 
     context "with validation errors" do

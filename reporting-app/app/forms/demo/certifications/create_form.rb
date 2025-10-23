@@ -21,9 +21,9 @@ module Demo
 
         case self.ex_parte_scenario
         when "Partially met work hours requirement"
-          member_data.merge!(FactoryBot.build(:certification_member_data, :partially_met_work_hours_requirement, cert_date: self.certification_date).attributes)
+          member_data.merge!(FactoryBot.build(:certification_member_data, :partially_met_work_hours_requirement, cert_date: self.certification_date).attributes.compact)
         when "Fully met work hours requirement"
-          member_data.merge!(FactoryBot.build(:certification_member_data, :fully_met_work_hours_requirement, cert_date: self.certification_date, num_months: self.number_of_months_to_certify).attributes)
+          member_data.merge!(FactoryBot.build(:certification_member_data, :fully_met_work_hours_requirement, cert_date: self.certification_date, num_months: self.number_of_months_to_certify).attributes.compact)
         else
           # nothing
         end
@@ -34,7 +34,7 @@ module Demo
           email: self.member_email,
           case_number: self.case_number,
           certification_requirements: certification_requirements,
-          member_data: ::Certifications::MemberData.new_filtered(member_data),
+          member_data: ::Certifications::MemberData.new(member_data),
         )
       end
     end
