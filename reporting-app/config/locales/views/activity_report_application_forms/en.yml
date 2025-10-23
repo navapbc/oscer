@@ -28,6 +28,16 @@ en:
           submitted: "Your activity report is being reviewed"
           approved: "Your activity report has been approved"
           denied: "Your activity report has been denied"
+    edit:
+      title: "Select reporting period"
+      instructions_html: "In [State name], you are required to report activities for <strong>%{number_of_months} %{pluralized_month}</strong>. Choose which %{pluralized_month} to report."
+      back: "Back to activity report"
+      save_button: "Save and continue"
+      submit_button: "Submit activity report"
+      declaration:
+        heading: "Declaration"
+        text: "I declare that the information I have provided in this activity report is true and complete to the best of my knowledge. I understand that providing false information may result in penalties, including disqualification from benefits."
+        agree_label: "I agree to the declaration"
     activity_report_application_form:
       activity: Activity
       income_earned: "Income earned"

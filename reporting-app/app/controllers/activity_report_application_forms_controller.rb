@@ -26,6 +26,8 @@ class ActivityReportApplicationFormsController < ApplicationController
   #
   # @param reporting_source [String] Override which reporting service to use ("income_verification_service", "reporting_app")
   def edit
+    @certification_requirements = certification_requirements
+
     respond_to do |format|
       format.html
       format.json { render json: @activity_report_application_form.as_json }
@@ -38,11 +40,21 @@ class ActivityReportApplicationFormsController < ApplicationController
 
   # PATCH/PUT /activity_report_application_forms/1 or /activity_report_application_forms/1.json
   def update
+    certification = fetch_certification
+    result = ActivityReportApplicationFormService.update_application_form(
+      @activity_report_application_form,
+      activity_report_application_form_params,
+      certification
+    )
+    @activity_report_application_form = result[:activity_report_application_form]
+
     respond_to do |format|
-      if @activity_report_application_form.update(activity_report_application_form_params)
+      if result[:success]
         format.html { redirect_to @activity_report_application_form, notice: "Activity report application form was successfully updated." }
         format.json { render :show, status: :ok, location: review_activity_report_application_form_path(@activity_report_application_form) }
       else
+        @certification_requirements = certification.certification_requirements
+        flash[:errors] = @activity_report_application_form.errors.full_messages
         format.html { render :edit, status: :unprocessable_entity }
         format.json { render json: @activity_report_application_form.errors, status: :unprocessable_entity }
       end
@@ -111,6 +123,15 @@ class ActivityReportApplicationFormsController < ApplicationController
     name = Strata::Name.new(first: "Jane", last: "Doe") # TODO: get real name and remove this
     invitation = CMSIncomeVerificationService.new.create_invitation(@activity_report_application_form, name)
     redirect_to invitation.tokenized_url, allow_other_host: true
+  end
+
+  def fetch_certification
+    certification_case = CertificationCase.find(@activity_report_application_form.certification_case_id)
+    Certification.find(certification_case.certification_id)
+  end
+
+  def certification_requirements
+    fetch_certification.certification_requirements
   end
 
   def activity_report_application_form_params

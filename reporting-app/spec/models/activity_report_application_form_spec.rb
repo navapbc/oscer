@@ -18,7 +18,7 @@ RSpec.describe ActivityReportApplicationForm, type: :model do
       end
 
       it "allows different certification_case_ids" do
-        certification_case_2 = create(:certification_case, certification: certification)
+        certification_case_2 = create(:certification_case)
         create(:activity_report_application_form, certification_case_id: certification_case.id)
         second_form = build(:activity_report_application_form, certification_case_id: certification_case_2.id)
 

@@ -19,7 +19,15 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
 
   let(:user) { User.create!(email: "test@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
   let(:other_user) { User.create!(email: "test-other@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
-  let(:certification) { create(:certification) }
+  let(:certification_requirements) do
+    build(
+      :certification_certification_requirements,
+      certification_date: Date.new(2025, 10, 31),
+      number_of_months_to_certify: 1,
+      months_that_can_be_certified: [ "2025-10-01", "2025-09-01", "2025-08-01" ]
+    )
+  end
+  let(:certification) { create(:certification, certification_requirements:) }
   let(:certification_case) { create(:certification_case, certification: certification) }
 
   # This should return the minimal set of attributes required to create a valid
@@ -163,15 +171,16 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
     context "with valid parameters" do
       let(:new_attributes) {
         {
-          reporting_periods: [ { year: 2025, month: 7 }.to_json ]
+          reporting_periods: [ { year: 2025, month: 8 }.to_json ]
         }
       }
 
       it "updates the requested activity_report_application_form" do
         activity_report_application_form = ActivityReportApplicationForm.create! valid_db_attributes
         patch activity_report_application_form_url(activity_report_application_form), params: { activity_report_application_form: new_attributes }
+        expect(response).to have_http_status(:found)
         activity_report_application_form.reload
-        expect(activity_report_application_form.reporting_periods).to eq([ Strata::YearMonth.new(year: 2025, month: 7) ])
+        expect(activity_report_application_form.reporting_periods).to eq([ Strata::YearMonth.new(year: 2025, month: 8) ])
       end
 
       it "does not update the requested activity_report_application_form if non-owning user" do
@@ -197,6 +206,34 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
         patch activity_report_application_form_url(activity_report_application_form), params: { activity_report_application_form: new_attributes }
         activity_report_application_form.reload
         expect(response).to redirect_to(activity_report_application_form_url(activity_report_application_form))
+      end
+    end
+
+    context "with incorrect number of reporting periods" do
+      let(:invalid_attributes) {
+        {
+          reporting_periods: [ { year: 2025, month: 8 }.to_json, { year: 2025, month: 9 }.to_json ]
+        }
+      }
+
+      it "renders an unprocessable entity response" do
+        activity_report_application_form = ActivityReportApplicationForm.create! valid_db_attributes
+        patch activity_report_application_form_url(activity_report_application_form), params: { activity_report_application_form: invalid_attributes }
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    end
+
+    context "with reporting periods outside of allowed months" do
+      let(:invalid_attributes) {
+        {
+          reporting_periods: [ { year: 2024, month: 5 }.to_json ]
+        }
+      }
+
+      it "renders an unprocessable entity response" do
+        activity_report_application_form = ActivityReportApplicationForm.create! valid_db_attributes
+        patch activity_report_application_form_url(activity_report_application_form), params: { activity_report_application_form: invalid_attributes }
+        expect(response).to have_http_status(:unprocessable_entity)
       end
     end
   end
