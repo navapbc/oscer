@@ -13,7 +13,19 @@ module Demo
       end
 
       def to_certification
-        certification_requirements = ::Certifications::RequirementParams.new_filtered(self.attributes.with_indifferent_access).to_requirements
+        certification_requirement_params = ::Certifications::RequirementParams.new_filtered(self.attributes.with_indifferent_access)
+        # shouldn't be possible, but we need to ensure the params are valid in
+        # order to construct the requirements next
+        if certification_requirement_params.invalid?
+          errors.merge!(certification_requirement_params.errors)
+          return false
+        end
+
+        certification_requirements = certification_requirement_params.to_requirements
+        if certification_requirements.invalid?
+          errors.merge!(certification_requirements.errors)
+          return false
+        end
 
         member_data = {
           "name": self.member_name

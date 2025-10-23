@@ -22,6 +22,11 @@ class Demo::CertificationsController < ApplicationController
 
     @certification = @form.to_certification
 
+    if !@certification
+      flash.now[:errors] = @form.errors.full_messages
+      render :new, status: :unprocessable_entity
+    end
+
     if @certification.save
       redirect_to certification_path(@certification)
     else

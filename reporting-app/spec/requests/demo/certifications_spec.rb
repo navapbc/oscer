@@ -52,6 +52,7 @@ RSpec.describe "/demo/certifications", type: :request do
       cert = Certification.order(created_at: :desc).last
       expect(cert.case_number).to eq(create_attrs[:case_number])
       expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+      expect(cert.certification_requirements.due_date).not_to be_nil
       expect(cert.member_name).to eq(Strata::Name.new({
         "first": create_attrs[:member_name_first],
         "last": create_attrs[:member_name_last]
@@ -81,6 +82,7 @@ RSpec.describe "/demo/certifications", type: :request do
       cert = Certification.order(created_at: :desc).last
       expect(cert.case_number).to eq(create_attrs[:case_number])
       expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+      expect(cert.certification_requirements.due_date).not_to be_nil
       expect(cert.certification_requirements.certification_type).to eq("new_application")
       expect(cert.member_name).to eq(Strata::Name.new({
         "first": create_attrs[:member_name_first],
@@ -107,6 +109,7 @@ RSpec.describe "/demo/certifications", type: :request do
         cert = Certification.order(created_at: :desc).last
         expect(cert.case_number).to eq(create_attrs[:case_number])
         expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+        expect(cert.certification_requirements.due_date).not_to be_nil
         expect(cert.member_name).to eq(Strata::Name.new({
           "first": create_attrs[:member_name_first],
           "last": create_attrs[:member_name_last]
@@ -124,6 +127,7 @@ RSpec.describe "/demo/certifications", type: :request do
         cert = Certification.order(created_at: :desc).last
         expect(cert.case_number).to eq(create_attrs[:case_number])
         expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+        expect(cert.certification_requirements.due_date).not_to be_nil
         expect(cert.member_name).to eq(Strata::Name.new({
           "first": create_attrs[:member_name_first],
           "last": create_attrs[:member_name_last]
