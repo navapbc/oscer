@@ -90,17 +90,36 @@ RSpec.describe "/activities", type: :request do
 
   describe "POST /create" do
     context "with valid parameters" do
-      it "creates a new Activity" do
-        expect {
+      [
+        ["work_activity", HourlyActivity],
+        ["earned_income_activity", EarnedIncomeActivity]
+      ].each do |type_string, model_class|
+        it "creates a new #{model_class} when type is #{type_string}" do
+          valid_attributes = {
+            name: Faker::Company.name,
+            type: type_string,
+            input: rand(1..79),
+            month: (Date.today - 2.months).beginning_of_month
+          }
+
+          expect {
+            post activity_report_application_form_activities_url(activity_report_application_form), params: { activity: valid_attributes }
+          }.to change(model_class, :count).by(1)
+        end
+        
+        it "redirects to the activity report when type is #{type_string}" do
+          valid_attributes = {
+            name: Faker::Company.name,
+            type: type_string,
+            input: rand(1..79),
+            month: (Date.today - 2.months).beginning_of_month
+          }
+
           post activity_report_application_form_activities_url(activity_report_application_form), params: { activity: valid_attributes }
-        }.to change(Activity, :count).by(1)
-      end
-
-      it "redirects to the activity report" do
-        post activity_report_application_form_activities_url(activity_report_application_form), params: { activity: valid_attributes }
-
-        expect(response).to have_http_status(:redirect)
-        expect(response.location).to match(%r{/activity_report_application_forms/#{activity_report_application_form.id}/activities/[^/]+/documents})
+          
+          expect(response).to have_http_status(:redirect)
+          expect(response.location).to match(%r{/activity_report_application_forms/#{activity_report_application_form.id}/activities/[^/]+/documents})
+        end
       end
     end
 
