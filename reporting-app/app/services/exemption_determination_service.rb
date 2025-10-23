@@ -4,15 +4,19 @@ class ExemptionDeterminationService
   class << self
     def determine!(kase)
       certification = Certification.find(kase.certification_id)
+      date_of_birth = extract_date_of_birth(certification)
 
-      if eligible_for_exemption?(certification)
+      eligible = evaluate_exemption_eligibility(date_of_birth)
+
+      if eligible
         ActiveRecord::Base.transaction do
           kase.exemption_request_approval_status = "approved"
           kase.exemption_request_approval_status_updated_at = Time.current
+          kase.save!
           kase.close
-        end
 
-        Strata::EventManager.publish("DeterminedExempt", { case_id: kase.id })
+          Strata::EventManager.publish("DeterminedExempt", { case_id: kase.id })
+        end
       else
         Strata::EventManager.publish("DeterminedRequirementsNotMet", { case_id: kase.id })
       end
@@ -20,12 +24,20 @@ class ExemptionDeterminationService
 
     private
 
-    def eligible_for_exemption?(certification)
-      date_of_birth = extract_date_of_birth(certification)
+    def evaluate_exemption_eligibility(date_of_birth)
       return false unless date_of_birth
 
-      age = calculate_age(date_of_birth)
-      age < 19 || age >= 65
+      ruleset = Rules::ExemptionRuleset.new
+      engine = Strata::RulesEngine.new(ruleset)
+
+      engine.set_facts(
+        date_of_birth: date_of_birth,
+        evaluated_on: Date.current
+      )
+
+      eligibility_fact = engine.evaluate(:eligible_for_age_exemption)
+
+      eligibility_fact.value
     end
 
     def extract_date_of_birth(certification)
@@ -37,13 +49,6 @@ class ExemptionDeterminationService
       Date.parse(dob_string)
     rescue Date::Error
       nil
-    end
-
-    def calculate_age(date_of_birth)
-      today = Date.current
-      age = today.year - date_of_birth.year
-      age -= 1 if (today.month < date_of_birth.month) || (today.month == date_of_birth.month && today.day < date_of_birth.day)
-      age
     end
   end
 end
