@@ -62,6 +62,18 @@ RSpec.describe ExemptionDeterminationService do
         kase.reload
         expect(kase.status).to eq("closed")
       end
+
+      it 'sets exemption_request_approval_status to approved' do
+        service.determine!(kase)
+        kase.reload
+        expect(kase.exemption_request_approval_status).to eq("approved")
+      end
+
+      it 'sets exemption_request_approval_status_updated_at' do
+        service.determine!(kase)
+        kase.reload
+        expect(kase.exemption_request_approval_status_updated_at).to be_present
+      end
     end
 
     context 'when applicant is 19 years old' do
@@ -123,6 +135,18 @@ RSpec.describe ExemptionDeterminationService do
       it 'publishes DeterminedRequirementsNotMet event' do
         service.determine!(kase)
         expect(Strata::EventManager).to have_received(:publish).with('DeterminedRequirementsNotMet', { case_id: kase.id })
+      end
+
+      it 'does not close the case' do
+        service.determine!(kase)
+        kase.reload
+        expect(kase.status).to eq("open")
+      end
+
+      it 'does not set exemption_request_approval_status' do
+        service.determine!(kase)
+        kase.reload
+        expect(kase.exemption_request_approval_status).to be_nil
       end
     end
   end
