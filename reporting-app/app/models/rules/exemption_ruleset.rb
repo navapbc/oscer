@@ -10,16 +10,10 @@ module Rules
       age < 19
     end
 
-    def age_65_or_older(age)
-      return if age.nil?
+    def eligible_for_age_exemption(age_under_19, age_over_65)
+      return if age_under_19.nil? && age_over_65.nil?
 
-      age >= 65
-    end
-
-    def eligible_for_age_exemption(age_under_19, age_65_or_older)
-      return if age_under_19.nil? && age_65_or_older.nil?
-
-      [ age_under_19, age_65_or_older ].any?
+      [ age_under_19, age_over_65 ].any?
     end
   end
 end
