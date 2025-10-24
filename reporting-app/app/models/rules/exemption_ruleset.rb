@@ -11,8 +11,6 @@ module Rules
     end
 
     def eligible_for_age_exemption(age_under_19, age_over_65)
-      return if age_under_19.nil? && age_over_65.nil?
-
       [ age_under_19, age_over_65 ].any?
     end
   end
