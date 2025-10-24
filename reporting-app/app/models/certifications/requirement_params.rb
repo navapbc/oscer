@@ -3,10 +3,10 @@
 class Certifications::RequirementParams < Certifications::RequirementTypeParams
   include ActiveModel::Validations::Callbacks
 
-  attribute :certification_date, :date
-  attribute :certification_type, :string, default: nil
+  strata_attribute :certification_date, :date
+  strata_attribute :certification_type, :string, default: nil
 
-  attribute :due_date, :date
+  strata_attribute :due_date, :date
 
   validates :certification_date, presence: true
   validates :lookback_period, presence: true
