@@ -7,7 +7,7 @@
     }, { prompt: t(".select_prompt") }
   %>
   <%= f.fieldset t(".type_label") do %>
-    <%= f.radio_button :type, :work_activity, label: t(".hours_label"), tile: false, checked: (activity.type == "WorkActivity") %>
+    <%= f.radio_button :type, :work_activity, label: t(".hours_label"), tile: false, checked: (activity.type == "WorkActivity" || activity.type.blank?) %>
     <%= f.radio_button :type, :earned_income_activity, label: t(".income_label"), tile: false, checked: (activity.type == "EarnedIncomeActivity") %>
   <% end %>
   <%= f.text_field :input, inputmode: "decimal", id: "activities-hours-input", label: t(".input_label"), value: activity.try(:hours) || activity.try(:earned_income)&.dollar_amount %>
