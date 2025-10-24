@@ -41,7 +41,7 @@ locals {
   # If enabled:
   # 1. Configures AWS SES for sending email notifications
   # 2. Sets up IAM permissions for the application to send emails
-  enable_notifications = false
+  enable_notifications = true
 
   # Whether or not the application should enable WAF for the load balancer.
   # If enabled:
