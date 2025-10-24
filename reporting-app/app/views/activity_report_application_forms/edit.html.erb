@@ -4,6 +4,8 @@
   { name: "Dashboard", url: dashboard_path },
   ], current_name: "Select reporting period" } %>
 
+<%= render "strata/shared/step_indicator", steps: %i[start select_periods add_activities review submitted], current_step: :select_periods, translation_scope: "activity_report_application_forms.steps" %>
+
 <h1>Select reporting period</h1>
 
 <%= render "form", activity_report_application_form: @activity_report_application_form %>

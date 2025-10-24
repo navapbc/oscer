@@ -1,4 +1,11 @@
 <% content_for :title, t(".title") %>
+
+<% if flash[:notice].present? && @activity_report_application_form.submitted_at.present? %>
+  <%= render "strata/shared/step_indicator", steps: %i[start select_periods add_activities review submitted], current_step: :submitted, translation_scope: "activity_report_application_forms.steps" %>
+<% elsif @activity_report_application_form.submitted_at.blank? %>
+  <%= render "strata/shared/step_indicator", steps: %i[start select_periods add_activities review submitted], current_step: :add_activities, translation_scope: "activity_report_application_forms.steps" %>
+<% end %>
+
 <%= link_to t(".back"), dashboard_path %>
 <h1><%= t(".title") %></h1>
 <% if policy(@activity_report_application_form).edit? %>

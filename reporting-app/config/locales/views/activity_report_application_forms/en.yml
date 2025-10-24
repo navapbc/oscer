@@ -1,5 +1,11 @@
 en:
   activity_report_application_forms:
+    steps:
+      start: "Before you start"
+      select_periods: "Select reporting period"
+      add_activities: "Add activities"
+      review: "Review and submit"
+      submitted: "Submitted"
     new:
       title: "Before you start"
       time_to_complete_description: "Estimated time to complete:"
