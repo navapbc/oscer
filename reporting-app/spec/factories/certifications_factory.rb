@@ -6,30 +6,7 @@ FactoryBot.define do
     member_id { Faker::NationalHealthService.british_number }
     case_number { "C-%d" % Faker::Number.within(range: 1..10000) }
     certification_requirements { build(:certification_certification_requirements) }
-    member_data { {} }
-
-    trait :invalid_json_data do
-      certification_requirements { "()" }
-      member_data { "()" }
-    end
-
-    trait :with_member_data_base do
-      transient do
-        member_data_base { {
-          name: {
-            first: Faker::Name.first_name,
-            middle: Faker::Name.middle_name,
-            last: Faker::Name.last_name,
-            suffix: ""
-          },
-          account_email: Faker::Internet.email
-        } }
-      end
-
-      after(:build) do |cert, context|
-        cert.member_data.deep_merge!(context.member_data_base)
-      end
-    end
+    member_data { build(:certification_member_data) }
 
     trait :connected_to_email do
       transient do
@@ -38,13 +15,13 @@ FactoryBot.define do
 
       after(:build) do |cert, context|
         if not context.email.blank?
-          cert.member_data.deep_merge!({
+          cert.member_data = Certifications::MemberData.new_filtered(cert.member_data.attributes.deep_merge({
             "account_email": context.email,
             "contact": {
               "email": context.email,
               "phone": Faker::PhoneNumber.cell_phone_in_e164
             }
-        })
+        }))
         end
       end
     end

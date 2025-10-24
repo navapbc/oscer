@@ -31,9 +31,11 @@ Rails.application.routes.draw do
   scope path: "/api", as: :api, defaults: { format: :json } do
     mount OasRails::Engine, at: "/docs", defaults: { format: :html }
 
+    # can add other mixed API/UI controllers here
+  end
+  namespace :api do
     resources :certifications, only: [ :create, :show ]
-
-    get "health" => "api/healthcheck#index"
+    get "health" => "healthcheck#index"
   end
 
   scope path: "/staff" do
