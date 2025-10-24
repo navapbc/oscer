@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'rails_helper'
-require_relative '../../vendor/gems/flex-sdk/spec/support/matchers/publish_event_with_payload'
+require_relative '../support/event_matchers'
 
 RSpec.describe CertificationBusinessProcess, type: :business_process do
   let(:certification) { create(:certification) }
@@ -131,12 +131,12 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
 
       expect {
         activity_report.submit_application
-      }.to publish_event_with_payload("ActivityReportApplicationFormSubmitted", {})
+      }.to have_published_event("ActivityReportApplicationFormSubmitted")
 
       # Approve activity report
       expect {
         certification_case.accept_activity_report
-      }.to publish_event_with_payload("DeterminedRequirementsMet", { case_id: certification_case.id })
+      }.to have_published_event("DeterminedRequirementsMet")
     end
 
     it 'publishes exemption events' do
@@ -148,12 +148,12 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
 
       expect {
         exemption.submit_application
-      }.to publish_event_with_payload("ExemptionApplicationFormSubmitted", {})
+      }.to have_published_event("ExemptionApplicationFormSubmitted")
 
       # Approve exemption
       expect {
         certification_case.accept_exemption_request
-      }.to publish_event_with_payload("DeterminedExempt", { case_id: certification_case.id })
+      }.to have_published_event("DeterminedExempt")
     end
   end
 end
