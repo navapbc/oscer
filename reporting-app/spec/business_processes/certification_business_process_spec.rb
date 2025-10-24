@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'rails_helper'
+require_relative '../support/event_matchers'
 
 RSpec.describe CertificationBusinessProcess, type: :business_process do
   let(:certification) { create(:certification) }
