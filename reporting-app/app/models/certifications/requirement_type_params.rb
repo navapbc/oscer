@@ -3,9 +3,9 @@
 class Certifications::RequirementTypeParams < Strata::ValueObject
   include ActiveModel::AsJsonAttributeType
 
-  attribute :lookback_period, :integer
-  attribute :number_of_months_to_certify, :integer
-  attribute :due_period_days, :integer
+  strata_attribute :lookback_period, :integer
+  strata_attribute :number_of_months_to_certify, :integer
+  strata_attribute :due_period_days, :integer
 
   def set_params_for_type(certification_type)
     type_params = self.class.cert_type_params_for(certification_type)

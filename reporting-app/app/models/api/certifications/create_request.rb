@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 class Api::Certifications::CreateRequest < Api::RequestBody::Model
-  attribute :member_id, :string
-  attribute :case_number, :string
+  strata_attribute :member_id, :string
+  strata_attribute :case_number, :string
 
-  attribute :certification_requirements, ActiveModel::Type::Json.new(UnionObject.build([ Api::Certifications::Requirements, Api::Certifications::RequirementParams ]))
-  attribute :member_data, Certifications::MemberData.to_type
+  strata_attribute :certification_requirements, ActiveModel::Type::Json.new(UnionObject.build([ Api::Certifications::Requirements, Api::Certifications::RequirementParams ]))
+  strata_attribute :member_data, Certifications::MemberData.to_type
 
   validates :certification_requirements, presence: true
 
