@@ -11,6 +11,11 @@ en:
     form:
       name: "Employer name"
       continue: "Save and continue"
+      select_prompt: "- Select -"
+      type_label: "Type"
+      hours_label: "Hours"
+      income_label: "Income"
+      input_label: "How many hours? / How much earned income?"
     show:
       title:
         work: "Work for %{name}"

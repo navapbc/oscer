@@ -1,14 +1,15 @@
-<%= strata_form_with(model: [activity_report_application_form, activity]) do |f| %>
+<%= strata_form_with(model: [activity_report_application_form, activity.becomes(Activity)]) do |f| %>
   <%= f.text_field :name, label: t(".name") %>
-
   <%= f.select :month,
     6.times.map { |i|
       date = (Date.today - i.months).beginning_of_month
       [date.strftime("%B %Y"), date]
-    }, { prompt: "- Select -" }
+    }, { prompt: t(".select_prompt") }
   %>
-  
-  <%= f.text_field :hours, inputmode: "decimal" %>
-  
+  <%= f.fieldset t(".type_label") do %>
+    <%= f.radio_button :type, :work_activity, label: t(".hours_label"), tile: false, checked: (activity.type == "WorkActivity" || activity.type.blank?) %>
+    <%= f.radio_button :type, :earned_income_activity, label: t(".income_label"), tile: false, checked: (activity.type == "EarnedIncomeActivity") %>
+  <% end %>
+  <%= f.text_field :input, inputmode: "decimal", id: "activities-hours-input", label: t(".input_label"), value: activity.try(:hours) || activity.try(:earned_income)&.dollar_amount %>
   <%= f.submit t(".continue"), big: true %>
 <% end %>
