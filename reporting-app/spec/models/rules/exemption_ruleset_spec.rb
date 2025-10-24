@@ -32,8 +32,8 @@ RSpec.describe Rules::ExemptionRuleset do
 
   describe '#eligible_for_age_exemption' do
     context 'when both parameters are nil' do
-      it 'returns false' do
-        expect(ruleset.eligible_for_age_exemption(nil, nil)).to be false
+      it 'returns nil' do
+        expect(ruleset.eligible_for_age_exemption(nil, nil)).to be_nil
       end
     end
 
