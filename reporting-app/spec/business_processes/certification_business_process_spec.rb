@@ -14,7 +14,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     it 'transitions through the full workflow and updates member status correctly' do
       # Step 1: Case starts on report_activities
       expect(certification_case.business_process_instance.current_step).to eq("report_activities")
-      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:awaiting_report])
+      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_AWAITING_REPORT)
       expect(certification_case).to be_open
 
       # Step 2: Member submits activity report
@@ -25,7 +25,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       certification_case.reload
 
       expect(certification_case.business_process_instance.current_step).to eq("review_activity_report")
-      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:pending_review])
+      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_PENDING_REVIEW)
       expect(certification_case).to be_open
 
       # Step 3: Staff approves activity report
@@ -33,7 +33,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       certification_case.reload
 
       expect(certification_case.business_process_instance.current_step).to eq("end")
-      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:met_requirements])
+      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_MET_REQUIREMENTS)
       expect(certification_case).to be_closed
     end
 
@@ -52,7 +52,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       certification_case.reload
 
       expect(certification_case.business_process_instance.current_step).to eq("end")
-      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:not_met_requirements])
+      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_NOT_MET_REQUIREMENTS)
       expect(certification_case).to be_closed
     end
   end
@@ -61,7 +61,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     it 'transitions through exemption workflow and updates member status correctly' do
       # Step 1: Case starts on report_activities
       expect(certification_case.business_process_instance.current_step).to eq("report_activities")
-      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:awaiting_report])
+      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_AWAITING_REPORT)
 
       # Step 2: Member submits exemption request
       exemption = create(:exemption_application_form,
@@ -72,7 +72,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       certification_case.reload
 
       expect(certification_case.business_process_instance.current_step).to eq("review_exemption_claim")
-      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:pending_review])
+      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_PENDING_REVIEW)
       expect(certification_case).to be_open
 
       # Step 3: Staff approves exemption
@@ -80,7 +80,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       certification_case.reload
 
       expect(certification_case.business_process_instance.current_step).to eq("end")
-      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:exempt])
+      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_EXEMPT)
       expect(certification_case).to be_closed
     end
 
@@ -100,7 +100,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       certification_case.reload
 
       expect(certification_case.business_process_instance.current_step).to eq("report_activities")
-      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:awaiting_report])
+      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_AWAITING_REPORT)
       expect(certification_case).to be_open
     end
   end
