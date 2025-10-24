@@ -38,23 +38,31 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       expect(certification_case).to be_closed
     end
 
-    it 'transitions to end when activity report is denied' do
-      # Submit activity report
-      activity_report = create(:activity_report_application_form,
-        certification_case_id: certification_case.id
-      )
-      activity_report.submit_application
-      certification_case.reload
+    context 'when activity report is denied' do
+      before do
+        # Submit activity report
+        activity_report = create(:activity_report_application_form,
+          certification_case_id: certification_case.id
+        )
+        activity_report.submit_application
+        certification_case.reload
 
-      expect(certification_case.business_process_instance.current_step).to eq("review_activity_report")
+        # Staff denies activity report
+        certification_case.deny_activity_report
+        certification_case.reload
+      end
 
-      # Staff denies activity report
-      certification_case.deny_activity_report
-      certification_case.reload
+      it 'transitions to end step' do
+        expect(certification_case.business_process_instance.current_step).to eq("end")
+      end
 
-      expect(certification_case.business_process_instance.current_step).to eq("end")
-      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_NOT_MET_REQUIREMENTS)
-      expect(certification_case).to be_closed
+      it 'updates member status to not_met_requirements' do
+        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_NOT_MET_REQUIREMENTS)
+      end
+
+      it 'closes the case' do
+        expect(certification_case).to be_closed
+      end
     end
   end
 
@@ -85,24 +93,32 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       expect(certification_case).to be_closed
     end
 
-    it 'returns to report_activities when exemption is denied' do
-      # Submit exemption request
-      exemption = create(:exemption_application_form,
-        certification_case_id: certification_case.id,
-        exemption_type: "short_term_hardship"
-      )
-      exemption.submit_application
-      certification_case.reload
+    context 'when exemption is denied' do
+      before do
+        # Submit exemption request
+        exemption = create(:exemption_application_form,
+          certification_case_id: certification_case.id,
+          exemption_type: "short_term_hardship"
+        )
+        exemption.submit_application
+        certification_case.reload
 
-      expect(certification_case.business_process_instance.current_step).to eq("review_exemption_claim")
+        # Staff denies exemption
+        certification_case.deny_exemption_request
+        certification_case.reload
+      end
 
-      # Staff denies exemption
-      certification_case.deny_exemption_request
-      certification_case.reload
+      it 'returns to report_activities step' do
+        expect(certification_case.business_process_instance.current_step).to eq("report_activities")
+      end
 
-      expect(certification_case.business_process_instance.current_step).to eq("report_activities")
-      expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_AWAITING_REPORT)
-      expect(certification_case).to be_open
+      it 'updates member status to awaiting_report' do
+        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_AWAITING_REPORT)
+      end
+
+      it 'keeps the case open' do
+        expect(certification_case).to be_open
+      end
     end
   end
 
