@@ -9,7 +9,7 @@ RSpec.describe CertificationCase, type: :model do
     context 'when on report_activities step' do
       it 'returns awaiting_report' do
         # Default factory step is "report_activities"
-        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:awaiting_report])
+        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_AWAITING_REPORT)
       end
     end
 
@@ -19,7 +19,7 @@ RSpec.describe CertificationCase, type: :model do
       end
 
       it 'returns pending_review' do
-        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:pending_review])
+        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_PENDING_REVIEW)
       end
     end
 
@@ -29,7 +29,7 @@ RSpec.describe CertificationCase, type: :model do
       end
 
       it 'returns pending_review' do
-        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:pending_review])
+        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_PENDING_REVIEW)
       end
     end
 
@@ -42,7 +42,7 @@ RSpec.describe CertificationCase, type: :model do
       end
 
       it 'returns exempt' do
-        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:exempt])
+        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_EXEMPT)
       end
     end
 
@@ -55,7 +55,7 @@ RSpec.describe CertificationCase, type: :model do
       end
 
       it 'returns met_requirements' do
-        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:met_requirements])
+        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_MET_REQUIREMENTS)
       end
     end
 
@@ -68,7 +68,7 @@ RSpec.describe CertificationCase, type: :model do
       end
 
       it 'returns not_met_requirements' do
-        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:not_met_requirements])
+        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_NOT_MET_REQUIREMENTS)
       end
     end
 
@@ -82,7 +82,7 @@ RSpec.describe CertificationCase, type: :model do
       end
 
       it 'returns exempt' do
-        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:exempt])
+        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_EXEMPT)
       end
     end
 
@@ -92,7 +92,7 @@ RSpec.describe CertificationCase, type: :model do
       end
 
       it 'returns awaiting_report' do
-        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS[:awaiting_report])
+        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_AWAITING_REPORT)
       end
     end
   end
