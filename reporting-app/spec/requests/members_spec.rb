@@ -9,7 +9,7 @@ RSpec.describe "Members", type: :request do
   let(:member_id) { "MEMBER123" }
   let(:member_email) { "test@example.com" }
   let(:certification) do
-    build(:certification,
+    create(:certification,
           member_id: member_id,
           member_data: {
             "account_email" => member_email,
@@ -26,9 +26,8 @@ RSpec.describe "Members", type: :request do
 
   before do
     login_as user
-    # Create certification and certification case through the service
-    certification_service = CertificationService.new
-    certification_service.save_new(certification)
+    # the certification needs to exist to get member data
+    certification
   end
 
   describe "GET /staff/members" do

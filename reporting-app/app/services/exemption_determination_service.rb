@@ -12,8 +12,7 @@ class ExemptionDeterminationService
         ActiveRecord::Base.transaction do
           kase.exemption_request_approval_status = "approved"
           kase.exemption_request_approval_status_updated_at = Time.current
-          kase.save!
-          kase.close
+          kase.close!
 
           Strata::EventManager.publish("DeterminedExempt", { case_id: kase.id })
         end
@@ -43,13 +42,7 @@ class ExemptionDeterminationService
     def extract_date_of_birth(certification)
       return nil unless certification.member_data
 
-      dob_string = certification.member_data.dig("date_of_birth")
-      return nil if dob_string.blank?
-
-      Date.parse(dob_string)
-    rescue Date::Error => e
-      Rails.logger.warn("Failed to parse date of birth for certification #{certification.id}: #{dob_string.inspect}. Error: #{e.message}")
-      nil
+      certification.member_data.date_of_birth
     end
   end
 end

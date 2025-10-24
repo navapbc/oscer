@@ -4,9 +4,10 @@ require 'rails_helper'
 
 RSpec.describe ExemptionDeterminationService do
   let(:service) { described_class }
+  let(:member_data) { build(:certification_member_data, date_of_birth: dob) }
 
   describe '#determine' do
-    let(:certification) { create(:certification, :with_member_data_base) }
+    let(:certification) { create(:certification, member_data: member_data) }
     let(:kase) { create(:certification_case, certification_id: certification.id) }
 
     before do
@@ -16,10 +17,6 @@ RSpec.describe ExemptionDeterminationService do
 
     context 'when applicant is under 19 years old' do
       let(:dob) { Date.current - 18.years }
-      let(:certification) do
-        create(:certification, :with_member_data_base,
-               member_data_base: { "name" => {}, "date_of_birth" => dob.iso8601 })
-      end
 
       it 'publishes DeterminedExempt event' do
         service.determine(kase)
@@ -47,10 +44,6 @@ RSpec.describe ExemptionDeterminationService do
 
     context 'when applicant is 65 years old or older' do
       let(:dob) { Date.current - 65.years }
-      let(:certification) do
-        create(:certification, :with_member_data_base,
-               member_data_base: { "name" => {}, "date_of_birth" => dob.iso8601 })
-      end
 
       it 'publishes DeterminedExempt event' do
         service.determine(kase)
@@ -78,10 +71,6 @@ RSpec.describe ExemptionDeterminationService do
 
     context 'when applicant is 19 years old' do
       let(:dob) { Date.current - 19.years }
-      let(:certification) do
-        create(:certification, :with_member_data_base,
-               member_data_base: { "name" => {}, "date_of_birth" => dob.iso8601 })
-      end
 
       it 'publishes DeterminedRequirementsNotMet event' do
         service.determine(kase)
@@ -103,10 +92,6 @@ RSpec.describe ExemptionDeterminationService do
 
     context 'when applicant is 64 years old' do
       let(:dob) { Date.current - 64.years }
-      let(:certification) do
-        create(:certification, :with_member_data_base,
-               member_data_base: { "name" => {}, "date_of_birth" => dob.iso8601 })
-      end
 
       it 'publishes DeterminedRequirementsNotMet event' do
         service.determine(kase)
@@ -127,10 +112,7 @@ RSpec.describe ExemptionDeterminationService do
     end
 
     context 'when member_data has no date_of_birth' do
-      let(:certification) do
-        create(:certification, :with_member_data_base,
-               member_data_base: { "name" => {} })
-      end
+      let(:dob) { nil }
 
       it 'publishes DeterminedRequirementsNotMet event' do
         service.determine(kase)
@@ -151,10 +133,7 @@ RSpec.describe ExemptionDeterminationService do
     end
 
     context 'when date_of_birth is invalid format' do
-      let(:certification) do
-        create(:certification, :with_member_data_base,
-               member_data_base: { "name" => {}, "date_of_birth" => "invalid-date-format" })
-      end
+      let(:dob) { "invalid-date-format" }
 
       it 'publishes DeterminedRequirementsNotMet event' do
         allow(Rails.logger).to receive(:warn)

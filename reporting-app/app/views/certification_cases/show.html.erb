@@ -37,20 +37,28 @@
     </p>
     <p>
       <span class="text-bold"><%= t(".certification_date") %></span>
-      <span><%= @certification.certification_date&.strftime("%m/%d/%Y") %></span>
+      <span><%= @certification.certification_requirements.certification_date&.strftime("%m/%d/%Y") %></span>
       </span>
     </p>
-    <p>
+    <div>
       <span class="text-bold"><%= t(".lookback_period") %></span>
-      <span><%= @certification.lookback_period.start&.strftime("%b, %Y") %> – <%= @certification.lookback_period.end&.strftime("%b, %Y") %></span>
-    </p>
+      <% if @certification.certification_requirements.continuous_lookback_period? %>
+        <span><%= @certification.certification_requirements.continuous_lookback_period.start&.strftime("%b, %Y") %> – <%= @certification.certification_requirements.continuous_lookback_period.end&.strftime("%b, %Y") %></span>
+      <% else %>
+        <ul>
+          <% @certification.certification_requirements.months_that_can_be_certified.each do |month| %>
+            <li><%= month %></li>
+          <% end %>
+        <ul>
+      <% end %>
+    </div>
     <p>
       <span class="text-bold"><%= t(".number_of_months_to_certify") %></span>
-      <span><%= @certification.certification_requirements&.dig("number_of_months_to_certify") %></span>
+      <span><%= @certification.certification_requirements&.number_of_months_to_certify %></span>
     </p>
     <p>
       <span class="text-bold"><%= t(".certification_due_date") %></span>
-      <span><%= @certification.due_date&.strftime("%m/%d/%Y") %></span>
+      <span><%= @certification.certification_requirements&.due_date&.strftime("%m/%d/%Y") %></span>
     </p>
     <p>
       <span class="text-bold"><%= t(".last_updated") %></span>
