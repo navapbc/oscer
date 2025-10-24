@@ -3,7 +3,7 @@
 module Demo
   module Certifications
     class CreateForm < BaseCreateForm
-      EX_PARTE_SCENARIO_OPTIONS = [ "No data", "Partially met work hours requirement", "Fully met work hours requirement" ]
+      EX_PARTE_SCENARIO_OPTIONS = [ "No data", "Partially met work hours requirement", "Fully met work hours requirement", "Meets age-based exemption requirement" ]
 
       attribute :ex_parte_scenario, :enum, options: EX_PARTE_SCENARIO_OPTIONS
 
@@ -33,12 +33,26 @@ module Demo
 
         case self.ex_parte_scenario
         when "Partially met work hours requirement"
-          member_data.merge!(FactoryBot.build(:certification_member_data, :partially_met_work_hours_requirement, cert_date: self.certification_date).attributes.compact)
+          member_data.merge!(
+            FactoryBot.build(
+              :certification_member_data, :partially_met_work_hours_requirement, cert_date: self.certification_date
+            ).attributes.compact
+          )
         when "Fully met work hours requirement"
-          member_data.merge!(FactoryBot.build(:certification_member_data, :fully_met_work_hours_requirement, cert_date: self.certification_date, num_months: self.number_of_months_to_certify).attributes.compact)
-        else
-          # nothing
+          member_data.merge!(
+            FactoryBot.build(
+              :certification_member_data, :fully_met_work_hours_requirement, cert_date: self.certification_date, num_months: self.number_of_months_to_certify
+            ).attributes.compact)
+        when "Meets age-based exemption requirement"
+          member_data.merge!(
+            FactoryBot.build(
+              :certification_member_data, :meets_age_based_exemption_requirement, cert_date: self.certification_date
+            ).attributes.compact
+          )
         end
+
+        member_data = ::Certifications::MemberData.new(member_data)
+        member_data.date_of_birth = self.date_of_birth if self.date_of_birth.present?
 
         @certification = FactoryBot.build(
           :certification,
@@ -46,7 +60,7 @@ module Demo
           email: self.member_email,
           case_number: self.case_number,
           certification_requirements: certification_requirements,
-          member_data: ::Certifications::MemberData.new(member_data),
+          member_data: member_data,
         )
       end
     end
