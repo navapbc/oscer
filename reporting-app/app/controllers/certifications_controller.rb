@@ -2,11 +2,6 @@
 
 class CertificationsController < StaffController
   before_action :set_certification, only: %i[ show update ]
-  before_action :set_activity_report_application_forms, only: %i[ show create update ]
-
-  # for API endpoints
-  skip_before_action :authenticate_user!, only: %i[ create show]
-  protect_from_forgery unless: -> { request.format.json? }
 
   # GET /certifications
   # GET /certifications.json
@@ -14,10 +9,7 @@ class CertificationsController < StaffController
     @certifications = policy_scope(Certification.all)
   end
 
-  # @summary Retrieve a Certification record
-  # @tags certifications
-  #
-  # @response A Certification(200) [Reference:#/components/schemas/CertificationResponseBody]
+  # GET /certifications/1
   def show
   end
 
@@ -26,14 +18,7 @@ class CertificationsController < StaffController
     @certification_form = authorize Certification.new
   end
 
-  # @summary Create a Certification record
-  # @tags certifications
-  #
-  # @request_body The Certification data. [Reference:#/components/schemas/CertificationCreateRequestBody]
-  # @request_body_example Fully specified certification requirements [Reference:#/components/schemas/CertificationCreateRequestBody/examples/fully_specified_certification_requirements]
-  # @request_body_example Certification type [Reference:#/components/schemas/CertificationCreateRequestBody/examples/certification_type]
-  # @response Created Certification.(201) [Reference:#/components/schemas/CertificationResponseBody]
-  # @response User error.(400) [Reference:#/components/schemas/ErrorResponseBody]
+  # POST /certifications/
   def create
     @certification = Certification.new(certification_params.except(:certification_requirements))
 
@@ -47,7 +32,7 @@ class CertificationsController < StaffController
       return
     end
 
-    if certification_service.save_new(@certification)
+    if @certification.save
       render :show, status: :created, location: @certification
     else
       render json: @certification.errors, status: :unprocessable_entity
@@ -67,10 +52,6 @@ class CertificationsController < StaffController
   private
     def set_certification
       @certification = authorize Certification.find(params[:id])
-    end
-
-    def set_activity_report_application_forms
-      @activity_report_application_forms = ActivityReportApplicationForm.where(certification_id: @certification&.id)
     end
 
     def certification_service

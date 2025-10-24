@@ -60,11 +60,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_21_141138) do
     t.uuid "user_id"
     t.integer "status"
     t.datetime "submitted_at"
-    t.uuid "certification_id"
     t.uuid "certification_case_id"
     t.jsonb "reporting_periods"
-    t.index ["certification_case_id"], name: "idx_on_certification_case_id_df9964575c"
-    t.index ["certification_id"], name: "index_activity_report_application_forms_on_certification_id"
+    t.index ["certification_case_id"], name: "idx_on_certification_case_id_df9964575c", unique: true
   end
 
   create_table "certification_cases", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -95,10 +93,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_21_141138) do
     t.string "exemption_type"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.uuid "certification_id"
     t.uuid "certification_case_id"
-    t.index ["certification_case_id"], name: "index_exemption_application_forms_on_certification_case_id"
-    t.index ["certification_id"], name: "index_exemption_application_forms_on_certification_id"
+    t.index ["certification_case_id"], name: "index_exemption_application_forms_on_certification_case_id", unique: true
   end
 
   create_table "information_requests", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -142,8 +138,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_21_141138) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "activities", "activity_report_application_forms"
   add_foreign_key "activity_report_application_forms", "certification_cases"
-  add_foreign_key "activity_report_application_forms", "certifications"
   add_foreign_key "certification_cases", "certifications"
   add_foreign_key "exemption_application_forms", "certification_cases"
-  add_foreign_key "exemption_application_forms", "certifications"
 end

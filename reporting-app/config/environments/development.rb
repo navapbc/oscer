@@ -17,7 +17,15 @@ Rails.application.configure do
   config.eager_load = false
 
   # Show full error reports.
-  config.consider_all_requests_local = true
+  #
+  # We intentionally avoid using Rails' `consider_all_requests_local = true`
+  # because that setting forces Rails to render its built-in error pages for all
+  # requests—including API routes. That prevents our API controllers from using
+  # their own error handling logic.
+  #
+  # Instead, we define a custom flag that our controllers can check. This allows
+  # us to show detailed error pages only for non-API (HTML) requests.
+  config.consider_all_non_api_requests_local = true
 
   # Enable server timing.
   config.server_timing = true

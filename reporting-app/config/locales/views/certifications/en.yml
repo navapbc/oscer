@@ -17,10 +17,6 @@ en:
     show:
       title: "Certification"
       submit: "Update"
-      activity_reports:
-        header: "Associated reports"
-        col_activity_report_id: "Activity Report ID"
-        col_cases: "Activity Report Cases"
     new:
       title: "New Certification"
       submit: "Create"
