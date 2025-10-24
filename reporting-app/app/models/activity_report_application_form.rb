@@ -3,7 +3,7 @@
 class ActivityReportApplicationForm < Strata::ApplicationForm
   has_many :activities, strict_loading: true, autosave: true, dependent: :destroy
 
-  validates :certification_case_id, uniqueness: true
+  validates :certification_case_id, presence: true, uniqueness: true
 
   strata_attribute :reporting_periods, :year_month, array: true
 

@@ -85,12 +85,6 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
       expect(response.body).to include("Cannot create activity report without a certification case")
     end
 
-    it "creates a new ActivityReportApplicationForm" do
-      expect {
-        get new_activity_report_application_form_url(certification_case_id: certification_case.id)
-      }.to change(ActivityReportApplicationForm, :count).by(1)
-    end
-
     context "with reporting source set to 'reporting_app'" do
       before do
         allow(Rails.application.config).to receive(:reporting_source).and_return("reporting_app")
@@ -101,22 +95,6 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
         expect(response).to be_successful
       end
 
-      it "does not create a duplicate exemption form with the same certification_case_id" do
-        create(:activity_report_application_form, certification_case_id: certification_case.id, user_id: user.id)
-
-        expect {
-          get new_activity_report_application_form_url(certification_case_id: certification_case.id)
-        }.not_to change(ActivityReportApplicationForm, :count)
-      end
-
-      it "redirects to dashboard with notice when attempting to create duplicate by certification_case_id" do
-        create(:activity_report_application_form, certification_case_id: certification_case.id, user_id: user.id)
-
-        get new_activity_report_application_form_url(certification_case_id: certification_case.id)
-        expect(response).to redirect_to(dashboard_path)
-        follow_redirect!
-        expect(response.body).to include("An activity report already exists for this certification case")
-      end
     end
 
     context "with reporting source set to 'income_verification_service'" do
@@ -131,6 +109,36 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
       it "redirects to the income verification service" do
         get new_activity_report_application_form_url(certification_case_id: certification_case.id)
         expect(response).to redirect_to("https://ivaas.gov/en/cbv/entry?token=dummy-token")
+      end
+    end
+  end
+
+  describe "POST /create" do
+    context "with invalid parameters" do
+      before do
+        create(
+          :activity_report_application_form,
+          certification_case_id: certification_case.id,
+          user_id: user.id
+        )
+      end
+      let(:invalid_params) do
+        { activity_report_application_form: { certification_case_id: certification_case.id } }
+      end
+
+      it "does not create a duplicate exemption form with the same certification_case_id" do
+        expect {
+          post activity_report_application_forms_url, params: invalid_params
+        }.not_to change(ActivityReportApplicationForm, :count)
+        expect(response).to have_http_status(:unprocessable_entity)
+        expec
+      end
+
+      it "redirects to dashboard with notice with duplicate certification_case_id" do
+        post activity_report_application_forms_url(certification_case_id: certification_case.id)
+        expect(response).to redirect_to(dashboard_path)
+        follow_redirect!
+        expect(response.body).to include("An activity report already exists for this certification case")
       end
     end
   end

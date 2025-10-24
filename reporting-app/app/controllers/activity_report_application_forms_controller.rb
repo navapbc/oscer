@@ -10,8 +10,6 @@ class ActivityReportApplicationFormsController < ApplicationController
     destroy
   ]
   before_action :authenticate_user!
-  before_action :set_certification_case, only: %i[ new ]
-  before_action :create_activity_report, only: %i[ new ]
   before_action :redirect_to_ivaas, only: %i[ new show edit ], if: :reporting_source_ivaas?
 
   # GET /activity_report_application_forms/1 or /activity_report_application_forms/1.json
@@ -20,6 +18,28 @@ class ActivityReportApplicationFormsController < ApplicationController
 
   # GET /activity_report_application_forms/new
   def new
+    authorize ActivityReportApplicationForm
+    if params[:certification_case_id].blank?
+      redirect_to dashboard_path, alert: "Cannot create activity report without a certification case"
+      return
+    end
+    @certification_case = certification_service.find(params[:certification_case_id], hydrate: false)
+  end
+
+  # POST /activity_report_application_forms
+  def create
+    @activity_report_application_form = authorize ActivityReportApplicationForm.new(activity_report_application_form_create_params)
+
+    respond_to do |format|
+      if @activity_report_application_form.save
+        format.html { redirect_to edit_activity_report_application_form_path(@activity_report_application_form) }
+        format.json { render :show, status: :created, location: @activity_report_application_form }
+      else
+        flash[:errors] = @activity_report_application_form.errors.full_messages
+        format.html { redirect_to dashboard_path, status: :unprocessable_entity }
+        format.json { render json: @activity_report_application_form.errors, status: :unprocessable_entity }
+      end
+    end
   end
 
   # GET /activity_report_application_forms/1/edit
@@ -30,10 +50,6 @@ class ActivityReportApplicationFormsController < ApplicationController
       format.html
       format.json { render json: @activity_report_application_form.as_json }
     end
-  end
-
-  # GET /activity_report_application_forms/1/review
-  def review
   end
 
   # PATCH/PUT /activity_report_application_forms/1 or /activity_report_application_forms/1.json
@@ -47,6 +63,10 @@ class ActivityReportApplicationFormsController < ApplicationController
         format.json { render json: @activity_report_application_form.errors, status: :unprocessable_entity }
       end
     end
+  end
+
+  # GET /activity_report_application_forms/1/review
+  def review
   end
 
   # POST /activity_report_application_forms/1/submit
@@ -75,13 +95,8 @@ class ActivityReportApplicationFormsController < ApplicationController
     @activity_report_application_form = authorize ActivityReportApplicationForm.find(params[:id])
   end
 
-  def set_certification_case
-    if params[:certification_case_id].blank?
-      redirect_to dashboard_path, alert: "Cannot create activity report without a certification case"
-      return
-    end
-
-    @certification_case = CertificationCase.find_by(id: params[:certification_case_id])
+  def certification_service
+    @certification_service ||= CertificationService.new
   end
 
   def default_reporting_source
@@ -93,24 +108,16 @@ class ActivityReportApplicationFormsController < ApplicationController
     reporting_source == "income_verification_service"
   end
 
-  def create_activity_report
-    activity_report_application_form = ActivityReportApplicationForm.create(certification_case_id: @certification_case.id)
-    activity_report_application_form.user_id = current_user.id
-    activity_report_application_form.save!
-    @activity_report_application_form = authorize activity_report_application_form
-  rescue ActiveRecord::RecordInvalid => e
-    if e.record.errors[:certification_case_id].include?("has already been taken")
-      redirect_to dashboard_path, notice: "An activity report already exists for this certification case"
-    else
-      raise
-    end
-  end
-
   def redirect_to_ivaas
     Rails.logger.debug("Redirecting user with id #{current_user.id} to CMS Income Verification Service")
     name = Strata::Name.new(first: "Jane", last: "Doe") # TODO: get real name and remove this
     invitation = CMSIncomeVerificationService.new.create_invitation(@activity_report_application_form, name)
     redirect_to invitation.tokenized_url, allow_other_host: true
+  end
+
+  def activity_report_application_form_create_params
+    permitted_params = params.require(:activity_report_application_form).permit(:certification_case_id)
+    permitted_params.merge(user_id: current_user.id)
   end
 
   def activity_report_application_form_params
