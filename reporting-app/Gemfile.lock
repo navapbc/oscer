@@ -1,6 +1,6 @@
 GIT
   remote: https://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:x-oauth-basic@github.com/navapbc/flex-sdk.git
-  revision: 9425626b2a014247f71aca0582fd9661fefa56a7
+  revision: 14c4b6c8ac66b964c6b6bcbc379f1c6f390db446
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -121,7 +121,7 @@ GEM
       aws-eventstream (~> 1, >= 1.0.2)
     base64 (0.3.0)
     bcrypt (3.1.20)
-    benchmark (0.4.1)
+    benchmark (0.5.0)
     bigdecimal (3.3.1)
     bindex (0.8.1)
     bootsnap (1.18.6)
@@ -268,7 +268,8 @@ GEM
       yard (~> 0.9)
       zeitwerk (~> 2.5)
     lumberjack (1.4.1)
-    mail (2.8.1)
+    mail (2.9.0)
+      logger
       mini_mime (>= 0.1.1)
       net-imap
       net-pop
@@ -538,8 +539,8 @@ GEM
     validates_timeliness (7.1.0)
       activemodel (>= 7.0.0, < 8)
       timeliness (>= 0.3.10, < 1)
-    view_component (4.0.2)
-      activesupport (>= 7.1.0, < 8.1)
+    view_component (4.1.0)
+      activesupport (>= 7.1.0, < 8.2)
       concurrent-ruby (~> 1)
     warden (1.2.9)
       rack (>= 2.0.9)
