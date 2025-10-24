@@ -35,7 +35,7 @@ RSpec.describe ExemptionApplicationForm, type: :model do
       end
 
       it "allows different certification_case_ids" do
-        certification_case_2 = create(:certification_case, certification: certification)
+        certification_case_2 = create(:certification_case)
         create(:exemption_application_form, certification_case_id: certification_case.id)
         second_form = build(:exemption_application_form, certification_case_id: certification_case_2.id)
 

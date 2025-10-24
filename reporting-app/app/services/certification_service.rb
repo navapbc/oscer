@@ -10,6 +10,11 @@ class CertificationService
     certification_cases
   end
 
+  def find(case_id)
+    kase = CertificationCase.find(case_id)
+    hydrate_cases_with_certifications!([ kase ]).first
+  end
+
   def fetch_open_actionable_cases
     hydrate_cases_with_certifications!(CertificationCase.open.actionable)
   end
