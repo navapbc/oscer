@@ -1,5 +1,7 @@
 <% content_for :title, t(".title") %>
 
+<%= render "strata/shared/step_indicator", steps: %i[start select_periods add_activities review], current_step: :review, translation_scope: "activity_report_application_forms.steps" %>
+
 <h1>Review and submit</h1>
 
 <div class="usa-section margin-top-4 padding-0">
