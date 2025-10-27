@@ -189,6 +189,16 @@ module ActiveModel
           when Strata::Attributes::ArrayAttribute::ArrayType
             symbol = :array
           else
+            # might have been given a direct class for the values instead of an
+            # attribute type, so just return that if so
+            #
+            # TODO: make this cleaner? this is mostly for array/collection types
+            # when we want to check their item types, which may be the
+            # underlying type themselves, but there may be other cases like
+            # that?
+            if attr_type.is_a?(Class)
+              return [ attr_type ]
+            end
             raise TypeError, "Unknown attribute type class: #{attr_type.class}"
           end
         end
