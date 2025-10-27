@@ -5,10 +5,12 @@
 module ActiveModel
   module Type
     class Json < ActiveRecord::Type::Json
-      attr_reader :underlying_type
-
       def initialize(underlying_type = HashWithIndifferentAccess)
         @underlying_type = underlying_type
+      end
+
+      def underlying_types
+        @underlying_type.respond_to?(:underlying_types) ? @underlying_type.underlying_types : [ @underlying_type ]
       end
 
       def cast(value)

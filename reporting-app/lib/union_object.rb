@@ -11,8 +11,8 @@ class UnionObject
     raise "this method should be overriden and return classes of the union"
   end
 
-  def self.is_valid_type(value)
-    self.union_types.map { |t| value.is_a?(t) }.any?
+  def self.underlying_types
+    self.union_types.flat_map { |t| t.respond_to?(:underlying_types) ? t.underlying_types : t }
   end
 
   def self.attribute_names
