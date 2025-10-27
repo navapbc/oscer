@@ -42,9 +42,10 @@ module ActiveModel
         end
 
         attr_type = record.class.type_for_attribute(attribute)
-        expected_type = get_underlying_type_of_attribute_type(attr_type)
+        expected_types = get_underlying_types_for_attribute_type(attr_type)
 
-        if expected_type <= Enumerable
+        is_collection = expected_types.count == 1 && expected_types[0] <= Enumerable
+        if is_collection
           if !value.is_a?(Enumerable) || !raw_value.is_a?(Enumerable)
             record.errors.add(attribute, "invalid_value")
             return
@@ -55,6 +56,7 @@ module ActiveModel
             return
           end
 
+          # TODO: generalize support for this?
           # if the values are supposed to be of a particular type
           if attr_type.respond_to?(:of)
             item_type = attr_type.of
@@ -65,15 +67,15 @@ module ActiveModel
 
           if item_type.present?
             value.each_with_index do |item, index|
-              check_value_for_type(record, attribute + "[#{index}]", item, raw_value[index], get_underlying_type_of_attribute_type(item_type))
+              check_value_for_type(record, attribute + "[#{index}]", item, raw_value[index], get_underlying_types_for_attribute_type(item_type))
             end
           end
         else
-          check_value_for_type(record, attribute, value, raw_value, expected_type)
+          check_value_for_type(record, attribute, value, raw_value, expected_types)
         end
       end
 
-      def check_value_for_type(record, attribute, value, raw_value, expected_type)
+      def check_value_for_type(record, attribute, value, raw_value, expected_types)
         # If model.<attribute> is nil, but model.<attribute>_before_type_cast is
         # not nil, that means the application failed to cast the value to the
         # appropriate type in order to complete the attribute assignment. This
@@ -84,29 +86,56 @@ module ActiveModel
           return
         end
 
-        is_expected_type = expected_type.respond_to?(:is_valid_type) ? expected_type.is_valid_type(value) : value.is_a?(expected_type)
+        is_expected_type = expected_types.include?(value.class)
         if !is_expected_type && !raw_value.blank?
           record.errors.add(attribute, "invalid_value")
           return
         end
 
-        # don't let any old value just come through as a string
-        # TODO: create better/more strict ActiveModel::Type::String class that avoids this natively
-        if expected_type == String && !raw_value.nil? && !raw_value.is_a?(String)
-          record.errors.add(attribute, "invalid_value")
-          return
-        end
+        for expected_type in expected_types
+          # don't let any old value just come through as a string
+          # TODO: create better/more strict ActiveModel::Type::String class that avoids this natively
+          if expected_type == String && !raw_value.nil? && !raw_value.is_a?(String)
+            record.errors.add(attribute, "invalid_value")
+            return
+          end
 
-        # don't let non-numeric strings masquerade as a proper number
-        # TODO: create better/more strict ActiveModel::Type::Integer class that avoids this natively
-        if expected_type == Integer && !raw_value.nil? && value.zero? && (raw_value != "0" || raw_value != 0)
-          record.errors.add(attribute, "invalid_value")
+          # don't let non-numeric strings masquerade as a proper number
+          # TODO: create better/more strict ActiveModel::Type::Integer class that avoids this natively
+          if expected_type == Integer && !raw_value.nil?
+            non_numeric_string = value.zero? && (raw_value != "0" || raw_value != 0)
+            boolean = (raw_value.is_a?(TrueClass) || raw_value.is_a?(FalseClass))
+
+            if non_numeric_string || boolean
+              record.errors.add(attribute, "invalid_value")
+            end
+          end
+
+          # don't let random input map to a proper boolean
+          # TODO: create better/more strict ActiveModel::Type::Boolean class that avoids this natively
+          if (expected_type == TrueClass || expected_type == FalseClass) && !raw_value.nil?
+            false_values = ActiveModel::Type::Boolean::FALSE_VALUES
+            true_values = [
+              true, 1,
+              "1", :"1",
+              "t", :t,
+              "T", :T,
+              "true", :true,
+              "TRUE", :TRUE,
+              "on", :on,
+              "off", :off
+            ].to_set.freeze
+
+            if !(false_values|true_values).include?(raw_value)
+              record.errors.add(attribute, "invalid_value")
+            end
+          end
         end
       end
 
-      def get_underlying_type_of_attribute_type(attr_type)
-        if attr_type.respond_to?(:underlying_type)
-          return attr_type.underlying_type
+      def get_underlying_types_for_attribute_type(attr_type)
+        if attr_type.respond_to?(:underlying_types)
+          return attr_type.underlying_types
         end
 
         # TODO: Could more flexibly do attr_type.respond_to?(:type), but that's
@@ -115,8 +144,8 @@ module ActiveModel
           symbol = attr_type.type()
         end
 
-        # all ActiveModel::Type::Value _should_ respond with something for the
-        # symbol, but some things don't, like Strata:Attributes
+        # all ActiveModel::Type::Value instances _should_ respond with something
+        # for the symbol, but some things don't, like Strata:Attributes
         #
         # TODO: have Strata::Attributes list their type at the standard `type`
         # or some other mechanism?
@@ -134,10 +163,10 @@ module ActiveModel
         end
 
         if symbol == :boolean
-          # TODO: handle this
+          return [ TrueClass, FalseClass ]
         end
 
-        symbol_class(symbol)
+        [ symbol_class(symbol) ]
       end
 
       def symbol_class(symbol)
