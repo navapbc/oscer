@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# loosely aligned with https://github.com/yez/validates_type
+# similar to https://github.com/yez/validates_type
 # similar to https://github.com/public-law/validated_object
 # similar to Strata::Validations' validate_type_casted_attribute
 # TODO: migrate to Strata
@@ -20,10 +20,10 @@ module ActiveModel
 
         attributes = record.attributes.keys
 
-        attributes.each do |attribute|
-          value = record.read_attribute_for_validation(attribute)
+        attributes.each do |attribute_name|
+          value = record.read_attribute_for_validation(attribute_name)
 
-          check_type(record, attribute, value)
+          check_attr_type(record, attribute_name, value)
 
           # TODO: handle allow_nil/allow_blank???
           # next if (value.nil? && options[:allow_nil]) || (value.blank? && options[:allow_blank])
@@ -32,27 +32,52 @@ module ActiveModel
 
       private
 
-      def check_type(record, attribute, value)
-        raw_value = record.read_attribute_before_type_cast(attribute)
+      def check_attr_type(record, attribute_name, value)
+        raw_value = record.read_attribute_before_type_cast(attribute_name)
 
         # nothing to check, requiring a value when none was given is a different
-        # validation
+        # validation at the moment
+        #
+        # TODO: move presence: true check into this validator, or provide an
+        # alternate checker that looks for before type cast value to determine
+        # "presence", or post-process the errors and remove and "blank" types
+        # if the same field has an "invalid_value"
         if raw_value.nil?
           return
         end
 
-        attr_type = record.class.type_for_attribute(attribute)
-        expected_types = get_underlying_types_for_attribute_type(attr_type)
+        attr_type = record.class.type_for_attribute(attribute_name)
+        expected_value_types = get_underlying_types_for_attribute_type(attr_type)
 
-        is_collection = expected_types.count == 1 && expected_types[0] <= Enumerable
-        if is_collection
+        check_value_for_types(record, record.errors, attribute_name, value, raw_value, expected_value_types)
+      end
+
+      def check_value_for_types(record, errors, attribute_name, value, raw_value, expected_types)
+        type_errors = {}
+        for expected_type in expected_types
+          errs = ActiveModel::Errors.new(record)
+          type_errors[expected_type.to_s] = errs
+
+          check_value_for_type(record, errs, attribute_name, value, raw_value, expected_type)
+        end
+
+        types_with_errors = type_errors.reject { |key, value| value.empty? }
+        if types_with_errors.size == expected_types.count
+          types_with_errors.each_value do |value|
+            errors.merge!(value)
+          end
+        end
+      end
+
+      def check_value_for_type(record, errors, attribute_name, value, raw_value, expected_type)
+        if expected_type <= Enumerable
           if !value.is_a?(Enumerable) || !raw_value.is_a?(Enumerable)
-            record.errors.add(attribute, "invalid_value")
+            errors.add(attribute_name, "invalid_value")
             return
           end
 
           if value.count != raw_value.count
-            record.errors.add(attribute, "invalid_item_value")
+            errors.add(attribute_name, "invalid_item_value")
             return
           end
 
@@ -67,68 +92,66 @@ module ActiveModel
 
           if item_type.present?
             value.each_with_index do |item, index|
-              check_value_for_type(record, attribute + "[#{index}]", item, raw_value[index], get_underlying_types_for_attribute_type(item_type))
+              check_value_for_types(record, errors, attribute_name + "[#{index}]", item, raw_value[index], get_underlying_types_for_attribute_type(item_type))
             end
           end
         else
-          check_value_for_type(record, attribute, value, raw_value, expected_types)
+          check_value_for_type_item(record, errors, attribute_name, value, raw_value, expected_type)
         end
       end
 
-      def check_value_for_type(record, attribute, value, raw_value, expected_types)
+      def check_value_for_type_item(record, errors, attribute_name, value, raw_value, expected_type)
         # If model.<attribute> is nil, but model.<attribute>_before_type_cast is
         # not nil, that means the application failed to cast the value to the
         # appropriate type in order to complete the attribute assignment. This
         # means the original value is invalid.
         did_type_cast_fail = value.nil? && !raw_value.nil?
         if did_type_cast_fail
-          record.errors.add(attribute, "invalid_value")
+          errors.add(attribute_name, "invalid_value")
           return
         end
 
-        is_expected_type = expected_types.include?(value.class)
+        is_expected_type = value.is_a?(expected_type)
         if !is_expected_type && !raw_value.blank?
-          record.errors.add(attribute, "invalid_value")
+          errors.add(attribute_name, "invalid_value")
           return
         end
 
-        for expected_type in expected_types
-          # don't let any old value just come through as a string
-          # TODO: create better/more strict ActiveModel::Type::String class that avoids this natively
-          if expected_type == String && !raw_value.nil? && !raw_value.is_a?(String)
-            record.errors.add(attribute, "invalid_value")
-            return
+        # don't let any old value just come through as a string
+        # TODO: create better/more strict ActiveModel::Type::String class that avoids this natively
+        if expected_type == String && !raw_value.nil? && !raw_value.is_a?(String)
+          errors.add(attribute_name, "invalid_value")
+          return
+        end
+
+        # don't let non-numeric strings masquerade as a proper number
+        # TODO: create better/more strict ActiveModel::Type::Integer class that avoids this natively
+        if expected_type == Integer && !raw_value.nil?
+          non_numeric_string = value.zero? && (raw_value != "0" || raw_value != 0)
+          boolean = (raw_value.is_a?(TrueClass) || raw_value.is_a?(FalseClass))
+
+          if non_numeric_string || boolean
+            errors.add(attribute_name, "invalid_value")
           end
+        end
 
-          # don't let non-numeric strings masquerade as a proper number
-          # TODO: create better/more strict ActiveModel::Type::Integer class that avoids this natively
-          if expected_type == Integer && !raw_value.nil?
-            non_numeric_string = value.zero? && (raw_value != "0" || raw_value != 0)
-            boolean = (raw_value.is_a?(TrueClass) || raw_value.is_a?(FalseClass))
+        # don't let random input map to a proper boolean
+        # TODO: create better/more strict ActiveModel::Type::Boolean class that avoids this natively
+        if (expected_type == TrueClass || expected_type == FalseClass) && !raw_value.nil?
+          false_values = ActiveModel::Type::Boolean::FALSE_VALUES
+          true_values = [
+            true, 1,
+            "1", :"1",
+            "t", :t,
+            "T", :T,
+            "true", :true,
+            "TRUE", :TRUE,
+            "on", :on,
+            "off", :off
+          ].to_set.freeze
 
-            if non_numeric_string || boolean
-              record.errors.add(attribute, "invalid_value")
-            end
-          end
-
-          # don't let random input map to a proper boolean
-          # TODO: create better/more strict ActiveModel::Type::Boolean class that avoids this natively
-          if (expected_type == TrueClass || expected_type == FalseClass) && !raw_value.nil?
-            false_values = ActiveModel::Type::Boolean::FALSE_VALUES
-            true_values = [
-              true, 1,
-              "1", :"1",
-              "t", :t,
-              "T", :T,
-              "true", :true,
-              "TRUE", :TRUE,
-              "on", :on,
-              "off", :off
-            ].to_set.freeze
-
-            if !(false_values|true_values).include?(raw_value)
-              record.errors.add(attribute, "invalid_value")
-            end
+          if !(false_values|true_values).include?(raw_value)
+            errors.add(attribute_name, "invalid_value")
           end
         end
       end

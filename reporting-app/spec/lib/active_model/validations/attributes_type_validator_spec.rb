@@ -38,6 +38,8 @@ class ModelToTestAttrs
   attribute :bool, :boolean
   attribute :date, :date
   attribute :union, ModelToTestAttrsOneOrOther.to_type
+  attribute :array, :array, of: ActiveModel::Type::Integer.new
+end
 end
 
 RSpec.describe ActiveModel::Validations::AttributesTypeValidator do
@@ -71,6 +73,14 @@ RSpec.describe ActiveModel::Validations::AttributesTypeValidator do
 
     it "allows valid dates" do
       expect(ModelToTestAttrs.new(date: "2025-10-15")).to be_valid
+    end
+
+    it "allows array type - empty" do
+      expect(ModelToTestAttrs.new(array: [])).to be_valid
+    end
+
+    it "allows array type - not empty" do
+      expect(ModelToTestAttrs.new(array: [ 1 ])).to be_valid
     end
   end
 
@@ -125,6 +135,16 @@ RSpec.describe ActiveModel::Validations::AttributesTypeValidator do
     it "rejects boolean" do
       expect(ModelToTestAttrs.new(int: true)).not_to be_valid
       expect(ModelToTestAttrs.new(int: false)).not_to be_valid
+    end
+  end
+
+  context "with array type handling" do
+    it "rejects if only invalid values" do
+      expect(ModelToTestAttrs.new(array: [ "foo", "bar" ])).not_to be_valid
+    end
+
+    it "rejects if partial invalid values" do
+      expect(ModelToTestAttrs.new(array: [ 1, "bar" ])).not_to be_valid
     end
   end
 end
