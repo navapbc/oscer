@@ -56,26 +56,35 @@ module ActiveModel
 
       def check_attr_type(record, attribute_name, value)
         raw_value = record.read_attribute_before_type_cast(attribute_name)
+        value_info = { final: value, raw: raw_value }
 
-        # nothing to check, requiring a value when none was given is a different
-        # validation at the moment
+        attr_type = record.class.type_for_attribute(attribute_name)
+        attr_info = { name: attribute_name, type: attr_type }
+
+        # Nothing to check, requiring a value when none was given is a different
+        # validation at the moment.
         #
         # TODO: move presence: true check into this validator, or provide an
         # alternate checker that looks for before type cast value to determine
-        # "presence", or post-process the errors and remove and "blank" types
-        # if the same field has an :invalid_value
-        if raw_value.nil?
+        # "presence"?
+        if value_info[:raw].nil?
           return
         end
 
-        attr_type = record.class.type_for_attribute(attribute_name)
+        # TODO: this is the simplest check, so short circuit early?
+        did_type_cast_fail = value_info[:final].nil? && !value_info[:raw].nil?
+        if did_type_cast_fail
+          record.errors.add(attr_info[:name], :invalid_value)
+          return
+        end
+
         expected_value_types = get_underlying_types_for_attribute_type(attr_type)
 
         check_value_for_types(
           record,
           record.errors,
-          { name: attribute_name, type: attr_type },
-          { final: value, raw: raw_value },
+          attr_info,
+          value_info,
           expected_value_types
         )
       end
@@ -172,6 +181,7 @@ module ActiveModel
 
           if non_numeric_string || boolean
             errors.add(attr_info[:name], :invalid_value)
+            return
           end
         end
 
