@@ -63,7 +63,7 @@ module ActiveModel
         # TODO: move presence: true check into this validator, or provide an
         # alternate checker that looks for before type cast value to determine
         # "presence", or post-process the errors and remove and "blank" types
-        # if the same field has an "invalid_value"
+        # if the same field has an :invalid_value
         if raw_value.nil?
           return
         end
@@ -105,11 +105,12 @@ module ActiveModel
       def check_value_for_type(record, errors, attr_info, value_info, expected_type)
         if expected_type <= Enumerable
           if !value_info[:final].is_a?(Enumerable) || !value_info[:raw].is_a?(Enumerable)
-            errors.add(attr_info[:name], "invalid_value")
+            errors.add(attr_info[:name], :invalid_value)
             return
           end
 
           if value_info[:final].count != value_info[:raw].count
+            # TODO: should this be a separate error type?
             errors.add(attr_info[:name], "invalid_item_value")
             return
           end
@@ -146,20 +147,20 @@ module ActiveModel
         # means the original value is invalid.
         did_type_cast_fail = value_info[:final].nil? && !value_info[:raw].nil?
         if did_type_cast_fail
-          errors.add(attr_info[:name], "invalid_value")
+          errors.add(attr_info[:name], :invalid_value)
           return
         end
 
         is_expected_type = value_info[:final].is_a?(expected_type)
         if !is_expected_type && !value_info[:raw].blank?
-          errors.add(attr_info[:name], "invalid_value")
+          errors.add(attr_info[:name], :invalid_value)
           return
         end
 
         # don't let any old value just come through as a string
         # TODO: create better/more strict ActiveModel::Type::String class that avoids this natively
         if expected_type == String && !value_info[:raw].nil? && !value_info[:raw].is_a?(String)
-          errors.add(attr_info[:name], "invalid_value")
+          errors.add(attr_info[:name], :invalid_value)
           return
         end
 
@@ -170,7 +171,7 @@ module ActiveModel
           boolean = (value_info[:raw].is_a?(TrueClass) || value_info[:raw].is_a?(FalseClass))
 
           if non_numeric_string || boolean
-            errors.add(attr_info[:name], "invalid_value")
+            errors.add(attr_info[:name], :invalid_value)
           end
         end
 
@@ -190,7 +191,7 @@ module ActiveModel
           ].to_set.freeze
 
           if !(false_values|true_values).include?(value_info[:raw])
-            errors.add(attr_info[:name], "invalid_value")
+            errors.add(attr_info[:name], :invalid_value)
           end
         end
       end
