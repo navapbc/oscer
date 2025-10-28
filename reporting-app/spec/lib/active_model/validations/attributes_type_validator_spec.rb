@@ -213,8 +213,12 @@ RSpec.describe ActiveModel::Validations::AttributesTypeValidator do
         expect(StrataModelToTestAttrs.new(name: { "first": "Jane", "last": "Doe" })).to be_valid
       end
 
-      it "rejects invalid" do
+      it "rejects invalid - non-object" do
         expect(StrataModelToTestAttrs.new(name: 123)).not_to be_valid
+      end
+
+      it "rejects invalid - non-string values" do
+        expect(StrataModelToTestAttrs.new(name: { "first": 1 })).not_to be_valid
       end
     end
 
