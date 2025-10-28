@@ -28,7 +28,8 @@ module ActiveModel
               err_options = error.options
             end
 
-            record.errors.add(attr_name, error.type, **err_options) unless record.errors.added?(attr_name, error.type)
+            # TODO: deduple message here?
+            record.errors.import(error, { attribute: attr_name })
           end
         end
       end

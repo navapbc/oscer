@@ -43,8 +43,13 @@ class UnionObject
 
   validate do |input|
     # TODO: possible to provide clearer message that you must fufill either set of properties?
+    #
+    # TODO: this is simpler but duplicates
+    # @union_models.each { |union_model| errors.merge!(union_model.errors) }
+
     for union_model in @union_models
       for error in union_model.errors
+        # TODO: errors.added? will fail if any error doesn't have a symbol type, but just a message...begin/rescue?
         errors.add(error.attribute, error.type, **error.options) unless errors.added?(error.attribute, error.type)
       end
     end
