@@ -83,6 +83,7 @@ module ActiveModel
       def check_value_for_types(record, errors, attr_info, value_info, expected_types)
         type_errors = {}
         for expected_type in expected_types
+          # TODO: is the record the correct base to use?
           errs = ActiveModel::Errors.new(record)
           type_errors[expected_type.to_s] = errs
 
@@ -90,9 +91,13 @@ module ActiveModel
         end
 
         types_with_errors = type_errors.reject { |key, value| value.empty? }
+        # if every type had errors, that means there was no valid value, so add
+        # the errors
         if types_with_errors.size == expected_types.count
-          types_with_errors.each_value do |value|
-            errors.merge!(value)
+          types_with_errors.each_value do |type_errors|
+            type_errors.each do |error|
+              errors.import(error) unless errors.added?(error.attribute, error.type)
+            end
           end
         end
       end
