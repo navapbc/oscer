@@ -13,8 +13,29 @@ class ValueObject
   validates_with ActiveModel::Validations::NestedAttributeValidator
   validates_with ActiveModel::Validations::AttributesTypeValidator
 
+  # TODO: move this to a module that can just be included
+  after_validation :dedupe_type_and_blank_errors
+
   def ==(other)
     return false if self.class != other.class
     self.as_json == other.as_json
+  end
+
+  private
+
+  def dedupe_type_and_blank_errors
+    return unless !self.errors.empty?
+
+    deduped_errors = ActiveModel::Errors.new(self)
+
+    for error in self.errors
+      if error.type == :blank && self.errors.of_kind?(error.attribute, :invalid_value)
+        next
+      end
+
+      deduped_errors.errors.append(error)
+    end
+
+    @errors = deduped_errors
   end
 end
