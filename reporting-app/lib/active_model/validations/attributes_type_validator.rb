@@ -188,6 +188,10 @@ module ActiveModel
           case attr_type
           when Strata::Attributes::ArrayAttribute::ArrayType
             symbol = :array
+          when Strata::Attributes::YearMonthAttribute::YearMonthType
+            return [ Strata::YearMonth ]
+          when Strata::Attributes::YearQuarterAttribute::YearQuarterType
+            return [ Strata::YearQuarter ]
           else
             # might have been given a direct class for the values instead of an
             # attribute type, so just return that if so
@@ -225,8 +229,13 @@ module ActiveModel
           time: Time,
           date: Date,
           decimal: BigDecimal,
-          big_decimal: BigDecimal
-        }[symbol] || fail(TypeError, "Unsupported type #{ symbol.to_s.camelize } given")
+          big_decimal: BigDecimal,
+          # Strata
+          date_from_hash: Date,
+          money: Strata::Money,
+          us_date: Strata::USDate,
+          tax_id: Strata::TaxId
+        }[symbol] || fail(TypeError, "Unsupported type symbol #{ symbol.to_s } given")
       end
     end
   end

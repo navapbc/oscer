@@ -52,6 +52,17 @@ class StrataModelToTestAttrs < Strata::ValueObject
   strata_attribute :date, :date
   strata_attribute :union, ModelToTestAttrsOneOrOther.to_type
   strata_attribute :array, :integer, array: true
+
+  # Strata-only attributes
+  strata_attribute :address, :address
+  strata_attribute :memorable_date, :memorable_date
+  strata_attribute :name, :name
+  strata_attribute :money, :money
+  strata_attribute :date_range, :us_date, range: true
+  strata_attribute :tax_id, :tax_id
+  strata_attribute :us_date, :us_date
+  strata_attribute :year_month, :year_month
+  strata_attribute :year_quarter, :year_quarter
 end
 
 RSpec.describe ActiveModel::Validations::AttributesTypeValidator do
@@ -160,6 +171,110 @@ RSpec.describe ActiveModel::Validations::AttributesTypeValidator do
         it "rejects if partial invalid values" do
           expect(test_class.new(array: [ 1, "bar" ])).not_to be_valid
         end
+      end
+    end
+  end
+
+  describe "Strata special attribute types" do
+    context "with address" do
+      it "allows valid" do
+        expect(StrataModelToTestAttrs.new(address: {
+          "street_line_1": "123 Main St.",
+          "street_line_2": "Apt 321",
+          "city": "Small town",
+          "state": "KS",
+          "zip_code": "67202"
+        })).to be_valid
+        # TODO: can't find the factory?
+        # expect(StrataModelToTestAttrs.new(address: build(:address).to_json)).to be_valid
+      end
+
+      it "rejects invalid" do
+        expect(StrataModelToTestAttrs.new(address: {
+          "street_line_1": 123
+        })).not_to be_valid
+        # TODO: can't find the factory?
+        # expect(StrataModelToTestAttrs.new(address: build(:address, :invalid).to_json)).not_to be_valid
+      end
+    end
+
+    context "with memorable date" do
+      it "allows valid" do
+        expect(StrataModelToTestAttrs.new(memorable_date: "2025-10-27")).to be_valid
+      end
+
+      it "rejects invalid" do
+        expect(StrataModelToTestAttrs.new(memorable_date: "foo")).not_to be_valid
+      end
+    end
+
+    context "with name" do
+      it "allows valid" do
+        expect(StrataModelToTestAttrs.new(name: { "first": "Jane", "last": "Doe" })).to be_valid
+      end
+
+      it "rejects invalid" do
+        expect(StrataModelToTestAttrs.new(name: 123)).not_to be_valid
+      end
+    end
+
+    context "with money" do
+      it "allows valid" do
+        expect(StrataModelToTestAttrs.new(money: 100)).to be_valid
+      end
+
+      it "rejects invalid" do
+        expect(StrataModelToTestAttrs.new(money: "foo")).not_to be_valid
+      end
+    end
+
+    context "with date_range" do
+      it "allows valid" do
+        expect(StrataModelToTestAttrs.new(date_range: { "start": Date.new(2025, 10, 27), "end": Date.new(2025, 10, 28) })).to be_valid
+      end
+
+      it "rejects invalid" do
+        expect(StrataModelToTestAttrs.new(date_range: "foo")).not_to be_valid
+      end
+    end
+
+    context "with tax_id" do
+      it "allows valid" do
+        expect(StrataModelToTestAttrs.new(tax_id: "123456789")).to be_valid
+      end
+
+      it "rejects invalid" do
+        expect(StrataModelToTestAttrs.new(tax_id: "foo")).not_to be_valid
+      end
+    end
+
+    context "with us_date" do
+      it "allows valid" do
+        expect(StrataModelToTestAttrs.new(us_date: Date.new(2025, 10, 27))).to be_valid
+      end
+
+      it "rejects invalid" do
+        expect(StrataModelToTestAttrs.new(us_date: "foo")).not_to be_valid
+      end
+    end
+
+    context "with year_month" do
+      it "allows valid" do
+        expect(StrataModelToTestAttrs.new(year_month: "2025-10")).to be_valid
+      end
+
+      it "rejects invalid" do
+        expect(StrataModelToTestAttrs.new(year_month: "foo")).not_to be_valid
+      end
+    end
+
+    context "with year_quarter" do
+      it "allows valid" do
+        expect(StrataModelToTestAttrs.new(year_quarter: "2025Q1")).to be_valid
+      end
+
+      it "rejects invalid" do
+        expect(StrataModelToTestAttrs.new(year_quarter: "foo")).not_to be_valid
       end
     end
   end
