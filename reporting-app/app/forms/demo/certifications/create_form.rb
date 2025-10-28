@@ -30,7 +30,9 @@ module Demo
           return false
         end
 
-        member_data = {}
+        member_data = {
+          "name": self.member_name.as_json
+        }
 
         case self.ex_parte_scenario
         when "Partially met work hours requirement"

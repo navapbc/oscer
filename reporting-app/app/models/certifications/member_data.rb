@@ -31,9 +31,16 @@ class Certifications::MemberData < ValueObject
     attribute :paychecks, :array, of: Paycheck.to_type
   end
 
+  class Name < Strata::Name
+    include ActiveModel::AsJsonAttributeType
+    include ActiveRecord::AttributeMethods::BeforeTypeCast
+
+    validates_with ActiveModel::Validations::AttributesTypeValidator
+  end
+
   attribute :account_email, :string
   attribute :contact, ContactData.to_type
-  attribute :name, ActiveModel::Type::Json.new(Strata::Name)
+  attribute :name, Name.to_type
   attribute :date_of_birth, :date
   attribute :race_ethnicity, :string
 
