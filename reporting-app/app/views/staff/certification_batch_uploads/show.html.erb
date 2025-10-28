@@ -1,0 +1,138 @@
+<% content_for :title, t(".title") %>
+
+<h1><%= @batch_upload.filename %></h1>
+
+<dl class="grid-row margin-bottom-2">
+  <dt class="grid-col-3 text-bold"><%= t(".uploaded_by") %>:</dt>
+  <dd class="grid-col-9"><%= @batch_upload.uploaded_by.email %></dd>
+  
+  <dt class="grid-col-3 text-bold"><%= t(".uploaded_at") %>:</dt>
+  <dd class="grid-col-9"><%= @batch_upload.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+  
+  <dt class="grid-col-3 text-bold"><%= t(".status") %>:</dt>
+  <dd class="grid-col-9">
+    <span class="usa-tag <%= status_tag_class(@batch_upload.status) %>">
+      <%= t("certification_batch_uploads.statuses.#{@batch_upload.status}") %>
+    </span>
+  </dd>
+  
+  <% if @batch_upload.total_rows > 0 %>
+    <dt class="grid-col-3 text-bold"><%= t(".total_rows") %>:</dt>
+    <dd class="grid-col-9"><%= @batch_upload.total_rows %></dd>
+  <% end %>
+  
+  <% if @batch_upload.processed_at %>
+    <dt class="grid-col-3 text-bold"><%= t(".processed_at") %>:</dt>
+    <dd class="grid-col-9"><%= @batch_upload.processed_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+  <% end %>
+</dl>
+
+<% if @batch_upload.pending? %>
+  <div class="usa-alert usa-alert--info margin-top-4" role="alert">
+    <div class="usa-alert__body">
+      <p class="usa-alert__text"><%= t(".pending_message") %></p>
+    </div>
+  </div>
+  <%= button_to t(".process_button"), process_batch_certification_batch_upload_path(@batch_upload),
+        method: :post,
+        class: "usa-button margin-top-2",
+        data: { confirm: t(".confirm_process") } %>
+<% elsif @batch_upload.processing? %>
+  <div class="usa-alert usa-alert--info margin-top-4" role="alert">
+    <div class="usa-alert__body">
+      <p class="usa-alert__text">
+        <%= t(".processing_message", processed: @batch_upload.processed_rows, total: @batch_upload.total_rows) %>
+      </p>
+    </div>
+  </div>
+<% elsif @batch_upload.failed? %>
+  <div class="usa-alert usa-alert--error margin-top-4" role="alert">
+    <div class="usa-alert__body">
+      <h4 class="usa-alert__heading"><%= t(".failed_heading") %></h4>
+      <p class="usa-alert__text"><%= @batch_upload.results.dig("error") || t(".failed_message") %></p>
+    </div>
+  </div>
+<% elsif @batch_upload.completed? && @batch_upload.results.present? %>
+  <% successes = @batch_upload.results.dig("successes") || [] %>
+  <% errors = @batch_upload.results.dig("errors") || [] %>
+  
+  <% if @batch_upload.error_count.zero? %>
+    <div class="usa-alert usa-alert--success" role="alert">
+      <div class="usa-alert__body">
+        <h4 class="usa-alert__heading"><%= t(".success_heading") %></h4>
+        <p class="usa-alert__text">
+          <%= t(".success_message", count: @batch_upload.success_count) %>
+        </p>
+      </div>
+    </div>
+  <% else %>
+    <div class="usa-alert usa-alert--warning" role="alert">
+      <div class="usa-alert__body">
+        <h4 class="usa-alert__heading"><%= t(".partial_success_heading") %></h4>
+        <p class="usa-alert__text">
+          <%= t(".partial_success_message",
+                success_count: @batch_upload.success_count,
+                error_count: @batch_upload.error_count,
+                total: @batch_upload.total_rows) %>
+        </p>
+      </div>
+    </div>
+  <% end %>
+
+  <% if successes.any? %>
+    <div class="margin-top-4">
+      <h2><%= t(".successful_uploads") %> (<%= successes.count %>)</h2>
+      <table class="usa-table usa-table--borderless width-full">
+        <thead>
+          <tr>
+            <th scope="col"><%= t(".columns.row") %></th>
+            <th scope="col"><%= t(".columns.case_number") %></th>
+            <th scope="col"><%= t(".columns.member_id") %></th>
+            <th scope="col"><%= t(".columns.status") %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% successes.each do |success| %>
+            <tr>
+              <td><%= success["row"] || success[:row] %></td>
+              <td><%= success["case_number"] || success[:case_number] %></td>
+              <td><%= success["member_id"] || success[:member_id] %></td>
+              <td><span class="usa-tag usa-tag--success"><%= t(".status.success") %></span></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+
+  <% if errors.any? %>
+    <div class="margin-top-4">
+      <h2><%= t(".failed_uploads") %> (<%= errors.count %>)</h2>
+      <table class="usa-table usa-table--borderless width-full">
+        <thead>
+          <tr>
+            <th scope="col"><%= t(".columns.row") %></th>
+            <th scope="col"><%= t(".columns.error") %></th>
+            <th scope="col"><%= t(".columns.data") %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% errors.each do |error| %>
+            <tr>
+              <td><%= error["row"] || error[:row] %></td>
+              <td class="text-error"><%= error["message"] || error[:message] %></td>
+              <td><code class="font-mono-2xs"><%= (error["data"] || error[:data])&.to_json %></code></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+<% end %>
+
+<div class="margin-top-4">
+  <%= link_to t(".back_to_queue"), certification_batch_uploads_path, class: "usa-button usa-button--outline" %>
+  <%= link_to t(".back_to_dashboard"), staff_path, class: "usa-button usa-button--unstyled" %>
+</div>
+
+

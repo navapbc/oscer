@@ -1,0 +1,4 @@
+member_id,case_number,member_email,first_name,middle_name,last_name,certification_date,certification_type,lookback_period,number_of_months_to_certify,due_period_days,address,county,zip_code,date_of_birth,pregnancy_status,race_ethnicity,work_hours,other_income_sources
+M12345,C-001,john.doe@example.com,John,Q,Doe,2025-01-15,new_application,1,1,30,123 Main St,Example County,12345,1990-05-15,no,white,40,none
+M12346,C-002,jane.smith@example.com,Jane,,Smith,2025-01-15,recertification,6,3,30,456 Oak Ave,Sample County,67890,1985-08-20,no,hispanic,35,SSI
+

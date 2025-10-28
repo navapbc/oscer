@@ -154,6 +154,7 @@ GEM
       addressable
     cssbundling-rails (1.4.3)
       railties (>= 6.0.0)
+    csv (3.3.5)
     date (3.5.0)
     debug (1.11.0)
       irb (~> 1.10)
@@ -590,6 +591,7 @@ DEPENDENCIES
   bootsnap
   capybara
   cssbundling-rails (~> 1.4)
+  csv
   debug
   devise
   dotenv

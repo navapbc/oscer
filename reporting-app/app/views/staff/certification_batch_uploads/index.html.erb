@@ -1,0 +1,69 @@
+<% content_for :title, t(".title") %>
+
+<div class="display-flex flex-justify">
+  <h1><%= t(".heading") %></h1>
+  <%= link_to t(".upload_new"), new_certification_batch_upload_path, class: "usa-button" %>
+</div>
+
+<% if @batch_uploads.any? %>
+  <table class="usa-table usa-table--borderless width-full margin-top-4">
+    <thead>
+      <tr>
+        <th scope="col"><%= t(".columns.filename") %></th>
+        <th scope="col"><%= t(".columns.uploaded_by") %></th>
+        <th scope="col"><%= t(".columns.uploaded_at") %></th>
+        <th scope="col"><%= t(".columns.status") %></th>
+        <th scope="col"><%= t(".columns.progress") %></th>
+        <th scope="col"><%= t(".columns.actions") %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @batch_uploads.each do |batch_upload| %>
+        <tr>
+          <td>
+            <%= link_to batch_upload.filename, certification_batch_upload_path(batch_upload) %>
+          </td>
+          <td><%= batch_upload.uploaded_by.email %></td>
+          <td><%= batch_upload.created_at.strftime("%m/%d/%Y %I:%M %p") %></td>
+          <td>
+            <span class="usa-tag <%= status_tag_class(batch_upload.status) %>">
+              <%= t("certification_batch_uploads.statuses.#{batch_upload.status}") %>
+            </span>
+          </td>
+          <td>
+            <% if batch_upload.total_rows > 0 %>
+              <%= batch_upload.processed_rows %> / <%= batch_upload.total_rows %>
+              <% if batch_upload.completed? %>
+                (<%= batch_upload.success_count %> success, <%= batch_upload.error_count %> errors)
+              <% end %>
+            <% else %>
+              —
+            <% end %>
+          </td>
+          <td>
+            <% if batch_upload.pending? %>
+              <%= button_to t(".process"), process_batch_certification_batch_upload_path(batch_upload), 
+                    method: :post, 
+                    class: "usa-button usa-button--outline",
+                    data: { confirm: t(".confirm_process", filename: batch_upload.filename) } %>
+            <% elsif batch_upload.processing? %>
+              <span class="text-base-dark"><%= t(".processing") %>...</span>
+            <% elsif batch_upload.completed? %>
+              <%= link_to t(".view_results"), certification_batch_upload_path(batch_upload), class: "usa-button usa-button--unstyled" %>
+            <% elsif batch_upload.failed? %>
+              <%= link_to t(".view_error"), certification_batch_upload_path(batch_upload), class: "usa-button usa-button--unstyled text-error" %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="usa-alert usa-alert--info margin-top-4" role="alert">
+    <div class="usa-alert__body">
+      <p class="usa-alert__text"><%= t(".no_uploads") %></p>
+    </div>
+  </div>
+<% end %>
+
+
