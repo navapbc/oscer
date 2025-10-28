@@ -13,6 +13,28 @@
 module ActiveModel
   module Validations
     class AttributesTypeValidator < ActiveModel::Validator
+      STANDARD_TYPE_SYMBOL_CLASS = {
+        array: Array,
+        float: Float,
+        hash: Hash,
+        integer: Integer,
+        string: String,
+        symbol: Symbol,
+        time: Time,
+        date: Date,
+        decimal: BigDecimal,
+        big_decimal: BigDecimal
+      }.freeze
+
+      STRATA_TYPE_SYMBOL_CLASS = {
+        date_from_hash: Date,
+        money: Strata::Money,
+        us_date: Strata::USDate,
+        tax_id: Strata::TaxId
+      }.freeze
+
+      TYPE_SYMBOL_CLASS = STANDARD_TYPE_SYMBOL_CLASS.merge(STRATA_TYPE_SYMBOL_CLASS).freeze
+
       def validate(record)
         if record.attributes.empty?
           return
@@ -180,18 +202,26 @@ module ActiveModel
         end
 
         # all ActiveModel::Type::Value instances _should_ respond with something
-        # for the symbol, but some things don't, like Strata:Attributes
+        # for the symbol, but some things don't, like some Strata:Attributes
         #
         # TODO: have Strata::Attributes list their type at the standard `type`
-        # or some other mechanism?
+        # or some other mechanism? We could have additional convention/fallback
+        # logic that strips `Type` off the end and uses that for a lookup
+        # (either here or more likely as a part of some default logic in
+        # Strata::Attribute types)? Feels like a lot of layered conventions that
+        # are a little hard to grok though...
         if symbol.blank?
           case attr_type
           when Strata::Attributes::ArrayAttribute::ArrayType
             symbol = :array
           when Strata::Attributes::YearMonthAttribute::YearMonthType
-            return [ Strata::YearMonth ]
+            symbol = :year_month
+            # TODO: could also just return directly, but potentially less upstreamable
+            # return [ Strata::YearMonth ]
           when Strata::Attributes::YearQuarterAttribute::YearQuarterType
-            return [ Strata::YearQuarter ]
+            symbol = :year_quarter
+            # TODO: could also just return directly, but potentially less upstreamable
+            # return [ Strata::YearQuarter ]
           else
             # might have been given a direct class for the values instead of an
             # attribute type, so just return that if so
@@ -219,23 +249,17 @@ module ActiveModel
       end
 
       def symbol_class(symbol)
-        {
-          array: Array,
-          float: Float,
-          hash: Hash,
-          integer: Integer,
-          string: String,
-          symbol: Symbol,
-          time: Time,
-          date: Date,
-          decimal: BigDecimal,
-          big_decimal: BigDecimal,
-          # Strata
-          date_from_hash: Date,
-          money: Strata::Money,
-          us_date: Strata::USDate,
-          tax_id: Strata::TaxId
-        }[symbol] || fail(TypeError, "Unsupported type symbol #{ symbol.to_s } given")
+        begin
+          # TODO: wonder if `resolve_class` could be named better or live
+          # somewhere else? Though there may be less generic logic in the future
+          # around "resolving" the "class" for "attributes", where the current
+          # location makes sense.
+          return Strata::Attributes.resolve_class(symbol)
+        rescue NameError
+          # continue to fallback logic
+        end
+
+        TYPE_SYMBOL_CLASS[symbol] || fail(TypeError, "Unknown type symbol: #{symbol}")
       end
     end
   end
