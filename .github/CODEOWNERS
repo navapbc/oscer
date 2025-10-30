@@ -1,14 +1,3 @@
 # More generic / higher level paths should be listed first.
 
-* @navapbc/platform-admins # project lead
-
-/docs/  @navapbc/platform-admins @navapbc/platform-backend @navapbc/sdk @navapbc/platform-frontend @navapbc/platform-infra
-
-/e2e/               @navapbc/platform-admins @navapbc/platform-backend @navapbc/sdk @navapbc/platform-frontend @navapbc/platform-infra
-
-/infra/   @navapbc/platform-admins @navapbc/platform-infra
-
-/reporting-app/               @navapbc/platform-admins @navapbc/platform-backend @navapbc/sdk @navapbc/platform-frontend
-
-/.github/           @navapbc/platform-admins
-/bin/               @navapbc/platform-admins
+* @navapbc/platform-admins @navapbc/sdk
