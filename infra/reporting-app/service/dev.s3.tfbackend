@@ -1,0 +1,4 @@
+bucket         = "community-engagement-medicaid-065727387448-us-east-1-tf"
+key            = "infra/reporting-app/service/dev.tfstate"
+dynamodb_table = "community-engagement-medicaid-065727387448-us-east-1-tf-state-locks"
+region         = "us-east-1"

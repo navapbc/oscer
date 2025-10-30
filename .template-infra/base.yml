@@ -1,0 +1,8 @@
+# Changes here will be overwritten by Copier
+_commit: v0.15.7-1-g4ebae27
+_src_path: https://github.com/navapbc/template-infra
+base_code_repository_url: https://github.com/navapbc/oscer
+base_default_region: us-east-1
+base_owner: navapbc
+base_project_name: community-engagement-medicaid
+template: base

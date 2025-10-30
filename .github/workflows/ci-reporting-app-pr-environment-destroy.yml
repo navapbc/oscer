@@ -1,0 +1,18 @@
+name: CI reporting-app PR Environment Destroy
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        required: true
+        type: string
+  pull_request_target:
+    types: [closed]
+
+jobs:
+  destroy:
+    name: " " # GitHub UI is noisy when calling reusable workflows, so use whitespace for name to reduce noise
+    uses: ./.github/workflows/pr-environment-destroy.yml
+    with:
+      app_name: "reporting-app"
+      environment: "dev"
+      pr_number: ${{ inputs.pr_number || github.event.number }}

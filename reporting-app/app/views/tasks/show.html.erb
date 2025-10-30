@@ -1,0 +1,20 @@
+<%= render template: 'strata/tasks/show', locals: {
+  task: @task,
+  application_form: @application_form,
+  kase: @case,
+  task_info: [
+    {
+      label: t("strata.tasks.show.details.status"),
+      value: t("tasks.statuses.#{@task.status}")
+    },
+    {
+      label: t("strata.tasks.show.details.due_on"),
+      value: local_en_us(@task.due_on)
+    },
+    {
+      label: @assignee.present? ? t("strata.tasks.show.details.assigned_to") : "",
+      value: @assignee.try(:email) || button_to("Assign to me", assign_task_path(@task), method: :patch, class: "usa-button")
+    }
+  ],
+  breadcrumbs: task_breadcrumbs(@member, @case, @task)
+} %>

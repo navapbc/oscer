@@ -1,0 +1,10 @@
+<%= content_for :main_col_class, 'bg-base-lightest' %>
+<%= content_for :content_col_class, 'tablet:grid-col-6 flex-align-self-center' %>
+
+<%= content_for :after_content_col do %>
+  <div class="grid-col-12 tablet:grid-col-6 padding-x-205">
+    <%= yield :sidebar %>
+  </div>
+<% end %>
+
+<%= render template: 'layouts/application' %>

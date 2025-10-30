@@ -1,0 +1,11 @@
+<div id="<%= dom_id activity %>" class="grid-row">
+  <div class="grid-col-7 grid-offset-1">
+    <%= link_to "Work for #{activity.name}", [activity_report_application_form, activity] %>
+  </div>
+  <div class="grid-col-2 text-right">
+    <%= activity.hours %>
+  </div>
+  <div class="grid-col-2 text-right">
+    <%# TODO: activity.income_earned %>
+  </div>
+</div>

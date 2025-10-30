@@ -1,0 +1,7 @@
+<% content_for :title, t(".title") %>
+
+<%= link_to t(".back"), activity_report_application_form_path(@activity_report_application_form) %>
+
+<h1><%= t(".title") %></h1>
+
+<%= render "form", activity_report_application_form: @activity_report_application_form, activity: @activity %>

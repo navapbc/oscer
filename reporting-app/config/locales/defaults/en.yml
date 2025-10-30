@@ -1,0 +1,72 @@
+en:
+  activerecord:
+    errors:
+      messages:
+        # Override error messages: https://guides.rubyonrails.org/i18n.html#error-message-interpolation
+        # blank: "'%{attribute}' can't be blank"
+        #
+        # i18n strings for ActiveStorageValidation
+        # See: https://github.com/igorkasyanchuk/active_storage_validations
+        content_type_invalid: "has an invalid content type"
+        file_size_not_less_than: "file size must be less than %{max_size} (current size is %{file_size})"
+        file_size_not_less_than_or_equal_to: "file size must be less than or equal to %{max_size} (current size is %{file_size})"
+        file_size_not_greater_than: "file size must be greater than %{min_size} (current size is %{file_size})"
+        file_size_not_greater_than_or_equal_to: "file size must be greater than or equal to %{min_size} (current size is %{file_size})"
+        file_size_not_between: "file size must be between %{min_size} and %{max_size} (current size is %{file_size})"
+        limit_out_of_range: "total number is out of range"
+        image_metadata_missing: "is not a valid image"
+        dimension_min_inclusion: "must be greater than or equal to %{width} x %{height} pixel."
+        dimension_max_inclusion: "must be less than or equal to %{width} x %{height} pixel."
+        dimension_width_inclusion: "width is not included between %{min} and %{max} pixel."
+        dimension_height_inclusion: "height is not included between %{min} and %{max} pixel."
+        dimension_width_greater_than_or_equal_to: "width must be greater than or equal to %{length} pixel."
+        dimension_height_greater_than_or_equal_to: "height must be greater than or equal to %{length} pixel."
+        dimension_width_less_than_or_equal_to: "width must be less than or equal to %{length} pixel."
+        dimension_height_less_than_or_equal_to: "height must be less than or equal to %{length} pixel."
+        dimension_width_equal_to: "width must be equal to %{length} pixel."
+        dimension_height_equal_to: "height must be equal to %{length} pixel."
+        aspect_ratio_not_square: "must be a square image"
+        aspect_ratio_not_portrait: "must be a portrait image"
+        aspect_ratio_not_landscape: "must be a landscape image"
+        aspect_ratio_is_not: "must have an aspect ratio of %{aspect_ratio}"
+        aspect_ratio_unknown: "has an unknown aspect ratio"
+        image_not_processable: "is not a valid image"
+  auth:
+    errors:
+      messages:
+        code_mismatch: "The code you entered is incorrect"
+        code_expired: "The code you entered has expired"
+        invalid_credentials: "Invalid email or password"
+        invalid_software_token: "Invalid code. Please try again."
+        invalid_password_format: "Password must be at least 12 characters long"
+        username_exists: "An account with the given email already exists"
+        user_not_confirmed: "You must confirm your email address first"
+  date:
+    formats:
+      default: "%m/%d/%Y"
+      short: "%b %d"
+      long: "%B %d, %Y"
+  errors:
+    attributes:
+      spam_trap:
+        present: "This field should be left empty. It is intended to prevent bots from submitting spam using this form."
+  helpers:
+    submit:
+      create: "Submit"
+      update: "Update"
+  time:
+    formats:
+      default: "%B %d, %Y"
+      long: "%B %d, %Y %-I:%M %p"
+  us_form_with:
+    boolean_true: "Yes"
+    boolean_false: "No"
+    date_picker_format: "Format: mm/dd/yyyy"
+    optional: "Optional"
+    tax_id_format: "For example, 123456789"
+  certification_statuses:
+    met_requirements: "Met requirements"
+    exempt: "Exempt"
+    pending_review: "Pending review"
+    awaiting_report: "Awaiting report"
+    not_met_requirements: "Not met requirements"

@@ -1,0 +1,35 @@
+<table class="usa-table usa-table--borderless width-full">
+  <thead>
+    <tr>
+      <th scope="col"><%= t(".activity_type") %></th>
+      <th scope="col"><%= t(".organization_name") %></th>
+      <th scope="col"><%= t(".month") %></th>
+      <th scope="col" style="width: 90px"><%= t(".hours_income").html_safe %></th>
+      <th scope="col"><%= t(".supporting_documents") %></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% for activity in activity_report.activities do %>
+      <tr>
+        <td>Work</td>
+        <td><%= activity.name %></td>
+        <td><%= activity.month&.strftime("%b, %Y") %></td>
+        <td class="text-right"><%= activity.hours %></td>
+        <td>
+          <% if activity.supporting_documents.any? %>
+            <ul class="usa-list usa-list--unstyled margin-0">
+              <% activity.supporting_documents.each do |document| %>
+                <li c>
+                  <%= link_to document.filename, rails_blob_path(document, disposition: "attachment"), 
+                      target: "_blank", class: "usa-link" %>
+                </li>
+              <% end %>
+            </ul>
+          <% else %>
+            <p>No documents</p>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

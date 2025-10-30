@@ -1,0 +1,53 @@
+<div id="<%= dom_id activity_report_application_form %>">
+  <% for month, activities in activity_report_application_form.activities_by_month do %>
+    <h2><%= month.strftime("%B %Y") %></h2>
+    <div class="grid-container font-body-md">
+      <div class="grid-row text-bold">
+        <div class="grid-col-7 grid-offset-1 border-bottom-1px">
+          <%= t(".activity") %>
+        </div>
+        <div class="grid-col-2 text-right border-bottom-1px">
+          <%= t(".hours") %>
+        </div>
+        <div class="grid-col-2 text-right border-bottom-1px">
+          <%= t(".income_earned") %>
+        </div>
+      </div>
+      <%= render partial: "activity_report_application_forms/activity_row",
+          collection: activities,
+          as: :activity,
+          locals: { activity_report_application_form: activity_report_application_form } %>
+      <%= render "activity_report_application_forms/month_total_row", activities: activities %>
+      <%# Required hours row %>
+      <div class="grid-row">
+        <div class="grid-col-7 grid-offset-1">
+          <%= t(".required") %>
+        </div>
+        <div class="grid-col-2 text-right">
+          80.0
+        </div>
+        <div class="grid-col-1 text-center">
+          or
+        </div>
+        <div class="grid-col-1 text-right">
+          <%= number_to_currency(580.0) %>
+        </div>
+      </div>
+      <%# Additional hours needed row %>
+      <div class="grid-row text-bold">
+        <div class="grid-col-7 grid-offset-1">
+          <%= t(".additional_needed") %>
+        </div>
+        <div class="grid-col-2 border-top-1px text-right">
+          <%= [0.0, 80.0 - activities.sum(&:hours)].max %>
+        </div>
+        <div class="grid-col-1 border-top-1px text-center">
+          or
+        </div>
+        <div class="grid-col-1 border-top-1px text-right">
+          <%= number_to_currency([0.0, 80.0 - activities.sum(&:hours)].max * 7.25) %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

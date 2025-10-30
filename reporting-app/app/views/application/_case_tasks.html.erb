@@ -1,0 +1,20 @@
+<% content_for :title, t("case_tasks.title") %>
+
+<% content_for :case_details do %>
+  <h2 id="case-details-heading" class="usa-heading-lg margin-bottom-1"><%= t("case_tasks.title") %></h2>
+  <% if tasks.any? %>
+    <ul class="usa-alert__text usa-list margin-top-1">
+      <% tasks.each do |task| %>
+        <li class="usa-list-item">
+          <%= link_to task.class.name.underscore.humanize, task_path(task) %> (<%= task.status.humanize %>)
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <div style="padding: unset;" class="usa-alert usa-alert--info usa-alert--slim  usa-alert--no-icon" role="status">
+      <div class="usa-alert__body">
+        <p class="usa-alert__text">No tasks available</p>
+      </div>
+    </div>
+  <% end %>
+<% end %>

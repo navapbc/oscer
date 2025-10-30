@@ -1,0 +1,5 @@
+en:
+  dashboard:
+    activity_report_submitted:
+      intro: "Your activity report is being reviewed."
+      view_activity_report_button: "View activity report"

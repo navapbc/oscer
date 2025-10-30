@@ -1,0 +1,7 @@
+en:
+  dashboard:
+    exemption_denied:
+      heading: "Exemption request does not meet requirements"
+      intro: "Your exemption request does not meet the requirements. You are still required to report activities. If you disagree with this decision, you may appeal this decision."
+      view_exemption_button: "View exemption request"
+      submit_new_exemption_button: "Submit new exemption request"

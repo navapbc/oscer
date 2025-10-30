@@ -1,0 +1,92 @@
+<% content_for :title, t(".title", case_number: @certification&.case_number) %>
+
+<%= render partial: "strata/shared/breadcrumbs", locals: { breadcrumbs: case_breadcrumbs(@member, @case) } %>
+
+<%= render partial: 'application/flash' %>
+
+<div class="usa-header padding-bottom-3">
+  <h1 class="font-sans-3xl text-semibold"><%= t(".title", case_number: @certification&.case_number) %></h1>
+  <p>
+    <span class="text-bold"><%= t(".status") %></span>
+    <span class="usa-tag"><%= @case.status %></span>
+  </p>
+  <p>
+    <span class="text-bold"><%= t(".step") %></span>
+    <span class="usa-tag"><%= @case.business_process_instance.current_step || t(".missing") %></span>
+  </p>
+  <p>
+    <span class="text-bold"><%= t(".assigned_to") %></span>
+    <span><%= t(".caseworker") %></span>
+  </p>
+</div>
+
+<%= render Strata::US::AccordionComponent.new(heading_tag: :h4, is_multiselectable: true) do |component| %>
+  <% component.with_heading { t(".certification_details") } %>
+  <% component.with_body do %>
+    <p>
+      <span class="text-bold"><%= t(".member_name") %></span>
+      <span><%= @certification&.member_name&.full_name %></span>
+    </p>
+    <p>
+      <span class="text-bold"><%= t(".member_email") %></span>
+      <span><%= @certification&.member_email %></span>
+    </p>
+    <p>
+      <span class="text-bold"><%= t(".member_status") %></span>
+      <span class="usa-tag"><%= t("certification_statuses.#{@case.member_status}") %></span>
+    </p>
+    <p>
+      <span class="text-bold"><%= t(".certification_date") %></span>
+      <span><%= @certification.certification_requirements.certification_date&.strftime("%m/%d/%Y") %></span>
+      </span>
+    </p>
+    <div>
+      <span class="text-bold"><%= t(".lookback_period") %></span>
+      <% if @certification.certification_requirements.continuous_lookback_period? %>
+        <span><%= @certification.certification_requirements.continuous_lookback_period.start&.strftime("%b, %Y") %> – <%= @certification.certification_requirements.continuous_lookback_period.end&.strftime("%b, %Y") %></span>
+      <% else %>
+        <ul>
+          <% @certification.certification_requirements.months_that_can_be_certified.each do |month| %>
+            <li><%= month %></li>
+          <% end %>
+        <ul>
+      <% end %>
+    </div>
+    <p>
+      <span class="text-bold"><%= t(".number_of_months_to_certify") %></span>
+      <span><%= @certification.certification_requirements&.number_of_months_to_certify %></span>
+    </p>
+    <p>
+      <span class="text-bold"><%= t(".certification_due_date") %></span>
+      <span><%= @certification.certification_requirements&.due_date&.strftime("%m/%d/%Y") %></span>
+    </p>
+    <p>
+      <span class="text-bold"><%= t(".last_updated") %></span>
+      <span><%= @certification.updated_at&.strftime("%m/%d/%Y") %></span>
+    </p>
+  <% end %>
+
+  <% component.with_heading { t(".tasks") } %>
+  <% component.with_body do %>
+    <%= render partial: 'tasks_section', locals: { tasks: @case.tasks } %>
+  <% end %>
+
+  <% component.with_heading { t(".information_requests") } %>
+  <% component.with_body do %>
+    <%= render partial: "certification_cases/information_requests", locals: { information_requests: @information_requests } %>
+  <% end %>
+
+  <% component.with_heading { t(".ex_parte_data") } %>
+  <% component.with_body do %>
+    <p><%= t(".none") %></p>
+  <% end %>
+  
+  <% component.with_heading { t(".activity_report") } %>
+  <% component.with_body do %>
+    <% if @activity_report %>
+      <%= render partial: 'activity_report_application_forms/staff_activity_report', locals: { activity_report: @activity_report } %>
+    <% else %>
+      <p><%= t(".no_activity_report") %></p>
+    <% end %>
+  <% end %>
+<% end %>

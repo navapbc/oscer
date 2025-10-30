@@ -1,0 +1,70 @@
+en:
+  users:
+    hide_password: "Hide password"
+    show_password: "Show password"
+    password_hint: "Your password must be 12 characters or longer. Don’t use common phrases or repeated characters, like abc or 111."
+    accounts:
+      edit:
+        title: "My account"
+        change_email: "Change email"
+        change_password: "Change password"
+        change_password_instructions: "A 6-digit code will be emailed to you to start the password reset process."
+        mfa_preference: "Multi-factor authentication"
+        disable_mfa: "Disable multi-factor authentication"
+        enable_mfa: "Enable multi-factor authentication"
+        mfa_successfully_disabled: "Multi-factor authentication has been disabled."
+    passwords:
+      forgot:
+        title: "Forgot your password?"
+        instructions: "If an account exists for the email you provide, we will email a 6-digit verification code to it."
+        submit: "Send code"
+      reset:
+        title: "Create a new password"
+        instructions_heading: "Check your email"
+        instructions_html: |
+          We sent a 6-digit code to your email. If you don’t see that email, check your spam folder.
+          If you didn’t get an email with a code, you may not have an account with that email, or you may need to <a href="%{verify_account_url}">verify your email address</a> first.
+        code: "6-digit code"
+        submit: "Set password"
+        success: "Your password has been reset."
+    sessions:
+      new:
+        title: "Sign in"
+        forgot_password: "Forgot your password?"
+        submit: "Log in"
+        no_account: "Don't have an account?"
+        create_account: "Create your account now"
+      challenge:
+        title: "Enter your authentication app code"
+        code: "6-digit code"
+        submit: "Submit"
+    registrations:
+      new:
+        have_existing_account: "Already have an account?"
+        login: "Log in"
+        title: "Create an account"
+      new_account_verification:
+        title: "Verify your email address"
+        instructions: "We sent a 6 digit verification code to your email. Enter the code to verify your email."
+        code: "6-digit code"
+        resend: "Send a new code"
+        resend_success: "If you have an account under that email, then a new code has been sent."
+    mfa:
+      new:
+        title: "Add an authentication app"
+        lead: "Set up an authentication app to sign in using temporary security codes."
+        auth_apps_heading: "What's an authentication app?"
+        auth_apps_html: "Authentication applications are downloaded to your device and generate secure, six-digit codes you use to sign in to your accounts. Some popular options include: Google Authenticator, Authy, LastPass, 1Password."
+        qr_heading: "Scan this QR barcode with your app"
+        code_label: "Or enter this code manually into your authentication app"
+        temporary_code: "Enter the temporary code from your app"
+        open_app: "Open your authentication app"
+      create:
+        success: "Successfully added an authentication app"
+      preference:
+        title: Would you like to set up multi-factor authentication?
+        preference: Add an additional layer of protection to your account by selecting a multi-factor authentication method.
+        software_token_label: Authentication application
+        software_token_hint: "Download or use an authentication app of your choice to generate secure codes."
+        opt_out_label: "Skip for now"
+        opt_out_hint: "You can set up multi-factor authentication later in your account settings."

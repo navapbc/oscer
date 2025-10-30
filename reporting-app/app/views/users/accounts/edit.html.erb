@@ -1,0 +1,35 @@
+<% content_for :title, t('.title') %>
+
+<h1 class="margin-bottom-5"><%= t('.title') %></h1>
+
+<div class="grid-row flex-column gap-5">
+  <section>
+    <h2><%= t('.change_email') %></h2>
+    <%= us_form_with model: @email_form, url: users_account_email_path, method: :patch do |f| %>
+      <%= f.email_field :email %>
+      <%= f.submit t('.change_email') %>
+    <% end %>
+  </section>
+
+  <section>
+    <h2><%= t('.change_password') %></h2>
+    <p><%= t('.change_password_instructions') %></p>
+    <%= us_form_with model: @password_form, url: users_forgot_password_path, local: true do |f| %>
+      <%= f.hidden_field :email %>
+      <%= f.submit t('.change_password'), { class: "margin-top-0" } %>
+    <% end %>
+  </section>
+
+  <section>
+    <h2><%= t('.mfa_preference') %></h2>
+
+    <p>
+      <% if current_user.mfa_preference == "software_token" %>
+        <%= button_to users_disable_mfa_path, { method: :delete, class: "usa-button usa-button--unstyled" } do %>
+          <%= t('.disable_mfa') %>
+        <% end %>
+      <% else %>
+        <%= link_to t(".enable_mfa"), new_users_mfa_path %>
+      <% end %>
+    </p>
+</div>

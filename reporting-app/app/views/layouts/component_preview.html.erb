@@ -1,0 +1,24 @@
+<%# Layout for Lookbook previews of component partials %>
+<!DOCTYPE html>
+<html lang="<%= I18n.locale %>">
+  <head>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+    <%= javascript_include_tag '@uswds/uswds/dist/js/uswds-init.min.js' %>
+  </head>
+
+  <body>
+    <div class="display-flex flex-column minh-viewport">
+      <main id="main-content" class="grid-col-fill display-flex flex-column">
+        <div class="grid-col-fill <%= yield :main_col_class %>">
+          <div class="grid-container">
+            <%= content_for?(:content) ? yield(:content) : yield %>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <%= javascript_include_tag '@uswds/uswds/dist/js/uswds.min.js' %>
+  </body>
+</html>

@@ -1,0 +1,31 @@
+<% content_for :title, t("certifications.demo_create.title") %>
+
+<h1><%= t("certifications.demo_create.title") %></h1>
+
+<% tabs = [
+  { name: "Generic", path: new_demo_certification_path, active: !@form.certification_type },
+] + Demo::Certifications::CreateForm.attribute_types["certification_type"].options.map { |ct| { name: t("certifications.demo_create.certification_type_options.#{ct}"), path: new_demo_certification_path(certification_type: ct), active: @form.certification_type == ct } }
+%>
+
+<nav class="display-flex border-bottom-1px border-base-light">
+  <% tabs.each do |tab| %>
+    <%= render partial: "strata/cases/nav_tab", locals: tab %>
+  <% end %>
+</nav>
+<%= strata_form_with model: @form, url: demo_certifications_path do |f| %>
+  <%= f.text_field :member_email %>
+  <%= f.name :member_name %>
+  <%= f.text_field :case_number, label: t("certifications.case_number") %>
+
+  <%= f.hidden_field :certification_type, value: @form.certification_type %>
+
+  <%= f.date_picker :certification_date %>
+
+  <%= f.select :lookback_period, Demo::Certifications::CreateForm::LOOKBACK_PERIOD_OPTIONS.map { |i| [ t("certifications.demo_create.lookback_period_options.#{i}"), i ] }, {}, disabled: @form.locked_type_params? %>
+  <%= f.select :number_of_months_to_certify, Demo::Certifications::CreateForm::NUMBER_OF_MONTHS_TO_CERTIFY_OPTIONS.map { |i| [ t("certifications.demo_create.number_of_months_to_certify_options.#{i}"), i ] }, {}, disabled: @form.locked_type_params? %>
+  <%= f.select :due_period_days, Demo::Certifications::CreateForm::DUE_PERIOD_OPTIONS.map { |i| [ t("certifications.demo_create.due_period_options.#{i}"), i ] }, {}, disabled: @form.locked_type_params? %>
+
+  <%= f.select :ex_parte_scenario, Demo::Certifications::CreateForm::EX_PARTE_SCENARIO_OPTIONS %>
+
+  <%= f.submit t("certifications.demo_create.submit") %>
+<% end %>

@@ -1,0 +1,22 @@
+<%= render template: 'strata/cases/show', locals: {
+  model_class: CertificationCase,
+  kase: @case,
+  sidenav: [
+    {
+      text: t(".details"),
+      link: polymorphic_path(@case)
+    },
+    {
+      text: t(".tasks"),
+      link: tasks_certification_case_path(@case)
+    },
+    {
+      text: t(".documents"),
+      link: documents_certification_case_path(@case)
+    },
+    {
+      text: t(".notes"),
+      link: notes_certification_case_path(@case)
+    }
+  ]
+} %>

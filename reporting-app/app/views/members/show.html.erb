@@ -1,0 +1,24 @@
+<div class="usa-header padding-bottom-3">
+  <h1><%= @member.name&.full_name %></h1>
+  <p>
+    Member ID: <%= @member.member_id %>
+  </p>
+  <p>
+    Email: <%= @member.email %>
+  </p>
+</div>
+<div class="usa-section">
+  <h2>Certification Cases</h2>
+  <table class="usa-table usa-table--borderless width-full">
+    <thead>
+      <tr>
+        <th>Case No.</th>
+        <th>Certification date</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <%= render partial: 'certification_case_row', collection: @certification_cases %>
+    </tbody>
+  </table>
+</div>

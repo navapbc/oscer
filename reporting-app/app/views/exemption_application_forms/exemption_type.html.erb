@@ -1,0 +1,15 @@
+<% content_for :title, t(".title") %>
+
+<%= render "exemption_step_indicator", current_step: :exemption_type %>
+
+<h1><%= t(".heading") %></h1>
+
+<%= strata_form_with(model: @exemption_application_form, data: { turbo: false }) do |f| %>
+  <%= f.hidden_field :certification_case_id %>
+
+  <%= f.radio_button :exemption_type, "short_term_hardship", { label: "Short-term Hardship", hint: "You are experiencing a short-term hardship as defined here: TODO: Add link to the definition" } %>
+  <%= f.radio_button :exemption_type, "incarceration", { label: "Incarceration", hint: "You are currently incarcerated or have left incarceration within the last 3 months." } %>
+
+  <%= f.submit "Continue" %>
+<% end %>
+

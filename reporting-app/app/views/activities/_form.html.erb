@@ -1,0 +1,14 @@
+<%= strata_form_with(model: [activity_report_application_form, activity]) do |f| %>
+  <%= f.text_field :name, label: t(".name") %>
+
+  <%= f.select :month,
+    6.times.map { |i|
+      date = (Date.today - i.months).beginning_of_month
+      [date.strftime("%B %Y"), date]
+    }, { prompt: "- Select -" }
+  %>
+  
+  <%= f.text_field :hours, inputmode: "decimal" %>
+  
+  <%= f.submit t(".continue"), big: true %>
+<% end %>

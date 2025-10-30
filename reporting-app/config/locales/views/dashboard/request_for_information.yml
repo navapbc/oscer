@@ -1,0 +1,6 @@
+en:
+  dashboard:
+    request_for_information:
+      heading: "Additional information needed for review"
+      intro_html: "Review the requested information and provide additional information to proceed. You have until %{due_date} to provide additional information."
+      cta_button: "Provide additional information"

@@ -1,0 +1,16 @@
+en:
+  information_requests:
+    edit:
+      title: "Provide additional information"
+      instructions_heading: "Instructions"
+      instructions_html: "Read through the information needed. If applicable, upload your supporting documentation and/or write a response in the text box below. If you need help, call the call center at XXX-XXX-XXXX"
+      due_by: "You have until %{due_date} to provide this information."
+      upload_documents: "Upload your documents"
+      comments_label: "Comments"
+      submit_button: "Submit additional information"
+    show:
+      due_date: "Due Date:"
+      member_comment: "Member Comment:"
+      staff_comment: "Staff Comment:"
+      supporting_documents: "Supporting documents:"
+      title: "Information Request"

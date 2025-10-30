@@ -1,0 +1,11 @@
+<div class="usa-alert usa-alert--error" role="alert">
+  <div class="usa-alert__body">
+    <h3 class="usa-alert__heading"><%= t(".heading") %></h3>
+    <p class="usa-alert__text">
+      <%= t(".intro") %>
+    </p>
+  </div>
+</div>
+<div class="margin-top-3">
+  <%= link_to t(".view_activity_report_button"), activity_report_application_form_path(activity_report), class: "usa-button" %>
+</div>

@@ -1,0 +1,433 @@
+---
+components:
+  schemas:
+    CertificationCreateRequestBody:
+      type: object
+      properties:
+        member_id:
+          type: string
+          description: An identifier for the person receiving benefits
+        case_number:
+          type:
+          - string
+          - 'null'
+          description: An identifier for the case associated with the certification
+        certification_requirements:
+          oneOf:
+          - "$ref": "#/components/schemas/CertificationRequirements"
+          - "$ref": "#/components/schemas/CertificationRequirementParameters"
+          - "$ref": "#/components/schemas/CertificationRequirementTypeParameters"
+        member_data:
+          type:
+          - object
+          - 'null'
+          description: Description of beneficiary
+          properties: {}
+      required:
+      - member_id
+      - certification_requirements
+      examples:
+        fully_specified_certification_requirements:
+          value:
+            member_id: '123'
+            case_number: C-111
+            certification_requirements:
+              certification_date: '2025-09-26'
+              lookback_period: 3
+              number_of_months_to_certify: 1
+              due_period_days: 30
+            member_data:
+              contact:
+                email: john@doe.com
+                phone: "+123456789"
+        certification_type:
+          value:
+            member_id: '123'
+            case_number: C-111
+            certification_requirements:
+              certification_date: '2025-09-26'
+              certification_type: new_application
+            member_data:
+              contact:
+                email: john@doe.com
+                phone: "+123456789"
+    CertificationRequirements:
+      type: object
+      description: Description of certification needs
+      properties:
+        certification_date:
+          type: string
+          format: date
+          description: The date of the certification
+        certification_type:
+          type:
+          - string
+          - 'null'
+          description: The type of certification
+        months_that_can_be_certified:
+          type: array
+          items:
+            type: string
+            format: date
+          description: The list of months the Member can choose from
+        number_of_months_to_certify:
+          type: integer
+          description: The number of months the Member needs to certify
+        due_date:
+          type: string
+          format: date
+          description: Date by which the Member must have submitted their evidence
+        params:
+          type:
+          - object
+          - 'null'
+          description: Input parameters, if any.
+          properties: {}
+      required:
+      - certification_date
+      - months_that_can_be_certified
+      - number_of_months_to_certify
+      - due_date
+    CertificationRequirementParameters:
+      type: object
+      properties:
+        certification_date:
+          type: string
+          format: date
+          description: The date of the certification
+        lookback_period:
+          type: integer
+          description: The number of months before `certification_date` the Member
+            can choose from
+        number_of_months_to_certify:
+          type: integer
+          description: The number of months the Member needs to certify
+        due_period_days:
+          type: integer
+      required:
+      - certification_date
+      - lookback_period
+      - number_of_months_to_certify
+      - due_period_days
+    CertificationRequirementTypeParameters:
+      type: object
+      properties:
+        certification_date:
+          type: string
+          format: date
+          description: The date of the certification
+        certification_type:
+          type: string
+          description: The type of certification
+      required:
+      - certification_date
+      - certification_type
+    CertificationMemberData:
+      type: object
+      description: Description of member
+      properties:
+        account_email:
+          type:
+          - string
+          - 'null'
+          format: email
+          description: The email of the Medicare account for the member
+        contact:
+          type:
+          - object
+          - 'null'
+          description: Contact information of the member
+          properties:
+            email:
+              type:
+              - string
+              - 'null'
+              format: email
+            phone:
+              type:
+              - string
+              - 'null'
+              pattern: "^\\+\\d{1,3}\\s\\d{1,14}(\\s\\d{1,13})?$"
+        name:
+          type:
+          - object
+          - 'null'
+          description: The name of the member
+          properties:
+            first:
+              type:
+              - string
+              - 'null'
+            middle:
+              type:
+              - string
+              - 'null'
+            last:
+              type:
+              - string
+              - 'null'
+            suffix:
+              type:
+              - string
+              - 'null'
+        payroll_accounts:
+          type:
+          - array
+          - 'null'
+          items:
+            "$ref": "#/components/schemas/CertificationMemberDataPayrollAccount"
+    CertificationMemberDataPayrollAccount:
+      type: object
+      description: Description of a payroll
+      properties:
+        company_name:
+          type: string
+        paychecks:
+          type:
+          - array
+          - 'null'
+          items:
+            "$ref": "#/components/schemas/CertificationMemberDataPayrollAccountPaycheck"
+    CertificationMemberDataPayrollAccountPaycheck:
+      type: object
+      description: Description of a paycheck
+      properties:
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        gross:
+          type:
+          - string
+          - 'null'
+          format: decimal
+        net:
+          type:
+          - string
+          - 'null'
+          format: decimal
+        hours_worked:
+          type:
+          - string
+          - 'null'
+          format: decimal
+      required:
+      - period_start
+      - period_end
+    CertificationResponseBody:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifier for the certification record
+        member_id:
+          type: string
+          description: An identifier for the person receiving benefits
+        case_number:
+          type:
+          - string
+          - 'null'
+          description: An identifier for the case associated with the certification
+        certification_requirements:
+          oneOf:
+          - "$ref": "#/components/schemas/CertificationRequirements"
+          - type: 'null'
+        member_data:
+          oneOf:
+          - "$ref": "#/components/schemas/CertificationMemberData"
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - member_id
+      - created_at
+      - updated_at
+      example:
+        id: 63680317-0e33-40a7-8e1a-249a2f5855d9
+        member_id: '123'
+        case_number: C-111
+        certification_requirements:
+          certification_date: '2025-09-26'
+          months_that_can_be_certified:
+          - '2025-07-01'
+          - '2025-08-01'
+          - '2025-09-01'
+          number_of_months_to_certify: 1
+          due_date: '2025-10-26'
+          params:
+            lookback_period: 3
+            number_of_months_to_certify: 1
+            due_period_days: 30
+        member_data:
+          contact:
+            email: john@doe.com
+            phone: "+123456789"
+        created_at: '1970-01-01T00:00:00.000Z'
+        updated_at: '1970-01-01T00:00:00.000Z'
+    ErrorResponseBody:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            oneOf:
+            - type: string
+            - type: object
+      example:
+        errors:
+        - Not found
+    ece4f2c15f241af4536e1132d15a279a:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+      - status
+  responses:
+    2a02b6b9f2bf8af2f69dc1b305fd2ea1:
+      description: Created Certification.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/CertificationResponseBody"
+    6a42a42fa0c1cf33a5f054f4227f54d2:
+      description: User error.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/ErrorResponseBody"
+    38188a97a450b2b1b918bdc340abcde3:
+      description: User error.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/ErrorResponseBody"
+    9698be85435e0bbc1a043ce1a4ef1523:
+      description: A Certification
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/CertificationResponseBody"
+    1720e8d4272c47d808ae092e196a7ab7:
+      description: Not found.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/ErrorResponseBody"
+    84d98a6bd862cc8319624388a6a874e4:
+      description: Response
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
+    e17ffcaa22d966f8d8fb6d62bd597c98:
+      description: Response
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
+  parameters:
+    49e46dd8af57e26752938ebb0d0ec979:
+      name: id
+      in: path
+      description: Id of existing certification.
+      required: true
+      schema:
+        type: string
+      style: simple
+  requestBodies:
+    a9c14ab9cae8249365a3dcbb916b7dec:
+      description: The Certification data.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/CertificationCreateRequestBody"
+          examples:
+            fully_specified_certification_requirements:
+              "$ref": "#/components/schemas/CertificationCreateRequestBody/examples/fully_specified_certification_requirements"
+            certification_type:
+              "$ref": "#/components/schemas/CertificationCreateRequestBody/examples/certification_type"
+      required: false
+  securitySchemes: {}
+  headers: {}
+  examples: {}
+  links: {}
+  callbacks: {}
+openapi: 3.1.0
+info:
+  title: Community Engagement Medicaid
+  summary: System for tracking and certifying community engagement requirements for
+    Medicaid
+  description: |
+    # Welcome to the Community Engagement Medicaid API
+
+    This is the OpenAPI spec for interacting with the Community Engagement Medicaid API.
+
+    ## Getting Started
+
+    This demo API has no required authentication at the moment.
+  termsOfService: ''
+  contact:
+    name: Nava PBC
+    url: https://github.com/navapbc/oscer
+    email: medicaid@navapbc.com
+  license:
+    name: Apache-2.0
+    url: https://opensource.org/license/apache-2-0
+  version: 1.0.0
+servers:
+- url: ''
+  description: Current server
+- url: http://medicaid.navateam.com
+  description: Dev
+paths:
+  "/api/certifications":
+    post:
+      tags:
+      - Certifications
+      summary: Create a Certification record
+      description: "#"
+      operationId: POST__api_certifications
+      requestBody:
+        "$ref": "#/components/requestBodies/a9c14ab9cae8249365a3dcbb916b7dec"
+      responses:
+        '201':
+          "$ref": "#/components/responses/2a02b6b9f2bf8af2f69dc1b305fd2ea1"
+        '400':
+          "$ref": "#/components/responses/6a42a42fa0c1cf33a5f054f4227f54d2"
+        '422':
+          "$ref": "#/components/responses/38188a97a450b2b1b918bdc340abcde3"
+  "/api/certifications/{id}":
+    get:
+      tags:
+      - Certifications
+      summary: Retrieve a Certification record
+      description: "#"
+      operationId: GET__api_certifications_{id}
+      parameters:
+      - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
+      responses:
+        '200':
+          "$ref": "#/components/responses/9698be85435e0bbc1a043ce1a4ef1523"
+        '404':
+          "$ref": "#/components/responses/1720e8d4272c47d808ae092e196a7ab7"
+  "/api/health":
+    get:
+      tags:
+      - Healthcheck
+      summary: Check service health
+      description: "#"
+      operationId: GET__api_health
+      responses:
+        '200':
+          "$ref": "#/components/responses/84d98a6bd862cc8319624388a6a874e4"
+        '503':
+          "$ref": "#/components/responses/e17ffcaa22d966f8d8fb6d62bd597c98"

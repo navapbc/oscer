@@ -1,0 +1,20 @@
+en:
+  dashboard:
+    index:
+      title: "Home"
+      activity_report:
+        title: "Report your community engagement (OSCER)"
+        intro: "Certify your community engagement requirements through OSCER."
+        new_button: "New activity report"
+        in_progress_applications:
+          heading: "In-progress activity reports"
+      exemption_report:
+        title: "Community Engagement Exemption Requests"
+        intro: "You may request an exemption from the community engagement requirements. Learn more at [LINK HERE]."
+        new_button: "Request an exemption"
+        in_progress_applications:
+          heading: "In-progress exemption applications"
+      previous_certifications:
+        title: "Previous completed requirements"
+        intro: "Review previously-completed certifications."
+        review_previous_certifications_button: "Review previous certifications"

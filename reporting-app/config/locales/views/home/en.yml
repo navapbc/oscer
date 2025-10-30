@@ -1,0 +1,9 @@
+en:
+  home:
+    index:
+      title: "Get started"
+      intro: "Create an account to use this application."
+      heading: "Users"
+      body: "I am using this website."
+      signup: "Create an account"
+      or_sign_in: "Or sign into an existing account"

@@ -1,0 +1,37 @@
+services:
+  reporting-app-database:
+    image: postgres:14-alpine
+    command: postgres -c "log_lock_waits=on" -N 1000 -c "fsync=off"
+    environment:
+      POSTGRES_PASSWORD: secret123
+      POSTGRES_USER: app
+    healthcheck:
+      test: "pg_isready --username=app"
+      timeout: 10s
+      retries: 20
+    ports:
+      - "5432:5432"
+
+  # Rails app
+  # Configured for "production" RAILS_ENV
+  reporting-app:
+    # the container root filesystem is read-only in production, so mirror that
+    read_only: true
+    build:
+      context: .
+      target: release
+    depends_on:
+      reporting-app-database:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      - DB_HOST=reporting-app-database
+      - RAILS_BINDING=0.0.0.0
+      # The following env vars allow testing a "production"-like environment on a local
+      # machine.
+      - RAILS_ENV=mock-production
+      - SECRET_KEY_BASE=verysecret
+      - DISABLE_DATABASE_ENVIRONMENT_CHECK=1
+      - AWS_DEFAULT_REGION=us-east-1
+    ports:
+      - 3000:3000

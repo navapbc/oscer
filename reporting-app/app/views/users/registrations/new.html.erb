@@ -1,0 +1,40 @@
+<% content_for :title, t(".title") %>
+<% icon = "local_library" %>
+<% icon_color = "violet" %>
+
+<div class="bg-white padding-top-3 padding-bottom-5 padding-x-5 border border-base-lighter">
+  <div class="text-center margin-bottom-2 padding-bottom-2 border-bottom border-base-lighter">
+    <svg class="usa-icon usa-icon--size-6 text-<%= icon_color %>" aria-hidden="true" focusable="false" role="img">
+      <use xlink:href="<%= asset_path "@uswds/uswds/dist/img/sprite.svg##{icon}" %>"></use>
+    </svg>
+
+    <h1 class="font-heading-xl margin-y-0"><%= t(".title") %></h1>
+  </div>
+
+  <%= us_form_with model: @form, url: users_registrations_path, local: true do |f| %>
+    <%= f.honeypot_field %>
+    <%= f.email_field :email %>
+
+    <%= f.password_field :password, autocomplete: "new-password", id: "new-password", hint: t("users.password_hint") %>
+
+    <button
+      type="button"
+      class="usa-show-password"
+      aria-controls="new-password new-password-confirmation"
+      data-show-text="<%= t "users.show_password" %>"
+      data-hide-text="<%= t "users.hide_password" %>">
+        <%= t "users.show_password" %>
+      </button>
+
+    <%= f.password_field :password_confirmation, autocomplete: "new-password", id: "new-password-confirmation" %>
+
+    <%= f.submit t(".title") %>
+  <% end %>
+</div>
+
+<p class="text-center desktop:text-left margin-bottom-6">
+  <%= t ".have_existing_account" %>
+  <a class="usa-link" href="<%= url_for new_user_session_path %>">
+    <%= t ".login" %>
+  </a>
+</p>

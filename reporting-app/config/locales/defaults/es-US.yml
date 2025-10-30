@@ -1,0 +1,17 @@
+es-US:
+  date:
+    formats:
+      default: "%m/%d/%Y"
+      short: "%b %d"
+      long: "%B %d, %Y"
+  helpers:
+    submit:
+      create: "Submit"
+      update: "Update"
+  time:
+    formats:
+      default: "%B %d, %Y"
+      long: "%B %d, %Y %-I:%M %p"
+  us_form_with:
+    boolean_true: "Sí"
+    boolean_false: "No"

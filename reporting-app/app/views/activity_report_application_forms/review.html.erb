@@ -1,0 +1,13 @@
+<% content_for :title, t(".title") %>
+
+<%= render "strata/shared/step_indicator", steps: %i[start select_periods add_activities review submitted], current_step: :review, translation_scope: "activity_report_application_forms.steps" %>
+
+<h1>Review and submit</h1>
+
+<div class="usa-section margin-top-4 padding-0">
+  <%= render partial: 'activity_report_application_forms/activity_report_application_form', locals: { activity_report_application_form: @activity_report_application_form } %>
+</div>
+
+<%= strata_form_with(model: @activity_report_application_form, url: submit_activity_report_application_form_path(@activity_report_application_form), method: :post) do |f| %>
+  <%= f.submit "Submit report" %>
+<% end %>

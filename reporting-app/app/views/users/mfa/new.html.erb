@@ -1,0 +1,50 @@
+<% content_for :title, t('.title') %>
+
+<h1><%= t('.title') %></h1>
+<p class="usa-intro margin-bottom-2"><%= t('.lead') %></p>
+
+<ol class="usa-process-list">
+  <li class="usa-process-list__item">
+    <h2 class="usa-process-list__heading"><%= t('.open_app') %></h2>
+
+    <div class="usa-accordion usa-accordion--bordered maxw-tablet margin-top-2">
+      <h3 class="usa-accordion__heading">
+        <button
+          type="button"
+          class="usa-accordion__button"
+          aria-controls="auth-apps-help"
+        >
+          <%= t('.auth_apps_heading') %>
+        </button>
+      </h3>
+      <div id="auth-apps-help" class="usa-accordion__content usa-prose">
+        <p>
+          <%= t('.auth_apps_html') %>
+        </p>
+      </div>
+    </div>
+  </li>
+
+  <li class="usa-process-list__item">
+    <h2 class="usa-process-list__heading"><%= t('.qr_heading') %></h2>
+
+    <div class="margin-y-2"><%= totp_qr_code(@secret_code, @email).html_safe %></div>
+
+    <div><%= t('.code_label') %></div>
+    <code class="bg-base-lightest padding-2 display-inline-block"><%= @secret_code %></code>
+  </li>
+
+  <li class="usa-process-list__item">
+    <h2 id="temporary_code_heading" class="usa-process-list__heading"><%= t('.temporary_code') %></h2>
+
+    <%= form_with model: @form, url: users_mfa_index_path, local: true, html: { class: "usa-form" } do |f| %>
+      <%= f.text_field :temporary_code, {
+        autocomplete: "one-time-code",
+        class: "usa-input usa-input--md",
+        aria: { labelledby: "temporary_code_heading" }
+      } %>
+
+      <%= f.submit nil, class: "usa-button" %>
+    <% end %>
+  </li>
+</ol>

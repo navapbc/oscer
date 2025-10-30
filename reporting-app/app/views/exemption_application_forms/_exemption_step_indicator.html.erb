@@ -1,0 +1,9 @@
+<%
+# Exemption application workflow step indicator
+# @param current_step [Symbol] The current step (e.g., :start, :exemption_type, :documents, :review)
+%>
+<%= render "strata/shared/step_indicator",
+           steps: %i[start exemption_type documents review],
+           current_step: current_step,
+           translation_scope: "exemption_application_forms.steps" %>
+

@@ -1,0 +1,11 @@
+---
+en:
+  name: Name
+  created_at: Created
+  steps:
+    exemption_check: System exemption check
+    ex_parte_determination: System ex parte determination
+    report_activities: Member reports activities
+    review_activity_report: Review activity report
+    review_exemption_claim: Review exemption claim
+    end: Closed

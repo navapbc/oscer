@@ -1,0 +1,4 @@
+# This file is allows you to specify a list of files that is acceptable to Dockle
+# To allow multiple files, use a list of names.
+# https://github.com/goodwithtech/dockle#accept-suspicious-environment-variables--files--file-extensions
+DOCKLE_ACCEPT_FILES=omniauth.rb,rails/config/database.yml

@@ -1,0 +1,23 @@
+<%= content_for :content_col_class, 'tablet:grid-col-8 desktop:grid-col-9' %>
+<% nav_items = [
+  {
+    path: dev_sandbox_path,
+    label: t('.sidebar.index')
+  },
+  { path: "https://rubyonrails.org", label: t('.sidebar.rails') },
+  { path: "https://guides.rubyonrails.org", label: t('.sidebar.rails_guides') },
+] %>
+
+<%= content_for :before_content_col do %>
+  <nav aria-label="Side navigation" class="tablet:grid-col-4 desktop:grid-col-3 margin-bottom-4 tablet:margin-bottom-0">
+    <ul class="usa-sidenav">
+      <% nav_items.each do |item| %>
+        <li class="usa-sidenav__item">
+          <%= link_to item[:label], item[:path], class: current_page?(item[:path]) ? 'usa-current' : '' %>
+        </li>
+      <% end %>
+    </ul>
+  </nav>
+<% end %>
+
+<%= render template: 'layouts/application' %>

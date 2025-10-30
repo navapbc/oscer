@@ -1,0 +1,11 @@
+<% inactive_locale = I18n.locale == :"en" ? :"es-US" : :"en" %>
+
+<div class="<%= container_class %> usa-language--small">
+  <%=
+    link_to t('header.language_toggle', locale: inactive_locale),
+    url_for(locale: inactive_locale.to_s),
+    hreflang: inactive_locale,
+    rel: 'alternate',
+    class: 'usa-button usa-button--outline padding-y-1 height-auto'
+  %>
+</div>

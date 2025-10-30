@@ -1,0 +1,47 @@
+services:
+  reporting-app-database:
+    image: postgres:14-alpine
+    command: postgres -c "log_lock_waits=on" -N 1000 -c "fsync=off"
+    environment:
+      POSTGRES_PASSWORD: secret123
+      POSTGRES_USER: app
+    healthcheck:
+      test: "pg_isready --username=app"
+      timeout: 10s
+      retries: 20
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - reporting-app-database_data:/var/lib/postgresql/data
+
+  # Rails app
+  # Configured for "development" RAILS_ENV
+  reporting-app:
+    build:
+      context: .
+      target: dev
+    depends_on:
+      reporting-app-database:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      - DB_HOST=reporting-app-database
+      - DB_PORT=5432
+      - RAILS_BINDING=0.0.0.0
+      - RAILS_ENV=development
+    ports:
+      - 3000:3000
+    volumes:
+      - .:/rails
+      # Use named volumes for directories that the container should use the guest
+      # machine's dir instead of the host machine's dir, which may be divergent.
+      # This is especially true for any dependency or temp directories.
+      - reporting-app_nodemodules:/rails/node_modules
+      - reporting-app_tmp:/rails/tmp
+      - reporting-app_storage:/rails/storage
+
+volumes:
+  reporting-app-database_data:
+  reporting-app_nodemodules:
+  reporting-app_tmp:
+  reporting-app_storage:

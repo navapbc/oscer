@@ -1,0 +1,9 @@
+en:
+  staff:
+    index:
+      case_number: "Case no."
+      due_on: "Due on"
+      member_name: "Member name"
+      my_tasks: "My tasks"
+      task_type: "Task type"
+      title: "Dashboard"

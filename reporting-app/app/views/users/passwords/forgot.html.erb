@@ -1,0 +1,11 @@
+<% content_for :title, t(".title") %>
+
+<h1><%= t(".title") %></h1>
+<p><%= t(".instructions") %></p>
+
+<%= us_form_with model: @form, url: users_forgot_password_path, local: true do |f| %>
+  <%= f.email_field :email, { autocomplete: "username" } %>
+  <%= f.honeypot_field %>
+
+  <%= f.submit t(".submit") %>
+<% end %>

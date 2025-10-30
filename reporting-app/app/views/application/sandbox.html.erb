@@ -1,0 +1,35 @@
+<%# This page is for development purposes and is only available during local development %>
+
+<h1>Sandbox</h1>
+
+<h2>us_form_with</h2>
+
+<%= us_form_with url: user_session_en_path do |f| %>
+  <%= f.text_field :username, { label: "Name", hint: 'As shown on your legal ID'}  %>
+  <%= f.email_field :email, { class: 'usa-input--md' } %>
+  <%= f.password_field :password, { hint: "Test <strong>hint</strong>" } %>
+
+  <%= f.fieldset "What's your age?" do %>
+    <%= f.radio_button :age, "child", { label: "I am younger than 21" } %>
+    <%= f.radio_button :age, "adult", { label: "I am over 21" } %>
+  <% end %>
+
+  <%= f.yes_no :has_previous_leave, {
+    yes_options: { label: "Yes, I've taken leave before", hint: "You may be eligible for additional benefits" },
+    no_options: { label: "No, I haven't taken leave before" }
+  } %>
+
+  <%= f.fieldset "What pets do you have?" do %>
+    <%= f.hint "Fieldset <strong>hint text</strong> here" %>
+    <%= f.check_box :pet_dog, { label: "I own a dog" } %>
+    <%= f.check_box :pet_cat, { label: "I own a cat", hint: "They have nine lives"} %>
+  <% end %>
+
+  <%= f.select :city, ["Berlin", "Chicago", "Madrid"] %>
+
+  <%= f.text_area :message %>
+
+  <%= f.file_field :picture %>
+
+  <%= f.submit 'Save and continue' %>
+<% end %>

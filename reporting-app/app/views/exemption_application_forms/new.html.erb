@@ -1,0 +1,19 @@
+<% content_for :title, t(".title") %>
+
+<%= render "exemption_step_indicator", current_step: :start %>
+
+<h1><%= t(".heading") %></h1>
+
+<p><strong><%= t(".time_estimate") %></strong></p>
+
+<ul>
+  <li><%= t(".what_you_need.item1") %></li>
+  <li><%= t(".what_you_need.item2") %></li>
+</ul>
+
+<p><%= t(".save_info") %></p>
+
+<%= form_with(url: exemption_application_forms_path, method: :post, scope: :exemption_application_form) do |f| %>
+  <%= f.hidden_field :certification_case_id, value: params[:certification_case_id] %>
+  <%= f.submit t(".start_button"), class: "usa-button" %>
+<% end %>

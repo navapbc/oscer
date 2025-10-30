@@ -1,0 +1,47 @@
+@forward "uswds-theme";
+@forward "uswds";
+
+@use "uswds-core" as *;
+
+// =========================================================
+// Base typography
+// =========================================================
+h1,
+h2,
+h3,
+h4,
+label,
+legend {
+  text-wrap: balance;
+}
+
+.usa-breadcrumb + h1 {
+  margin-top: units(3);
+}
+
+p,
+li,
+.usa-hint {
+  text-wrap: pretty;
+}
+
+// =========================================================
+// Custom utilities missing from USWDS (for now)
+// =========================================================
+
+// Gap - USWDS has grid-gap but it doesn't work with flexbox
+@for $i from 0 through 10 {
+  .gap-#{$i} {
+    gap: units($i);
+  }
+}
+
+// =========================================================
+// Developer tooling
+// =========================================================
+// This shows when an i18n key is missing a value
+.translation_missing {
+  color: red;
+  font-weight: bold;
+  border: 3px dashed red;
+}

@@ -1,0 +1,21 @@
+plugins:
+  - rubocop-rspec
+inherit_gem:
+  pundit: config/rubocop-rspec.yml
+  rubocop-rails-omakase: rubocop.yml
+
+RSpec/IncludeExamples:
+  Enabled: true
+RSpec/ExampleLength:
+  Enabled: false
+RSpec/MultipleExpectations:
+  Enabled: false
+RSpec/MultipleMemoizedHelpers:
+  Enabled: false
+RSpec/NoExpectationExample:
+  AllowedPatterns:
+    - assert_
+    - is_expected_in_block
+
+Style/FrozenStringLiteralComment:
+  Enabled: true

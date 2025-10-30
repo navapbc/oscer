@@ -1,0 +1,19 @@
+<%= content_for :title, t(".title") %>
+
+<%= render "strata/shared/step_indicator", steps: %i[start select_periods add_activities review submitted], current_step: :start, translation_scope: "activity_report_application_forms.steps" %>
+
+<h1><%= t(".title") %></h1>
+<dl class="grid-row margin-bottom-0">
+  <dt class="grid-col flex-auto"><strong><%= t(".time_to_complete_description") %></strong></dt>
+  <dd class="grid-col flex-auto margin-left-1"><%= t(".time_to_complete") %></dd>
+</dl>
+<p class="margin-top-0"><%= t(".instructions") %></p>
+<ul>
+  <li><%= t(".what_you_need.item_1") %></li>
+  <li><%= t(".what_you_need.item_2") %></li>
+</ul>
+<p><%= t(".save_info") %></p>
+<%= strata_form_with(model: ActivityReportApplicationForm.new) do |f| %>
+  <%= f.hidden_field :certification_case_id, value: @certification_case.id %>
+  <%= f.submit t(".start_button") %>
+<% end %>

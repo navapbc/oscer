@@ -1,0 +1,12 @@
+<% content_for :title, t(".title") %>
+<%= render "strata/shared/step_indicator", steps: %i[start select_periods add_activities review submitted], current_step: :select_periods, translation_scope: "activity_report_application_forms.steps" %>
+<p>
+  <%= t( ".instructions_html",
+      number_of_months: @certification_requirements.number_of_months_to_certify,
+      pluralized_month: "month".pluralize(@certification_requirements.number_of_months_to_certify)
+    ) %>
+</p>
+<%= render "form",
+  activity_report_application_form: @activity_report_application_form,
+  months: @certification_requirements.months_that_can_be_certified
+%>

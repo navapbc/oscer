@@ -1,0 +1,7 @@
+<%= render "strata/shared/step_indicator", steps: %i[start select_periods add_activities review submitted], current_step: :add_activities, translation_scope: "activity_report_application_forms.steps" %>
+
+<%= render "application/upload_supporting_documents",
+  model: @activity,
+  url: upload_documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity) %>
+
+<%= link_to t("supporting_documents.continue"), @activity_report_application_form, class: "usa-button usa-button--outline margin-top-4" %>

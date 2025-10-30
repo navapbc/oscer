@@ -1,0 +1,41 @@
+# See: https://guides.rubyonrails.org/i18n.html.
+#
+# Be aware that YAML interprets the following case-insensitive strings as
+# booleans: `true`, `false`, `on`, `off`, `yes`, `no`. Therefore, these strings
+# must be quoted to be interpreted as strings. For example:
+#  "yes": yup
+#  enabled: "ON"
+
+en:
+  header:
+    account: My account
+    dashboard: Dashboard
+    language_toggle: English
+    logout: "Log out"
+    title: "Medicaid Community Engagement"
+    close: "Close"
+  flash:
+    error_heading:
+      zero: "An unexpected error occurred"
+      one: "An error occurred"
+      other: "%{count} errors occurred"
+    error_fallback: "Sorry, we encountered an unexpected error. If this continues to happen, you may call the Contact Center."
+    reload_page: "Reload page"
+  breadcrumbs:
+    home: "Home"
+  buttons:
+    submit: "Submit"
+  tables:
+    column: "Column"
+    description: "Description"
+  supporting_documents:
+    title: "Supporting documents"
+    continue: "Continue"
+    heading: "Supporting documents"
+    no_documents_text: "No supporting documents"
+    upload_document_label: "Upload supporting document(s)"
+    upload: "Upload document(s)"
+  case_documents:
+    title: "Documents"
+  case_tasks:
+    title: "Tasks"

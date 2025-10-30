@@ -1,0 +1,5 @@
+en:
+  dashboard:
+    exemption_submitted:
+      intro: "Your exemption application is being reviewed."
+      view_exemption_button: "View exemption application"

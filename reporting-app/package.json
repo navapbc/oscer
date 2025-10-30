@@ -1,0 +1,14 @@
+{
+  "name": "reporting-app",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build:css": "sass ./app/assets/stylesheets/application.scss:./app/assets/builds/application.css --load-path=node_modules --load-path=node_modules/@uswds/uswds/packages"
+  },
+  "dependencies": {
+    "@uswds/uswds": "^3.7.1"
+  },
+  "devDependencies": {
+    "sass": "^1.71.1"
+  }
+}

@@ -1,0 +1,11 @@
+<% content_for :title, t(".title") %>
+
+<div class="bg-white padding-5 border border-base-lighter">
+  <h1 class="font-heading-xl"><%= t(".title") %></h1>
+
+  <%= us_form_with model: @form, url: respond_to_session_challenge_path, local: true do |f| %>
+    <%= f.text_field :code, { autocomplete: "one-time-code", label: t(".code"), width: "md" } %>
+
+    <%= f.submit t(".submit") %>
+  <% end %>
+</div>

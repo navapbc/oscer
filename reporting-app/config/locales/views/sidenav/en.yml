@@ -1,0 +1,7 @@
+en:
+  layouts:
+    sidenav:
+      sidebar:
+        index: "Developer sandbox"
+        rails: "Ruby on Rails"
+        rails_guides: "Rails Guides"

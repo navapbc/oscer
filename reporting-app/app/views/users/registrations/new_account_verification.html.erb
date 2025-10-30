@@ -1,0 +1,26 @@
+<% content_for :title, t(".title") %>
+
+<div data-controller="registrations" class="bg-white padding-5 border border-base-lighter">
+  <h1>
+    <%= t(".title") %>
+  </h1>
+  <p>
+    <%= t(".instructions") %>
+  </p>
+
+  <%= us_form_with model: @form, url: users_verify_account_path, local: true do |f| %>
+    <%= f.email_field :email, { autocomplete: "username", "data-action": "input->registrations#updateResendEmail" } %>
+
+    <%= f.text_field :code, { autocomplete: "off", label: t('.code'), width: "md" } %>
+
+    <div>
+      <%= f.button t(".resend"), { class: "usa-button usa-button--unstyled margin-top-1", form: "resend-form" } %>
+    </div>
+
+    <%= f.submit t(".title") %>
+  <% end %>
+
+  <%= us_form_with model: @resend_verification_form, url: users_resend_verification_path, local: true, id: "resend-form" do |f| %>
+    <%= f.hidden_field :email, { "data-registrations-target": "resendEmailField" } %>
+  <% end %>
+</div>

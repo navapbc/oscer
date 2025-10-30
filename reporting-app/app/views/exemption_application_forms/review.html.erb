@@ -1,0 +1,13 @@
+<% content_for :title, t(".title") %>
+
+<%= render "exemption_step_indicator", current_step: :review %>
+
+<h1>Review and submit</h1>
+
+<div class="usa-section margin-top-4 padding-0">
+  <%= render partial: 'exemption_application_forms/exemption_application_form', locals: { exemption_application_form: @exemption_application_form } %>
+</div>
+
+<%= strata_form_with(model: @exemption_application_form, url: submit_exemption_application_form_path(@exemption_application_form), method: :post) do |f| %>
+  <%= f.submit "Submit exemption" %>
+<% end %>

@@ -1,0 +1,17 @@
+en:
+  dashboard:
+    new_certification:
+      activity_report:
+        title: "Report activities"
+        intro: "Report your activities for the current reporting period."
+        in_progress_status: "Report status"
+        in_progress_message: "You have an activity report in progress."
+        continue_report_button: "Continue report"
+        report_activities_button: "Report activities"
+      exemption_request:
+        title: "Apply for an exemption"
+        intro: "If you have certain conditions, you may not need to report activities."
+        in_progress_status: "Exemption status"
+        in_progress_message: "You have an exemption request in progress."
+        continue_request_button: "Continue request"
+        request_exemption_button: "Request exemption"

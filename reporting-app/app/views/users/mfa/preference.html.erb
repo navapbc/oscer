@@ -1,0 +1,12 @@
+<% content_for :title, t('.title') %>
+
+<h1><%= t('.title') %></h1>
+
+<%= us_form_with model: @form, url: users_update_mfa_preference_path, local: true do |f| %>
+  <%= f.fieldset t(".preference") do %>
+    <%= f.radio_button :mfa_preference, :software_token, { label: t('.software_token_label'), hint: t('.software_token_hint') } %>
+    <%= f.radio_button :mfa_preference, :opt_out, { label: t('.opt_out_label'), hint: t('.opt_out_hint') } %>
+  <% end %>
+
+  <%= f.submit %>
+<% end %>

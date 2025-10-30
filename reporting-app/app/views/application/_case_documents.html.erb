@@ -1,0 +1,19 @@
+<% content_for :title, t("case_documents.title") %>
+<% content_for :case_details do %>
+  <h2 id="case-details-heading" class="usa-heading-lg margin-bottom-1"><%= t("case_documents.title") %></h2>
+  <% if documents.any? %>
+    <ul class="usa-alert__text usa-list margin-top-1">
+      <% documents.each do |document| %>
+        <li class="usa-list-item">
+          <%= link_to("#{document.filename}", document.blob, target: "_blank") %> <small><em>(<%= document.created_at.strftime("%m/%d/%y %I:%M %p %Z") %>)</em></small>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <div style="padding: unset;" class="usa-alert usa-alert--info usa-alert--slim  usa-alert--no-icon" role="status">
+      <div class="usa-alert__body">
+        <p class="usa-alert__text">No documents available</p>
+      </div>
+    </div>
+  <% end %>
+<% end %>

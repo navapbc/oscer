@@ -1,0 +1,9 @@
+<% content_for :title, t("supporting_documents.title", default: "Upload documents") %>
+
+<%= render "exemption_step_indicator", current_step: :documents %>
+
+<%= render "application/upload_supporting_documents",
+  model: @exemption_application_form,
+  url: upload_documents_exemption_application_form_path(@exemption_application_form) %>
+
+<%= link_to t("supporting_documents.continue"), review_exemption_application_form_path(@exemption_application_form), class: "usa-button margin-top-4" %>

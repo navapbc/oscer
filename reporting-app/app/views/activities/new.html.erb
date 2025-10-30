@@ -1,0 +1,9 @@
+<% content_for :title, t(".title") %>
+
+<%= render "strata/shared/step_indicator", steps: %i[start select_periods add_activities review submitted], current_step: :add_activities, translation_scope: "activity_report_application_forms.steps" %>
+
+<%= link_to t(".back"), activity_report_application_form_path(@activity_report_application_form) %>
+
+<h1><%= t(".title") %></h1>
+
+<%= render "form", activity_report_application_form: @activity_report_application_form, activity: @activity %>

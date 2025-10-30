@@ -1,0 +1,17 @@
+<% content_for :title, t(".title") %>
+<%= content_for :main_col_class, "bg-base-lightest" %>
+
+<h1 class="font-heading-2xl">
+  <%= t(".title") %>
+</h1>
+<p class="usa-intro">
+  <%= t('.intro') %>
+</p>
+<a href="<%= users_new_registration_path %>" class="usa-button">
+  <%= t('.signup') %>
+</a>
+<p>
+  <a class="usa-link" href="<%= new_user_session_path %>">
+    <%= t('.or_sign_in') %>
+  </a>
+</p>

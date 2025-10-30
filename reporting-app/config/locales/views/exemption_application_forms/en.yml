@@ -1,0 +1,33 @@
+en:
+  exemption_application_forms:
+    steps:
+      start: "Before you start"
+      exemption_type: "Exemption type"
+      documents: "Supporting documents"
+      review: "Review and submit"
+    new:
+      title: "Before you start"
+      heading: "Apply for an activity exemption"
+      time_estimate: "It will take most people about one hour to complete this form. You will need the following information:"
+      what_you_need:
+        item1: "Supporting documentation"
+        item2: "Information about your situation that qualifies for an exemption"
+      save_info: "If at any time you need to take a break, simply save the form. You can start again where you left off when you are ready."
+      start_button: "Start"
+    exemption_type:
+      title: "Select exemption type"
+      heading: "What type of exemption are you requesting?"
+    show:
+      title: "Exemption"
+      back: "Back to dashboard"
+      edit: "Edit exemption"
+      submitted_on: "Submitted on"
+      intro:
+        in_progress: "Complete and submit your exemption"
+        submitted: "Your exemption is being reviewed"
+        approved: "Your exemption has been approved"
+        denied: "Your exemption has been denied"
+      next_step:
+        status:
+          in_progress: "Complete and submit your exemption"
+          submitted: "Your exemption is being reviewed"

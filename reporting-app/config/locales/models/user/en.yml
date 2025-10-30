@@ -1,0 +1,5 @@
+en:
+  activemodel:
+    attributes:
+      "users/mfa_preference_form":
+        mfa_preference: "Multi-factor authentication preference"

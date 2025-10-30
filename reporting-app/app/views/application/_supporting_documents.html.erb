@@ -1,0 +1,27 @@
+<%# 
+  Read-only partial for displaying supporting documents
+  
+  Parameters:
+  - model: The model object to check for attached documents
+  - field_name: The field name for the documents (default: :supporting_documents)
+%>
+
+<%
+  field_name ||= :supporting_documents
+  documents = model.send(field_name)
+%>
+
+<h2><%= t("supporting_documents.heading") %></h2>
+<% if documents.any? %>
+  <ul class="usa-list">
+    <% documents.each do |document| %>
+      <li>
+        <%= link_to document.filename, rails_blob_path(document, disposition: "attachment"), 
+            target: "_blank", class: "usa-link" %>
+        (<%= number_to_human_size(document.byte_size) %>)
+      </li>
+    <% end %>
+  </ul>
+<% else %>
+  <p><%= t("supporting_documents.no_documents_text") %></p>
+<% end %>

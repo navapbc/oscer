@@ -1,0 +1,22 @@
+<h1><%= t(".title") %></h1>
+
+<h2><%= t(".my_tasks") %></h2>
+<table class="usa-table usa-table--borderless width-full">
+  <thead>
+    <tr>
+      <th scope="col"><%= t(".task_type") %></th>
+      <th scope="col"><%= t(".member_name") %></th>
+      <th scope="col"><%= t(".case_number") %></th>
+      <th scope="col"><%= t(".due_on") %></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if @tasks.any? %>
+      <%= render partial: 'task_row', collection: @tasks, as: :task, locals: { cases_by_id: @cases_by_id } %>
+    <% else %>
+      <tr>
+        <td colspan="4" class="text-center">No pending tasks</td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

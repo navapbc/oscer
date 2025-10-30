@@ -1,0 +1,32 @@
+<% content_for :title, t(".title") %>
+
+<div class="usa-alert usa-alert--info">
+  <div class="usa-alert__body">
+    <h2 class="usa-alert__heading"><%= t(".instructions_heading") %></h2>
+    <p class="usa-alert__text">
+      <%= t(".instructions_html", verify_account_url: url_for(users_verify_account_path)) %>
+    </p>
+  </div>
+</div>
+
+<h1><%= t(".title") %></h1>
+
+<%= us_form_with model: @form, url: users_reset_password_path, local: true do |f| %>
+  <%= f.honeypot_field %>
+  <%= f.text_field :code, { autocomplete: "off", label: t('.code'), width: "md" } %>
+
+  <%= f.email_field :email, { autocomplete: "username" } %>
+
+  <%= f.password_field :password, autocomplete: "new-password", id: "new-password", hint: t("users.password_hint") %>
+
+  <button
+    type="button"
+    class="usa-show-password"
+    aria-controls="new-password"
+    data-show-text="<%= t "users.show_password" %>"
+    data-hide-text="<%= t "users.hide_password" %>">
+      <%= t "users.show_password" %>
+  </button>
+
+  <%= f.submit t(".submit") %>
+<% end %>

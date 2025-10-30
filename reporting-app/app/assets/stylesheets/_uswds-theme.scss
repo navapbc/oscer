@@ -1,0 +1,33 @@
+/*
+----------------------------------------
+USWDS settings overrides
+----------------------------------------
+See https://designsystem.digital.gov/documentation/settings/
+for a full list of available settings.
+----------------------------------------
+*/
+
+@use "uswds-core" with (
+  // Disable scary but mostly irrelevant warnings:
+  $theme-show-notifications: false,
+
+  // Ensure utility classes always override other styles
+  $utilities-use-important: true,
+
+  // Use USWDS defaults for typography
+  $theme-style-body-element: true,
+  $theme-font-type-sans: "public-sans",
+  $theme-global-content-styles: true,
+  $theme-global-link-styles: true,
+  $theme-global-paragraph-styles: true,
+
+  $theme-h1-font-size: "2xl",
+  $theme-h2-font-size: "lg",
+  $theme-h3-font-size: "md",
+
+  $theme-font-weight-semibold: 600,
+
+  // See also: config/initializers/uswds.rb
+  $theme-image-path: "@uswds/uswds/dist/img",
+  $theme-font-path: "@uswds/uswds/dist/fonts"
+);

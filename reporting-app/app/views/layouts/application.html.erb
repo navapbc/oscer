@@ -1,0 +1,47 @@
+<%# Top-level layout for all pages in the application %>
+<!DOCTYPE html>
+<html lang="<%= I18n.locale %>">
+  <head>
+    <title>
+      <%= content_for?(:title) ? "#{ yield(:title) } | #{ t('header.title') }" : t("header.title") %>
+    </title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= favicon_link_tag asset_path('@uswds/uswds/dist/img/us_flag_small.png') %>
+
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= yield :head %>
+
+    <%= javascript_importmap_tags %>
+    <%= javascript_include_tag '@uswds/uswds/dist/js/uswds-init.min.js' %>
+  </head>
+
+  <body>
+    <div class="display-flex flex-column minh-viewport">
+      <%= render partial: 'application/header' %>
+
+      <main id="main-content" class="grid-col-fill display-flex flex-column">
+        <div class="grid-col-fill <%= yield :main_col_class %>">
+          <section class="usa-section">
+            <div class="grid-container">
+              <%= render partial: 'application/flash' %>
+
+              <div class="grid-row grid-gap">
+                <%= yield :before_content_col %>
+                <div class="grid-col-12 <%= yield :content_col_class %>" id="content">
+                  <%= content_for?(:content) ? yield(:content) : yield %>
+                </div>
+                <%= yield :after_content_col %>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <%= javascript_include_tag '@uswds/uswds/dist/js/uswds.min.js' %>
+    <%= yield :scripts %>
+  </body>
+</html>

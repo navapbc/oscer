@@ -1,0 +1,6 @@
+<tr>
+  <td><%= link_to task.type.underscore.humanize, task_path(task) %></td>
+  <td><%= cases_by_id[task.case_id].certification&.member_email %></td>
+  <td><%= cases_by_id[task.case_id].certification&.case_number %></td>
+  <td><%= task.due_on&.strftime("%m/%d/%Y") || "—" %></td>
+</tr>

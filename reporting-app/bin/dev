@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+
+if gem list --no-installed --exact --silent overman; then
+  echo "Installing overman..."
+  gem install overman
+fi
+
+# Default to port 3000 if not specified
+export PORT="${PORT:-3000}"
+export RAILS_BINDING="${RAILS_BINDING:-localhost}"
+
+# -e /dev/null to disable the limited/broken .env file loading logic, which does
+# not respect existing env vars
+#
+# https://github.com/ddollar/foreman/pull/711
+exec overman start -f Procfile.dev -e /dev/null "$@"

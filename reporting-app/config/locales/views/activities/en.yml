@@ -1,0 +1,19 @@
+en:
+  activities:
+    edit:
+      title: "Edit activity"
+      back: "Back to activity report"
+      edit: "Edit activity"
+    new:
+      title: "Add activity"
+      back: "Back to activity report"
+      edit: "Edit activity"
+    form:
+      name: "Employer name"
+      continue: "Save and continue"
+    show:
+      title:
+        work: "Work for %{name}"
+      back: "Back to activity report"
+      edit: "Edit activity"
+      destroy: "Delete activity"

@@ -1,0 +1,5 @@
+en:
+  dashboard:
+    exemption_approved:
+      intro: "Your exemption request meets the requirements. You do not need to report activities at this time."
+      view_certification_button: "View completed certification"

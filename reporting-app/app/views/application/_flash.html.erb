@@ -1,0 +1,45 @@
+<% # @TODO: Dry this up using a partial or something like View Components %>
+<% # https://api.rubyonrails.org/classes/ActionDispatch/Flash.html %>
+<% if flash[:notice] || flash[:errors] || alert || notice %>
+  <div class="grid-row margin-bottom-3">
+    <div class="grid-col-12">
+      <% if flash[:notice] || notice %>
+        <div class="usa-alert usa-alert--success">
+          <div class="usa-alert__body">
+            <p class="usa-alert__text"><%= flash[:notice] || notice %></p>
+          </div>
+        </div>
+      <% end %>
+
+      <% if flash[:errors] || alert %>
+        <div class="usa-alert usa-alert--error" role="alert">
+          <div class="usa-alert__body">
+            <% if flash[:errors] %>
+              <h3 class="usa-alert__heading">
+                <%= t "flash.error_heading", count: flash[:errors].count %>
+              </h3>
+            <% end %>
+            <div class="usa-alert__text">
+              <% if alert %>
+                <%= alert %>
+              <% elsif flash[:errors].count == 0 %>
+                <p><%= t('flash.error_fallback') %></p>
+                <button class="usa-button usa-button--outline" onclick="location.reload();">
+                  <%= t('flash.reload_page') %>
+                </button>
+              <% elsif flash[:errors].count == 1 %>
+                <%= flash[:errors].first %>
+              <% else %>
+                <ul class="usa-list">
+                  <% flash[:errors].each do |error| %>
+                    <li><%= error %></li>
+                  <% end %>
+                </ul>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>

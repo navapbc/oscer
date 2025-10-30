@@ -1,0 +1,47 @@
+<%# 
+  Partial for displaying and uploading supporting documents with a dedicated upload form
+  
+  Parameters:
+  - model: The model object to check for attached documents
+  - url: The URL for the upload form action
+  - method: HTTP method for the form (default: :post)
+  - field_name: The field name for the documents (default: :supporting_documents)
+%>
+
+<%
+  field_name ||= :supporting_documents
+  method ||= :post
+  documents = model.send(field_name)
+%>
+<% content_for :title, t("supporting_documents.title") %>
+
+<h1><%= t("supporting_documents.title") %></h1>
+
+<% if documents.attached? %>
+  <div class="usa-form-group">
+    <label class="usa-label"><%= t("supporting_documents.heading") %></label>
+    <ul class="usa-list">
+      <% documents.each do |document| %>
+        <li>
+          <%= link_to document.filename, rails_blob_path(document, disposition: "attachment"), 
+              target: "_blank", class: "usa-link" %>
+          (<%= number_to_human_size(document.byte_size) %>)
+        </li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<%= strata_form_with(
+  model: model,
+  url: url,
+  method: method) do |f| %>
+
+  <% documents.each do |document| %>
+    <%= f.hidden_field field_name, multiple: true, value: document.signed_id %>
+  <% end %>
+
+  <%= f.file_field field_name, label: t("supporting_documents.upload_document_label"), multiple: true %>
+  
+  <%= f.submit t("supporting_documents.upload") %>
+<% end %>

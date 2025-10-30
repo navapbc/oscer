@@ -1,0 +1,44 @@
+<% content_for :title, t(".title") %>
+
+<h1><%= t(".title") %></h1>
+
+<%= link_to t(".create"), new_certification_path(), class: "usa-button" %>
+
+<section class="d-flex flex-column flex-md-row gap-4 align-items-start justify-content-between">
+  <table class="usa-table usa-table--borderless width-full">
+    <thead>
+      <tr>
+        <th scope="col">
+          <%= t(".columns.col_certification_id") %>
+        </th>
+        <th scope="col">
+          <%= t(".columns.col_case_number") %>
+        </th>
+        <th scope="col">
+          <%= t(".columns.col_created") %>
+        </th>
+        <th scope="col">
+          <%= t(".columns.col_actions") %>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <% for certification in @certifications do %>
+        <tr>
+          <td>
+            <%= certification.id %>
+          </td>
+          <td>
+            <%= certification.case_number %>
+          </td>
+          <td>
+            <%= local_time(certification.created_at, format: :long) %>
+          </td>
+          <td>
+              <%= link_to t(".actions.show"), certification_path(certification), class: "usa-button" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</section>

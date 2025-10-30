@@ -1,0 +1,19 @@
+<%= strata_form_with(model: activity_report_application_form, data: { turbo: false }) do |f| %>
+  <fieldset class="usa-fieldset">
+    <%# TODO: Add collection_check_boxes to strata-sdk form builder %>
+    <%= f.collection_check_boxes :reporting_periods, selectable_reporting_periods(months), :last, :first,
+        { checked: selected_reporting_periods(activity_report_application_form) },
+        { class: "usa-checkbox__input" } do |builder| %>
+        <% if activity_report_application_form.errors[:reporting_periods].any? %>
+          <div class="usa-error-message id-error-reporting_periods" role="alert">
+            <%= activity_report_application_form.errors[:reporting_periods].join(', ') %>
+          </div>
+        <% end %>
+      <div class="usa-checkbox">
+        <%= builder.check_box(class: "usa-checkbox__input") %>
+        <%= builder.label(class: "usa-checkbox__label") %>
+      </div>
+    <% end %>
+  </fieldset>
+  <%= f.submit "Save" %>
+<% end %>

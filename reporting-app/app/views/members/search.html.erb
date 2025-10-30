@@ -1,0 +1,24 @@
+<h1>Member Search</h1>
+
+<%= form_with url: search_members_path, method: :post, class: "usa-form" do |form| %>
+  <div class="usa-form-group">
+    <%= form.label :email, "By Email", class: "usa-label" %>
+    <%= form.text_field :email, value: params[:email], class: "usa-input" %>
+  </div>
+  <%= form.submit "Search", class: "usa-button" %>
+<% end %>
+
+<% if @members.any? %>
+  <h2>Results</h2>
+  <table class="usa-table usa-table--borderless width-full">
+    <thead>
+      <tr>
+        <th>Member ID</th>
+        <th>Email</th>
+      </tr>
+    </thead>
+    <tbody>
+      <%= render partial: 'member_row', collection: @members %>
+    </tbody>
+  </table>
+<% end %>

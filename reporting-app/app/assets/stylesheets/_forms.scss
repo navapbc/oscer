@@ -1,0 +1,19 @@
+@use "uswds-core" as *;
+
+.usa-hint {
+  ul,
+  ol {
+    margin-bottom: units(2);
+  }
+}
+.usa-legend--large {
+  @include u-measure(5);
+  padding-top: units(2);
+  margin-top: 0;
+  margin-bottom: units(1);
+  font-size: font-size($theme-form-font-family, "lg");
+  font-weight: font-weight("bold");
+}
+.usa-form--large {
+  @include u-measure(5);
+}

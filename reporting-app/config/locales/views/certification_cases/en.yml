@@ -1,0 +1,37 @@
+en:
+  certification_cases:
+    case_layout:
+      details: "Details"
+      tasks: "Tasks"
+      documents: "Documents"
+      notes: "Notes"
+    index:
+      title: "Certification Cases"
+    show:
+      assigned_to: "Assigned to:"
+      caseworker: "Caseworker"
+      certification_date: "Certification date:"
+      certification_details: "Certification Details"
+      certification_due_date: "Certification due date:"
+      last_updated: "Last updated:"
+      activity_report: "Activity Report"
+      no_activity_report: "No activity report submitted"
+      ex_parte_data: "Ex parte data"
+      information_request_info: "Tasks will be updated once the member provides updated documents."
+      information_request_sent: "We sent a Request for Information to this member"
+      information_requests: "Requests for Information"
+      lookback_period: "Lookback period:"
+      member_name: "Member name:"
+      member_email: "Member email:"
+      member_status: "Member Status:"
+      missing: "Missing"
+      no_information_requests: "No information requests"
+      no_tasks: "No tasks"
+      none: "None"
+      number_of_months_to_certify: "Number of months to certify:"
+      status: "Status:"
+      step: "Step:"
+      tasks: "Tasks"
+      title: "Case: %{case_number}"
+    notes:
+      title: "Notes"

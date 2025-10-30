@@ -1,0 +1,20 @@
+<% content_for :title, t(".title") %>
+
+<%= link_to t(".back"), dashboard_path %>
+
+<h1><%= t(".title") %></h1>
+
+<% if policy(@exemption_application_form).edit? %>
+  <p class="usa-intro"><%= t(".intro.in_progress") %></p>
+  <%= link_to "Review and submit", review_exemption_application_form_path(@exemption_application_form), class: class_names("usa-button") %>
+  <%= link_to t(".edit"), edit_exemption_application_form_path(@exemption_application_form), class: class_names("usa-button") %>
+<% elsif @certification_case&.exemption_request_approval_status == "approved" || @certification_case&.exemption_request_approval_status == "denied" %>
+  <p class="usa-intro"><%= t(".intro.#{@certification_case.exemption_request_approval_status}") %></p>
+<% else %>
+  <p class="usa-intro"><%= t(".intro.submitted") %></p>
+<% end %>
+
+<%# Temporary spacing workaround %>
+<div class="margin-top-6"></div>
+
+<%= render @exemption_application_form %>

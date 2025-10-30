@@ -1,0 +1,35 @@
+<% content_for :title, t(".title") %>
+
+<div class="bg-white padding-5 border border-base-lighter">
+  <h1>
+    <%= t(".title") %>
+  </h1>
+
+  <%= us_form_with model: @form, url: new_user_session_path, local: true do |f| %>
+    <%= f.honeypot_field %>
+    <%= f.email_field :email, { autocomplete: "username" } %>
+
+    <%= f.password_field :password, {id: "password", autocomplete: "current-password"} %>
+    <button
+      type="button"
+      class="usa-show-password"
+      aria-controls="password"
+      data-show-text="<%= t "users.show_password" %>"
+      data-hide-text="<%= t "users.hide_password" %>">
+        <%= t "users.show_password" %>
+      </button>
+
+    <%= f.submit t(".title") %>
+
+    <p>
+      <%= link_to t('.forgot_password'), users_forgot_password_path %>
+    </p>
+  <% end %>
+</div>
+
+<p class="text-center">
+  <%= t('.no_account') %>
+  <a class="usa-link" href="<%= url_for users_new_registration_path %>">
+    <%= t('.create_account') %>
+  </a>.
+</p>
