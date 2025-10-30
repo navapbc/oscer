@@ -26,6 +26,7 @@ FactoryBot.define do
     end
 
     trait :partially_met_work_hours_requirement do
+      date_of_birth { cert_date - 35.years } # 35 years old (ineligible for age exemption)
       payroll_accounts {
         [
           {
@@ -46,6 +47,7 @@ FactoryBot.define do
     end
 
     trait :fully_met_work_hours_requirement do
+      date_of_birth { cert_date - 35.years }
       payroll_accounts {
         [
           {
@@ -62,6 +64,10 @@ FactoryBot.define do
           }
         ]
       }
+    end
+
+    trait :meets_age_based_exemption_requirement do
+      date_of_birth { cert_date - 18.years } # 18 years old (eligible for age exemption)
     end
   end
 end

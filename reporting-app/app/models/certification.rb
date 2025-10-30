@@ -4,6 +4,8 @@ require_relative "certifications/member_data"
 require_relative "certifications/requirements"
 
 class Certification < ApplicationRecord
+  include Determinable
+
   attribute :member_id, :string
   attribute :case_number, :string
 

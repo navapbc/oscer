@@ -64,6 +64,29 @@ class CertificationCase < Strata::Case
     Strata::EventManager.publish("DeterminedNotExempt", { case_id: id })
   end
 
+  def determine_ex_parte_exemption(eligibility_fact)
+    if eligibility_fact.value
+      transaction do
+        self.exemption_request_approval_status = "approved"
+        self.exemption_request_approval_status_updated_at = Time.current
+        self.close!
+
+        certification = Certification.find(self.certification_id)
+        certification.record_determination!(
+          decision_method: :automated,
+          reason: :age_under_19_exempt, # hardcoded for now
+          outcome: :exempt,
+          determination_data: eligibility_fact.reasons,
+          determined_at: certification.certification_requirements.certification_date
+        )
+      end
+
+      Strata::EventManager.publish("DeterminedExempt", { case_id: id })
+    else
+      Strata::EventManager.publish("DeterminedNotExempt", { case_id: id })
+    end
+  end
+
   # Determines the member's certification status based on business process state
   # Uses the workflow's current_step as the source of truth
   def member_status

@@ -31,5 +31,12 @@
 # @see Strata::Determinable for the +record_determination!+ method to use in models
 #
 class Determination < Strata::Determination
-  # Add custom enums, validations, scopes, and callbacks here
+  enum :decision_method, { automated: "automated", manual: "manual" }
+  enum :reason, {
+    age_under_19_exempt: "age_under_19_exempt",
+    age_over_65_exempt: "age_over_65_exempt",
+    pregnancy_exempt: "pregnancy_exempt",
+    american_indian_alaska_native_exempt: "american_indian_alaska_native_exempt"
+  }
+  enum :outcome, { compliant: "compliant", exempt: "exempt" }
 end

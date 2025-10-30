@@ -13,6 +13,7 @@ module Demo
 
       attribute :member_email, :string
       strata_attribute :member_name, :name
+      strata_attribute :date_of_birth, :us_date
       attribute :case_number, :string
 
       # TODO: add validation you can't set both certification_type and the other params?
@@ -39,8 +40,20 @@ module Demo
       # message about relationship to number_of_months_to_certify
       validates :lookback_period, numericality: { greater_than_or_equal_to: Proc.new { |record| record.number_of_months_to_certify } }
 
+      validate :date_of_birth_must_be_in_past
+
       def locked_type_params?
         certification_type.present?
+      end
+
+      private
+
+      def date_of_birth_must_be_in_past
+        return unless date_of_birth.present?
+
+        if date_of_birth > Date.current
+          errors.add(:date_of_birth, "must be in the past")
+        end
       end
     end
   end

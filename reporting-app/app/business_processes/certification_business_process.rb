@@ -2,11 +2,10 @@
 
 class CertificationBusinessProcess < Strata::BusinessProcess
   # TODO: system process to do exemption check
-  system_process("exemption_check", ->(kase) {
-    Strata::EventManager.publish("DeterminedNotExempt", { case_id: kase.id })
+  system_process("ex_parte_exemption_check", ->(kase) {
+    ExemptionDeterminationService.determine(kase)
   })
-  # TODO: system process for Ex Parte Determination
-  system_process("ex_parte_determination", ->(kase) {
+  system_process("ex_parte_community_engagement_check", ->(kase) {
     Strata::EventManager.publish("DeterminedRequirementsNotMet", { case_id: kase.id })
   })
 
@@ -15,16 +14,16 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   staff_task("review_exemption_claim", ReviewExemptionClaimTask)
 
   # define start step
-  start("exemption_check", on: "CertificationCreated") do |event|
+  start("ex_parte_exemption_check", on: "CertificationCreated") do |event|
     CertificationCase.new(certification_id: event[:payload][:certification_id])
   end
 
   # define transitions
 
-  transition("exemption_check", "DeterminedNotExempt", "ex_parte_determination")
-  transition("exemption_check", "DeterminedExempt", "end")
-  transition("ex_parte_determination", "DeterminedRequirementsNotMet", "report_activities")
-  transition("ex_parte_determination", "DeterminedRequirementsMet", "end")
+  transition("ex_parte_exemption_check", "DeterminedNotExempt", "ex_parte_community_engagement_check")
+  transition("ex_parte_exemption_check", "DeterminedExempt", "end")
+  transition("ex_parte_community_engagement_check", "DeterminedRequirementsNotMet", "report_activities")
+  transition("ex_parte_community_engagement_check", "DeterminedRequirementsMet", "end")
 
   transition("report_activities", "ActivityReportApplicationFormSubmitted", "review_activity_report")
   transition("review_activity_report", "DeterminedRequirementsMet", "end")
