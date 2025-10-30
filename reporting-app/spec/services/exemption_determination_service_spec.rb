@@ -13,6 +13,7 @@ RSpec.describe ExemptionDeterminationService do
 
     before do
       allow(Strata::EventManager).to receive(:publish)
+      allow(NotificationService).to receive(:send_email_notification)
     end
 
     context 'when applicant is under 19 years old' do

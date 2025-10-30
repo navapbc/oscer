@@ -1,0 +1,30 @@
+en:
+  member_mailer:
+    greeting:
+      hello: "Hello %{first_name},"
+    action_required_email:
+      subject: "Action Needed: Please Submit Your Community Engagement Activities"
+      need_information: "We need information to complete your Medicaid Community Engagement compliance review."
+      login_instructions: "Please log in to your account at %{login_link} by %{due_date} and do one of the following:"
+      report_activities:
+        title: "Report your activities (have evidence ready)"
+        description: "You'll enter your hours or income and upload a document, photo, or PDF."
+        helpful_examples: "Helpful examples:"
+        work_income: "Work/income: recent pay stub, earnings statement"
+        job_search: "Job search/training/education: enrollment or attendance letter, class schedule"
+        volunteering: "Volunteering/community service: letter or email from the organization showing dates and hours"
+      check_exempt:
+        title: "Check if you're exempt"
+        description: "You can walk through some prompts to see if the requirement applies to you (e.g., pregnancy,
+          caring for a young child, medical reasons). If you may be exempt, you'll need to provide supporting documentation."
+    exempt_email:
+      subject: "No Action Needed: You're Exempt for %{period}"
+      good_news: "Good news—based on the information we have, you are exempt from Community Engagement reporting for %{period}."
+      reason: "Reason:"
+      what_this_means: "What this means: You do not need to report any activities for this period."
+      contact_if_needed: "We'll contact you if we need anything else."
+      questions: "Questions? Call us: [Call Center Number] (TTY: [TTY Number]) [Hours/Timezone]"
+    signature:
+      sincerely: "Sincerely,"
+      agency_name: "[Agency Name]"
+      support_contact: "[Support Contact Information]"

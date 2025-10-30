@@ -1,0 +1,13 @@
+<%= render partial: 'member_mailer/greeting', locals: { first_name: @first_name }  %>
+
+<p><%= t('.good_news', period: @period) %></p>
+
+<p><strong><%= t('.reason') %></strong> <%= @exemption_reasons %></p>
+
+<p><strong><%= t('.what_this_means') %></strong></p>
+
+<p><%= t('.contact_if_needed') %></p>
+
+<p><%= t('.questions') %></p>
+
+<%= render 'member_mailer/signature' %>
