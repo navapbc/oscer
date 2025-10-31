@@ -188,8 +188,11 @@ RSpec.describe CertificationCase, type: :model do
 
     context 'when applicant is eligible for exemption' do
       it 'sets approval status and closes case' do
+        age_fact = Strata::RulesEngine::Fact.new(
+          :age_under_19, true, reasons: []
+        )
         eligibility_fact = Strata::RulesEngine::Fact.new(
-          "no-op", true, reasons: [ { rule_name: "eligible_for_age_exemption", reason: "age_under_19", rule_result: true } ]
+          :age_eligibility, true, reasons: [ age_fact ]
         )
         certification_case.determine_ex_parte_exemption(eligibility_fact)
         certification_case.reload
@@ -201,9 +204,10 @@ RSpec.describe CertificationCase, type: :model do
         determination = Determination.first
 
         expect(determination.decision_method).to eq("automated")
-        expect(determination.reason).not_to be_nil
+        expect(determination.reason).to eq("age_under_19_exempt")
         expect(determination.outcome).to eq("exempt")
         expect(determination.determined_at).to be_present
+        expect(determination.determination_data).to eq(eligibility_fact.reasons.to_json)
 
         expect(Strata::EventManager).to have_received(:publish).with(
           "DeterminedExempt",

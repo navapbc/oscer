@@ -19,11 +19,21 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     end
 
     context 'when applicant is eligible for exemption' do
+      let(:age_fact) do
+        Strata::RulesEngine::Fact.new(
+          :age_under_19, true, reasons: []
+        )
+      end
+      let(:other_age_fact) do
+        Strata::RulesEngine::Fact.new(
+          :age_over_65, false, reasons: []
+        )
+      end
       let(:eligibility_fact) do
         Strata::RulesEngine::Fact.new(
-          "no-op",
+          :age_eligibility,
           true,
-          reasons: [ { rule_name: "eligible_for_age_exemption", reason: "age_under_19", rule_result: true } ]
+          reasons: [ age_fact, other_age_fact ]
         )
       end
 
