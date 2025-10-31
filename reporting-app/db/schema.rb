@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_10_30_155156) do
+ActiveRecord::Schema[7.2].define(version: 2025_10_31_214909) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -110,12 +110,12 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_30_155156) do
     t.uuid "subject_id", null: false
     t.string "subject_type", null: false
     t.string "decision_method", null: false
-    t.string "reason", null: false
     t.string "outcome", null: false
     t.jsonb "determination_data", default: {}, null: false
     t.uuid "determined_by_id"
     t.datetime "determined_at", null: false
     t.datetime "created_at", null: false
+    t.string "reasons", default: [], null: false, array: true
     t.index ["created_at"], name: "index_strata_determinations_on_created_at"
     t.index ["determined_at"], name: "index_strata_determinations_on_determined_at"
     t.index ["determined_by_id"], name: "index_strata_determinations_on_determined_by_id"

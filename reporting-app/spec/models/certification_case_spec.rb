@@ -204,7 +204,7 @@ RSpec.describe CertificationCase, type: :model do
         determination = Determination.first
 
         expect(determination.decision_method).to eq("automated")
-        expect(determination.reason).to eq("age_under_19_exempt")
+        expect(determination.reasons).to include("age_under_19_exempt")
         expect(determination.outcome).to eq("exempt")
         expect(determination.determined_at).to be_present
         expect(determination.determination_data).to eq(eligibility_fact.reasons.to_json)

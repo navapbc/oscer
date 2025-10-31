@@ -1,0 +1,8 @@
+en:
+  activerecord:
+    errors:
+      models:
+        determination:
+          attributes:
+            reasons:
+              inclusion: "must contain only valid reason values"
