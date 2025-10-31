@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class CertificationBusinessProcess < Strata::BusinessProcess
-  # TODO: system process to do exemption check
   system_process("ex_parte_exemption_check", ->(kase) {
     ExemptionDeterminationService.determine(kase)
   })
