@@ -2,6 +2,7 @@
 
 class Certifications::MemberData < ValueObject
   include ActiveModel::AsJsonAttributeType
+  include Strata::Attributes
 
   class ContactData < ValueObject
     include ActiveModel::AsJsonAttributeType
@@ -33,6 +34,7 @@ class Certifications::MemberData < ValueObject
   attribute :account_email, :string
   attribute :contact, ContactData.to_type
   attribute :name, ActiveModel::Type::Json.new(Strata::Name)
+  attribute :date_of_birth, :date
 
   attribute :payroll_accounts, :array, of: PayrollAccount.to_type
 end

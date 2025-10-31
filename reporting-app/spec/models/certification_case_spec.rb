@@ -98,9 +98,9 @@ RSpec.describe CertificationCase, type: :model do
   end
 
   describe '#accept_activity_report' do
-    it 'sets approval status and closes case' do
-      allow(Strata::EventManager).to receive(:publish)
+    before { allow(Strata::EventManager).to receive(:publish) }
 
+    it 'sets approval status and closes case' do
       certification_case.accept_activity_report
       certification_case.reload
 
@@ -110,8 +110,6 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'publishes DeterminedRequirementsMet event' do
-      allow(Strata::EventManager).to receive(:publish)
-
       certification_case.accept_activity_report
 
       expect(Strata::EventManager).to have_received(:publish).with(
@@ -122,9 +120,9 @@ RSpec.describe CertificationCase, type: :model do
   end
 
   describe '#deny_activity_report' do
-    it 'sets denial status' do
-      allow(Strata::EventManager).to receive(:publish)
+    before { allow(Strata::EventManager).to receive(:publish) }
 
+    it 'sets denial status' do
       certification_case.deny_activity_report
       certification_case.reload
 
@@ -133,8 +131,6 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'publishes DeterminedRequirementsNotMet event' do
-      allow(Strata::EventManager).to receive(:publish)
-
       certification_case.deny_activity_report
 
       expect(Strata::EventManager).to have_received(:publish).with(
@@ -145,9 +141,9 @@ RSpec.describe CertificationCase, type: :model do
   end
 
   describe '#accept_exemption_request' do
-    it 'sets approval status and closes case' do
-      allow(Strata::EventManager).to receive(:publish)
+    before { allow(Strata::EventManager).to receive(:publish) }
 
+    it 'sets approval status and closes case' do
       certification_case.accept_exemption_request
       certification_case.reload
 
@@ -157,8 +153,6 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'publishes DeterminedExempt event' do
-      allow(Strata::EventManager).to receive(:publish)
-
       certification_case.accept_exemption_request
 
       expect(Strata::EventManager).to have_received(:publish).with(
@@ -169,9 +163,9 @@ RSpec.describe CertificationCase, type: :model do
   end
 
   describe '#deny_exemption_request' do
-    it 'sets denial status' do
-      allow(Strata::EventManager).to receive(:publish)
+    before { allow(Strata::EventManager).to receive(:publish) }
 
+    it 'sets denial status' do
       certification_case.deny_exemption_request
       certification_case.reload
 
@@ -180,14 +174,66 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'publishes DeterminedNotExempt event' do
-      allow(Strata::EventManager).to receive(:publish)
-
       certification_case.deny_exemption_request
 
       expect(Strata::EventManager).to have_received(:publish).with(
         "DeterminedNotExempt",
         { case_id: certification_case.id }
       )
+    end
+  end
+
+  describe '#determine_ex_parte_exemption' do
+    before { allow(Strata::EventManager).to receive(:publish) }
+
+    context 'when applicant is eligible for exemption' do
+      it 'sets approval status and closes case' do
+        age_fact = Strata::RulesEngine::Fact.new(
+          :age_under_19, true, reasons: []
+        )
+        eligibility_fact = Strata::RulesEngine::Fact.new(
+          :age_eligibility, true, reasons: [ age_fact ]
+        )
+        certification_case.determine_ex_parte_exemption(eligibility_fact)
+        certification_case.reload
+
+        expect(certification_case.exemption_request_approval_status).to eq("approved")
+        expect(certification_case.exemption_request_approval_status_updated_at).to be_present
+        expect(certification_case).to be_closed
+
+        determination = Determination.first
+
+        expect(determination.decision_method).to eq("automated")
+        expect(determination.reason).to eq("age_under_19_exempt")
+        expect(determination.outcome).to eq("exempt")
+        expect(determination.determined_at).to be_present
+        expect(determination.determination_data).to eq(eligibility_fact.reasons.to_json)
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DeterminedExempt",
+          { case_id: certification_case.id }
+        )
+      end
+    end
+
+
+    context 'when applicant is not eligible for exemption' do
+      it 'publishes DeterminedNotExempt event' do
+        eligibility_fact = Strata::RulesEngine::Fact.new(
+          "no-op", false
+        )
+        certification_case.determine_ex_parte_exemption(eligibility_fact)
+        certification_case.reload
+
+        expect(certification_case.exemption_request_approval_status).to be_nil
+        expect(certification_case.exemption_request_approval_status_updated_at).to be_nil
+        expect(Determination.count).to be_zero
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DeterminedNotExempt",
+          { case_id: certification_case.id }
+        )
+      end
     end
   end
 end

@@ -11,6 +11,74 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     allow(Strata::EventManager).to receive(:publish).and_call_original
   end
 
+  describe 'ex_parte_exemption_check' do
+    before do
+      certification_case.update!(
+        business_process_current_step: "ex_parte_exemption_check"
+      )
+    end
+
+    context 'when applicant is eligible for exemption' do
+      let(:age_fact) do
+        Strata::RulesEngine::Fact.new(
+          :age_under_19, true, reasons: []
+        )
+      end
+      let(:other_age_fact) do
+        Strata::RulesEngine::Fact.new(
+          :age_over_65, false, reasons: []
+        )
+      end
+      let(:eligibility_fact) do
+        Strata::RulesEngine::Fact.new(
+          :age_eligibility,
+          true,
+          reasons: [ age_fact, other_age_fact ]
+        )
+      end
+
+      it 'transitions to end' do
+        # Step 1: Case has been created and is on ex_parte_exemption_check step
+        expect(certification_case.business_process_instance.current_step).to eq("ex_parte_exemption_check")
+        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_AWAITING_REPORT)
+        expect(certification_case).to be_open
+
+        # Step 2: System process determines applicant is eligible for exemption
+        certification_case.determine_ex_parte_exemption(eligibility_fact)
+        certification_case.reload
+
+        expect(certification_case.business_process_instance.current_step).to eq("end")
+        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_EXEMPT)
+        expect(certification_case).to be_closed
+      end
+    end
+
+    context 'when applicant is not eligible for exemption' do
+      let(:eligibility_fact) do
+        Strata::RulesEngine::Fact.new(
+          "no-op",
+          false
+        )
+      end
+
+      it 'transitions to ex_parte_community_engagement_check' do
+        # Step 1: Case has been created and is on ex_parte_exemption_check step
+        expect(certification_case.business_process_instance.current_step).to eq("ex_parte_exemption_check")
+        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_AWAITING_REPORT)
+        expect(certification_case).to be_open
+
+        # Step 2: System process determines applicant is not eligible for exemption
+        certification_case.determine_ex_parte_exemption(eligibility_fact)
+        certification_case.reload
+
+        # Case transitions to report_activities step is hardcoded in the business process
+        expect(certification_case.business_process_instance.current_step).to eq("report_activities")
+        expect(certification_case.member_status).to eq(CertificationCase::MEMBER_STATUS_AWAITING_REPORT)
+        expect(certification_case).to be_open
+      end
+    end
+  end
+
   describe 'activity report workflow' do
     it 'transitions through the full workflow and updates member status correctly' do
       # Step 1: Case starts on report_activities

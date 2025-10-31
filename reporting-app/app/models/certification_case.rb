@@ -24,6 +24,7 @@ class CertificationCase < Strata::Case
   MEMBER_STATUS_NOT_MET_REQUIREMENTS = "not_met_requirements"
 
   def accept_activity_report
+    # TODO: add determination record
     transaction do
       self.activity_report_approval_status = "approved"
       self.activity_report_approval_status_updated_at = Time.current
@@ -46,6 +47,7 @@ class CertificationCase < Strata::Case
   end
 
   def accept_exemption_request
+    # TODO: add determination record
     transaction do
       self.exemption_request_approval_status = "approved"
       self.exemption_request_approval_status_updated_at = Time.current
@@ -62,6 +64,37 @@ class CertificationCase < Strata::Case
     save!
 
     Strata::EventManager.publish("DeterminedNotExempt", { case_id: id })
+  end
+
+  def determine_ex_parte_exemption(eligibility_fact)
+    if eligibility_fact.value
+      transaction do
+        self.exemption_request_approval_status = "approved"
+        self.exemption_request_approval_status_updated_at = Time.current
+        self.close!
+
+        # TODO: Extract to Fact class that inherits from Strata::RulesEngine::Fact
+        true_reasons = eligibility_fact.reasons.select { |reason| reason.value }.map(&:name)
+
+        reasons = {
+          age_under_19_exempt: true_reasons.include?(:age_under_19),
+          age_over_65_exempt: true_reasons.include?(:age_over_65)
+        }
+
+        certification = Certification.find(self.certification_id)
+        certification.record_determination!(
+          decision_method: :automated,
+          reason: reasons.key(true),
+          outcome: :exempt,
+          determination_data: eligibility_fact.reasons.to_json,
+          determined_at: certification.certification_requirements.certification_date
+        )
+      end
+
+      Strata::EventManager.publish("DeterminedExempt", { case_id: id })
+    else
+      Strata::EventManager.publish("DeterminedNotExempt", { case_id: id })
+    end
   end
 
   # Determines the member's certification status based on business process state
