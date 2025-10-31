@@ -17,7 +17,7 @@
 # @example Record an automated determination
 #   record.record_determination!(
 #     decision_method: :automated,
-#     reason: "pregnant_member",
+#     reasons: ["pregnant_member"],
 #     outcome: :automated_exemption,
 #     determination_data: rules_engine.evaluate(:pregnant_member).reasons,
 #     determined_at: Time.current
@@ -26,7 +26,7 @@
 # @example Record a staff-reviewed determination
 #   record.record_determination!(
 #     decision_method: :staff_review,
-#     reason: "requirements_verification",
+#     reasons: ["requirements_verification"],
 #     outcome: :requirements_met,
 #     determination_data: {verified_fields: [:income, :address]},
 #     determined_at: Time.current,

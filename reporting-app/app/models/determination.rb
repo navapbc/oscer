@@ -4,8 +4,8 @@
 #
 # By default, Strata::Determination provides:
 # - A polymorphic +subject+ association to any aggregate root
-# - Validations for all required fields (+decision_method+, +reason+, +outcome+, +determination_data+, +determined_at+)
-# - Query scopes for filtering by subject, decision method, reason, outcome, user, and time windows
+# - Validations for all required fields (+decision_method+, +reasons+, +outcome+, +determination_data+, +determined_at+)
+# - Query scopes for filtering by subject, decision method, reasons, outcome, user, and time windows
 # - Support for automated, staff-reviewed, and attested determinations
 #
 # Extend this class to add:
@@ -19,7 +19,7 @@
 #     enum decision_method: { automated: "automated", staff_review: "staff_review", attestation: "attestation" }
 #     enum outcome: { approved: "approved", denied: "denied", pending: "pending" }
 #
-#     validates :reason, inclusion: { in: %w(pregnant_member incarcerated other) }
+#     validates :reasons, presence: true, inclusion: { in: %w(pregnant_member incarcerated other) }
 #   end
 #
 # @example Query determinations for a specific subject
@@ -31,12 +31,15 @@
 # @see Strata::Determinable for the +record_determination!+ method to use in models
 #
 class Determination < Strata::Determination
+  VALID_REASONS = %w[
+    age_under_19_exempt
+    age_over_65_exempt
+    pregnancy_exempt
+    american_indian_alaska_native_exempt
+  ].freeze
+
   enum :decision_method, { automated: "automated", manual: "manual" }
-  enum :reason, {
-    age_under_19_exempt: "age_under_19_exempt",
-    age_over_65_exempt: "age_over_65_exempt",
-    pregnancy_exempt: "pregnancy_exempt",
-    american_indian_alaska_native_exempt: "american_indian_alaska_native_exempt"
-  }
   enum :outcome, { compliant: "compliant", exempt: "exempt" }
+
+  validates :reasons, presence: true, inclusion: { in: VALID_REASONS }
 end

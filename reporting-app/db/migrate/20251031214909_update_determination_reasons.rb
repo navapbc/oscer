@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class UpdateDeterminationReasons < ActiveRecord::Migration[7.2]
   def up
     # Add the new reasons column as an array of strings
