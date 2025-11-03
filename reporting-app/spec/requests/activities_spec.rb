@@ -86,7 +86,7 @@ RSpec.describe "/activities", type: :request do
 
           expect {
             post activity_report_application_form_activities_url(activity_report_application_form), params: { activity: valid_attributes }
-          }.to change(WorkActivity, :count).from(0).to(1)
+          }.to change(WorkActivity, :count).from(1).to(2)
         end
 
         it "redirects to the activity report when type is work_activity" do
