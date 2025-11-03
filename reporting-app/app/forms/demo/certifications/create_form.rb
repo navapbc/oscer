@@ -30,10 +30,7 @@ module Demo
           return false
         end
 
-        member_data = {
-          "name": self.member_name,
-          "pregnancy_status": self.pregnancy_status
-        }.compact
+        member_data = {}
 
         case self.ex_parte_scenario
         when "Partially met work hours requirement"
@@ -56,7 +53,9 @@ module Demo
         end
 
         member_data = ::Certifications::MemberData.new(member_data)
+        member_data.name = self.member_name if self.member_name.present?
         member_data.date_of_birth = self.date_of_birth if self.date_of_birth.present?
+        member_data.pregnancy_status = self.pregnancy_status if self.pregnancy_status.present?
 
         @certification = FactoryBot.build(
           :certification,
