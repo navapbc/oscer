@@ -3,7 +3,10 @@
 module Demo
   module Certifications
     class CreateForm < BaseCreateForm
-      EX_PARTE_SCENARIO_OPTIONS = [ "No data", "Partially met work hours requirement", "Fully met work hours requirement", "Meets age-based exemption requirement" ]
+      EX_PARTE_SCENARIO_OPTIONS = [
+        "No data", "Partially met work hours requirement", "Fully met work hours requirement",
+        "Meets age-based exemption requirement"
+      ].freeze
 
       attribute :ex_parte_scenario, :enum, options: EX_PARTE_SCENARIO_OPTIONS
 
@@ -28,8 +31,9 @@ module Demo
         end
 
         member_data = {
-          "name": self.member_name
-        }
+          "name": self.member_name,
+          "pregnancy_status": self.pregnancy_status
+        }.compact
 
         case self.ex_parte_scenario
         when "Partially met work hours requirement"

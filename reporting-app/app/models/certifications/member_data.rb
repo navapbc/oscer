@@ -37,4 +37,5 @@ class Certifications::MemberData < ValueObject
   attribute :date_of_birth, :date
 
   attribute :payroll_accounts, :array, of: PayrollAccount.to_type
+  attribute :pregnancy_status, :boolean, default: false
 end

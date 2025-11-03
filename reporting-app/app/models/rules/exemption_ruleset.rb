@@ -10,10 +10,16 @@ module Rules
       age < 19
     end
 
-    def eligible_for_age_exemption(age_under_19, age_over_65)
-      return if age_under_19.nil? && age_over_65.nil?
+    def pregnant(pregnancy_status)
+      return if pregnancy_status.nil?
 
-      [ age_under_19, age_over_65 ].any?
+      pregnancy_status
+    end
+
+    def eligible_for_exemption(age_under_19, age_over_65, pregnant)
+      return if [ age_under_19, age_over_65, pregnant ].all?(&:nil?)
+
+      [ age_under_19, age_over_65, pregnant ].any?
     end
   end
 end
