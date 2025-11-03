@@ -186,7 +186,7 @@ RSpec.describe CertificationCase, type: :model do
   describe '#determine_ex_parte_exemption' do
     before { allow(Strata::EventManager).to receive(:publish) }
 
-    context 'when applicant is eligible for exemption' do
+    context 'when member is eligible for exemption' do
       it 'sets approval status and closes case' do
         age_fact = Strata::RulesEngine::Fact.new(
           :age_under_19, true, reasons: []
@@ -214,10 +214,54 @@ RSpec.describe CertificationCase, type: :model do
           { case_id: certification_case.id }
         )
       end
+
+      it 'sets approval status when eligible via pregnancy only' do
+        pregnant_fact = Strata::RulesEngine::Fact.new(
+          :pregnant, true, reasons: []
+        )
+        eligibility_fact = Strata::RulesEngine::Fact.new(
+          :eligible_for_exemption, true, reasons: [ pregnant_fact ]
+        )
+        certification_case.determine_ex_parte_exemption(eligibility_fact)
+        certification_case.reload
+
+        expect(certification_case.exemption_request_approval_status).to eq("approved")
+        expect(certification_case.exemption_request_approval_status_updated_at).to be_present
+        expect(certification_case).to be_closed
+
+        determination = Determination.first
+
+        expect(determination.decision_method).to eq("automated")
+        expect(determination.reasons).to include("pregnancy_exempt")
+        expect(determination.outcome).to eq("exempt")
+      end
+
+      it 'sets approval status with multiple reasons (age and pregnancy)' do
+        age_fact = Strata::RulesEngine::Fact.new(
+          :age_under_19, true, reasons: []
+        )
+        pregnant_fact = Strata::RulesEngine::Fact.new(
+          :pregnant, true, reasons: []
+        )
+        eligibility_fact = Strata::RulesEngine::Fact.new(
+          :eligible_for_exemption, true, reasons: [ age_fact, pregnant_fact ]
+        )
+        certification_case.determine_ex_parte_exemption(eligibility_fact)
+        certification_case.reload
+
+        expect(certification_case.exemption_request_approval_status).to eq("approved")
+        expect(certification_case).to be_closed
+
+        determination = Determination.first
+
+        expect(determination.decision_method).to eq("automated")
+        expect(determination.reasons).to include("age_under_19_exempt", "pregnancy_exempt")
+        expect(determination.outcome).to eq("exempt")
+      end
     end
 
 
-    context 'when applicant is not eligible for exemption' do
+    context 'when member is not eligible for exemption' do
       it 'publishes DeterminedNotExempt event' do
         eligibility_fact = Strata::RulesEngine::Fact.new(
           "no-op", false
