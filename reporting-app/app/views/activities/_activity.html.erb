@@ -2,7 +2,12 @@
 <p><%= activity.month.strftime("%B %Y") %></p>
 <h2>Employer name</h2>
 <p><%= activity.name %></p>
-<h2>Hours</h2>
-<p><%= activity.hours %></p>
+<% if activity.is_a?(HourlyActivity) %>
+  <h2>Hours</h2>
+  <p><%= activity.hours %></p>
+<% elsif activity.is_a?(IncomeActivity) %>
+  <h2>Income</h2>
+  <p><%= activity.income %></p>
+<% end %>
 <%= render "application/supporting_documents", 
     model: activity %>
