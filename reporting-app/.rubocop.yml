@@ -12,6 +12,8 @@ RSpec/MultipleExpectations:
   Enabled: false
 RSpec/MultipleMemoizedHelpers:
   Enabled: false
+RSpec/NestedGroups:
+  Max: 4
 RSpec/NoExpectationExample:
   AllowedPatterns:
     - assert_
