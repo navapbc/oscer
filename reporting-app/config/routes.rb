@@ -105,6 +105,8 @@ Rails.application.routes.draw do
     # Defines the root path route ("/")
     root "home#index"
 
+    get "/exemption-screener", to: "exemption_screener#index"
+
     # Session management
     devise_for :users, controllers: { sessions: "users/sessions" }
     devise_scope :user do
