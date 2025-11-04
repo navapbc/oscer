@@ -17,6 +17,7 @@
 
   app_form.activities.create!(
     name: "Community Meeting",
+    type: "WorkActivity",
     month: Date.today.prev_month.beginning_of_month,
     hours: rand(1..5),
     supporting_documents: [
@@ -25,6 +26,7 @@
   )
   app_form.activities.create!(
     name: "Outreach Event",
+    type: "WorkActivity",
     month: Date.today.prev_month.beginning_of_month,
     hours: rand(1..5),
     supporting_documents: [
@@ -35,19 +37,22 @@
   )
   app_form.activities.create!(
     name: "Training Session",
+    type: "IncomeActivity",
     month: Date.today.prev_month.beginning_of_month,
-    hours: rand(1..5),
+    income: rand(15..300),
     supporting_documents: [
       { io: File.open(Rails.root.join("db/seeds/files/fake_training_certificate.pdf")), filename: "Training Certificate.pdf", content_type: "application/pdf" }
     ]
   )
   app_form.activities.create!(
     name: "Policy Discussion",
+    type: "WorkActivity",
     month: Date.today.prev_month.prev_month.beginning_of_month,
     hours: rand(1..10)
   )
   app_form.activities.create!(
     name: "Volunteer Coordination",
+    type: "WorkActivity",
     month: Date.today.prev_month.prev_month.beginning_of_month,
     hours: rand(15..60),
     supporting_documents: [

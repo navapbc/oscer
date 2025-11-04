@@ -1,53 +1,71 @@
 <div id="<%= dom_id activity_report_application_form %>">
-  <% for month, activities in activity_report_application_form.activities_by_month do %>
-    <h2><%= month.strftime("%B %Y") %></h2>
+  <% activities_by_month = activity_report_application_form.activities_by_month %>
+  <% activities_by_month.each_with_index do |(month, activities), index| %>
+    <% hourly_activities = activities.select { |act| act.is_a?(WorkActivity) } %>
+    <% income_activities = activities.select { |act| act.is_a?(IncomeActivity) } %>
+    <% summed_hours = hourly_activities.map { |act| act.hours || 0 }.sum.round(1) %>
+    <% summed_income = income_activities.map { |act| act.income.dollar_amount || 0 }.sum.round(0) %>
+    <% hours_equivalent_of_earnings = (summed_income / 7.25).round(1) %>
+    <% income_equivalent_of_hours = (summed_hours * 7.25).round(0) %>
+    <% remaining_income = 580 - (income_equivalent_of_hours + summed_income) %>
+    <% remaining_hours = 80.0 - summed_hours - hours_equivalent_of_earnings %>
+    <h2 class="margin-bottom-2"><%= month.strftime("%B %Y") %></h2>
+    <%# Top summary %>
+    <% if income_activities.any? %>
+      <p class="margin-top-1px">
+        <%= t(".total_income_reported") %> <strong><%= number_to_currency(summed_income, precision: 0) %></strong>
+      </p>
+    <% end %>
+    <% if hourly_activities.any? %>
+      <p class="margin-top-1px">
+        <%= t(".total_hours_reported") %> <strong><%= summed_hours %> hrs</strong>
+      </p>
+    <% end %>
+    <p class="margin-top-1px">
+      <%= raw t(".additional_hours_income_needed", hours: remaining_hours, income: number_to_currency(remaining_income, precision: 0)) %>
+    </p>
+    <%# Breakdown of activities for month %>
     <div class="grid-container font-body-md">
-      <div class="grid-row text-bold">
-        <div class="grid-col-7 grid-offset-1 border-bottom-1px">
-          <%= t(".activity") %>
+      <% if income_activities.any? %>
+        <%# Earned income activities %>
+        <div class="grid-row">
+          <div class="grid-col-11 grid-offset-1 text-bold">
+            <%= t(".income_reported") %>
+          </div>
         </div>
-        <div class="grid-col-2 text-right border-bottom-1px">
-          <%= t(".hours") %>
-        </div>
-        <div class="grid-col-2 text-right border-bottom-1px">
-          <%= t(".income_earned") %>
-        </div>
-      </div>
-      <%= render partial: "activity_report_application_forms/activity_row",
-          collection: activities,
+        <%= render partial: "activity_report_application_forms/activity_row",
+          collection: income_activities,
           as: :activity,
           locals: { activity_report_application_form: activity_report_application_form } %>
-      <%= render "activity_report_application_forms/month_total_row", activities: activities %>
-      <%# Required hours row %>
-      <div class="grid-row">
-        <div class="grid-col-7 grid-offset-1">
-          <%= t(".required") %>
+        <div class="grid-row">
+          <div class="grid-col-8 grid-offset-2">
+            <%= t(".total_income") %>
+          </div>
+          <div class="grid-col-2 border-top-1px text-right">
+            <%= number_to_currency(summed_income, precision: 0) %>
+          </div>
         </div>
-        <div class="grid-col-2 text-right">
-          80.0
+      <% end %>
+      <% if hourly_activities.any? %>
+        <%# Hourly activities %>
+        <div class="grid-row">
+          <div class="grid-col-11 grid-offset-1 text-bold">
+            <%= t(".hours_reported") %>
+          </div>
         </div>
-        <div class="grid-col-1 text-center">
-          or
+        <%= render partial: "activity_report_application_forms/activity_row",
+          collection: hourly_activities,
+          as: :activity,
+          locals: { activity_report_application_form: activity_report_application_form } %>
+        <div class="grid-row">
+          <div class="grid-col-8 grid-offset-2">
+            <%= t(".total_hours") %>
+          </div>
+          <div class="grid-col-2 border-top-1px text-right">
+            <%= summed_hours %>
+          </div>
         </div>
-        <div class="grid-col-1 text-right">
-          <%= number_to_currency(580.0) %>
-        </div>
-      </div>
-      <%# Additional hours needed row %>
-      <div class="grid-row text-bold">
-        <div class="grid-col-7 grid-offset-1">
-          <%= t(".additional_needed") %>
-        </div>
-        <div class="grid-col-2 border-top-1px text-right">
-          <%= [0.0, 80.0 - activities.sum(&:hours)].max %>
-        </div>
-        <div class="grid-col-1 border-top-1px text-center">
-          or
-        </div>
-        <div class="grid-col-1 border-top-1px text-right">
-          <%= number_to_currency([0.0, 80.0 - activities.sum(&:hours)].max * 7.25) %>
-        </div>
-      </div>
+      <% end %>
     </div>
   <% end %>
 </div>

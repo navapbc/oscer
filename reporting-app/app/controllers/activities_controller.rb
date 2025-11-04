@@ -12,7 +12,12 @@ class ActivitiesController < ApplicationController
 
   # GET /activities/new
   def new
-    @activity = @activity_report_application_form.activities.build
+    authorize @activity_report_application_form, :edit?
+  end
+
+  # GET /activities/new/new_activity
+  def new_activity
+    @activity = activity_type_map(params[:activity_type] || activity_params[:activity_type])
     authorize @activity_report_application_form, :edit?
   end
 
@@ -36,9 +41,9 @@ class ActivitiesController < ApplicationController
     respond_to do |format|
       if @activity_report_application_form.save
         format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity) }
-        format.json { render :show, status: :ok, location: @activity }
+        format.json { render :show, status: :ok, location: @activity.becomes(Activity) }
       else
-        format.html { render :edit, status: :unprocessable_entity }
+        format.html { render :documents, status: :unprocessable_entity }
         format.json { render json: @activity.errors, status: :unprocessable_entity }
       end
     end
@@ -48,14 +53,19 @@ class ActivitiesController < ApplicationController
   def create
     authorize @activity_report_application_form, :update?
 
-    @activity = @activity_report_application_form.activities.build(activity_params)
+    @activity = activity_type_map(activity_params[:activity_type])
+    @activity.attributes = activity_attributes_from_params.merge({
+      activity_report_application_form_id: @activity_report_application_form.id
+    })
+    @activity_report_application_form.activities << @activity
 
     respond_to do |format|
       if @activity_report_application_form.save
+        @activity.reload
         format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity) }
-        format.json { render :show, status: :created, location: @activity }
+        format.json { render :documents, status: :created, location: @activity.becomes(Activity) }
       else
-        format.html { render :new, status: :unprocessable_entity }
+        format.html { render :new_activity, status: :unprocessable_entity }
         format.json { render json: @activity.errors, status: :unprocessable_entity }
       end
     end
@@ -65,12 +75,14 @@ class ActivitiesController < ApplicationController
   def update
     authorize @activity_report_application_form, :update?
 
-    @activity.attributes = activity_params
+    @activity.attributes = activity_attributes_from_params.merge({
+      activity_report_application_form_id: @activity_report_application_form.id
+    })
 
     respond_to do |format|
       if @activity_report_application_form.save
-        format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity) }
-        format.json { render :show, status: :ok, location: @activity }
+        format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity.becomes(Activity)) }
+        format.json { render :show, status: :ok, location: @activity.becomes(Activity) }
       else
         format.html { render :edit, status: :unprocessable_entity }
         format.json { render json: @activity.errors, status: :unprocessable_entity }
@@ -101,8 +113,35 @@ class ActivitiesController < ApplicationController
       @activity_report_application_form = ActivityReportApplicationForm.find(params[:activity_report_application_form_id])
     end
 
+    def activity_type_map(type)
+      case type
+      when "work_activity"
+        WorkActivity.new
+      when "income_activity"
+        IncomeActivity.new
+      else
+        raise "Unknown activity type: #{type}"
+      end
+    end
+
     # Only allow a list of trusted parameters through.
     def activity_params
-      params.require(:activity).permit(:month, :hours, :name)
+      params.require(:activity).permit(
+        :month,
+        :name,
+        :hours,
+        :income,
+        :activity_type
+      )
+    end
+
+    def activity_attributes_from_params
+      attrs = activity_params.to_h.slice(
+        "month",
+        "name",
+      )
+      attrs[:income] = activity_params[:income].to_i * 100 if activity_params.key?(:income)
+      attrs[:hours] = activity_params[:hours].to_i if activity_params.key?(:hours)
+      attrs
     end
 end

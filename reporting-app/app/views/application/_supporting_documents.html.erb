@@ -5,12 +5,10 @@
   - model: The model object to check for attached documents
   - field_name: The field name for the documents (default: :supporting_documents)
 %>
-
 <%
   field_name ||= :supporting_documents
   documents = model.send(field_name)
 %>
-
 <h2><%= t("supporting_documents.heading") %></h2>
 <% if documents.any? %>
   <ul class="usa-list">

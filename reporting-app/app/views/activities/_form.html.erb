@@ -1,14 +1,12 @@
-<%= strata_form_with(model: [activity_report_application_form, activity]) do |f| %>
+<%= strata_form_with(model: [activity_report_application_form, activity.becomes(Activity)]) do |f| %>
   <%= f.text_field :name, label: t(".name") %>
-
   <%= f.select :month,
     6.times.map { |i|
       date = (Date.today - i.months).beginning_of_month
       [date.strftime("%B %Y"), date]
-    }, { prompt: "- Select -" }
+    }, { prompt: t(".select_prompt") }
   %>
-  
-  <%= f.text_field :hours, inputmode: "decimal" %>
-  
+  <%= build_activity_input_field(f, activity) %>
+  <%= f.hidden_field :activity_type, value: activity.class.name.underscore %>
   <%= f.submit t(".continue"), big: true %>
 <% end %>

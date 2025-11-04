@@ -3,6 +3,7 @@
 Rails.application.routes.draw do
   resources :activity_report_application_forms, except: [ :index ] do
     resources :activities, only: [ :show, :new, :create, :edit, :update, :destroy ] do
+      get :new_activity, on: :new
       member do
         get :documents
         post :upload_documents

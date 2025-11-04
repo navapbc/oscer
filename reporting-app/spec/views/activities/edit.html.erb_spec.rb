@@ -3,8 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe "activities/edit", type: :view do
-  let(:activity_report_application_form) { create(:activity_report_application_form, :with_activities) }
-  let(:activity) { activity_report_application_form.activities.first }
+  let(:activity_report_application_form) { create(:activity_report_application_form) }
+  let(:activity) { create(:work_activity, activity_report_application_form_id: activity_report_application_form.id) }
 
   before do
     assign(:activity_report_application_form, activity_report_application_form)

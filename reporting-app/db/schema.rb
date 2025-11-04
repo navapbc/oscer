@@ -49,6 +49,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_31_214909) do
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "type"
+    t.integer "income"
     t.index ["activity_report_application_form_id"], name: "index_activities_on_activity_report_application_form_id"
   end
 
