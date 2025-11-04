@@ -1,7 +1,4 @@
-import {
-  Locator,
-  Page,
-} from '@playwright/test';
+import { Locator, Page } from '@playwright/test';
 
 import { BasePage } from '../../BasePage';
 import { SupportingDocumentsPage } from './SupportingDocumentsPage';
