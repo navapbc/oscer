@@ -17,13 +17,14 @@ export class ActivityTypePage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.hoursRadioButton = page.getByLabel(/hours/i);
-    this.incomeRadioButton = page.getByLabel(/income/i);
-    this.submitButton = page.getByRole('button', { name: /continue/i });
+    this.hoursRadioButton = page.getByLabel('Hours', { exact: true });
+    this.incomeRadioButton = page.getByLabel('Income', { exact: true });
+    this.submitButton = page.getByRole('button', { name: /continue/i, includeHidden: true });
   }
 
   async fillActivityType() {
-    await this.hoursRadioButton.check({ force: true });
+    await this.hoursRadioButton.scrollIntoViewIfNeeded();
+    await this.hoursRadioButton.dispatchEvent('click');
     await this.submitButton.click();
     return new ActivityDetailsPage(this.page).waitForURLtoMatchPagePath();
   }

@@ -1,11 +1,14 @@
-import { Locator, Page } from '@playwright/test';
+import {
+  Locator,
+  Page,
+} from '@playwright/test';
 
 import { BasePage } from '../../BasePage';
 import { SupportingDocumentsPage } from './SupportingDocumentsPage';
 
 export class ActivityDetailsPage extends BasePage {
   get pagePath() {
-    return '/activity_report_application_forms/*/activities/new/new_activity';
+    return '/activity_report_application_forms/*/activities/new/new_activity*';
   }
 
   readonly employerNameField: Locator;
