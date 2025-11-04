@@ -30,22 +30,22 @@ RSpec.describe Rules::ExemptionRuleset do
     end
   end
 
-  describe '#pregnant' do
+  describe '#is_pregnant' do
     context 'when pregnancy_status is nil' do
       it 'returns nil' do
-        expect(ruleset.pregnant(nil)).to be_nil
+        expect(ruleset.is_pregnant(nil)).to be_nil
       end
     end
 
     context 'when pregnancy_status is true' do
       it 'returns true' do
-        expect(ruleset.pregnant(true)).to be true
+        expect(ruleset.is_pregnant(true)).to be true
       end
     end
 
     context 'when pregnancy_status is false' do
       it 'returns false' do
-        expect(ruleset.pregnant(false)).to be false
+        expect(ruleset.is_pregnant(false)).to be false
       end
     end
   end
@@ -57,7 +57,7 @@ RSpec.describe Rules::ExemptionRuleset do
       end
     end
 
-    context 'when only pregnant is true' do
+    context 'when only is_pregnant is true' do
       it 'returns true' do
         expect(ruleset.eligible_for_exemption(nil, nil, true)).to be true
       end
@@ -75,7 +75,7 @@ RSpec.describe Rules::ExemptionRuleset do
       end
     end
 
-    context 'when age_under_19 and pregnant are both true' do
+    context 'when age_under_19 and is_pregnant are both true' do
       it 'returns true (multiple reasons)' do
         expect(ruleset.eligible_for_exemption(true, nil, true)).to be true
       end
