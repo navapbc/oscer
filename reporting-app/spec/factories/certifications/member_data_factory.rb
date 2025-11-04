@@ -26,7 +26,7 @@ FactoryBot.define do
     end
 
     trait :with_no_exemptions do
-      date_of_birth { cert_date - (19..64).to_a.sample.years } # random age between 19 and 64 years old (ineligible for age exemption)
+      date_of_birth { cert_date - rand(19..64).years } # random age between 19 and 64 years old (ineligible for age exemption)
       pregnancy_status { false }
       race_ethnicity do
         (
@@ -78,7 +78,7 @@ FactoryBot.define do
 
     trait :meets_age_based_exemption_requirement do
       with_no_exemptions
-      date_of_birth { cert_date - (1..18).to_a.sample.years } # random age between 1 and 18 years old (eligible for age exemption)
+      date_of_birth { cert_date - rand(1..18).years } # random age between 1 and 18 years old (eligible for age exemption)
     end
   end
 end

@@ -220,7 +220,7 @@ RSpec.describe CertificationCase, type: :model do
 
       it 'sets approval status when eligible via pregnancy only' do
         pregnant_fact = Strata::RulesEngine::Fact.new(
-          :pregnant, true, reasons: []
+          :is_pregnant, true, reasons: []
         )
         eligibility_fact = Strata::RulesEngine::Fact.new(
           :eligible_for_exemption, true, reasons: [ pregnant_fact ]
@@ -244,7 +244,7 @@ RSpec.describe CertificationCase, type: :model do
           :age_under_19, true, reasons: []
         )
         pregnant_fact = Strata::RulesEngine::Fact.new(
-          :pregnant, true, reasons: []
+          :is_pregnant, true, reasons: []
         )
         eligibility_fact = Strata::RulesEngine::Fact.new(
           :eligible_for_exemption, true, reasons: [ age_fact, pregnant_fact ]
