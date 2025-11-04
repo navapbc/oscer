@@ -7,6 +7,7 @@ class MemberMailer < ApplicationMailer
     certification = params[:certification]
     @first_name = certification.member_name.first
     @period = certification.certification_requirements.certification_date.strftime("%B %Y")
+    @renewal_date = (certification.certification_requirements.certification_date + 30.days).strftime("%B %d, %Y")
 
     mail(
       to: certification.member_email,

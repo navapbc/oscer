@@ -3,10 +3,9 @@
 <p><%= t('.good_news', period: @period) %></p>
 
 <p><strong><%= t('.what_this_means.title') %></strong></p>
-
 <ul>
   <li><%= t('.what_this_means.item_1_html') %></li>
-  <li><%= t('.what_this_means.item_2_html') %></li>
+  <li><%= t('.what_this_means.item_2_html', renewal_date: @renewal_date) %></li>
 </ul>
 
 <p><%= t('.contact_if_needed') %></p>

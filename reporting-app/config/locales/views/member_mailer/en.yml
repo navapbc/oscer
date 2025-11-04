@@ -17,12 +17,12 @@ en:
         title: "Check if you're exempt"
         description: "You can walk through some prompts to see if the requirement applies to you (e.g., pregnancy, caring for a young child, medical reasons). If you may be exempt, you'll need to provide supporting documentation."
     exempt_email:
-      subject: "No Action Needed: You're Exempt for %{period}"
-      good_news: "Good news—based on the information we have, you may not be required (exempt) to add community engagement reporting for %{period}."
+      subject: "No action needed for your Medicaid coverage for %{period}"
+      good_news: "Good news—based on the information we have, you're excused from reporting work or activities for %{period}. This won't affect your coverage. If we need anything later, we'll contact you."
       what_this_means:
         title: "What this means now"
-        item_1_html: "You <strong>do not need to report activities</strong> for this period."
-        item_2_html: "We'll <strong>check again on [Next Check Date]</strong> (or at your next renewal on <strong>[Renewal Date]</strong>). If your exemption continues, you may stay exempt. If not, we'll let you know what to do."
+        item_1_html: "You <strong>do not need to report work or community engagement activities</strong> for this period. No action is required."
+        item_2_html: "We'll <strong>check and notify you again</strong> about your coverage on your next renewal date on %{renewal_date}."
       contact_if_needed: "We'll contact you if we need anything else."
       questions: "Questions? Call us: [Call Center Number] (TTY: [TTY Number]) [Hours/Timezone]"
     signature:

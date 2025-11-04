@@ -14,7 +14,7 @@ RSpec.describe MemberMailer, type: :mailer do
     let(:mail) { described_class.with(certification: certification).exempt_email }
 
     it "renders the headers" do
-      expect(mail.subject).to match(/No Action Needed/)
+      expect(mail.subject).to match(/No action needed/)
       expect(mail.to).to eq([ certification.member_email ])
     end
 
