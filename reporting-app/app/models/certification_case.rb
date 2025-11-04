@@ -97,11 +97,7 @@ class CertificationCase < Strata::Case
       # Send exempt notification email
       NotificationService.send_email_notification(
         MemberMailer,
-        {
-          certification: certification,
-          reasons: eligibility_fact.reasons.join(", ")
-
-        },
+        { certification: certification },
         :exempt_email,
         [ certification.member_email ]
       )

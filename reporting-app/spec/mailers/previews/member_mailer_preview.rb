@@ -10,8 +10,7 @@ class MemberMailerPreview < ActionMailer::Preview
 
   def exempt_email
     certification = mock_certification
-    reasons = [ :age_exemption, :full_time_student ]
-    MemberMailer.with(certification: certification, reasons: reasons).exempt_email
+    MemberMailer.with(certification: certification).exempt_email
   end
 
   private

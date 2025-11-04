@@ -15,13 +15,14 @@ en:
         volunteering: "Volunteering/community service: letter or email from the organization showing dates and hours"
       check_exempt:
         title: "Check if you're exempt"
-        description: "You can walk through some prompts to see if the requirement applies to you (e.g., pregnancy,
-          caring for a young child, medical reasons). If you may be exempt, you'll need to provide supporting documentation."
+        description: "You can walk through some prompts to see if the requirement applies to you (e.g., pregnancy, caring for a young child, medical reasons). If you may be exempt, you'll need to provide supporting documentation."
     exempt_email:
       subject: "No Action Needed: You're Exempt for %{period}"
-      good_news: "Good news—based on the information we have, you are exempt from Community Engagement reporting for %{period}."
-      reason: "Reason:"
-      what_this_means: "What this means: You do not need to report any activities for this period."
+      good_news: "Good news—based on the information we have, you may not be required (exempt) to add community engagement reporting for %{period}."
+      what_this_means:
+        title: "What this means now"
+        item_1_html: "You <strong>do not need to report activities</strong> for this period."
+        item_2_html: "We'll <strong>check again on [Next Check Date]</strong> (or at your next renewal on <strong>[Renewal Date]</strong>). If your exemption continues, you may stay exempt. If not, we'll let you know what to do."
       contact_if_needed: "We'll contact you if we need anything else."
       questions: "Questions? Call us: [Call Center Number] (TTY: [TTY Number]) [Hours/Timezone]"
     signature:

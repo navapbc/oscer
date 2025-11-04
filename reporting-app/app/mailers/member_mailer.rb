@@ -6,8 +6,6 @@ class MemberMailer < ApplicationMailer
   def exempt_email
     certification = params[:certification]
     @first_name = certification.member_name.first
-    reasons = params[:reasons] || []
-    @exemption_reasons = reasons.map { |r| r.to_s.humanize }.join(", ")
     @period = certification.certification_requirements.certification_date.strftime("%B %Y")
 
     mail(
