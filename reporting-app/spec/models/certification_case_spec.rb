@@ -184,7 +184,10 @@ RSpec.describe CertificationCase, type: :model do
   end
 
   describe '#determine_ex_parte_exemption' do
-    before { allow(Strata::EventManager).to receive(:publish) }
+    before do
+      allow(Strata::EventManager).to receive(:publish)
+      allow(NotificationService).to receive(:send_email_notification)
+    end
 
     context 'when member is eligible for exemption' do
       it 'sets approval status and closes case' do
@@ -258,6 +261,18 @@ RSpec.describe CertificationCase, type: :model do
         expect(determination.reasons).to include("age_under_19_exempt", "pregnancy_exempt")
         expect(determination.outcome).to eq("exempt")
       end
+
+      it 'sends exempt notification email' do
+        age_fact = Strata::RulesEngine::Fact.new(
+          :age_under_19, true, reasons: []
+        )
+        eligibility_fact = Strata::RulesEngine::Fact.new(
+          :age_eligibility, true, reasons: [ age_fact ]
+        )
+        certification_case.determine_ex_parte_exemption(eligibility_fact)
+
+        expect(NotificationService).to have_received(:send_email_notification)
+      end
     end
 
 
@@ -276,6 +291,21 @@ RSpec.describe CertificationCase, type: :model do
         expect(Strata::EventManager).to have_received(:publish).with(
           "DeterminedNotExempt",
           { case_id: certification_case.id }
+        )
+      end
+
+      it 'sends action required notification email' do
+        eligibility_fact = Strata::RulesEngine::Fact.new(
+          "no-op", false
+        )
+        certification_case.determine_ex_parte_exemption(eligibility_fact)
+
+        certification = Certification.find(certification_case.certification_id)
+        expect(NotificationService).to have_received(:send_email_notification).with(
+          MemberMailer,
+          { certification: certification },
+          :action_required_email,
+          [ certification.member_email ]
         )
       end
     end

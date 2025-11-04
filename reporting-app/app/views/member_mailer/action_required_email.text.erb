@@ -1,0 +1,20 @@
+<%= render partial: 'member_mailer/greeting', locals: { first_name: @first_name } %>
+
+<%= t('.need_information') %>
+
+<%= t('.login_instructions', login_link: @login_url, due_date: @due_date) %>
+
+1. <%= t('.report_activities.title') %>
+   <%= t('.report_activities.description') %>
+   <%= t('.report_activities.helpful_examples') %>
+   - <%= t('.report_activities.work_income') %>
+   - <%= t('.report_activities.job_search') %>
+   - <%= t('.report_activities.volunteering') %>
+
+2. <%= t('.check_exempt.title') %>
+   <%= t('.check_exempt.description') %>
+
+<%= t('.coverage_warning') %>
+
+<%= t('.questions') %>
+<%= render 'member_mailer/signature' %>

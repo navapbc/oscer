@@ -9,6 +9,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
 
   before do
     allow(Strata::EventManager).to receive(:publish).and_call_original
+    allow(NotificationService).to receive(:send_email_notification)
   end
 
   describe 'ex_parte_exemption_check' do

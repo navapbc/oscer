@@ -67,6 +67,8 @@ class CertificationCase < Strata::Case
   end
 
   def determine_ex_parte_exemption(eligibility_fact)
+    certification = Certification.find(self.certification_id)
+
     if eligibility_fact.value
       transaction do
         self.exemption_request_approval_status = "approved"
@@ -81,7 +83,6 @@ class CertificationCase < Strata::Case
 
         # TODO: Extract to Fact class that inherits from Strata::RulesEngine::Fact
         true_reasons = eligibility_fact.reasons.select { |reason| reason.value }.map(&:name).map { |name| reasons[name] }
-        certification = Certification.find(self.certification_id)
         certification.record_determination!(
           decision_method: :automated,
           reasons: true_reasons,
@@ -92,8 +93,26 @@ class CertificationCase < Strata::Case
       end
 
       Strata::EventManager.publish("DeterminedExempt", { case_id: id })
+
+      # Send exempt notification email
+      NotificationService.send_email_notification(
+        MemberMailer,
+        { certification: certification },
+        :exempt_email,
+        [ certification.member_email ]
+      )
     else
       Strata::EventManager.publish("DeterminedNotExempt", { case_id: id })
+
+      # TODO: move action required email to after exparte determination step is complete
+      # once it has been implemented
+      # Send action required notification email
+      NotificationService.send_email_notification(
+        MemberMailer,
+        { certification: certification },
+        :action_required_email,
+        [ certification.member_email ]
+      )
     end
   end
 
