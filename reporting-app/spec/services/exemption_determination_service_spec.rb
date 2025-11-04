@@ -152,7 +152,7 @@ RSpec.describe ExemptionDeterminationService do
 
     context 'when member is American Indian or Alaska Native' do
       let(:member_data) do
-        build(:certification_member_data, race_ethnicity: "American Indian or Alaska Native", cert_date: cert_date)
+        build(:certification_member_data, race_ethnicity: "american_indian_or_alaska_native", cert_date: cert_date)
       end
 
       it 'publishes DeterminedExempt event' do

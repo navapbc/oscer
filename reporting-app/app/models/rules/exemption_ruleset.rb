@@ -19,7 +19,7 @@ module Rules
     def is_american_indian_or_alaska_native(race_ethnicity)
       return if race_ethnicity.nil?
 
-      race_ethnicity == "American Indian or Alaska Native"
+      race_ethnicity == "american_indian_or_alaska_native"
     end
 
     def eligible_for_exemption(age_under_19, age_over_65, is_pregnant, is_american_indian_or_alaska_native)

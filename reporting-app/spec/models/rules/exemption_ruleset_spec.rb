@@ -57,17 +57,18 @@ RSpec.describe Rules::ExemptionRuleset do
       end
     end
 
-    context 'when race_ethnicity is "American Indian or Alaska Native"' do
+    context 'when race_ethnicity is "american_indian_or_alaska_native"' do
       it 'returns true' do
-        expect(ruleset.is_american_indian_or_alaska_native("American Indian or Alaska Native")).to be true
+        expect(ruleset.is_american_indian_or_alaska_native("american_indian_or_alaska_native")).to be true
       end
     end
 
     context 'when race_ethnicity is another category' do
       it 'returns false' do
-        expect(ruleset.is_american_indian_or_alaska_native("White")).to be false
-        expect(ruleset.is_american_indian_or_alaska_native("Black or African American")).to be false
-        expect(ruleset.is_american_indian_or_alaska_native("Asian")).to be false
+        expect(ruleset.is_american_indian_or_alaska_native("white")).to be false
+        expect(ruleset.is_american_indian_or_alaska_native("black_or_african_american")).to be false
+        expect(ruleset.is_american_indian_or_alaska_native("asian")).to be false
+        expect(ruleset.is_american_indian_or_alaska_native("native_hawaiian_or_other_pacific_islander")).to be false
       end
     end
   end
