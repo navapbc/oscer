@@ -28,6 +28,8 @@
 
   <%= f.check_box :pregnancy_status %>
 
+  <%= f.select :race_ethnicity, Demo::Certifications::CreateForm::RACE_ETHNICITY_OPTIONS.map { |re| [ t("certifications.demo_create.race_ethnicity_options.#{re}"), re ] }, { include_blank: true } %>
+
   <%= f.select :ex_parte_scenario, Demo::Certifications::CreateForm::EX_PARTE_SCENARIO_OPTIONS %>
 
   <%= f.submit t("certifications.demo_create.submit") %>

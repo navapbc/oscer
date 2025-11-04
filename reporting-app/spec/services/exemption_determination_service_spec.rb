@@ -149,5 +149,57 @@ RSpec.describe ExemptionDeterminationService do
         expect(kase.status).to eq("open")
       end
     end
+
+    context 'when member is American Indian or Alaska Native' do
+      let(:member_data) do
+        build(:certification_member_data, race_ethnicity: "American Indian or Alaska Native", cert_date: cert_date)
+      end
+
+      it 'publishes DeterminedExempt event' do
+        service.determine(kase)
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id })
+      end
+
+      it 'closes the case' do
+        service.determine(kase)
+        kase.reload
+        expect(kase.status).to eq("closed")
+      end
+
+      it 'sets exemption_request_approval_status to approved' do
+        service.determine(kase)
+        kase.reload
+        expect(kase.exemption_request_approval_status).to eq("approved")
+      end
+
+      it 'sets exemption_request_approval_status_updated_at' do
+        service.determine(kase)
+        kase.reload
+        expect(kase.exemption_request_approval_status_updated_at).to be_present
+      end
+    end
+
+    context 'when member is not American Indian or Alaska Native' do
+      let(:member_data) do
+        build(:certification_member_data, race_ethnicity: "White", cert_date: cert_date)
+      end
+
+      it 'publishes DeterminedNotExempt event' do
+        service.determine(kase)
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id })
+      end
+
+      it 'does not close the case' do
+        service.determine(kase)
+        kase.reload
+        expect(kase.status).to eq("open")
+      end
+
+      it 'does not set exemption_request_approval_status' do
+        service.determine(kase)
+        kase.reload
+        expect(kase.exemption_request_approval_status).to be_nil
+      end
+    end
   end
 end

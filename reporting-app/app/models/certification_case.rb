@@ -78,7 +78,8 @@ class CertificationCase < Strata::Case
         reasons = {
           age_under_19: :age_under_19_exempt,
           age_over_65: :age_over_65_exempt,
-          pregnant: :pregnancy_exempt
+          pregnant: :pregnancy_exempt,
+          american_indian_or_alaska_native: :american_indian_or_alaska_native_exempt
         }
 
         # TODO: Extract to Fact class that inherits from Strata::RulesEngine::Fact

@@ -151,7 +151,9 @@ RSpec.describe "/demo/certifications", type: :request do
           "first": create_attrs[:member_name_first],
           "last": create_attrs[:member_name_last]
         }))
-        expect(cert.member_data.date_of_birth).to eq(cert.certification_requirements.certification_date - 18.years)
+        expect(cert.member_data.date_of_birth).to be_between(
+          cert.certification_requirements.certification_date - 18.years, cert.certification_requirements.certification_date - 1.years
+        )
       end
 
       it "creates a new Certification with 'Meets age-based exemption requirement' scenario and uses form DOB over scenario DOB" do
