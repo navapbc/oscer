@@ -1,4 +1,7 @@
-import { Locator, Page } from '@playwright/test';
+import {
+  Locator,
+  Page,
+} from '@playwright/test';
 
 import { BasePage } from '../../BasePage';
 import { ActivityDetailsPage } from './ActivityDetailsPage';
@@ -14,13 +17,13 @@ export class ActivityTypePage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.hoursRadioButton = page.getByLabel('Hours');
-    this.incomeRadioButton = page.getByLabel('Income');
+    this.hoursRadioButton = page.getByLabel(/hours/i);
+    this.incomeRadioButton = page.getByLabel(/income/i);
     this.submitButton = page.getByRole('button', { name: /continue/i });
   }
 
   async fillActivityType() {
-    await this.hoursRadioButton.check();
+    await this.hoursRadioButton.check({ force: true });
     await this.submitButton.click();
     return new ActivityDetailsPage(this.page).waitForURLtoMatchPagePath();
   }

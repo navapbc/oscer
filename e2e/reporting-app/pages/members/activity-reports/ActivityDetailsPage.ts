@@ -5,7 +5,7 @@ import { SupportingDocumentsPage } from './SupportingDocumentsPage';
 
 export class ActivityDetailsPage extends BasePage {
   get pagePath() {
-    return '/activity_report_application_forms/*/activities/new_activity';
+    return '/activity_report_application_forms/*/activities/new/new_activity';
   }
 
   readonly employerNameField: Locator;
