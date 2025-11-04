@@ -2,11 +2,11 @@
 
 <p><%= t('.need_information') %></p>
 
-<p><%= t('.login_instructions', login_link: link_to(@login_url, @login_url), due_date: content_tag(:strong, @due_date)).html_safe %></p>
+<p><%= t('.login_instructions_html', login_link: link_to(@login_url, @login_url), due_date: content_tag(:strong, @due_date)).html_safe %></p>
 <ol>
   <li>
     <strong style="display: block; margin-bottom: 0.5em;"><%= t('.report_activities.title') %></strong>
-    <%= t('.report_activities.description').html_safe %>
+    <%= t('.report_activities.description_html').html_safe %>
     <%= t('.report_activities.helpful_examples') %>
     <ul>
       <li><%= t('.report_activities.work_income').html_safe %></li>
@@ -19,5 +19,7 @@
     <%= t('.check_exempt.description') %>
   </li>
 </ol>
+<p><%= t(".coverage_warning", due_date: @due_date)%></p>
+<p><%= t(".questions")%></p>
 
 <%= render 'member_mailer/signature' %>
