@@ -171,6 +171,18 @@ RSpec.describe "/demo/certifications", type: :request do
         }))
         expect(cert.member_data.date_of_birth).to eq(Date.new(1990, 1, 15))
       end
+
+      it "creates a new Certification with pregnancy_status checkbox selected" do
+        create_attrs = valid_request_attributes.merge({ pregnancy_status: "1", ex_parte_scenario: "No data" })
+
+        expect {
+          post demo_certifications_url,
+               params: { demo_certifications_create_form: create_attrs }
+        }.to change(Certification, :count).by(1)
+
+        cert = Certification.order(created_at: :desc).last
+        expect(cert.member_data.pregnancy_status).to be true
+      end
     end
 
     context "with validation errors" do

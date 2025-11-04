@@ -26,6 +26,8 @@
   <%= f.select :number_of_months_to_certify, Demo::Certifications::CreateForm::NUMBER_OF_MONTHS_TO_CERTIFY_OPTIONS.map { |i| [ t("certifications.demo_create.number_of_months_to_certify_options.#{i}"), i ] }, {}, disabled: @form.locked_type_params? %>
   <%= f.select :due_period_days, Demo::Certifications::CreateForm::DUE_PERIOD_OPTIONS.map { |i| [ t("certifications.demo_create.due_period_options.#{i}"), i ] }, {}, disabled: @form.locked_type_params? %>
 
+  <%= f.check_box :pregnancy_status %>
+
   <%= f.select :ex_parte_scenario, Demo::Certifications::CreateForm::EX_PARTE_SCENARIO_OPTIONS %>
 
   <%= f.submit t("certifications.demo_create.submit") %>

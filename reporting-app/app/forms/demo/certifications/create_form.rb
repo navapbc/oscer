@@ -3,7 +3,10 @@
 module Demo
   module Certifications
     class CreateForm < BaseCreateForm
-      EX_PARTE_SCENARIO_OPTIONS = [ "No data", "Partially met work hours requirement", "Fully met work hours requirement", "Meets age-based exemption requirement" ]
+      EX_PARTE_SCENARIO_OPTIONS = [
+        "No data", "Partially met work hours requirement", "Fully met work hours requirement",
+        "Meets age-based exemption requirement"
+      ].freeze
 
       attribute :ex_parte_scenario, :enum, options: EX_PARTE_SCENARIO_OPTIONS
 
@@ -27,9 +30,7 @@ module Demo
           return false
         end
 
-        member_data = {
-          "name": self.member_name
-        }
+        member_data = {}
 
         case self.ex_parte_scenario
         when "Partially met work hours requirement"
@@ -52,7 +53,9 @@ module Demo
         end
 
         member_data = ::Certifications::MemberData.new(member_data)
+        member_data.name = self.member_name if self.member_name.present?
         member_data.date_of_birth = self.date_of_birth if self.date_of_birth.present?
+        member_data.pregnancy_status = self.pregnancy_status if self.pregnancy_status.present?
 
         @certification = FactoryBot.build(
           :certification,

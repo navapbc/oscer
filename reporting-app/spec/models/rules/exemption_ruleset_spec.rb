@@ -30,50 +30,72 @@ RSpec.describe Rules::ExemptionRuleset do
     end
   end
 
-  describe '#eligible_for_age_exemption' do
-    context 'when both parameters are nil' do
+  describe '#is_pregnant' do
+    context 'when pregnancy_status is nil' do
       it 'returns nil' do
-        expect(ruleset.eligible_for_age_exemption(nil, nil)).to be_nil
+        expect(ruleset.is_pregnant(nil)).to be_nil
       end
     end
 
-    context 'when age_under_19 is nil and age_over_65 is not nil' do
+    context 'when pregnancy_status is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_age_exemption(nil, true)).to be true
-      end
-
-      it 'returns false' do
-        expect(ruleset.eligible_for_age_exemption(nil, false)).to be false
+        expect(ruleset.is_pregnant(true)).to be true
       end
     end
 
-    context 'when age_under_19 is not nil and age_over_65 is nil' do
+    context 'when pregnancy_status is false' do
+      it 'returns false' do
+        expect(ruleset.is_pregnant(false)).to be false
+      end
+    end
+  end
+
+  describe '#eligible_for_exemption' do
+    context 'when all parameters are nil' do
+      it 'returns nil' do
+        expect(ruleset.eligible_for_exemption(nil, nil, nil)).to be_nil
+      end
+    end
+
+    context 'when only is_pregnant is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_age_exemption(true, nil)).to be true
-      end
-
-      it 'returns false' do
-        expect(ruleset.eligible_for_age_exemption(false, nil)).to be false
+        expect(ruleset.eligible_for_exemption(nil, nil, true)).to be true
       end
     end
 
-    context 'when age_under_19 is true' do
-      it 'returns true (exempt)' do
-        expect(ruleset.eligible_for_age_exemption(true, false)).to be true
-        expect(ruleset.eligible_for_age_exemption(true, true)).to be true
+    context 'when only age_under_19 is true' do
+      it 'returns true' do
+        expect(ruleset.eligible_for_exemption(true, nil, nil)).to be true
       end
     end
 
-    context 'when age_over_65 is true' do
-      it 'returns true (exempt)' do
-        expect(ruleset.eligible_for_age_exemption(false, true)).to be true
-        expect(ruleset.eligible_for_age_exemption(true, true)).to be true
+    context 'when only age_over_65 is true' do
+      it 'returns true' do
+        expect(ruleset.eligible_for_exemption(nil, true, nil)).to be true
       end
     end
 
-    context 'when both are false' do
-      it 'returns false (not exempt)' do
-        expect(ruleset.eligible_for_age_exemption(false, false)).to be false
+    context 'when age_under_19 and is_pregnant are both true' do
+      it 'returns true (multiple reasons)' do
+        expect(ruleset.eligible_for_exemption(true, nil, true)).to be true
+      end
+    end
+
+    context 'when all are true' do
+      it 'returns true (all reasons)' do
+        expect(ruleset.eligible_for_exemption(true, true, true)).to be true
+      end
+    end
+
+    context 'when all are false' do
+      it 'returns false (no exemption)' do
+        expect(ruleset.eligible_for_exemption(false, false, false)).to be false
+      end
+    end
+
+    context 'when age-based exemption is false but pregnant is true' do
+      it 'returns true (pregnant exemption)' do
+        expect(ruleset.eligible_for_exemption(false, false, true)).to be true
       end
     end
   end

@@ -15,6 +15,7 @@ module Demo
       strata_attribute :member_name, :name
       strata_attribute :date_of_birth, :us_date
       attribute :case_number, :string
+      attribute :pregnancy_status, :boolean, default: false
 
       # TODO: add validation you can't set both certification_type and the other params?
       attribute :certification_type, :enum, options: ::Certifications::Requirements::CERTIFICATION_TYPE_OPTIONS
