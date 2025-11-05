@@ -76,8 +76,11 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
     end
 
     context 'when processing fails' do
+      let (:certification_batch_upload_service) { instance_double(CertificationBatchUploadService) }
+
       before do
-        allow_any_instance_of(CertificationBatchUploadService).to receive(:process_csv).and_raise(StandardError, "Test error")
+        allow(CertificationBatchUploadService).to receive(:new).and_return(certification_batch_upload_service)
+        allow(certification_batch_upload_service).to receive(:process_csv).and_raise(StandardError, "Test error")
       end
 
       it 'marks batch as failed' do

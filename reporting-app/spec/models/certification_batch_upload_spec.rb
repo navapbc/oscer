@@ -105,17 +105,17 @@ RSpec.describe CertificationBatchUpload, type: :model do
 
   describe '#certifications' do
     let(:batch_upload) { create(:certification_batch_upload, uploaded_by: user) }
-    let!(:cert_m777) { create(:certification, member_id: "M777", case_number: "C-777") }
-    let!(:cert_m778) { create(:certification, member_id: "M778", case_number: "C-778") }
+    let(:cert_first) { create(:certification, member_id: "M777", case_number: "C-777") }
+    let(:cert_second) { create(:certification, member_id: "M778", case_number: "C-778") }
 
     before do
       CertificationOrigin.create!(
-        certification_id: cert_m777.id,
+        certification_id: cert_first.id,
         source_type: CertificationOrigin::SOURCE_TYPE_BATCH_UPLOAD,
         source_id: batch_upload.id
       )
       CertificationOrigin.create!(
-        certification_id: cert_m778.id,
+        certification_id: cert_second.id,
         source_type: CertificationOrigin::SOURCE_TYPE_BATCH_UPLOAD,
         source_id: batch_upload.id
       )
@@ -124,7 +124,7 @@ RSpec.describe CertificationBatchUpload, type: :model do
     it 'returns certifications created from this batch' do
       results = batch_upload.certifications
 
-      expect(results).to include(cert_m777, cert_m778)
+      expect(results).to include(cert_first, cert_second)
       expect(results.count).to eq(2)
     end
   end
