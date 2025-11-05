@@ -44,12 +44,16 @@ RSpec.describe Certification, type: :model do
   end
 
   describe '.exists_for?' do
-    let!(:certification) do
+    let(:certification) do
       create(:certification,
         member_id: "M999",
         case_number: "C-999",
         certification_requirements: { "certification_date" => "2025-01-15" }
       )
+    end
+
+    before do
+      certification # ensure creation
     end
 
     it 'returns true when certification exists with matching compound key' do
