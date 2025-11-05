@@ -52,10 +52,12 @@ module Demo
           )
         end
 
-        member_data = ::Certifications::MemberData.new(member_data)
-        member_data.name = self.member_name if self.member_name.present?
-        member_data.date_of_birth = self.date_of_birth if self.date_of_birth.present?
-        member_data.pregnancy_status = self.pregnancy_status if self.pregnancy_status.present?
+        member_data = ::Certifications::MemberData.new(member_data).tap do |md|
+          md.name = self.member_name if self.member_name.present?
+          md.date_of_birth = self.date_of_birth if self.date_of_birth.present?
+          md.pregnancy_status = self.pregnancy_status if self.pregnancy_status.present?
+          md.race_ethnicity = self.race_ethnicity if self.race_ethnicity.present?
+        end
 
         @certification = FactoryBot.build(
           :certification,

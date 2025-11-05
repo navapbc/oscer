@@ -47,3 +47,9 @@ en:
         new_application: "New application"
         recertification: "Recertification"
       pregnancy_status: "Pregnancy Status"
+      race_ethnicity_options:
+        "white": "White"
+        "black_or_african_american": "Black or African American"
+        "american_indian_or_alaska_native": "American Indian or Alaska Native"
+        "asian": "Asian"
+        "native_hawaiian_or_other_pacific_islander": "Native Hawaiian or Other Pacific Islander"

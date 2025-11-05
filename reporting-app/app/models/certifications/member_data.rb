@@ -35,6 +35,7 @@ class Certifications::MemberData < ValueObject
   attribute :contact, ContactData.to_type
   attribute :name, ActiveModel::Type::Json.new(Strata::Name)
   attribute :date_of_birth, :date
+  attribute :race_ethnicity, :string
 
   attribute :payroll_accounts, :array, of: PayrollAccount.to_type
   attribute :pregnancy_status, :boolean, default: false

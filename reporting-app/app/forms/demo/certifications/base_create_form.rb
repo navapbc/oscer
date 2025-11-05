@@ -10,12 +10,21 @@ module Demo
       LOOKBACK_PERIOD_OPTIONS = (1..6).to_a
       NUMBER_OF_MONTHS_TO_CERTIFY_OPTIONS = (1..6).to_a
       DUE_PERIOD_OPTIONS = [ 15, 30, 60 ] # in days
+      # Minimum US Census Bureau race/ethnicity options
+      RACE_ETHNICITY_OPTIONS = [
+        "white",
+        "black_or_african_american",
+        "american_indian_or_alaska_native",
+        "asian",
+        "native_hawaiian_or_other_pacific_islander"
+      ].freeze
 
       attribute :member_email, :string
       strata_attribute :member_name, :name
       strata_attribute :date_of_birth, :us_date
       attribute :case_number, :string
       attribute :pregnancy_status, :boolean, default: false
+      attribute :race_ethnicity, :enum, options: RACE_ETHNICITY_OPTIONS
 
       # TODO: add validation you can't set both certification_type and the other params?
       attribute :certification_type, :enum, options: ::Certifications::Requirements::CERTIFICATION_TYPE_OPTIONS

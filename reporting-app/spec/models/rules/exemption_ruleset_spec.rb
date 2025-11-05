@@ -50,52 +50,87 @@ RSpec.describe Rules::ExemptionRuleset do
     end
   end
 
+  describe '#is_american_indian_or_alaska_native' do
+    context 'when race_ethnicity is nil' do
+      it 'returns nil' do
+        expect(ruleset.is_american_indian_or_alaska_native(nil)).to be_nil
+      end
+    end
+
+    context 'when race_ethnicity is "american_indian_or_alaska_native"' do
+      it 'returns true' do
+        expect(ruleset.is_american_indian_or_alaska_native("american_indian_or_alaska_native")).to be true
+      end
+    end
+
+    context 'when race_ethnicity is another category' do
+      it 'returns false' do
+        expect(ruleset.is_american_indian_or_alaska_native("white")).to be false
+        expect(ruleset.is_american_indian_or_alaska_native("black_or_african_american")).to be false
+        expect(ruleset.is_american_indian_or_alaska_native("asian")).to be false
+        expect(ruleset.is_american_indian_or_alaska_native("native_hawaiian_or_other_pacific_islander")).to be false
+      end
+    end
+  end
+
   describe '#eligible_for_exemption' do
     context 'when all parameters are nil' do
       it 'returns nil' do
-        expect(ruleset.eligible_for_exemption(nil, nil, nil)).to be_nil
+        expect(ruleset.eligible_for_exemption(nil, nil, nil, nil)).to be_nil
       end
     end
 
     context 'when only is_pregnant is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exemption(nil, nil, true)).to be true
+        expect(ruleset.eligible_for_exemption(nil, nil, true, nil)).to be true
       end
     end
 
     context 'when only age_under_19 is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exemption(true, nil, nil)).to be true
+        expect(ruleset.eligible_for_exemption(true, nil, nil, nil)).to be true
       end
     end
 
     context 'when only age_over_65 is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exemption(nil, true, nil)).to be true
+        expect(ruleset.eligible_for_exemption(nil, true, nil, nil)).to be true
+      end
+    end
+
+    context 'when only is_american_indian_or_alaska_native is true' do
+      it 'returns true' do
+        expect(ruleset.eligible_for_exemption(nil, nil, nil, true)).to be true
       end
     end
 
     context 'when age_under_19 and is_pregnant are both true' do
       it 'returns true (multiple reasons)' do
-        expect(ruleset.eligible_for_exemption(true, nil, true)).to be true
+        expect(ruleset.eligible_for_exemption(true, nil, true, nil)).to be true
       end
     end
 
     context 'when all are true' do
       it 'returns true (all reasons)' do
-        expect(ruleset.eligible_for_exemption(true, true, true)).to be true
+        expect(ruleset.eligible_for_exemption(true, true, true, true)).to be true
       end
     end
 
     context 'when all are false' do
       it 'returns false (no exemption)' do
-        expect(ruleset.eligible_for_exemption(false, false, false)).to be false
+        expect(ruleset.eligible_for_exemption(false, false, false, false)).to be false
+      end
+    end
+
+    context 'when age-based exemption is false but is_american_indian_or_alaska_native is true' do
+      it 'returns true (race-based exemption)' do
+        expect(ruleset.eligible_for_exemption(false, false, false, true)).to be true
       end
     end
 
     context 'when age-based exemption is false but pregnant is true' do
       it 'returns true (pregnant exemption)' do
-        expect(ruleset.eligible_for_exemption(false, false, true)).to be true
+        expect(ruleset.eligible_for_exemption(false, false, true, nil)).to be true
       end
     end
   end

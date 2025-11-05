@@ -16,10 +16,16 @@ module Rules
       pregnancy_status
     end
 
-    def eligible_for_exemption(age_under_19, age_over_65, is_pregnant)
-      return if [ age_under_19, age_over_65, is_pregnant ].all?(&:nil?)
+    def is_american_indian_or_alaska_native(race_ethnicity)
+      return if race_ethnicity.nil?
 
-      [ age_under_19, age_over_65, is_pregnant ].any?
+      race_ethnicity == "american_indian_or_alaska_native"
+    end
+
+    def eligible_for_exemption(age_under_19, age_over_65, is_pregnant, is_american_indian_or_alaska_native)
+      return if [ age_under_19, age_over_65, is_pregnant, is_american_indian_or_alaska_native ].all?(&:nil?)
+
+      [ age_under_19, age_over_65, is_pregnant, is_american_indian_or_alaska_native ].any?
     end
   end
 end
