@@ -11,8 +11,7 @@
         <p class="text-base-lightest">
          <%= t(".get_started.prompt") %>
         </p>
-        <!-- TODO: link to screener -->
-        <a class="usa-button" href=""><%= t(".get_started.button") %></a>
+        <%= link_to t(".get_started.button"), exemption_screener_path(certification_case_id: @certification_case.id), class: "usa-button" %>
       </div>
 
       <div class="grid-col display-flex flex-align-center">
