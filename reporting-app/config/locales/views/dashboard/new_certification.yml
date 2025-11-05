@@ -1,6 +1,13 @@
 en:
   dashboard:
     new_certification:
+      get_started:
+        header: "Report activities by"
+        prompt: "Begin reporting your Community Engagement activities, or find out if you qualify for an exemption."
+        button: "Get started"
+        info: "Medicaid beneficiaries need to regularly report activities like volunteering, education, and hours worked in order to keep their coverage. Certain life situations may allow you to apply for an exemption so that you don't have to report."
+      activities:
+        header: "Activities & Exemptions"
       activity_report:
         title: "Report activities"
         intro: "Report your activities for the current reporting period."
