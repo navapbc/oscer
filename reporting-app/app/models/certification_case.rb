@@ -16,13 +16,6 @@ class CertificationCase < Strata::Case
   store_accessor :facts, :activity_report_approval_status, :activity_report_approval_status_updated_at,
     :exemption_request_approval_status, :exemption_request_approval_status_updated_at
 
-  # Member certification status values
-  MEMBER_STATUS_AWAITING_REPORT = "awaiting_report"
-  MEMBER_STATUS_PENDING_REVIEW = "pending_review"
-  MEMBER_STATUS_EXEMPT = "exempt"
-  MEMBER_STATUS_MET_REQUIREMENTS = "met_requirements"
-  MEMBER_STATUS_NOT_MET_REQUIREMENTS = "not_met_requirements"
-
   def accept_activity_report
     # TODO: add determination record
     transaction do
@@ -114,24 +107,6 @@ class CertificationCase < Strata::Case
         :action_required_email,
         [ certification.member_email ]
       )
-    end
-  end
-
-  # Determines the member's certification status based on business process state
-  # Uses the workflow's current_step as the source of truth
-  def member_status
-    case business_process_instance.current_step
-    when "report_activities"
-      MEMBER_STATUS_AWAITING_REPORT
-    when "review_activity_report", "review_exemption_claim"
-      MEMBER_STATUS_PENDING_REVIEW
-    when "end"
-      return MEMBER_STATUS_EXEMPT if exemption_request_approval_status == "approved"
-      return MEMBER_STATUS_MET_REQUIREMENTS if activity_report_approval_status == "approved"
-      MEMBER_STATUS_NOT_MET_REQUIREMENTS
-    else
-      # System process steps (exemption_check, ex_parte_determination) default to awaiting
-      MEMBER_STATUS_AWAITING_REPORT
     end
   end
 end

@@ -16,6 +16,12 @@
 #   status.determination_method # => "automated"
 #   status.reason_codes # => ["age_under_19_exempt"]
 class MemberStatus < Strata::ValueObject
+  AWAITING_REPORT = "awaiting_report"
+  EXEMPT = "exempt"
+  COMPLIANT = "compliant"
+  NOT_COMPLIANT = "not_compliant"
+  PENDING_REVIEW = "pending_review"
+
   include Strata::Attributes
 
   strata_attribute :status, :string
@@ -23,5 +29,5 @@ class MemberStatus < Strata::ValueObject
   strata_attribute :reason_codes, :string, array: true
 
   validates :status, presence: true,
-                     inclusion: { in: %w[compliant exempt not_compliant pending_review awaiting_report] }
+                     inclusion: { in: [ AWAITING_REPORT, EXEMPT, COMPLIANT, NOT_COMPLIANT, PENDING_REVIEW ] }
 end

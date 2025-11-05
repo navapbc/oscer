@@ -30,7 +30,7 @@ class MemberStatusService
       if determination.present?
         status_from_determination(determination)
       else
-        status_from_case_and_forms(certification_case)
+        status_from_case_step(certification_case.business_process_instance)
       end
     end
 
@@ -65,78 +65,45 @@ class MemberStatusService
       )
     end
 
-    def status_from_case_and_forms(certification_case)
-      return awaiting_report_status if certification_case.blank?
-
-      activity_report_form = ActivityReportApplicationForm.find_by_certification_case_id(certification_case.id)
-      exemption_form = ExemptionApplicationForm.find_by_certification_case_id(certification_case.id)
-
-      # Determine status based on application form submission and approval states
-      if are_forms_incomplete?(activity_report_form, exemption_form)
+    def status_from_case_step(business_process_instance)
+      case business_process_instance.current_step
+      when CertificationBusinessProcess::REPORT_ACTIVITIES_STEP
         awaiting_report_status
-      elsif is_activity_report_pending_review?(activity_report_form, certification_case)
+      when CertificationBusinessProcess::REVIEW_ACTIVITY_REPORT_STEP, CertificationBusinessProcess::REVIEW_EXEMPTION_CLAIM_STEP
         pending_review_status
-      elsif is_exemption_pending_review?(exemption_form, certification_case)
-        pending_review_status
-      elsif is_activity_report_approved?(activity_report_form, certification_case)
-        compliant_status
-      elsif is_activity_report_denied?(activity_report_form, certification_case)
-        not_compliant_status
-      elsif is_exemption_approved?(exemption_form, certification_case)
-        exempt_status
-      elsif is_exemption_denied?(exemption_form, certification_case)
+      when CertificationBusinessProcess::END_STEP
+        # TODO: Eventually Determination Record will be used here as a manual determination
+        # should have been created. A not compliant determination will also be created.
+        return exempt_status if exemption_request_approval_status == "approved"
+        return compliant_status if activity_report_approval_status == "approved"
+
         not_compliant_status
       else
         awaiting_report_status
       end
     end
 
-    def are_forms_incomplete?(activity_report_form, exemption_form)
-      !activity_report_form&.submitted? && !exemption_form&.submitted?
-    end
-
-    def is_activity_report_pending_review?(activity_report_form, certification_case)
-      activity_report_form&.submitted? && certification_case.activity_report_approval_status.nil?
-    end
-
-    def is_exemption_pending_review?(exemption_form, certification_case)
-      exemption_form&.submitted? && certification_case.exemption_request_approval_status.nil?
-    end
-
-    def is_activity_report_approved?(activity_report_form, certification_case)
-      activity_report_form&.submitted? && certification_case.activity_report_approval_status == "approved"
-    end
-
-    def is_activity_report_denied?(activity_report_form, certification_case)
-      activity_report_form&.submitted? && certification_case.activity_report_approval_status == "denied"
-    end
-
-    def is_exemption_approved?(exemption_form, certification_case)
-      exemption_form&.submitted? && certification_case.exemption_request_approval_status == "approved"
-    end
-
-    def is_exemption_denied?(exemption_form, certification_case)
-      exemption_form&.submitted? && certification_case.exemption_request_approval_status == "denied"
-    end
-
     def awaiting_report_status
-      MemberStatus.new(status: "awaiting_report")
+      MemberStatus.new(status: MemberStatus::AWAITING_REPORT)
     end
 
     def pending_review_status
-      MemberStatus.new(status: "pending_review")
+      MemberStatus.new(status: MemberStatus::PENDING_REVIEW)
     end
 
     def compliant_status
-      MemberStatus.new(status: "compliant")
+      # TODO: Eventually have determination method and reason codes here
+      MemberStatus.new(status: MemberStatus::COMPLIANT)
     end
 
     def not_compliant_status
-      MemberStatus.new(status: "not_compliant")
+      # TODO: Eventually have determination method and reason codes here
+      MemberStatus.new(status: MemberStatus::NOT_COMPLIANT)
     end
 
     def exempt_status
-      MemberStatus.new(status: "exempt")
+      # TODO: Eventually have determination method and reason codes here
+      MemberStatus.new(status: MemberStatus::EXEMPT)
     end
   end
 end
