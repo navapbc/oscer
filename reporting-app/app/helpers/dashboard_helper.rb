@@ -24,6 +24,10 @@ module DashboardHelper
     end
   end
 
+  def application_exists?
+    @activity_report_application_form.present? || @exemption_application_form.present?
+  end
+
   def are_activity_report_or_exemption_incomplete?
     !(@activity_report_application_form&.submitted? || @exemption_application_form&.submitted?)
   end
