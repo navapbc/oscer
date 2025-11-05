@@ -1,32 +1,25 @@
 <% content_for :title, t(".title") %>
-
 <h1><%= @batch_upload.filename %></h1>
-
 <dl class="grid-row margin-bottom-2">
   <dt class="grid-col-3 text-bold"><%= t(".uploaded_by") %>:</dt>
   <dd class="grid-col-9"><%= @batch_upload.uploaded_by.email %></dd>
-  
   <dt class="grid-col-3 text-bold"><%= t(".uploaded_at") %>:</dt>
   <dd class="grid-col-9"><%= @batch_upload.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
-  
   <dt class="grid-col-3 text-bold"><%= t(".status") %>:</dt>
   <dd class="grid-col-9">
     <span class="usa-tag <%= status_tag_class(@batch_upload.status) %>">
       <%= t("certification_batch_uploads.statuses.#{@batch_upload.status}") %>
     </span>
   </dd>
-  
   <% if @batch_upload.total_rows > 0 %>
     <dt class="grid-col-3 text-bold"><%= t(".total_rows") %>:</dt>
     <dd class="grid-col-9"><%= @batch_upload.total_rows %></dd>
   <% end %>
-  
   <% if @batch_upload.processed_at %>
     <dt class="grid-col-3 text-bold"><%= t(".processed_at") %>:</dt>
     <dd class="grid-col-9"><%= @batch_upload.processed_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
   <% end %>
 </dl>
-
 <% if @batch_upload.pending? %>
   <div class="usa-alert usa-alert--info margin-top-4" role="alert">
     <div class="usa-alert__body">
@@ -55,7 +48,6 @@
 <% elsif @batch_upload.completed? && @batch_upload.results.present? %>
   <% successes = @batch_upload.results.dig("successes") || [] %>
   <% errors = @batch_upload.results.dig("errors") || [] %>
-  
   <% if @batch_upload.error_count.zero? %>
     <div class="usa-alert usa-alert--success" role="alert">
       <div class="usa-alert__body">
@@ -78,7 +70,6 @@
       </div>
     </div>
   <% end %>
-
   <% if successes.any? %>
     <div class="margin-top-4">
       <h2><%= t(".successful_uploads") %> (<%= successes.count %>)</h2>
@@ -104,7 +95,6 @@
       </table>
     </div>
   <% end %>
-
   <% if errors.any? %>
     <div class="margin-top-4">
       <h2><%= t(".failed_uploads") %> (<%= errors.count %>)</h2>
@@ -121,7 +111,9 @@
             <tr>
               <td><%= error["row"] || error[:row] %></td>
               <td class="text-error"><%= error["message"] || error[:message] %></td>
-              <td><code class="font-mono-2xs"><%= (error["data"] || error[:data])&.to_json %></code></td>
+              <td>
+                <pre class="font-mono-2xs"><code><%= JSON.pretty_generate(error["data"] || error[:data]) %></code></pre>
+              </td>
             </tr>
           <% end %>
         </tbody>
@@ -129,10 +121,7 @@
     </div>
   <% end %>
 <% end %>
-
 <div class="margin-top-4">
   <%= link_to t(".back_to_queue"), certification_batch_uploads_path, class: "usa-button usa-button--outline" %>
   <%= link_to t(".back_to_dashboard"), staff_path, class: "usa-button usa-button--unstyled" %>
 </div>
-
-
