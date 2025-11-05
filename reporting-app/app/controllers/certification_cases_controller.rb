@@ -18,6 +18,7 @@ class CertificationCasesController < StaffController
   def show
     @information_requests = InformationRequest.for_application_forms(application_form_ids)
     @activity_report = ActivityReportApplicationForm.find_by(certification_case_id: @case.id)
+    @member_status = MemberStatusService.determine(@case)
   end
 
   private
