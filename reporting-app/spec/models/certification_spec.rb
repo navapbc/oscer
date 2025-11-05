@@ -53,7 +53,7 @@ RSpec.describe Certification, type: :model do
     end
 
     it 'returns true when certification exists with matching compound key' do
-      result = Certification.exists_for?(
+      result = described_class.exists_for?(
         member_id: "M999",
         case_number: "C-999",
         certification_date: "2025-01-15"
@@ -63,7 +63,7 @@ RSpec.describe Certification, type: :model do
     end
 
     it 'returns false when member_id does not match' do
-      result = Certification.exists_for?(
+      result = described_class.exists_for?(
         member_id: "M000",
         case_number: "C-999",
         certification_date: "2025-01-15"
@@ -73,7 +73,7 @@ RSpec.describe Certification, type: :model do
     end
 
     it 'returns false when case_number does not match' do
-      result = Certification.exists_for?(
+      result = described_class.exists_for?(
         member_id: "M999",
         case_number: "C-000",
         certification_date: "2025-01-15"
@@ -83,7 +83,7 @@ RSpec.describe Certification, type: :model do
     end
 
     it 'returns false when certification_date does not match' do
-      result = Certification.exists_for?(
+      result = described_class.exists_for?(
         member_id: "M999",
         case_number: "C-999",
         certification_date: "2025-01-20"
@@ -93,7 +93,7 @@ RSpec.describe Certification, type: :model do
     end
 
     it 'handles Date objects' do
-      result = Certification.exists_for?(
+      result = described_class.exists_for?(
         member_id: "M999",
         case_number: "C-999",
         certification_date: Date.parse("2025-01-15")
@@ -122,7 +122,7 @@ RSpec.describe Certification, type: :model do
     end
 
     it 'returns only certifications from specified batch upload' do
-      results = Certification.from_batch_upload(batch_upload.id)
+      results = described_class.from_batch_upload(batch_upload.id)
 
       expect(results).to include(batch_cert)
       expect(results).not_to include(manual_cert)

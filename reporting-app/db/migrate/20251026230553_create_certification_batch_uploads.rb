@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateCertificationBatchUploads < ActiveRecord::Migration[7.2]
   def change
     create_table :certification_batch_uploads, id: :uuid do |t|

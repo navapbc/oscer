@@ -7,13 +7,13 @@ RSpec.describe CertificationBatchUpload, type: :model do
 
   describe 'validations' do
     it 'requires filename' do
-      batch_upload = CertificationBatchUpload.new(uploaded_by: user)
+      batch_upload = described_class.new(uploaded_by: user)
       expect(batch_upload).not_to be_valid
       expect(batch_upload.errors[:filename]).to be_present
     end
 
     it 'requires file on create' do
-      batch_upload = CertificationBatchUpload.new(filename: "test.csv", uploaded_by: user)
+      batch_upload = described_class.new(filename: "test.csv", uploaded_by: user)
       expect(batch_upload).not_to be_valid
       expect(batch_upload.errors[:file]).to be_present
     end
