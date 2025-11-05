@@ -88,9 +88,6 @@ Rails.application.configure do
   config.action_mailer.perform_caching = false
 
   config.action_mailer.delivery_method = :ses_v2
-  config.action_mailer.ses_v2_settings = {
-    region: ENV.fetch("AWS_REGION", "us-east-1")
-  }
 
   # Ignore bad email addresses and do not raise email delivery errors.
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.
