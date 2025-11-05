@@ -4,16 +4,31 @@ en:
       title: "Edit activity"
       back: "Back to activity report"
       edit: "Edit activity"
-    new:
-      title: "Add activity"
+    new_activity:
+      title: "Activity type"
       back: "Back to activity report"
-      edit: "Edit activity"
+      type_label: "Select the type of activity you want to add"
+      hours_label: "Hours"
+      income_label: "Income"
+      continue: "Continue"
     form:
       name: "Employer name"
       continue: "Save and continue"
+      select_prompt: "- Select -"
+      type_label: "Type"
+      hours_label: "Hours"
+      income_label: "Income"
+      input_label: "How many hours? / How much earned income?"
     show:
       title:
         work: "Work for %{name}"
       back: "Back to activity report"
       edit: "Edit activity"
       destroy: "Delete activity"
+    new:
+      title: "Activity type"
+      back: "Back to activity report"
+      type_label: "Select the type of activity you want to add"
+      hours_label: "Hours"
+      income_label: "Income"
+      continue: "Continue"

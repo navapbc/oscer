@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test';
+
 import { DashboardPage } from '../pages/members';
 
 export class ActivityReportFlow {
@@ -18,7 +19,8 @@ export class ActivityReportFlow {
     const beforeYouStartPage = await dashboardPage.clickReportActivities();
     const chooseMonthsPage = await beforeYouStartPage.clickStart();
     const activityReportPage = await chooseMonthsPage.selectFirstReportingPeriodAndSave();
-    const activityDetailsPage = await activityReportPage.clickAddActivity();
+    const activityTypePage = await activityReportPage.clickAddActivity();
+    const activityDetailsPage = await activityTypePage.fillActivityType();
     const supportingDocumentsPage = await activityDetailsPage.fillActivityDetails(
       employerName,
       hours

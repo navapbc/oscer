@@ -1,6 +1,7 @@
 import { Locator, Page } from '@playwright/test';
+
 import { BasePage } from '../../BasePage';
-import { ActivityDetailsPage } from './ActivityDetailsPage';
+import { ActivityTypePage } from './ActivityTypePage';
 import { ReviewAndSubmitPage } from './ReviewAndSubmitPage';
 
 export class ActivityReportPage extends BasePage {
@@ -19,7 +20,7 @@ export class ActivityReportPage extends BasePage {
 
   async clickAddActivity() {
     await this.addActivityButton.click();
-    return new ActivityDetailsPage(this.page).waitForURLtoMatchPagePath();
+    return new ActivityTypePage(this.page).waitForURLtoMatchPagePath();
   }
 
   async clickReviewAndSubmit() {

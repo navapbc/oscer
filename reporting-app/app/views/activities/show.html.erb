@@ -1,19 +1,15 @@
 <% content_for :title, t(".title") %>
-
+<%= render "strata/shared/step_indicator", steps: %i[start select_periods add_activities review submitted], current_step: :add_activities, translation_scope: "activity_report_application_forms.steps" %>
 <%= link_to t(".back"), activity_report_application_form_path(@activity_report_application_form) %>
-
 <h1><%= t(".title.work", name: @activity.name) %></h1>
-
-<%= render @activity %>
-
+<%= render "activity", activity: @activity %>
 <ul class="usa-button-group margin-top-4">
   <li class="usa-button-group__item">
-    <%= link_to t(".edit"), edit_activity_report_application_form_activity_path(@activity_report_application_form, @activity), class: class_names("usa-button") %>
+    <%= link_to t(".edit"), edit_activity_report_application_form_activity_path(@activity_report_application_form, @activity.becomes(Activity)), class: class_names("usa-button") %>
   </li>
   <li class="usa-button-group__item">
-    <%= strata_form_with(model: [@activity_report_application_form, @activity], method: :delete, html: { class: "display-inline-block" }) do |f| %>
+    <%= strata_form_with(model: [@activity_report_application_form, @activity.becomes(Activity)], method: :delete, html: { class: "display-inline-block" }) do |f| %>
       <%= f.submit t(".destroy"), class: "usa-button--outline" %>
     <% end %>
   </li>
 </ul>
-
