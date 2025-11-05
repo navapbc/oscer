@@ -109,4 +109,8 @@ class CertificationCase < Strata::Case
       )
     end
   end
+
+  def member_status
+    MemberStatusService.determine(self).status
+  end
 end

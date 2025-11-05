@@ -90,7 +90,7 @@ RSpec.describe MemberStatusService do
     end
 
     context 'when no Determination exists' do
-      context 'and no application forms are submitted' do
+      context 'when no application forms are submitted' do
         it 'returns status "awaiting_report"' do
           result = service.determine(certification_case)
           expect(result.status).to eq("awaiting_report")
@@ -107,7 +107,7 @@ RSpec.describe MemberStatusService do
         end
       end
 
-      context 'and business process is in review_activity_report step' do
+      context 'when business process is in review_activity_report step' do
         before do
           certification_case.update(business_process_current_step: CertificationBusinessProcess::REVIEW_ACTIVITY_REPORT_STEP)
         end
@@ -123,7 +123,7 @@ RSpec.describe MemberStatusService do
         end
       end
 
-      context 'and activity report is approved and business process is in end step' do
+      context 'when activity report is approved and business process is in end step' do
         before do
           certification_case.update(
             activity_report_approval_status: "approved",
@@ -142,7 +142,7 @@ RSpec.describe MemberStatusService do
         end
       end
 
-      context 'and there is no approval and business process is in end step' do
+      context 'when there is no approval and business process is in end step' do
         before do
           certification_case.update(
             business_process_current_step: CertificationBusinessProcess::END_STEP
@@ -160,7 +160,7 @@ RSpec.describe MemberStatusService do
         end
       end
 
-      context 'and exemption request is approved' do
+      context 'when exemption request is approved' do
         before do
           certification_case.update(
             exemption_request_approval_status: "approved",
