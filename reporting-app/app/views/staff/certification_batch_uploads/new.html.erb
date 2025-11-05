@@ -1,22 +1,25 @@
 <% content_for :title, t(".title") %>
-
 <h1><%= t(".heading") %></h1>
-
 <p><%= t(".instructions") %></p>
-
 <p>
   <%= link_to t(".download_template"), "/certification_batch_upload_template.csv", class: "usa-link", download: true %>
 </p>
-
 <div class="usa-alert usa-alert--info" role="alert">
   <div class="usa-alert__body">
     <h4 class="usa-alert__heading"><%= t(".csv_format.heading") %></h4>
     <p class="usa-alert__text"><%= t(".csv_format.description") %></p>
-    <details class="usa-accordion usa-accordion--bordered">
-      <summary class="usa-accordion__button" aria-expanded="false">
-        <%= t(".csv_format.view_required_columns") %>
-      </summary>
-      <div class="usa-accordion__content">
+    <div class="usa-accordion usa-accordion--bordered maxw-tablet">
+      <h4 class="usa-accordion__heading">
+        <button
+          type="button"
+          class="usa-accordion__button"
+          aria-expanded="false"
+          aria-controls="a1"
+        >
+          <%= t(".csv_format.view_required_columns") %>
+        </button>
+      </h4>
+      <div id="a1" class="usa-accordion__content usa-prose">
         <h5><%= t(".csv_format.required_fields") %>:</h5>
         <ul>
           <li><code>member_id</code> - <%= t(".csv_format.fields.member_id") %></li>
@@ -25,7 +28,6 @@
           <li><code>certification_date</code> - <%= t(".csv_format.fields.certification_date") %></li>
           <li><code>certification_type</code> - <%= t(".csv_format.fields.certification_type") %></li>
         </ul>
-        
         <h5><%= t(".csv_format.optional_fields") %>:</h5>
         <ul>
           <li><code>first_name, middle_name, last_name</code> - <%= t(".csv_format.fields.name") %></li>
@@ -40,17 +42,14 @@
           <li><code>other_income_sources</code> - <%= t(".csv_format.fields.other_income_sources") %></li>
         </ul>
       </div>
-    </details>
+    </div>
   </div>
 </div>
-
 <%= form_with(url: certification_batch_uploads_path, multipart: true, class: "margin-top-4") do |f| %>
   <div class="usa-form-group">
     <%= f.label :csv_file, t(".csv_file_label"), class: "usa-label" %>
     <%= f.file_field :csv_file, accept: ".csv", required: true, class: "usa-file-input" %>
   </div>
-
   <%= f.submit t(".upload_button"), class: "usa-button" %>
   <%= link_to t(".cancel"), staff_path, class: "usa-button usa-button--unstyled" %>
 <% end %>
-
