@@ -14,6 +14,11 @@ for a full list of available settings.
   // Ensure utility classes always override other styles
   $utilities-use-important: true,
 
+  // For turning columns into rows or vice versa on breakpoints
+  $flex-direction-settings: (
+    responsive: true
+  ),
+
   // Use USWDS defaults for typography
   $theme-style-body-element: true,
   $theme-font-type-sans: "public-sans",
