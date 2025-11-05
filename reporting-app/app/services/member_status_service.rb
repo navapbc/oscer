@@ -30,7 +30,7 @@ class MemberStatusService
       if determination.present?
         status_from_determination(determination)
       else
-        status_from_case_step(certification_case.business_process_instance)
+        status_from_case_step(certification_case)
       end
     end
 
@@ -65,8 +65,10 @@ class MemberStatusService
       )
     end
 
-    def status_from_case_step(business_process_instance)
-      case business_process_instance.current_step
+    def status_from_case_step(certification_case)
+      return awaiting_report_status if certification_case.blank?
+
+      case certification_case.business_process_instance.current_step
       when CertificationBusinessProcess::REPORT_ACTIVITIES_STEP
         awaiting_report_status
       when CertificationBusinessProcess::REVIEW_ACTIVITY_REPORT_STEP, CertificationBusinessProcess::REVIEW_EXEMPTION_CLAIM_STEP
@@ -74,8 +76,8 @@ class MemberStatusService
       when CertificationBusinessProcess::END_STEP
         # TODO: Eventually Determination Record will be used here as a manual determination
         # should have been created. A not compliant determination will also be created.
-        return exempt_status if exemption_request_approval_status == "approved"
-        return compliant_status if activity_report_approval_status == "approved"
+        return exempt_status if certification_case.exemption_request_approval_status == "approved"
+        return compliant_status if certification_case.activity_report_approval_status == "approved"
 
         not_compliant_status
       else

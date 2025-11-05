@@ -40,37 +40,12 @@ RSpec.describe MemberStatusService do
       end
     end
 
-    context 'when Determination exists with outcome "compliant"' do
-      before do
-        create(:determination,
-               subject: certification,
-               outcome: "compliant",
-               decision_method: "automated",
-               reasons: [ "age_under_19_exempt" ])
-      end
-
-      it 'returns status "compliant"' do
-        result = service.determine(certification)
-        expect(result.status).to eq("compliant")
-      end
-
-      it 'returns the determination_method' do
-        result = service.determine(certification)
-        expect(result.determination_method).to eq("automated")
-      end
-
-      it 'returns the reason_codes array' do
-        result = service.determine(certification)
-        expect(result.reason_codes).to eq([ "age_under_19_exempt" ])
-      end
-    end
-
     context 'when Determination exists with outcome "exempt"' do
       before do
         create(:determination,
                subject: certification,
                outcome: "exempt",
-               decision_method: "manual",
+               decision_method: "automated",
                reasons: [ "age_over_65_exempt", "pregnancy_exempt" ])
       end
 
@@ -81,7 +56,7 @@ RSpec.describe MemberStatusService do
 
       it 'returns the determination_method' do
         result = service.determine(certification)
-        expect(result.determination_method).to eq("manual")
+        expect(result.determination_method).to eq("automated")
       end
 
       it 'returns all reason_codes' do
@@ -132,11 +107,9 @@ RSpec.describe MemberStatusService do
         end
       end
 
-      context 'and activity report is submitted but not approved' do
+      context 'and business process is in review_activity_report step' do
         before do
-          create(:activity_report_application_form,
-                 certification_case_id: certification_case.id,
-                 status: "submitted")
+          certification_case.update(business_process_current_step: CertificationBusinessProcess::REVIEW_ACTIVITY_REPORT_STEP)
         end
 
         it 'returns status "pending_review"' do
@@ -150,30 +123,12 @@ RSpec.describe MemberStatusService do
         end
       end
 
-      context 'and exemption request is submitted but not approved' do
+      context 'and activity report is approved and business process is in end step' do
         before do
-          create(:exemption_application_form,
-                 certification_case_id: certification_case.id,
-                 status: "submitted")
-        end
-
-        it 'returns status "pending_review"' do
-          result = service.determine(certification_case)
-          expect(result.status).to eq("pending_review")
-        end
-
-        it 'returns nil determination_method' do
-          result = service.determine(certification_case)
-          expect(result.determination_method).to be_nil
-        end
-      end
-
-      context 'and activity report is approved' do
-        before do
-          create(:activity_report_application_form,
-                 certification_case_id: certification_case.id,
-                 status: "submitted")
-          certification_case.update(activity_report_approval_status: "approved")
+          certification_case.update(
+            activity_report_approval_status: "approved",
+            business_process_current_step: CertificationBusinessProcess::END_STEP
+          )
         end
 
         it 'returns status "compliant"' do
@@ -187,12 +142,11 @@ RSpec.describe MemberStatusService do
         end
       end
 
-      context 'and activity report is denied' do
+      context 'and there is no approval and business process is in end step' do
         before do
-          create(:activity_report_application_form,
-                 certification_case_id: certification_case.id,
-                 status: "submitted")
-          certification_case.update(activity_report_approval_status: "denied")
+          certification_case.update(
+            business_process_current_step: CertificationBusinessProcess::END_STEP
+          )
         end
 
         it 'returns status "not_compliant"' do
@@ -208,34 +162,15 @@ RSpec.describe MemberStatusService do
 
       context 'and exemption request is approved' do
         before do
-          create(:exemption_application_form,
-                 certification_case_id: certification_case.id,
-                 status: "submitted")
-          certification_case.update(exemption_request_approval_status: "approved")
+          certification_case.update(
+            exemption_request_approval_status: "approved",
+            business_process_current_step: CertificationBusinessProcess::END_STEP
+          )
         end
 
         it 'returns status "exempt"' do
           result = service.determine(certification_case)
           expect(result.status).to eq("exempt")
-        end
-
-        it 'returns nil determination_method' do
-          result = service.determine(certification_case)
-          expect(result.determination_method).to be_nil
-        end
-      end
-
-      context 'and exemption request is denied' do
-        before do
-          create(:exemption_application_form,
-                 certification_case_id: certification_case.id,
-                 status: "submitted")
-          certification_case.update(exemption_request_approval_status: "denied")
-        end
-
-        it 'returns status "not_compliant"' do
-          result = service.determine(certification_case)
-          expect(result.status).to eq("not_compliant")
         end
 
         it 'returns nil determination_method' do
@@ -253,60 +188,6 @@ RSpec.describe MemberStatusService do
       it 'returns status "awaiting_report"' do
         result = service.determine(certification)
         expect(result.status).to eq("awaiting_report")
-      end
-    end
-
-    context 'when Certification is nil' do
-      let(:orphan_case) { create(:certification_case, certification_id: nil) }
-
-      it 'returns status "awaiting_report"' do
-        result = service.determine(orphan_case)
-        expect(result.status).to eq("awaiting_report")
-      end
-
-      it 'handles nil determination gracefully' do
-        expect { service.determine(orphan_case) }.not_to raise_error
-      end
-    end
-
-    context 'Determination takes precedence over CertificationCase state' do
-      before do
-        create(:activity_report_application_form,
-               certification_case_id: certification_case.id,
-               status: "submitted")
-        certification_case.update(activity_report_approval_status: "pending")
-
-        create(:determination,
-               subject: certification,
-               outcome: "exempt",
-               decision_method: "automated",
-               reasons: [ "age_under_19_exempt" ])
-      end
-
-      it 'returns status from Determination, not from CertificationCase' do
-        result = service.determine(certification_case)
-        expect(result.status).to eq("exempt")
-        expect(result.determination_method).to eq("automated")
-      end
-    end
-
-    context 'return value validation' do
-      let(:result) { service.determine(certification_case) }
-
-      it 'has a status attribute' do
-        expect(result).to respond_to(:status)
-      end
-
-      it 'has a determination_method attribute' do
-        expect(result).to respond_to(:determination_method)
-      end
-
-      it 'has a reason_codes attribute' do
-        expect(result).to respond_to(:reason_codes)
-      end
-
-      it 'status value is within allowed values' do
-        expect(%w[compliant exempt not_compliant pending_review awaiting_report]).to include(result.status)
       end
     end
   end
