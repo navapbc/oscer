@@ -4,8 +4,8 @@
     <div class="grid-row flex-column tablet:flex-row gap-4">
       <div class="usa-hero__callout grid-col">
         <h2 class="usa-hero__heading font-heading-xl">
-          <!-- TODO: handle this formatting stuff in the content so can pass the date -->
-          <!-- TODO: also '%b %d, %Y' doesn't correspond to a defined date format for locales, most similar to :short, but that doesn't have the year -->
+          <%# TODO: handle this formatting stuff in the content so can pass the date %>
+          <%# TODO: also '%b %d, %Y' doesn't correspond to a defined date format for locales, most similar to :short, but that doesn't have the year %>
           <span class="usa-hero__heading--alt"><%= t(".get_started.header") %></span> <%= certification.certification_requirements.due_date&.strftime('%b %d, %Y') %>
         </h2>
         <p class="text-base-lightest">
