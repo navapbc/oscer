@@ -5,7 +5,7 @@
   <dd class="grid-col-9"><%= @batch_upload.uploader.email %></dd>
   <dt class="grid-col-3 text-bold"><%= t(".uploaded_at") %>:</dt>
   <dd class="grid-col-9"><%= @batch_upload.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
-  <dt class="grid-col-3 text-bold"><%= t(".status") %>:</dt>
+  <dt class="grid-col-3 text-bold"><%= t(".upload_status") %>:</dt>
   <dd class="grid-col-9">
     <span class="usa-tag <%= status_tag_class(@batch_upload.status) %>">
       <%= t("certification_batch_uploads.statuses.#{@batch_upload.status}") %>

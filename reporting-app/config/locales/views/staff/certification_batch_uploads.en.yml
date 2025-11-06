@@ -58,7 +58,7 @@ en:
         title: "Batch Upload Details"
         uploader: "Uploaded by"
         uploaded_at: "Uploaded at"
-        status: "Status"
+        upload_status: "Status"
         num_rows: "Total rows"
         processed_at: "Processed at"
         pending_message: "This file is ready to be processed. Click the button below to start processing."
