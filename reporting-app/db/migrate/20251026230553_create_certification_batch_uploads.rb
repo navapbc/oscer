@@ -17,7 +17,6 @@ class CreateCertificationBatchUploads < ActiveRecord::Migration[7.2]
     end
 
     add_index :certification_batch_uploads, :uploader_id
-    add_index :certification_batch_uploads, :status
     add_index :certification_batch_uploads, :created_at
   end
 end
