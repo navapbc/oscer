@@ -38,8 +38,8 @@ completed_batch = CertificationBatchUpload.new(
   status: :completed,
   num_rows: 50,
   num_rows_processed: 50,
-  success_count: 48,
-  error_count: 2,
+  num_rows_succeeded: 48,
+  num_rows_errored: 2,
   processed_at: 1.hour.ago,
   results: {
     successes: [

@@ -70,7 +70,7 @@ en:
         success_heading: "Upload Successful!"
         success_message: "Successfully created %{count} certification(s)"
         partial_success_heading: "Upload Completed with Errors"
-        partial_success_message: "%{success_count} succeeded, %{error_count} failed out of %{total} total rows"
+        partial_success_message: "%{num_rows_succeeded} succeeded, %{num_rows_errored} failed out of %{total} total rows"
         successful_uploads: "Successful Uploads"
         failed_uploads: "Failed Uploads"
         columns:

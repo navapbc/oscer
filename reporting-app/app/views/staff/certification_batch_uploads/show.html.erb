@@ -48,12 +48,12 @@
 <% elsif @batch_upload.completed? && @batch_upload.results.present? %>
   <% successes = @batch_upload.results.dig("successes") || [] %>
   <% errors = @batch_upload.results.dig("errors") || [] %>
-  <% if @batch_upload.error_count.zero? %>
+  <% if @batch_upload.num_rows_errored.zero? %>
     <div class="usa-alert usa-alert--success" role="alert">
       <div class="usa-alert__body">
         <h4 class="usa-alert__heading"><%= t(".success_heading") %></h4>
         <p class="usa-alert__text">
-          <%= t(".success_message", count: @batch_upload.success_count) %>
+          <%= t(".success_message", count: @batch_upload.num_rows_succeeded) %>
         </p>
       </div>
     </div>
@@ -63,8 +63,8 @@
         <h4 class="usa-alert__heading"><%= t(".partial_success_heading") %></h4>
         <p class="usa-alert__text">
           <%= t(".partial_success_message",
-                success_count: @batch_upload.success_count,
-                error_count: @batch_upload.error_count,
+                num_rows_succeeded: @batch_upload.num_rows_succeeded,
+                num_rows_errored: @batch_upload.num_rows_errored,
                 total: @batch_upload.num_rows) %>
         </p>
       </div>

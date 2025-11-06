@@ -25,8 +25,8 @@ class ProcessCertificationBatchUploadJob < ApplicationJob
       if success
         # Store results and mark complete
         batch_upload.complete_processing!(
-          success_count: service.successes.count,
-          error_count: service.errors.count,
+          num_rows_succeeded: service.successes.count,
+          num_rows_errored: service.errors.count,
           results: {
             successes: service.successes,
             errors: service.errors

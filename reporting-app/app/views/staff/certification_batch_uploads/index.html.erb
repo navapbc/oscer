@@ -32,7 +32,7 @@
             <% if batch_upload.num_rows > 0 %>
               <%= batch_upload.num_rows_processed %> / <%= batch_upload.num_rows %>
               <% if batch_upload.completed? %>
-                (<%= batch_upload.success_count %> success, <%= batch_upload.error_count %> errors)
+                (<%= batch_upload.num_rows_succeeded %> success, <%= batch_upload.num_rows_errored %> errors)
               <% end %>
             <% else %>
               —

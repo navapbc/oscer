@@ -61,14 +61,14 @@ RSpec.describe CertificationBatchUpload, type: :model do
       results = { successes: [ { row: 1 } ], errors: [] }
 
       batch_upload.complete_processing!(
-        success_count: 1,
-        error_count: 0,
+        num_rows_succeeded: 1,
+        num_rows_errored: 0,
         results: results
       )
 
       expect(batch_upload).to be_completed
-      expect(batch_upload.success_count).to eq(1)
-      expect(batch_upload.error_count).to eq(0)
+      expect(batch_upload.num_rows_succeeded).to eq(1)
+      expect(batch_upload.num_rows_errored).to eq(0)
       expect(batch_upload.results).to eq(results.deep_stringify_keys)
       expect(batch_upload.processed_at).to be_present
     end

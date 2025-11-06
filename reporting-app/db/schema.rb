@@ -71,8 +71,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_31_214909) do
     t.uuid "uploader_id", null: false
     t.integer "num_rows", default: 0
     t.integer "num_rows_processed", default: 0
-    t.integer "success_count", default: 0
-    t.integer "error_count", default: 0
+    t.integer "num_rows_succeeded", default: 0
+    t.integer "num_rows_errored", default: 0
     t.jsonb "results", default: {}
     t.datetime "processed_at"
     t.datetime "created_at", null: false

@@ -25,8 +25,8 @@ FactoryBot.define do
       status { :completed }
       num_rows { 10 }
       num_rows_processed { 10 }
-      success_count { 8 }
-      error_count { 2 }
+      num_rows_succeeded { 8 }
+      num_rows_errored { 2 }
       processed_at { Time.current }
       results { { successes: [], errors: [] } }
     end

@@ -24,11 +24,11 @@ class CertificationBatchUpload < ApplicationRecord
   end
 
   # Mark as completed with results
-  def complete_processing!(success_count:, error_count:, results:)
+  def complete_processing!(num_rows_succeeded:, num_rows_errored:, results:)
     update!(
       status: :completed,
-      success_count: success_count,
-      error_count: error_count,
+      num_rows_succeeded: num_rows_succeeded,
+      num_rows_errored: num_rows_errored,
       results: results,
       processed_at: Time.current
     )
