@@ -129,6 +129,12 @@ RSpec.describe MemberStatusService do
             activity_report_approval_status: "approved",
             business_process_current_step: CertificationBusinessProcess::END_STEP
           )
+
+          create(:determination,
+            subject: certification,
+            outcome: "compliant",
+            decision_method: "manual",
+            reasons: [ "hours_reported_compliant" ])
         end
 
         it 'returns status "compliant"' do
@@ -138,7 +144,17 @@ RSpec.describe MemberStatusService do
 
         it 'returns nil determination_method' do
           result = service.determine(certification_case)
-          expect(result.determination_method).to be_nil
+          expect(result.determination_method).to eq("manual")
+        end
+
+        it 'returns all reason_codes' do
+          result = service.determine(certification_case)
+          expect(result.reason_codes).to eq([ "hours_reported_compliant" ])
+        end
+
+        it 'returns all human_readable_reason_codes' do
+          result = service.determine(certification_case)
+          expect(result.human_readable_reason_codes).to eq([ "Hours reported compliant" ])
         end
       end
 
@@ -166,6 +182,11 @@ RSpec.describe MemberStatusService do
             exemption_request_approval_status: "approved",
             business_process_current_step: CertificationBusinessProcess::END_STEP
           )
+          create(:determination,
+            subject: certification,
+            outcome: "exempt",
+            decision_method: "manual",
+            reasons: [ "exemption_request_compliant" ])
         end
 
         it 'returns status "exempt"' do
@@ -175,7 +196,17 @@ RSpec.describe MemberStatusService do
 
         it 'returns nil determination_method' do
           result = service.determine(certification_case)
-          expect(result.determination_method).to be_nil
+          expect(result.determination_method).to eq("manual")
+        end
+
+        it 'returns all reason_codes' do
+          result = service.determine(certification_case)
+          expect(result.reason_codes).to eq([ "exemption_request_compliant" ])
+        end
+
+        it 'returns all human_readable_reason_codes' do
+          result = service.determine(certification_case)
+          expect(result.human_readable_reason_codes).to eq([ "Exemption request compliant" ])
         end
       end
     end

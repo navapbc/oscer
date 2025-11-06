@@ -27,6 +27,7 @@ class MemberStatus < Strata::ValueObject
   strata_attribute :status, :string
   strata_attribute :determination_method, :string
   strata_attribute :reason_codes, :string, array: true
+  strata_attribute :human_readable_reason_codes, :string, array: true
 
   validates :status, presence: true,
                      inclusion: { in: [ AWAITING_REPORT, EXEMPT, COMPLIANT, NOT_COMPLIANT, PENDING_REVIEW ] }

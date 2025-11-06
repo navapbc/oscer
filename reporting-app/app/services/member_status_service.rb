@@ -61,7 +61,8 @@ class MemberStatusService
       MemberStatus.new(
         status: determination.outcome,
         determination_method: determination.decision_method,
-        reason_codes: determination.reasons
+        reason_codes: determination.reasons,
+        human_readable_reason_codes: determination.reasons.map { |reason| human_readable_reason_codes(reason) }
       )
     end
 
@@ -74,11 +75,6 @@ class MemberStatusService
       when CertificationBusinessProcess::REVIEW_ACTIVITY_REPORT_STEP, CertificationBusinessProcess::REVIEW_EXEMPTION_CLAIM_STEP
         pending_review_status
       when CertificationBusinessProcess::END_STEP
-        # TODO: Eventually Determination Record will be used here as a manual determination
-        # should have been created. A not compliant determination will also be created.
-        return exempt_status if certification_case.exemption_request_approval_status == "approved"
-        return compliant_status if certification_case.activity_report_approval_status == "approved"
-
         not_compliant_status
       else
         awaiting_report_status
@@ -93,19 +89,12 @@ class MemberStatusService
       MemberStatus.new(status: MemberStatus::PENDING_REVIEW)
     end
 
-    def compliant_status
-      # TODO: Eventually have determination method and reason codes here
-      MemberStatus.new(status: MemberStatus::COMPLIANT)
-    end
-
     def not_compliant_status
-      # TODO: Eventually have determination method and reason codes here
       MemberStatus.new(status: MemberStatus::NOT_COMPLIANT)
     end
 
-    def exempt_status
-      # TODO: Eventually have determination method and reason codes here
-      MemberStatus.new(status: MemberStatus::EXEMPT)
+    def human_readable_reason_codes(reason)
+      I18n.t("services.member_status_service.reason_codes.#{reason}", default: reason)
     end
   end
 end
