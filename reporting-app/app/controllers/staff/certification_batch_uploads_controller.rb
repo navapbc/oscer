@@ -2,7 +2,7 @@
 
 module Staff
   class CertificationBatchUploadsController < StaffController
-    before_action :set_batch_upload, only: [ :show, :process_batch ]
+    before_action :set_batch_upload, only: [ :show, :process_batch, :results ]
 
     # GET /staff/certification_batch_uploads
     def index
@@ -42,6 +42,10 @@ module Staff
 
     # GET /staff/certification_batch_uploads/:id
     def show
+    end
+
+    # GET /staff/certification_batch_uploads/:id/results
+    def results
     end
 
     # POST /staff/certification_batch_uploads/:id/process_batch
