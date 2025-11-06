@@ -25,7 +25,8 @@ RSpec.describe Determination, type: :model do
           age_over_65_exempt
           pregnancy_exempt
           american_indian_alaska_native_exempt
-          activity_report_compliant
+          income_reported_compliant
+          hours_reported_compliant
           activity_report_non_compliant
           exemption_request_compliant
           exemption_request_non_compliant

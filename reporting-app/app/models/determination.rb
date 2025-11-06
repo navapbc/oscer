@@ -31,19 +31,27 @@
 # @see Strata::Determinable for the +record_determination!+ method to use in models
 #
 class Determination < Strata::Determination
-  VALID_REASONS = %w[
-    age_under_19_exempt
-    age_over_65_exempt
-    pregnancy_exempt
-    american_indian_alaska_native_exempt
-    activity_report_compliant
-    activity_report_non_compliant
-    exemption_request_compliant
-    exemption_request_non_compliant
-  ].freeze
+  REASON_CODE_MAPPING = {
+    age_under_19: "age_under_19_exempt",
+    age_over_65: "age_over_65_exempt",
+    is_pregnant: "pregnancy_exempt",
+    is_american_indian_or_alaska_native: "american_indian_alaska_native_exempt",
+    income_reported_compliant: "income_reported_compliant",
+    hours_reported_compliant: "hours_reported_compliant",
+    activity_report_non_compliant: "activity_report_non_compliant",
+    exemption_request_compliant: "exemption_request_compliant",
+    exemption_request_non_compliant: "exemption_request_non_compliant"
+  }.freeze
+
+  VALID_REASONS = REASON_CODE_MAPPING.values.freeze
 
   enum :decision_method, { automated: "automated", manual: "manual" }
   enum :outcome, { compliant: "compliant", exempt: "exempt" }
 
   validates :reasons, presence: true, inclusion: { in: VALID_REASONS }
+
+  def self.to_reason_codes(eligibility_fact)
+    eligibility_fact_reasons = eligibility_fact.reasons.select { |reason| reason.value }.map(&:name).map(&:to_sym)
+    eligibility_fact_reasons.map { |reason| REASON_CODE_MAPPING[reason] }
+  end
 end
