@@ -2,12 +2,12 @@
 
 class CertificationBatchUpload < ApplicationRecord
   # Status workflow for batch upload processing
-  enum :status, {
-    pending: 0,      # Uploaded, waiting to be processed
-    processing: 1,   # Currently being processed by background job
-    completed: 2,    # Processing finished successfully
-    failed: 3        # Processing failed
-  }
+  enum :status, 
+    :pending,      # Uploaded, waiting to be processed
+    :processing,   # Currently being processed by background job
+    :completed,    # Processing finished successfully
+    :failed        # Processing failed
+  
 
   belongs_to :uploader, class_name: "User"
   has_one_attached :file
