@@ -3,7 +3,7 @@
 class CertificationBatchUpload < ApplicationRecord
   # Status workflow for batch upload processing
   attribute :status, :string, default: :pending
-  enum :status, [ :pending, :processing, :completed, :failed ]
+  enum :status, { :pending => "pending", :processing => "processing", :completed => "completed", :failed => "failed" }
 
   belongs_to :uploader, class_name: "User"
   has_one_attached :file
