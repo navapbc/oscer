@@ -34,7 +34,7 @@
   <div class="usa-alert usa-alert--info margin-top-4" role="alert">
     <div class="usa-alert__body">
       <p class="usa-alert__text">
-        <%= t(".processing_message", processed: @batch_upload.processed_rows, total: @batch_upload.num_rows) %>
+        <%= t(".processing_message", processed: @batch_upload.num_rows_processed, total: @batch_upload.num_rows) %>
       </p>
     </div>
   </div>

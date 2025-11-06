@@ -50,7 +50,7 @@ RSpec.describe CertificationBatchUpload, type: :model do
       batch_upload.start_processing!
 
       expect(batch_upload).to be_processing
-      expect(batch_upload.processed_rows).to eq(0)
+      expect(batch_upload.num_rows_processed).to eq(0)
     end
   end
 

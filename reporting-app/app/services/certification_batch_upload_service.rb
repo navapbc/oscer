@@ -29,12 +29,12 @@ class CertificationBatchUploadService
 
       # Update progress every 10 rows
       if @batch_upload && (index + 1) % 10 == 0
-        @batch_upload.update_progress!(processed_rows: index + 1)
+        @batch_upload.update_progress!(num_rows_processed: index + 1)
       end
     end
 
     # Final progress update
-    @batch_upload&.update_progress!(processed_rows: csv_data.size)
+    @batch_upload&.update_progress!(num_rows_processed: csv_data.size)
 
     true
   rescue CSV::MalformedCSVError => e

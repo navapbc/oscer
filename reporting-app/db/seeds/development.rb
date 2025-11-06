@@ -22,7 +22,7 @@ processing_batch = CertificationBatchUpload.new(
   uploader: user,
   status: :processing,
   num_rows: 100,
-  processed_rows: 45
+  num_rows_processed: 45
 )
 processing_batch.file.attach(
   io: StringIO.new("member_id,case_number,member_email\nM002,C-002,test2@example.com"),
@@ -37,7 +37,7 @@ completed_batch = CertificationBatchUpload.new(
   uploader: user,
   status: :completed,
   num_rows: 50,
-  processed_rows: 50,
+  num_rows_processed: 50,
   success_count: 48,
   error_count: 2,
   processed_at: 1.hour.ago,

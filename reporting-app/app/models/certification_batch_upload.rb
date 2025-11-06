@@ -20,7 +20,7 @@ class CertificationBatchUpload < ApplicationRecord
 
   # Mark as processing and update timestamp
   def start_processing!
-    update!(status: :processing, processed_rows: 0)
+    update!(status: :processing, num_rows_processed: 0)
   end
 
   # Mark as completed with results
@@ -44,8 +44,8 @@ class CertificationBatchUpload < ApplicationRecord
   end
 
   # Update progress during processing
-  def update_progress!(processed_rows:)
-    update!(processed_rows: processed_rows)
+  def update_progress!(num_rows_processed:)
+    update!(num_rows_processed: num_rows_processed)
   end
 
   # Check if can be processed

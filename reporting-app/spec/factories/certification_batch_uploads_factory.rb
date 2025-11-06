@@ -18,13 +18,13 @@ FactoryBot.define do
     trait :processing do
       status { :processing }
       num_rows { 10 }
-      processed_rows { 5 }
+      num_rows_processed { 5 }
     end
 
     trait :completed do
       status { :completed }
       num_rows { 10 }
-      processed_rows { 10 }
+      num_rows_processed { 10 }
       success_count { 8 }
       error_count { 2 }
       processed_at { Time.current }

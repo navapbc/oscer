@@ -30,7 +30,7 @@
           </td>
           <td>
             <% if batch_upload.num_rows > 0 %>
-              <%= batch_upload.processed_rows %> / <%= batch_upload.num_rows %>
+              <%= batch_upload.num_rows_processed %> / <%= batch_upload.num_rows %>
               <% if batch_upload.completed? %>
                 (<%= batch_upload.success_count %> success, <%= batch_upload.error_count %> errors)
               <% end %>
