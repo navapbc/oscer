@@ -69,7 +69,7 @@ class MemberStatusService
     def status_from_case_step(certification_case)
       return awaiting_report_status if certification_case.blank?
 
-      case certification_case.business_process_instance.current_step
+      case certification_case.business_process_current_step
       when CertificationBusinessProcess::REPORT_ACTIVITIES_STEP
         awaiting_report_status
       when CertificationBusinessProcess::REVIEW_ACTIVITY_REPORT_STEP, CertificationBusinessProcess::REVIEW_EXEMPTION_CLAIM_STEP
