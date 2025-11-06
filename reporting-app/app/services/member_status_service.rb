@@ -23,7 +23,7 @@ class MemberStatusService
     # @return [MemberStatus] The member's current status with optional determination details
     # @raise [ArgumentError] If record is neither Certification nor CertificationCase
     def determine(record)
-      certification, certification_case = normalize_input(record)
+      certification, certification_case = get_certification_and_case_from(record)
 
       determination = latest_determination_for(certification)
 
@@ -36,7 +36,7 @@ class MemberStatusService
 
     private
 
-    def normalize_input(record)
+    def get_certification_and_case_from(record)
       case record
       when Certification
         certification = record
@@ -54,7 +54,7 @@ class MemberStatusService
     def latest_determination_for(certification)
       return nil if certification.blank?
 
-      Determination.for_subject(certification).order(created_at: :desc).first # TODO: make this scope in SDK
+      Determination.for_subject(certification).first
     end
 
     def status_from_determination(determination)
@@ -62,7 +62,7 @@ class MemberStatusService
         status: determination.outcome,
         determination_method: determination.decision_method,
         reason_codes: determination.reasons,
-        human_readable_reason_codes: determination.reasons.map { |reason| human_readable_reason_codes(reason) }
+        human_readable_reason_codes: human_readable_reason_codes(determination.reasons)
       )
     end
 
@@ -93,8 +93,8 @@ class MemberStatusService
       MemberStatus.new(status: MemberStatus::NOT_COMPLIANT)
     end
 
-    def human_readable_reason_codes(reason)
-      I18n.t("services.member_status_service.reason_codes.#{reason}", default: reason)
+    def human_readable_reason_codes(reasons)
+      reasons.map { |reason| I18n.t("services.member_status_service.reason_codes.#{reason}", default: reason) }
     end
   end
 end

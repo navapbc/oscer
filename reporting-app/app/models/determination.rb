@@ -48,6 +48,8 @@ class Determination < Strata::Determination
 
   validates :reasons, presence: true, inclusion: { in: VALID_REASONS }
 
+  default_scope { order(created_at: :desc) }
+
   def self.to_reason_codes(eligibility_fact)
     eligibility_fact_reasons = eligibility_fact.reasons.select { |reason| reason.value }.map(&:name).map(&:to_sym)
     eligibility_fact_reasons.map { |reason| REASON_CODE_MAPPING[reason] }
