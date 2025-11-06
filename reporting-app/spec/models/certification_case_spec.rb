@@ -15,6 +15,15 @@ RSpec.describe CertificationCase, type: :model do
       expect(certification_case.activity_report_approval_status).to eq("approved")
       expect(certification_case.activity_report_approval_status_updated_at).to be_present
       expect(certification_case).to be_closed
+
+
+      determination = Determination.first
+
+      expect(determination.decision_method).to eq("manual")
+      expect(determination.reasons).to include("hours_reported_compliant")
+      expect(determination.outcome).to eq("compliant")
+      expect(determination.determined_at).to be_present
+      expect(determination.determination_data).to eq({ "activity_type" => "placeholder", "activity_hours" => 0, "income" => 0 })
     end
 
     it 'publishes DeterminedRequirementsMet event' do
@@ -58,6 +67,14 @@ RSpec.describe CertificationCase, type: :model do
       expect(certification_case.exemption_request_approval_status).to eq("approved")
       expect(certification_case.exemption_request_approval_status_updated_at).to be_present
       expect(certification_case).to be_closed
+
+      determination = Determination.first
+
+      expect(determination.decision_method).to eq("manual")
+      expect(determination.reasons).to include("exemption_request_compliant")
+      expect(determination.outcome).to eq("exempt")
+      expect(determination.determined_at).to be_present
+      expect(determination.determination_data).to eq({ "exemption_type" => "placeholder" })
     end
 
     it 'publishes DeterminedExempt event' do

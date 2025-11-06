@@ -38,15 +38,13 @@ class Determination < Strata::Determination
     is_american_indian_or_alaska_native: "american_indian_alaska_native_exempt",
     income_reported_compliant: "income_reported_compliant",
     hours_reported_compliant: "hours_reported_compliant",
-    activity_report_non_compliant: "activity_report_non_compliant",
-    exemption_request_compliant: "exemption_request_compliant",
-    exemption_request_non_compliant: "exemption_request_non_compliant"
+    exemption_request_compliant: "exemption_request_compliant"
   }.freeze
 
   VALID_REASONS = REASON_CODE_MAPPING.values.freeze
 
   enum :decision_method, { automated: "automated", manual: "manual" }
-  enum :outcome, { compliant: "compliant", exempt: "exempt" }
+  enum :outcome, { compliant: "compliant", exempt: "exempt", not_compliant: "not_compliant" }
 
   validates :reasons, presence: true, inclusion: { in: VALID_REASONS }
 

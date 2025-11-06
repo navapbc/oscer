@@ -17,35 +17,52 @@ class CertificationCase < Strata::Case
     :exemption_request_approval_status, :exemption_request_approval_status_updated_at
 
   def accept_activity_report
-    # TODO: add determination record
     transaction do
       self.activity_report_approval_status = "approved"
       self.activity_report_approval_status_updated_at = Time.current
-      save!
       close!
+
+      certification = Certification.find(self.certification_id)
+      certification.record_determination!(
+        decision_method: :manual,
+        reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_compliant] ], # TODO: lookup activity type to determine reason code
+        outcome: :compliant,
+        determined_at: certification.certification_requirements.certification_date,
+        determination_data: {
+          activity_type: "placeholder",
+          activity_hours: 0,
+          income: 0
+        } # TODO: add determined_by_id
+      )
     end
 
     Strata::EventManager.publish("DeterminedRequirementsMet", { case_id: id })
   end
 
   def deny_activity_report
-    transaction do
-      self.activity_report_approval_status = "denied"
-      self.activity_report_approval_status_updated_at = Time.current
-      save!
-      close!
-    end
+    self.activity_report_approval_status = "denied"
+    self.activity_report_approval_status_updated_at = Time.current
+    close!
 
     Strata::EventManager.publish("DeterminedRequirementsNotMet", { case_id: id })
   end
 
   def accept_exemption_request
-    # TODO: add determination record
     transaction do
       self.exemption_request_approval_status = "approved"
       self.exemption_request_approval_status_updated_at = Time.current
-      save!
       close!
+
+      certification = Certification.find(self.certification_id)
+      certification.record_determination!(
+        decision_method: :manual,
+        reasons: [ Determination::REASON_CODE_MAPPING[:exemption_request_compliant] ],
+        outcome: :exempt,
+        determined_at: certification.certification_requirements.certification_date,
+        determination_data: {
+          exemption_type: "placeholder"
+        } # TODO: add determined_by_id
+      )
     end
 
     Strata::EventManager.publish("DeterminedExempt", { case_id: id })
@@ -68,18 +85,9 @@ class CertificationCase < Strata::Case
         self.exemption_request_approval_status_updated_at = Time.current
         self.close!
 
-        reasons = {
-          age_under_19: :age_under_19_exempt,
-          age_over_65: :age_over_65_exempt,
-          is_pregnant: :pregnancy_exempt,
-          is_american_indian_or_alaska_native: :american_indian_or_alaska_native_exempt
-        }
-
-        # TODO: Extract to Fact class that inherits from Strata::RulesEngine::Fact
-        true_reasons = eligibility_fact.reasons.select { |reason| reason.value }.map(&:name).map { |name| reasons[name] }
         certification.record_determination!(
           decision_method: :automated,
-          reasons: true_reasons,
+          reasons: Determination.to_reason_codes(eligibility_fact),
           outcome: :exempt,
           determination_data: eligibility_fact.reasons.to_json,
           determined_at: certification.certification_requirements.certification_date
