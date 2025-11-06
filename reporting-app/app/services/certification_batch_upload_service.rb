@@ -72,31 +72,8 @@ class CertificationBatchUploadService
     # Build certification from CSV row
     certification = build_certification_from_row(row)
 
-    if certification.save
-      # Track origin if batch_upload provided
-      if @batch_upload
-        CertificationOrigin.create!(
-          certification_id: certification.id,
-          source_type: CertificationOrigin::SOURCE_TYPE_BATCH_UPLOAD,
-          source_id: @batch_upload.id
-        )
-      end
-
-      @successes << {
-        row: row_number,
-        case_number: certification.case_number,
-        member_id: certification.member_id,
-        certification_id: certification.id
-      }
-      @results << { row: row_number, status: :success, certification_id: certification.id }
-    else
-      error_messages = certification.errors.full_messages.join(", ")
-      @errors << {
-        row: row_number,
-        message: error_messages,
-        data: row.to_h
-      }
-      @results << { row: row_number, status: :error, errors: certification.errors }
+    ActiveRecord::Base.transaction do
+      save_certification(certification, row, row_number)
     end
   rescue StandardError => e
     @errors << {
@@ -169,5 +146,34 @@ class CertificationBatchUploadService
       case_number: row[:case_number],
       certification_date: row[:certification_date]
     )
+  end
+
+  def save_certification(certification, row, row_number)
+    if certification.save
+      # Track origin if batch_upload provided
+      if @batch_upload
+        CertificationOrigin.create!(
+          certification_id: certification.id,
+          source_type: CertificationOrigin::SOURCE_TYPE_BATCH_UPLOAD,
+          source_id: @batch_upload.id
+        )
+      end
+
+      @successes << {
+        row: row_number,
+        case_number: certification.case_number,
+        member_id: certification.member_id,
+        certification_id: certification.id
+      }
+      @results << { row: row_number, status: :success, certification_id: certification.id }
+    else
+      error_messages = certification.errors.full_messages.join(", ")
+      @errors << {
+        row: row_number,
+        message: error_messages,
+        data: row.to_h
+      }
+      @results << { row: row_number, status: :error, errors: certification.errors }
+    end
   end
 end
