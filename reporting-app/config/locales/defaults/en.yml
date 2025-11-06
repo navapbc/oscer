@@ -64,9 +64,9 @@ en:
     date_picker_format: "Format: mm/dd/yyyy"
     optional: "Optional"
     tax_id_format: "For example, 123456789"
-  certification_statuses:
-    met_requirements: "Met requirements"
+  member_statuses:
+    compliant: "Compliant"
     exempt: "Exempt"
     pending_review: "Pending review"
     awaiting_report: "Awaiting report"
-    not_met_requirements: "Not met requirements"
+    not_compliant: "Not compliant"

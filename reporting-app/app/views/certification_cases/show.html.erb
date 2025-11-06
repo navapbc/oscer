@@ -34,6 +34,20 @@
     <p>
       <span class="text-bold"><%= t(".member_status") %></span>
       <span class="usa-tag"><%= t("member_statuses.#{@member_status.status}") %></span>
+      <% if @member_status.determination_method.present? %>
+        <br>
+        <span class="text-bold margin-top-1 display-block"><%= t(".determination_method") %></span>
+        <span><%= @member_status.determination_method.capitalize %></span>
+      <% end %>
+      <% if @member_status.human_readable_reason_codes.present? %>
+        <br>
+        <span class="text-bold margin-top-1 display-block"><%= t(".reason_codes") %></span>
+        <ul class="margin-top-05 margin-bottom-0">
+          <% @member_status.human_readable_reason_codes.each do |reason| %>
+            <li><%= reason %></li>
+          <% end %>
+        </ul>
+      <% end %>
     </p>
     <p>
       <span class="text-bold"><%= t(".certification_date") %></span>
