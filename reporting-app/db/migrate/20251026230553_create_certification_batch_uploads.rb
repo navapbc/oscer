@@ -6,7 +6,7 @@ class CreateCertificationBatchUploads < ActiveRecord::Migration[7.2]
       t.string :filename, null: false
       t.integer :status, default: 0, null: false
       t.uuid :uploader_id, null: false
-      t.integer :total_rows, default: 0
+      t.integer :num_rows, default: 0
       t.integer :processed_rows, default: 0
       t.integer :success_count, default: 0
       t.integer :error_count, default: 0

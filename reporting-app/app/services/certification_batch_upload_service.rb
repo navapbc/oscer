@@ -22,7 +22,7 @@ class CertificationBatchUploadService
     csv_data = CSV.read(file.path, headers: true, header_converters: :symbol)
 
     # Update total rows if batch_upload provided
-    @batch_upload&.update!(total_rows: csv_data.size)
+    @batch_upload&.update!(num_rows: csv_data.size)
 
     csv_data.each_with_index do |row, index|
       process_row(row, index + 2) # +2 for header row and 0-indexing

@@ -69,7 +69,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_31_214909) do
     t.string "filename", null: false
     t.integer "status", default: 0, null: false
     t.uuid "uploader_id", null: false
-    t.integer "total_rows", default: 0
+    t.integer "num_rows", default: 0
     t.integer "processed_rows", default: 0
     t.integer "success_count", default: 0
     t.integer "error_count", default: 0

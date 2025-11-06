@@ -11,9 +11,9 @@
       <%= t("certification_batch_uploads.statuses.#{@batch_upload.status}") %>
     </span>
   </dd>
-  <% if @batch_upload.total_rows > 0 %>
-    <dt class="grid-col-3 text-bold"><%= t(".total_rows") %>:</dt>
-    <dd class="grid-col-9"><%= @batch_upload.total_rows %></dd>
+  <% if @batch_upload.num_rows > 0 %>
+    <dt class="grid-col-3 text-bold"><%= t(".num_rows") %>:</dt>
+    <dd class="grid-col-9"><%= @batch_upload.num_rows %></dd>
   <% end %>
   <% if @batch_upload.processed_at %>
     <dt class="grid-col-3 text-bold"><%= t(".processed_at") %>:</dt>
@@ -34,7 +34,7 @@
   <div class="usa-alert usa-alert--info margin-top-4" role="alert">
     <div class="usa-alert__body">
       <p class="usa-alert__text">
-        <%= t(".processing_message", processed: @batch_upload.processed_rows, total: @batch_upload.total_rows) %>
+        <%= t(".processing_message", processed: @batch_upload.processed_rows, total: @batch_upload.num_rows) %>
       </p>
     </div>
   </div>
@@ -65,7 +65,7 @@
           <%= t(".partial_success_message",
                 success_count: @batch_upload.success_count,
                 error_count: @batch_upload.error_count,
-                total: @batch_upload.total_rows) %>
+                total: @batch_upload.num_rows) %>
         </p>
       </div>
     </div>

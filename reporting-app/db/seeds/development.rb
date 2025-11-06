@@ -21,7 +21,7 @@ processing_batch = CertificationBatchUpload.new(
   filename: "processing_upload.csv",
   uploader: user,
   status: :processing,
-  total_rows: 100,
+  num_rows: 100,
   processed_rows: 45
 )
 processing_batch.file.attach(
@@ -36,7 +36,7 @@ completed_batch = CertificationBatchUpload.new(
   filename: "completed_upload.csv",
   uploader: user,
   status: :completed,
-  total_rows: 50,
+  num_rows: 50,
   processed_rows: 50,
   success_count: 48,
   error_count: 2,
