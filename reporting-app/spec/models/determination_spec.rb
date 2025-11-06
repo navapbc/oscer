@@ -12,7 +12,7 @@ RSpec.describe Determination, type: :model do
 
     describe 'outcome' do
       it 'defines the outcome enum with correct values' do
-        expect(described_class.outcomes.keys).to contain_exactly('compliant', 'exempt')
+        expect(described_class.outcomes.keys).to contain_exactly('compliant', 'exempt', 'not_compliant')
       end
     end
   end
@@ -25,6 +25,9 @@ RSpec.describe Determination, type: :model do
           age_over_65_exempt
           pregnancy_exempt
           american_indian_alaska_native_exempt
+          income_reported_compliant
+          hours_reported_compliant
+          exemption_request_compliant
         ]
         expect(Determination::VALID_REASONS).to match_array(expected_reasons)
       end
