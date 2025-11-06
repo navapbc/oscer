@@ -13,7 +13,7 @@ en:
         upload_new: "Upload New File"
         columns:
           filename: "Filename"
-          uploaded_by: "Uploaded By"
+          uploader: "Uploaded By"
           uploaded_at: "Uploaded At"
           status: "Status"
           progress: "Progress"
@@ -56,7 +56,7 @@ en:
         cancel: "Cancel"
       show:
         title: "Batch Upload Details"
-        uploaded_by: "Uploaded by"
+        uploader: "Uploaded by"
         uploaded_at: "Uploaded at"
         status: "Status"
         total_rows: "Total rows"

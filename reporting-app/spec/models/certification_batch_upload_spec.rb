@@ -7,20 +7,20 @@ RSpec.describe CertificationBatchUpload, type: :model do
 
   describe 'validations' do
     it 'requires filename' do
-      batch_upload = described_class.new(uploaded_by: user)
+      batch_upload = described_class.new(uploader: user)
       expect(batch_upload).not_to be_valid
       expect(batch_upload.errors[:filename]).to be_present
     end
 
     it 'requires file on create' do
-      batch_upload = described_class.new(filename: "test.csv", uploaded_by: user)
+      batch_upload = described_class.new(filename: "test.csv", uploader: user)
       expect(batch_upload).not_to be_valid
       expect(batch_upload.errors[:file]).to be_present
     end
   end
 
   describe 'status enum' do
-    let(:batch_upload) { create(:certification_batch_upload, uploaded_by: user) }
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
 
     it 'defaults to pending' do
       expect(batch_upload.status).to eq("pending")
@@ -44,7 +44,7 @@ RSpec.describe CertificationBatchUpload, type: :model do
   end
 
   describe '#start_processing!' do
-    let(:batch_upload) { create(:certification_batch_upload, uploaded_by: user) }
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
 
     it 'marks as processing and resets progress' do
       batch_upload.start_processing!
@@ -55,7 +55,7 @@ RSpec.describe CertificationBatchUpload, type: :model do
   end
 
   describe '#complete_processing!' do
-    let(:batch_upload) { create(:certification_batch_upload, uploaded_by: user, status: :processing) }
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user, status: :processing) }
 
     it 'marks as completed with results' do
       results = { successes: [ { row: 1 } ], errors: [] }
@@ -75,7 +75,7 @@ RSpec.describe CertificationBatchUpload, type: :model do
   end
 
   describe '#fail_processing!' do
-    let(:batch_upload) { create(:certification_batch_upload, uploaded_by: user, status: :processing) }
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user, status: :processing) }
 
     it 'marks as failed with error message' do
       batch_upload.fail_processing!(error_message: "Test error")
@@ -88,23 +88,23 @@ RSpec.describe CertificationBatchUpload, type: :model do
 
   describe '#processable?' do
     it 'returns true when pending' do
-      batch_upload = create(:certification_batch_upload, uploaded_by: user, status: :pending)
+      batch_upload = create(:certification_batch_upload, uploader: user, status: :pending)
       expect(batch_upload.processable?).to be true
     end
 
     it 'returns false when processing' do
-      batch_upload = create(:certification_batch_upload, uploaded_by: user, status: :processing)
+      batch_upload = create(:certification_batch_upload, uploader: user, status: :processing)
       expect(batch_upload.processable?).to be false
     end
 
     it 'returns false when completed' do
-      batch_upload = create(:certification_batch_upload, uploaded_by: user, status: :completed)
+      batch_upload = create(:certification_batch_upload, uploader: user, status: :completed)
       expect(batch_upload.processable?).to be false
     end
   end
 
   describe '#certifications' do
-    let(:batch_upload) { create(:certification_batch_upload, uploaded_by: user) }
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
     let(:cert_first) { create(:certification, member_id: "M777", case_number: "C-777") }
     let(:cert_second) { create(:certification, member_id: "M778", case_number: "C-778") }
 
@@ -130,7 +130,7 @@ RSpec.describe CertificationBatchUpload, type: :model do
   end
 
   describe '#certifications_count' do
-    let(:batch_upload) { create(:certification_batch_upload, uploaded_by: user) }
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
 
     it 'returns 0 when no certifications created' do
       expect(batch_upload.certifications_count).to eq(0)

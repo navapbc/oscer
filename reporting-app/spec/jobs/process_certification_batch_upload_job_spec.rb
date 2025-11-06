@@ -6,7 +6,7 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
   include ActiveJob::TestHelper
 
   let(:user) { create(:user) }
-  let(:batch_upload) { create(:certification_batch_upload, uploaded_by: user) }
+  let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
 
   describe '#perform' do
     context 'with valid CSV' do

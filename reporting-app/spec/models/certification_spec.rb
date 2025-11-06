@@ -109,7 +109,7 @@ RSpec.describe Certification, type: :model do
 
   describe '.from_batch_upload' do
     let(:user) { create(:user) }
-    let(:batch_upload) { create(:certification_batch_upload, uploaded_by: user) }
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
     let!(:batch_cert) { create(:certification, member_id: "M888", case_number: "C-888") }
     let!(:manual_cert) { create(:certification, member_id: "M889", case_number: "C-889") }
 

@@ -6,7 +6,7 @@ module Staff
 
     # GET /staff/certification_batch_uploads
     def index
-      @batch_uploads = CertificationBatchUpload.includes(:uploaded_by).recent
+      @batch_uploads = CertificationBatchUpload.includes(:uploader).recent
     end
 
     # GET /staff/certification_batch_uploads/new
@@ -27,7 +27,7 @@ module Staff
 
       @batch_upload = CertificationBatchUpload.new(
         filename: uploaded_file.original_filename,
-        uploaded_by: current_user
+        uploader: current_user
       )
       @batch_upload.file.attach(uploaded_file)
 
@@ -61,7 +61,7 @@ module Staff
     private
 
     def set_batch_upload
-      @batch_upload = CertificationBatchUpload.includes(:uploaded_by).find(params[:id])
+      @batch_upload = CertificationBatchUpload.includes(:uploader).find(params[:id])
     end
   end
 end

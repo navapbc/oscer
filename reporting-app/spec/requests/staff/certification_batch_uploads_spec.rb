@@ -80,7 +80,7 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
   end
 
   describe "GET /staff/staff/certification_batch_uploads/:id" do
-    let(:batch_upload) { create(:certification_batch_upload, uploaded_by: user) }
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
 
     it "shows batch upload details" do
       get certification_batch_upload_path(batch_upload)
@@ -94,7 +94,7 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
     include ActiveJob::TestHelper
 
     context "when batch is pending" do
-      let(:batch_upload) { create(:certification_batch_upload, uploaded_by: user, status: :pending) }
+      let(:batch_upload) { create(:certification_batch_upload, uploader: user, status: :pending) }
 
       it "enqueues processing job" do
         expect {
@@ -111,7 +111,7 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
     end
 
     context "when batch is already processing" do
-      let(:batch_upload) { create(:certification_batch_upload, uploaded_by: user, status: :processing) }
+      let(:batch_upload) { create(:certification_batch_upload, uploader: user, status: :processing) }
 
       it "shows error and redirects" do
         post process_batch_certification_batch_upload_path(batch_upload)

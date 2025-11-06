@@ -1,16 +1,14 @@
 <% content_for :title, t(".title") %>
-
 <div class="display-flex flex-justify">
   <h1><%= t(".heading") %></h1>
   <%= link_to t(".upload_new"), new_certification_batch_upload_path, class: "usa-button" %>
 </div>
-
 <% if @batch_uploads.any? %>
   <table class="usa-table usa-table--borderless width-full margin-top-4">
     <thead>
       <tr>
         <th scope="col"><%= t(".columns.filename") %></th>
-        <th scope="col"><%= t(".columns.uploaded_by") %></th>
+        <th scope="col"><%= t(".columns.uploader") %></th>
         <th scope="col"><%= t(".columns.uploaded_at") %></th>
         <th scope="col"><%= t(".columns.status") %></th>
         <th scope="col"><%= t(".columns.progress") %></th>
@@ -23,7 +21,7 @@
           <td>
             <%= link_to batch_upload.filename, certification_batch_upload_path(batch_upload) %>
           </td>
-          <td><%= batch_upload.uploaded_by.email %></td>
+          <td><%= batch_upload.uploader.email %></td>
           <td><%= batch_upload.created_at.strftime("%m/%d/%Y %I:%M %p") %></td>
           <td>
             <span class="usa-tag <%= status_tag_class(batch_upload.status) %>">
@@ -65,5 +63,3 @@
     </div>
   </div>
 <% end %>
-
-

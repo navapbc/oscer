@@ -6,7 +6,7 @@ user = User.first || User.create!(email: "staff@example.com", uid: SecureRandom.
 # Pending batch
 pending_batch = CertificationBatchUpload.new(
   filename: "pending_upload.csv",
-  uploaded_by: user,
+  uploader: user,
   status: :pending
 )
 pending_batch.file.attach(
@@ -19,7 +19,7 @@ pending_batch.save!
 # Processing batch
 processing_batch = CertificationBatchUpload.new(
   filename: "processing_upload.csv",
-  uploaded_by: user,
+  uploader: user,
   status: :processing,
   total_rows: 100,
   processed_rows: 45
@@ -34,7 +34,7 @@ processing_batch.save!
 # Completed batch with successes
 completed_batch = CertificationBatchUpload.new(
   filename: "completed_upload.csv",
-  uploaded_by: user,
+  uploader: user,
   status: :completed,
   total_rows: 50,
   processed_rows: 50,
@@ -62,7 +62,7 @@ completed_batch.save!
 # Failed batch
 failed_batch = CertificationBatchUpload.new(
   filename: "failed_upload.csv",
-  uploaded_by: user,
+  uploader: user,
   status: :failed,
   processed_at: 2.hours.ago,
   results: { error: "Invalid CSV format: Unclosed quoted field" }

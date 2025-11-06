@@ -1,8 +1,8 @@
 <% content_for :title, t(".title") %>
 <h1><%= @batch_upload.filename %></h1>
 <dl class="grid-row margin-bottom-2">
-  <dt class="grid-col-3 text-bold"><%= t(".uploaded_by") %>:</dt>
-  <dd class="grid-col-9"><%= @batch_upload.uploaded_by.email %></dd>
+  <dt class="grid-col-3 text-bold"><%= t(".uploader") %>:</dt>
+  <dd class="grid-col-9"><%= @batch_upload.uploader.email %></dd>
   <dt class="grid-col-3 text-bold"><%= t(".uploaded_at") %>:</dt>
   <dd class="grid-col-9"><%= @batch_upload.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
   <dt class="grid-col-3 text-bold"><%= t(".status") %>:</dt>

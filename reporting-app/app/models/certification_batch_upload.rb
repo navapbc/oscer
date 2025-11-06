@@ -9,14 +9,14 @@ class CertificationBatchUpload < ApplicationRecord
     failed: 3        # Processing failed
   }
 
-  belongs_to :uploaded_by, class_name: "User"
+  belongs_to :uploader, class_name: "User"
   has_one_attached :file
 
   validates :filename, presence: true
   validates :file, presence: true, on: :create
 
   scope :recent, -> { order(created_at: :desc) }
-  scope :by_user, ->(user_id) { where(uploaded_by_id: user_id) }
+  scope :by_user, ->(user_id) { where(uploader_id: user_id) }
 
   # Mark as processing and update timestamp
   def start_processing!

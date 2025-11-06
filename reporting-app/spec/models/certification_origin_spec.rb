@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe CertificationOrigin, type: :model do
   let(:certification) { create(:certification) }
   let(:user) { create(:user) }
-  let(:batch_upload) { create(:certification_batch_upload, uploaded_by: user) }
+  let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
 
   describe 'validations' do
     it 'requires certification_id' do

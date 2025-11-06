@@ -4,7 +4,7 @@ FactoryBot.define do
   factory :certification_batch_upload do
     filename { "test_upload.csv" }
     status { :pending }
-    association :uploaded_by, factory: :user
+    association :uploader, factory: :user
 
     after(:build) do |batch_upload|
       # Attach a dummy CSV file
