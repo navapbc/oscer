@@ -36,6 +36,10 @@ class Determination < Strata::Determination
     age_over_65_exempt
     pregnancy_exempt
     american_indian_alaska_native_exempt
+    activity_report_compliant
+    activity_report_non_compliant
+    exemption_request_compliant
+    exemption_request_non_compliant
   ].freeze
 
   enum :decision_method, { automated: "automated", manual: "manual" }

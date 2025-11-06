@@ -25,6 +25,10 @@ RSpec.describe Determination, type: :model do
           age_over_65_exempt
           pregnancy_exempt
           american_indian_alaska_native_exempt
+          activity_report_compliant
+          activity_report_non_compliant
+          exemption_request_compliant
+          exemption_request_non_compliant
         ]
         expect(Determination::VALID_REASONS).to match_array(expected_reasons)
       end
