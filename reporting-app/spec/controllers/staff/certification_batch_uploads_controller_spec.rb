@@ -15,10 +15,10 @@ RSpec.describe Staff::CertificationBatchUploadsController do
     let(:exempt_cert) { create(:certification) }
     let(:not_compliant_cert) { create(:certification) }
     let(:pending_review_cert) { create(:certification) }
-    
+
     # Default status for pending_review_cert (can be overridden in specific contexts)
     let(:pending_review_cert_status) { MemberStatus::PENDING_REVIEW }
-    
+
     before do
       # Create certification origins linking certifications to batch upload
       CertificationOrigin.create!(
@@ -41,13 +41,13 @@ RSpec.describe Staff::CertificationBatchUploadsController do
         source_type: CertificationOrigin::SOURCE_TYPE_BATCH_UPLOAD,
         source_id: batch_upload.id
       )
-      
+
       # Stub MemberStatusService to return different statuses
       allow(MemberStatusService).to receive(:determine).with(compliant_cert).and_return(
         MemberStatus.new(status: MemberStatus::COMPLIANT, determination_method: "automated", reason_codes: [])
       )
       allow(MemberStatusService).to receive(:determine).with(exempt_cert).and_return(
-        MemberStatus.new(status: MemberStatus::EXEMPT, determination_method: "automated", reason_codes: ["age_under_19_exempt"])
+        MemberStatus.new(status: MemberStatus::EXEMPT, determination_method: "automated", reason_codes: [ "age_under_19_exempt" ])
       )
       allow(MemberStatusService).to receive(:determine).with(not_compliant_cert).and_return(
         MemberStatus.new(status: MemberStatus::NOT_COMPLIANT, determination_method: "automated", reason_codes: [])
@@ -58,12 +58,11 @@ RSpec.describe Staff::CertificationBatchUploadsController do
     end
 
     context "when accessing without filters" do
-
       it "loads certifications from the batch upload" do
         get :results, params: { id: batch_upload.id, locale: "en" }
 
         certifications = controller.instance_variable_get(:@certifications)
-        expect(certifications).to match_array([compliant_cert, exempt_cert, not_compliant_cert, pending_review_cert])
+        expect(certifications).to contain_exactly(compliant_cert, exempt_cert, not_compliant_cert, pending_review_cert)
       end
 
       it "calculates member statuses for all certifications" do
@@ -84,7 +83,7 @@ RSpec.describe Staff::CertificationBatchUploadsController do
         exempt = controller.instance_variable_get(:@exempt_certifications)
         member_action = controller.instance_variable_get(:@member_action_required_certifications)
         pending_review = controller.instance_variable_get(:@pending_review_certifications)
-        
+
         expect(compliant).to contain_exactly(compliant_cert)
         expect(exempt).to contain_exactly(exempt_cert)
         expect(member_action).to contain_exactly(not_compliant_cert)
@@ -95,7 +94,7 @@ RSpec.describe Staff::CertificationBatchUploadsController do
         get :results, params: { id: batch_upload.id, locale: "en" }
 
         certifications_to_show = controller.instance_variable_get(:@certifications_to_show)
-        expect(certifications_to_show).to match_array([compliant_cert, exempt_cert, not_compliant_cert, pending_review_cert])
+        expect(certifications_to_show).to contain_exactly(compliant_cert, exempt_cert, not_compliant_cert, pending_review_cert)
       end
 
       it "renders successfully" do
@@ -131,7 +130,7 @@ RSpec.describe Staff::CertificationBatchUploadsController do
         get :results, params: { id: batch_upload.id, filter: "member_action_required", locale: "en" }
 
         certifications_to_show = controller.instance_variable_get(:@certifications_to_show)
-        expect(certifications_to_show).to match_array([not_compliant_cert, pending_review_cert])
+        expect(certifications_to_show).to contain_exactly(not_compliant_cert, pending_review_cert)
       end
     end
 
