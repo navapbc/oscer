@@ -87,3 +87,6 @@ en:
       results:
         title: "Bulk intake results"
         filename: "Filename"
+        uploaded_date: "Uploaded date"
+        result: "Result"
+        results_message: "%{num_rows_succeeded} succeeded, %{num_rows_errored} failed out of %{total} rows"
