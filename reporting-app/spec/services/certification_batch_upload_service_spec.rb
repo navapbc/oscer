@@ -52,6 +52,62 @@ RSpec.describe CertificationBatchUploadService do
       end
     end
 
+    context 'with missing headers' do
+      required_headers = [:member_id, :case_number, :member_email, :certification_date, :certification_type].freeze
+      let(:csv_content) do
+        <<~CSV
+          member_id,case_number,member_email,first_name,last_name,certification_type
+        CSV
+      end
+      let(:csv_file) do
+        file = Tempfile.new([ 'test', '.csv' ])
+        file.write(csv_content)
+        file.rewind
+        file
+      end
+      let(:uploaded_file) { Rack::Test::UploadedFile.new(csv_file.path, 'text/csv') }
+      after do
+        csv_file.close
+        csv_file.unlink
+      end
+
+      required_headers.each do |missing_header|
+        it "captures error when #{missing_header} header is missing" do
+          headers = required_headers - [missing_header]
+          csv_content = <<~CSV
+            #{headers.join(",")}
+            M123,C-001,john@example.com,John,Doe,2025-01-15,new_application
+            M124,C-002,jane@example.com,Jane,Smith,2025-01-15,recertification
+          CSV
+          csv_file = Tempfile.new([ 'test', '.csv' ])
+          csv_file.write(csv_content)
+          csv_file.rewind
+          uploaded_file = Rack::Test::UploadedFile.new(csv_file.path, 'text/csv')
+
+          service.process_csv(uploaded_file)
+
+          expect(service.errors.count).to eq(1)
+          expect(service.errors.first[:message]).to include("Missing required columns: #{missing_header}")
+        end
+      end
+
+      it 'mentions multiple missing headers' do
+        csv_content = <<~CSV
+          member_id,first_name,last_name
+          M123,John,Doe
+        CSV
+        csv_file = Tempfile.new([ 'test', '.csv' ])
+        csv_file.write(csv_content)
+        csv_file.rewind
+        uploaded_file = Rack::Test::UploadedFile.new(csv_file.path, 'text/csv')
+
+        service.process_csv(uploaded_file)
+
+        expect(service.errors.count).to eq(1)
+        expect(service.errors.first[:message]).to include("Missing required columns: case_number, member_email, certification_date, certification_type")
+      end
+    end
+
     context 'with valid CSV file' do
       let(:csv_content) do
         <<~CSV
