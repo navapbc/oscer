@@ -1,3 +1,11 @@
+<h1>
+  <%= t(".title_prefix") %>
+  <span class="activity-type-highlight">
+    <%= t(".#{activity.category}_label") %>
+  </span>
+  <%= t(".title_suffix") %>
+</h1>
+
 <%= strata_form_with(model: [activity_report_application_form, activity.becomes(Activity)]) do |f| %>
   <%= f.text_field :name, label: t(".name") %>
 
