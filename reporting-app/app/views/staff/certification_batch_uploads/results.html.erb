@@ -1,0 +1,7 @@
+<% content_for :title, t(".title") %>
+<h1><%= t(".title") %></h1>
+<%# Batch Info %>
+<dl>
+  <dt class="text-bold display-inline-block"><%= t(".filename") %>:</dt>
+  <dd class="margin-0 display-inline-block"><%= link_to @batch_upload.filename, rails_blob_path(@batch_upload.file, disposition: "attachment") %></dd>
+</dl>

@@ -84,3 +84,6 @@ en:
           success: "Success"
         back_to_queue: "Back to Queue"
         back_to_dashboard: "Back to Dashboard"
+      results:
+        title: "Bulk intake results"
+        filename: "Filename"
