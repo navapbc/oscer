@@ -53,7 +53,7 @@ RSpec.describe CertificationBatchUploadService do
     end
 
     context 'with missing headers' do
-      required_headers = [:member_id, :case_number, :member_email, :certification_date, :certification_type].freeze
+      required_headers = [ :member_id, :case_number, :member_email, :certification_date, :certification_type ].freeze
       let(:csv_content) do
         <<~CSV
           member_id,case_number,member_email,first_name,last_name,certification_type
@@ -66,6 +66,7 @@ RSpec.describe CertificationBatchUploadService do
         file
       end
       let(:uploaded_file) { Rack::Test::UploadedFile.new(csv_file.path, 'text/csv') }
+
       after do
         csv_file.close
         csv_file.unlink
@@ -73,7 +74,7 @@ RSpec.describe CertificationBatchUploadService do
 
       required_headers.each do |missing_header|
         it "captures error when #{missing_header} header is missing" do
-          headers = required_headers - [missing_header]
+          headers = required_headers - [ missing_header ]
           csv_content = <<~CSV
             #{headers.join(",")}
             M123,C-001,john@example.com,John,Doe,2025-01-15,new_application
