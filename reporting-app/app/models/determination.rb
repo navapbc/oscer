@@ -50,6 +50,18 @@ class Determination < Strata::Determination
 
   default_scope { order(created_at: :desc) }
 
+  # Batch query scopes
+  scope :for_certifications, ->(certification_ids) {
+    where(subject_type: "Certification", subject_id: certification_ids)
+  }
+
+  scope :latest_per_subject, -> {
+    # Override default_scope ordering for DISTINCT ON to work correctly
+    unscope(:order)
+      .select("DISTINCT ON (subject_id) strata_determinations.*")
+      .order("subject_id, created_at DESC")
+  }
+
   def self.to_reason_codes(eligibility_fact)
     eligibility_fact_reasons = eligibility_fact.reasons.select { |reason| reason.value }.map(&:name).map(&:to_sym)
     eligibility_fact_reasons.map { |reason| REASON_CODE_MAPPING[reason] }
