@@ -49,17 +49,12 @@ module Staff
       certification_origin = CertificationOrigin.from_batch_upload(@batch_upload.id)
       @certifications = Certification.where(id: certification_origin.select(:certification_id))
       @member_statuses = @certifications.map {|cert| { cert.id => MemberStatusService.determine(cert) } }.reduce({}, :merge)
-      case params[:filter]
-      when "compliant"
-        @certifications = @certifications.select { |cert| @member_statuses[cert.id].status == MemberStatus::COMPLIANT }
-      when "exempt"
-        @certifications = @certifications.select { |cert| @member_statuses[cert.id].status == MemberStatus::EXEMPT }
-      when "member_action_required"
-        @certifications = @certifications.select { |cert| [MemberStatus::NOT_COMPLIANT, MemberStatus::AWAITING_REPORT].include?(@member_statuses[cert.id].status) }
-      when "pending_review"
-        @certifications = @certifications.select { |cert| @member_statuses[cert.id].status == MemberStatus::PENDING_REVIEW }
-      end
-      @certification_cases = CertificationCase.where(certification_id: @certifications.map(&:id)).index_by(&:certification_id)
+      @compliant_certifications = @certifications.select { |cert| @member_statuses[cert.id].status == MemberStatus::COMPLIANT }
+      @exempt_certifications = @certifications.select { |cert| @member_statuses[cert.id].status == MemberStatus::EXEMPT }
+      @member_action_required_certifications = @certifications.select { |cert| [MemberStatus::NOT_COMPLIANT, MemberStatus::AWAITING_REPORT].include?(@member_statuses[cert.id].status) }
+      @pending_review_certifications = @certifications.select { |cert| @member_statuses[cert.id].status == MemberStatus::PENDING_REVIEW }
+      set_certifications_to_show
+      @certification_cases = CertificationCase.where(certification_id: @certifications_to_show.map(&:id)).index_by(&:certification_id)
     end
 
     # POST /staff/certification_batch_uploads/:id/process_batch
@@ -80,6 +75,21 @@ module Staff
 
     def set_batch_upload
       @batch_upload = CertificationBatchUpload.includes(:uploader).find(params[:id])
+    end
+
+    def set_certifications_to_show
+      case params[:filter]
+      when "compliant"
+        @certifications_to_show = @compliant_certifications
+      when "exempt"
+        @certifications_to_show = @exempt_certifications
+      when "member_action_required"
+        @certifications_to_show = @member_action_required_certifications
+      when "pending_review"
+        @certifications_to_show = @pending_review_certifications
+      else
+        @certifications_to_show = @certifications
+      end
     end
   end
 end
