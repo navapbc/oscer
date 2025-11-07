@@ -143,7 +143,6 @@ class MemberStatusService
     end
 
     def human_readable_reason_codes(reasons)
-      @translation_cache ||= {}
       reasons.map do |reason|
         @translation_cache[reason] ||= I18n.t("services.member_status_service.reason_codes.#{reason}", default: reason)
       end
