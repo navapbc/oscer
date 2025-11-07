@@ -1,30 +1,46 @@
 <% content_for :title, t(".title") %>
 
-<% if flash[:notice].present? && @activity_report_application_form.submitted_at.present? %>
-  <%= render "strata/shared/step_indicator", steps: %i[start select_periods add_activities review submitted], current_step: :submitted, translation_scope: "activity_report_application_forms.steps" %>
-<% elsif @activity_report_application_form.submitted_at.blank? %>
-  <%= render "strata/shared/step_indicator", steps: %i[start select_periods add_activities review submitted], current_step: :add_activities, translation_scope: "activity_report_application_forms.steps" %>
+<% current_step = activity_report_current_step(@activity_report_application_form, flash_notice_present: flash[:notice].present?) %>
+<% if current_step %>
+  <%= render "strata/shared/step_indicator",
+    steps: %i[start select_periods add_activities review submitted],
+    current_step: current_step,
+    translation_scope: "activity_report_application_forms.steps" %>
 <% end %>
 
-<%= link_to t(".back"), dashboard_path %>
 <h1><%= t(".title") %></h1>
 <% if policy(@activity_report_application_form).edit? %>
-  <p class="usa-intro"><%= t(".intro.in_progress") %></p>
-  <%= link_to "Add activity", new_activity_report_application_form_activity_path(@activity_report_application_form), class: class_names("usa-button") %>
-  <%= link_to "Review and submit", review_activity_report_application_form_path(@activity_report_application_form), class: class_names("usa-button") %>
-  <div class="usa-alert usa-alert--info margin-top-3" role="alert">
-    <div class="usa-alert__body">
-      <p class="usa-alert__heading"><%= t(".info_heading") %></p>
-      <p class="usa-alert__text">
-        <%= t(".info_text") %>
+  <p class="usa-intro">
+    <%= t("activity_report_application_forms.shared.status_messages.in_progress") %>
+    <%= t("activity_report_application_forms.shared.status_messages.in_progress_detail") %>
+  </p>
+  <%= link_to t(".add_activity_button"),
+    new_activity_report_application_form_activity_path(@activity_report_application_form),
+    class: "usa-button" %>
+  <%= link_to t("activity_report_application_forms.shared.review_and_submit"),
+    review_activity_report_application_form_path(@activity_report_application_form),
+    class: "usa-button" %>
+
+  <div class="usa-summary-box" style="width: fit-content;">
+    <div class="usa-summary-box__body">
+      <h2 class="usa-summary-box__heading"><%= t(".info_heading") %></h2>
+      <p class="usa-summary-box__text">
+        <%= t(".info_text",
+               hours: ActivityReportApplicationForm::MINIMUM_MONTHLY_HOURS,
+               income: number_to_currency(ActivityReportApplicationForm::MINIMUM_MONTHLY_INCOME, precision: 0)
+             )
+        %>
       </p>
     </div>
   </div>
+
 <% elsif @certification_case&.activity_report_approval_status %>
-  <p class="usa-intro <%= @certification_case.activity_report_approval_status == "approved" ? "text-green" : "text-red" %>"><%= t(".intro.#{@certification_case.activity_report_approval_status}") %></p>
+  <p class="usa-intro <%= activity_report_status_class(@certification_case.activity_report_approval_status) %>">
+    <%= t("activity_report_application_forms.shared.status_messages.#{@certification_case.activity_report_approval_status}") %>
+  </p>
 <% else %>
-  <p class="usa-intro"><%= t(".intro.submitted") %></p>
+  <p class="usa-intro"><%= t("activity_report_application_forms.shared.status_messages.submitted") %></p>
 <% end %>
-<%# Temporary spacing workaround %>
-<div class="margin-top-6"></div>
-<%= render @activity_report_application_form %>
+<div class="margin-y-6">
+  <%= render @activity_report_application_form %>
+</div>

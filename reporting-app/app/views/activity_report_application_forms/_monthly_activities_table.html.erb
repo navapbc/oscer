@@ -1,0 +1,31 @@
+<table class="usa-table usa-table--borderless width-full">
+  <h2><%= title %></h2>
+  <thead>
+    <tr>
+      <th><%= t("activity_report_application_forms.shared.organization_name") %></th>
+      <th><%= t("activity_report_application_forms.shared.activity_type") %></th>
+      <th class="text-right bg-base-lightest" style="width: 150px;"><%= column_header %></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% activities.each do |activity| %>
+      <tr>
+        <td class="border-0"><%= link_to activity.name, [activity_report_application_form, activity.becomes(Activity)] %></td>
+        <td class="border-0"><%= activity_type_display(activity) %></td>
+        <td class="border-0 text-right bg-base-lightest"><%= activity_value.call(activity) %></td>
+      </tr>
+    <% end %>
+    <tr>
+      <td colspan="2" style="border-bottom: 0;"><%= t("activity_report_application_forms.monthly_activities_table.total_reported") %></td>
+      <td class="text-right bg-base-lightest" style="border-bottom: 0;"><%= format_value.call(summed_value) %></td>
+    </tr>
+    <tr>
+      <td colspan="2" style="border-top: 0;"><%= t("activity_report_application_forms.monthly_activities_table.required") %></td>
+      <td class="text-right bg-base-lightest" style="border-top: 0;"><%= format_value.call(required_value) %></td>
+    </tr>
+    <tr>
+      <td colspan="2" class="bg-base-lightest"><strong><%= remaining_label %></strong></td>
+      <td class="text-right bg-base-lighter"><%= format_value.call(remaining_value) %></td>
+    </tr>
+  </tbody>
+</table>

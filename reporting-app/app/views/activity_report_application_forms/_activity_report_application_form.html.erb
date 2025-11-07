@@ -1,70 +1,54 @@
 <div id="<%= dom_id activity_report_application_form %>">
-  <% activities_by_month = activity_report_application_form.activities_by_month %>
-  <% activities_by_month.each_with_index do |(month, activities), index| %>
-    <% hourly_activities = activities.select { |act| act.is_a?(WorkActivity) } %>
-    <% income_activities = activities.select { |act| act.is_a?(IncomeActivity) } %>
-    <% summed_hours = hourly_activities.map { |act| act.hours || 0 }.sum.round(1) %>
-    <% summed_income = income_activities.map { |act| act.income.dollar_amount || 0 }.sum.round(0) %>
-    <% hours_equivalent_of_earnings = (summed_income / 7.25).round(1) %>
-    <% income_equivalent_of_hours = (summed_hours * 7.25).round(0) %>
-    <% remaining_income = 580 - (income_equivalent_of_hours + summed_income) %>
-    <% remaining_hours = 80.0 - summed_hours - hours_equivalent_of_earnings %>
+  <% monthly_stats = activity_report_application_form.monthly_statistics %>
+  <% monthly_stats.each_with_index do |(month, stats), index| %>
+    <% hourly_activities, income_activities, summed_hours, summed_income, remaining_hours, remaining_income =
+         stats.values_at(:hourly_activities, :income_activities, :summed_hours, :summed_income, :remaining_hours, :remaining_income) %>
     <h2 class="margin-bottom-2"><%= month.strftime("%B %Y") %></h2>
-    <%# Top summary %>
-    <% if income_activities.any? %>
-      <p class="margin-top-1px">
-        <%= t(".total_income_reported") %> <strong><%= number_to_currency(summed_income, precision: 0) %></strong>
-      </p>
-    <% end %>
-    <% if hourly_activities.any? %>
-      <p class="margin-top-1px">
-        <%= t(".total_hours_reported") %> <strong><%= summed_hours %> hrs</strong>
-      </p>
-    <% end %>
-    <p class="margin-top-1px">
-      <%= raw t(".additional_hours_income_needed", hours: remaining_hours, income: number_to_currency(remaining_income, precision: 0)) %>
-    </p>
+    <%= render partial: "activity_report_application_forms/monthly_summary",
+      locals: {
+        income_activities:,
+        hourly_activities:,
+        summed_income:,
+        summed_hours:,
+        remaining_hours:,
+        remaining_income:
+      }
+    %>
     <%# Breakdown of activities for month %>
     <div class="grid-container font-body-md">
-      <% if income_activities.any? %>
-        <%# Earned income activities %>
-        <div class="grid-row">
-          <div class="grid-col-11 grid-offset-1 text-bold">
-            <%= t(".income_reported") %>
-          </div>
-        </div>
-        <%= render partial: "activity_report_application_forms/activity_row",
-          collection: income_activities,
-          as: :activity,
-          locals: { activity_report_application_form: activity_report_application_form } %>
-        <div class="grid-row">
-          <div class="grid-col-8 grid-offset-2">
-            <%= t(".total_income") %>
-          </div>
-          <div class="grid-col-2 border-top-1px text-right">
-            <%= number_to_currency(summed_income, precision: 0) %>
-          </div>
-        </div>
-      <% end %>
       <% if hourly_activities.any? %>
         <%# Hourly activities %>
-        <div class="grid-row">
-          <div class="grid-col-11 grid-offset-1 text-bold">
-            <%= t(".hours_reported") %>
-          </div>
-        </div>
-        <%= render partial: "activity_report_application_forms/activity_row",
-          collection: hourly_activities,
-          as: :activity,
-          locals: { activity_report_application_form: activity_report_application_form } %>
-        <div class="grid-row">
-          <div class="grid-col-8 grid-offset-2">
-            <%= t(".total_hours") %>
-          </div>
-          <div class="grid-col-2 border-top-1px text-right">
-            <%= summed_hours %>
-          </div>
-        </div>
+        <%= render partial: "activity_report_application_forms/monthly_activities_table",
+          locals: {
+            title: t(".hours_reported"),
+            column_header: t("activity_report_application_forms.shared.hours"),
+            activities: hourly_activities,
+            activity_report_application_form:,
+            activity_value: ->(activity) { activity.hours },
+            format_value: ->(value) { value },
+            summed_value: summed_hours,
+            required_value: ActivityReportApplicationForm::MINIMUM_MONTHLY_HOURS,
+            remaining_value: remaining_hours,
+            remaining_label: t("activity_report_application_forms.monthly_activities_table.remaining_label.hours")
+          }
+        %>
+      <% end %>
+      <% if income_activities.any? %>
+        <%# Income activities %>
+        <%= render partial: "activity_report_application_forms/monthly_activities_table",
+          locals: {
+            title: t(".income_reported"),
+            column_header: t("activity_report_application_forms.shared.income"),
+            activities: income_activities,
+            activity_report_application_form:,
+            activity_value: ->(activity) { number_to_currency(activity.income&.dollar_amount, precision: 0) },
+            format_value: ->(value) { number_to_currency(value, precision: 0) },
+            summed_value: summed_income,
+            required_value: ActivityReportApplicationForm::MINIMUM_MONTHLY_INCOME,
+            remaining_value: remaining_income,
+            remaining_label: t("activity_report_application_forms.monthly_activities_table.remaining_label.income")
+          }
+        %>
       <% end %>
     </div>
   <% end %>
