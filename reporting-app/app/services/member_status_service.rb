@@ -48,12 +48,8 @@ class MemberStatusService
       cert_ids = certifications.map(&:id) + cases.map(&:certification_id).compact
       cert_ids = cert_ids.uniq
 
-      # Bulk load cross-references
-      cases_by_cert_id = CertificationCase.where(certification_id: cert_ids).index_by(&:certification_id)
-      certs_by_id = Certification.where(id: cert_ids).index_by(&:id)
-
-      # Bulk load latest determinations
-      latest_dets = Determination.for_certifications(cert_ids).latest_per_subject.index_by(&:subject_id)
+      # Bulk load all related data in single operation
+      data = bulk_load_data(cert_ids)
 
       # Memoize human-readable translations
       @translation_cache = {}
@@ -61,8 +57,8 @@ class MemberStatusService
       # Build results
       results = {}
       records_array.each do |record|
-        cert, case_record = build_pair(record, certs_by_id, cases_by_cert_id)
-        status = compute_status(cert, case_record, latest_dets)
+        cert, case_record = build_pair(record, data[:certs_by_id], data[:cases_by_cert_id])
+        status = compute_status(cert, case_record, data[:determinations])
         results[[ record.class.name, record.id ]] = status
       end
 
@@ -70,6 +66,18 @@ class MemberStatusService
     end
 
     private
+
+    # Bulk loads all related data needed for status determination in a single operation
+    #
+    # @param cert_ids [Array<String>] Array of certification IDs to load data for
+    # @return [Hash] Hash with keys :cases_by_cert_id, :certs_by_id, :determinations
+    def bulk_load_data(cert_ids)
+      {
+        cases_by_cert_id: CertificationCase.where(certification_id: cert_ids).index_by(&:certification_id),
+        certs_by_id: Certification.where(id: cert_ids).index_by(&:id),
+        determinations: Determination.for_certifications(cert_ids).latest_per_subject.index_by(&:subject_id)
+      }
+    end
 
     def valid_record_type?(record)
       record.is_a?(Certification) || record.is_a?(CertificationCase)
