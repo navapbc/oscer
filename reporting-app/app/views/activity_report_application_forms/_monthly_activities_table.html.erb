@@ -4,7 +4,7 @@
     <tr>
       <th><%= t("activity_report_application_forms.shared.organization_name") %></th>
       <th><%= t("activity_report_application_forms.shared.activity_type") %></th>
-      <th class="text-right bg-base-lightest" style="width: 150px;"><%= column_header %></th>
+      <th class="text-right bg-base-lightest width-card"><%= column_header %></th>
     </tr>
   </thead>
   <tbody>
@@ -16,12 +16,12 @@
       </tr>
     <% end %>
     <tr>
-      <td colspan="2" style="border-bottom: 0;"><%= t("activity_report_application_forms.monthly_activities_table.total_reported") %></td>
-      <td class="text-right bg-base-lightest" style="border-bottom: 0;"><%= format_value.call(summed_value) %></td>
+      <td colspan="2" class="border-bottom-0"><%= t("activity_report_application_forms.monthly_activities_table.total_reported") %></td>
+      <td class="border-bottom-0 text-right bg-base-lightest"><%= format_value.call(summed_value) %></td>
     </tr>
     <tr>
-      <td colspan="2" style="border-top: 0;"><%= t("activity_report_application_forms.monthly_activities_table.required") %></td>
-      <td class="text-right bg-base-lightest" style="border-top: 0;"><%= format_value.call(required_value) %></td>
+      <td colspan="2" class="border-top-0"><%= t("activity_report_application_forms.monthly_activities_table.required") %></td>
+      <td class="border-top-0 text-right bg-base-lightest"><%= format_value.call(required_value) %></td>
     </tr>
     <tr>
       <td colspan="2" class="bg-base-lightest"><strong><%= remaining_label %></strong></td>
