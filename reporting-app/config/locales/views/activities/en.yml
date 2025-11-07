@@ -5,7 +5,6 @@ en:
       back: "Back to activity report"
       edit: "Edit activity"
     new_activity:
-      title: "Activity type"
       back: "Back to activity report"
     form:
       title_prefix: "Add"
@@ -19,7 +18,7 @@ en:
       input_label: "How many hours? / How much earned income?"
       employment_label: "Employment"
       education_label: "Education"
-      community_service_label: "Community service"
+      community_service_label: "Community Service"
     show:
       title:
         work: "Work for %{name}"
