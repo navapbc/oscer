@@ -65,13 +65,11 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
         )
       end
 
-      it 'marks batch as completed with errors' do
+      it 'marks batch as failed' do
         described_class.perform_now(batch_upload.id)
         batch_upload.reload
 
-        expect(batch_upload).to be_completed
-        expect(batch_upload.num_rows_succeeded).to eq(0)
-        expect(batch_upload.num_rows_errored).to eq(1)
+        expect(batch_upload).to be_failed
       end
     end
 
