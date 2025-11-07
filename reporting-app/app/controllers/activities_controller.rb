@@ -17,7 +17,7 @@ class ActivitiesController < ApplicationController
 
   # GET /activities/new/new_activity
   def new_activity
-    @activity = activity_type_map(params[:activity_type])
+    @activity = activity_type_map(params[:activity_type] || activity_params[:activity_type])
     @activity.category = params[:category] if params[:category].present?
     authorize @activity_report_application_form, :edit?
   end
