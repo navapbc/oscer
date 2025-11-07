@@ -19,11 +19,13 @@ class ActivitiesController < ApplicationController
   def new_activity
     @activity = activity_type_map(params[:activity_type] || activity_params[:activity_type])
     authorize @activity_report_application_form, :edit?
+    @months = selectable_months
   end
 
   # GET /activities/1/edit
   def edit
     authorize @activity_report_application_form, :edit?
+    @months = selectable_months
   end
 
   # GET /activities/1/documents
@@ -111,6 +113,15 @@ class ActivitiesController < ApplicationController
 
     def set_activity_report_application_form
       @activity_report_application_form = ActivityReportApplicationForm.find(params[:activity_report_application_form_id])
+    end
+
+    def selectable_months
+      @activity_report_application_form.reporting_periods
+        .sort_by { |ym| [ -ym.year, -ym.month ] }
+        .map do |ym|
+          date = Date.new(ym.year, ym.month, 1)
+          [ date.strftime("%B %Y"), date ]
+        end
     end
 
     def activity_type_map(type)
