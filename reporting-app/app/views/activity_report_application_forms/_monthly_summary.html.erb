@@ -1,0 +1,14 @@
+<%# Top summary %>
+<% if income_activities.any? %>
+  <p class="margin-top-1px">
+    <%= t("activity_report_application_forms.activity_report_application_form.total_income_reported") %> <strong><%= number_to_currency(summed_income, precision: 0) %></strong>
+  </p>
+<% end %>
+<% if hourly_activities.any? %>
+  <p class="margin-top-1px">
+    <%= t("activity_report_application_forms.activity_report_application_form.total_hours_reported") %> <strong><%= summed_hours %> hrs</strong>
+  </p>
+<% end %>
+<p class="margin-top-1px">
+  <%= raw t("activity_report_application_forms.activity_report_application_form.additional_hours_income_needed", hours: remaining_hours, income: number_to_currency(remaining_income, precision: 0)) %>
+</p>

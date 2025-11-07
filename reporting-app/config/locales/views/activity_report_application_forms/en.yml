@@ -1,5 +1,17 @@
 en:
   activity_report_application_forms:
+    shared:
+      review_and_submit: "Review and submit"
+      organization_name: "Organization Name"
+      activity_type: "Activity Type"
+      hours: "Hours"
+      income: "Income"
+      status_messages:
+        in_progress: "Complete and submit your activity report"
+        in_progress_detail: "Add activities for each month that you are reporting."
+        submitted: "Your activity report is being reviewed"
+        approved: "Your activity report has been approved"
+        denied: "Your activity report has been denied"
     steps:
       start: "Before you start"
       select_periods: "Select reporting period"
@@ -18,39 +30,31 @@ en:
       start_button: "Start"
     show:
       title: "Activity Report"
-      back: "Back to dashboard"
       edit: "Edit activity report"
       submitted_on: "Submitted on"
+      add_activity_button: "Add activity"
       info_heading: "Two ways to meet your requirement"
-      info_text: "For each month, report 80 hours of qualifying activities, show $580 of earnings, or a combination of the two."
-      intro:
-        in_progress: "Complete and submit your activity report. Add activities for each month that you are reporting."
-        submitted: "Your activity report is being reviewed"
-        approved: "Your activity report has been approved"
-        denied: "Your activity report has been denied"
-      next_step:
-        status:
-          in_progress: "Complete and submit your activity report"
-          submitted: "Your activity report is being reviewed"
-          approved: "Your activity report has been approved"
-          denied: "Your activity report has been denied"
+      info_text: "For each month, report %{hours} hours of activities or show %{income} of income."
     edit:
       title: "Select reporting period"
       instructions_html: "In [State name], you are required to report activities for <strong>%{number_of_months} %{pluralized_month}</strong>. Choose which %{pluralized_month} to report."
       back: "Back to activity report"
       save_button: "Save and continue"
       submit_button: "Submit activity report"
+    review:
+      submit_button: "Submit report"
+    monthly_activities_table:
+      total_reported: "Total Reported"
+      required: "Required"
+      remaining_label:
+        hours: "Additional Hours Needed"
+        income: "Income Needed"
     activity_report_application_form:
       total_income_reported: "Total income reported"
       total_hours_reported: "Total hours reported"
       additional_hours_income_needed: "Additional hours/income needed: <strong>%{hours} hours</strong> <em>or</em> <strong>%{income}</strong>"
       income_reported: "Income reported"
       hours_reported: "Hours reported"
-      total_income: "Total income"
-      total_hours: "Total hours"
-    activity_row:
-      income_earned_from: "Income earned from %{organization_name}"
-      hours_worked_for: "Hours worked for %{organization_name}"
     staff_activity_report:
       activity_type: Type
       organization_name: Org name

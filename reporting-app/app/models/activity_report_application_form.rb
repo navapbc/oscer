@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class ActivityReportApplicationForm < Strata::ApplicationForm
+  MINIMUM_MONTHLY_HOURS = 80
+  MINIMUM_MONTHLY_INCOME = 580
+
   has_many :activities, strict_loading: true, autosave: true, dependent: :destroy
 
   default_scope { includes(:determinations) }
@@ -25,6 +28,24 @@ class ActivityReportApplicationForm < Strata::ApplicationForm
 
   def activities_by_month
     @activities_by_month ||= activities.group_by(&:month)
+  end
+
+  def monthly_statistics
+    @monthly_statistics ||= activities_by_month.transform_values do |activities|
+      hourly_activities = activities.select { |act| act.is_a?(WorkActivity) }
+      income_activities = activities.select { |act| act.is_a?(IncomeActivity) }
+      summed_hours = hourly_activities.sum { |act| act.hours || 0 }.round(1)
+      summed_income = income_activities.sum { |act| act.income.dollar_amount || 0 }.round(0)
+
+      {
+        hourly_activities: hourly_activities,
+        income_activities: income_activities,
+        summed_hours: summed_hours,
+        summed_income: summed_income,
+        remaining_hours: [ MINIMUM_MONTHLY_HOURS - summed_hours, 0 ].max,
+        remaining_income: [ MINIMUM_MONTHLY_INCOME - summed_income, 0 ].max
+      }
+    end
   end
 
   default_scope { includes(:activities) }
