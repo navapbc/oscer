@@ -43,8 +43,8 @@ class ActivitiesController < ApplicationController
         format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity) }
         format.json { render :show, status: :ok, location: @activity.becomes(Activity) }
       else
-        format.html { render :documents, status: :unprocessable_entity }
-        format.json { render json: @activity.errors, status: :unprocessable_entity }
+        format.html { render :documents, status: :unprocessable_content }
+        format.json { render json: @activity.errors, status: :unprocessable_content }
       end
     end
   end
@@ -65,8 +65,8 @@ class ActivitiesController < ApplicationController
         format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity) }
         format.json { render :documents, status: :created, location: @activity.becomes(Activity) }
       else
-        format.html { render :new_activity, status: :unprocessable_entity }
-        format.json { render json: @activity.errors, status: :unprocessable_entity }
+        format.html { render :new_activity, status: :unprocessable_content }
+        format.json { render json: @activity.errors, status: :unprocessable_content }
       end
     end
   end
@@ -84,8 +84,8 @@ class ActivitiesController < ApplicationController
         format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity.becomes(Activity)) }
         format.json { render :show, status: :ok, location: @activity.becomes(Activity) }
       else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @activity.errors, status: :unprocessable_entity }
+        format.html { render :edit, status: :unprocessable_content }
+        format.json { render json: @activity.errors, status: :unprocessable_content }
       end
     end
   end

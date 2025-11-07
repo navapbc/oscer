@@ -14,14 +14,14 @@ class Users::PasswordsController < ApplicationController
 
     if @form.invalid?
       flash.now[:errors] = @form.errors.full_messages
-      return render :forgot, status: :unprocessable_entity
+      return render :forgot, status: :unprocessable_content
     end
 
     begin
       auth_service.forgot_password(email)
     rescue Auth::Errors::BaseAuthError => e
       flash.now[:errors] = [ e.message ]
-      return render :forgot, status: :unprocessable_entity
+      return render :forgot, status: :unprocessable_content
     end
 
     redirect_to users_reset_password_path
@@ -36,7 +36,7 @@ class Users::PasswordsController < ApplicationController
 
     if @form.invalid?
       flash.now[:errors] = @form.errors.full_messages
-      return render :reset, status: :unprocessable_entity
+      return render :reset, status: :unprocessable_content
     end
 
     begin
@@ -47,7 +47,7 @@ class Users::PasswordsController < ApplicationController
       )
     rescue Auth::Errors::BaseAuthError => e
       flash.now[:errors] = [ e.message ]
-      return render :reset, status: :unprocessable_entity
+      return render :reset, status: :unprocessable_content
     end
 
     redirect_to new_user_session_path, notice: I18n.t("users.passwords.reset.success")

@@ -209,7 +209,7 @@ RSpec.describe "/demo/certifications", type: :request do
                    member_name_last: "Doe"
                  )
              }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it "renders form with errors when member_name_first is missing" do
@@ -220,7 +220,7 @@ RSpec.describe "/demo/certifications", type: :request do
                    certification_date: "09/25/2025"
                  )
              }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it "renders form with errors when member_name_last is missing" do
@@ -231,7 +231,7 @@ RSpec.describe "/demo/certifications", type: :request do
                    certification_date: "09/25/2025"
                  )
              }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it "renders form with errors when date_of_birth is in the future" do
@@ -242,7 +242,7 @@ RSpec.describe "/demo/certifications", type: :request do
                    date_of_birth: (Date.current + 1.day).strftime("%m/%d/%Y")
                  )
              }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end

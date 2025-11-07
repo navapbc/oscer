@@ -72,7 +72,7 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
       it "shows error and re-renders form" do
         post certification_batch_uploads_path, params: { csv_file: nil }
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include("Upload Certification Roster")
         expect(flash[:alert]).to eq("Please select a CSV file to upload")
       end

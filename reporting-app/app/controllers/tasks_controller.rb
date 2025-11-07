@@ -32,7 +32,7 @@ class TasksController < Strata::TasksController
     else
       @information_request = result[:information_request_record]
       set_create_path
-      render "tasks/request_information", status: :unprocessable_entity
+      render "tasks/request_information", status: :unprocessable_content
     end
   end
 

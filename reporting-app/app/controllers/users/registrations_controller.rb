@@ -16,14 +16,14 @@ class Users::RegistrationsController < ApplicationController
 
     if @form.invalid?
       flash.now[:errors] = @form.errors.full_messages
-      return render :new, status: :unprocessable_entity
+      return render :new, status: :unprocessable_content
     end
 
     begin
       auth_service.register(@form.email, @form.password)
     rescue Auth::Errors::BaseAuthError => e
       flash.now[:errors] = [ e.message ]
-      return render :new, status: :unprocessable_entity
+      return render :new, status: :unprocessable_content
     end
 
     redirect_to users_verify_account_path
@@ -40,14 +40,14 @@ class Users::RegistrationsController < ApplicationController
 
     if @form.invalid?
       flash.now[:errors] = @form.errors.full_messages
-      return render :new_account_verification, status: :unprocessable_entity
+      return render :new_account_verification, status: :unprocessable_content
     end
 
     begin
       auth_service.verify_account(@form.email, @form.code)
     rescue Auth::Errors::BaseAuthError => e
       flash.now[:errors] = [ e.message ]
-      return render :new_account_verification, status: :unprocessable_entity
+      return render :new_account_verification, status: :unprocessable_content
     end
 
     redirect_to new_user_session_path
@@ -59,7 +59,7 @@ class Users::RegistrationsController < ApplicationController
 
     if @resend_verification_form.invalid?
       flash.now[:errors] = @resend_verification_form.errors.full_messages
-      return render :new_account_verification, status: :unprocessable_entity
+      return render :new_account_verification, status: :unprocessable_content
     end
 
     auth_service.resend_verification_code(email)

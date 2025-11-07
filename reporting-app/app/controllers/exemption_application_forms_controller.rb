@@ -28,8 +28,8 @@ class ExemptionApplicationFormsController < ApplicationController
         format.html { redirect_to edit_exemption_application_form_path(@exemption_application_form) }
         format.json { render :show, status: :created, location: @exemption_application_form }
       else
-        format.html { render :new, status: :unprocessable_entity }
-        format.json { render json: @exemption_application_form.errors, status: :unprocessable_entity }
+        format.html { render :new, status: :unprocessable_content }
+        format.json { render json: @exemption_application_form.errors, status: :unprocessable_content }
       end
     end
   end
@@ -41,8 +41,8 @@ class ExemptionApplicationFormsController < ApplicationController
         format.html { redirect_to documents_exemption_application_form_path(@exemption_application_form) }
         format.json { render :show, status: :ok, location: @exemption_application_form }
       else
-        format.html { render :exemption_type, status: :unprocessable_entity }
-        format.json { render json: @exemption_application_form.errors, status: :unprocessable_entity }
+        format.html { render :exemption_type, status: :unprocessable_content }
+        format.json { render json: @exemption_application_form.errors, status: :unprocessable_content }
       end
     end
   end
@@ -85,8 +85,8 @@ class ExemptionApplicationFormsController < ApplicationController
         format.html { redirect_to documents_exemption_application_form_path(@exemption_application_form) }
         format.json { render :show, status: :ok, location: @exemption_application_form }
       else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @exemption_application_form.errors, status: :unprocessable_entity }
+        format.html { render :edit, status: :unprocessable_content }
+        format.json { render json: @exemption_application_form.errors, status: :unprocessable_content }
       end
     end
   end
