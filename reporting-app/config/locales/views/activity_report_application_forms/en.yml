@@ -55,9 +55,6 @@ en:
       additional_hours_income_needed: "Additional hours/income needed: <strong>%{hours} hours</strong> <em>or</em> <strong>%{income}</strong>"
       income_reported: "Income reported"
       hours_reported: "Hours reported"
-    activity_row:
-      income_earned_from: "Income earned from %{organization_name}"
-      hours_worked_for: "Hours worked for %{organization_name}"
     staff_activity_report:
       activity_type: Type
       organization_name: Org name
