@@ -48,10 +48,10 @@ module Staff
     def results
       certification_origin = CertificationOrigin.from_batch_upload(@batch_upload.id)
       @certifications = Certification.where(id: certification_origin.select(:certification_id))
-      @member_statuses = @certifications.map {|cert| { cert.id => MemberStatusService.determine(cert) } }.reduce({}, :merge)
+      @member_statuses = @certifications.map { |cert| { cert.id => MemberStatusService.determine(cert) } }.reduce({}, :merge)
       @compliant_certifications = @certifications.select { |cert| @member_statuses[cert.id].status == MemberStatus::COMPLIANT }
       @exempt_certifications = @certifications.select { |cert| @member_statuses[cert.id].status == MemberStatus::EXEMPT }
-      @member_action_required_certifications = @certifications.select { |cert| [MemberStatus::NOT_COMPLIANT, MemberStatus::AWAITING_REPORT].include?(@member_statuses[cert.id].status) }
+      @member_action_required_certifications = @certifications.select { |cert| [ MemberStatus::NOT_COMPLIANT, MemberStatus::AWAITING_REPORT ].include?(@member_statuses[cert.id].status) }
       @pending_review_certifications = @certifications.select { |cert| @member_statuses[cert.id].status == MemberStatus::PENDING_REVIEW }
       set_certifications_to_show
       @certification_cases = CertificationCase.where(certification_id: @certifications_to_show.map(&:id)).index_by(&:certification_id)
