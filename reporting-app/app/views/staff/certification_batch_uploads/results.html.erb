@@ -1,7 +1,7 @@
 <% content_for :title, t(".title") %>
 <h1><%= t(".title") %></h1>
 <%# Batch Info %>
-<dl>
+<dl class="margin-top-4">
   <dt class="text-bold display-inline-block"><%= t(".filename") %>:</dt>
   <dd class="margin-0 display-inline-block"><%= link_to @batch_upload.filename, rails_blob_path(@batch_upload.file, disposition: "attachment") %></dd>
   <br />
@@ -16,7 +16,7 @@
   </dd>
 </dl>
 <p>
-  Filter by:
+  <%= t('.filter_by') %>
 </p>
 <div class="display-inline-block">
   <%= link_to t('.filters.all', count: @certifications.length), results_certification_batch_upload_path(@batch_upload), class: "usa-button #{'usa-button--base' if params[:filter].present?}" %>

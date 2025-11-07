@@ -96,6 +96,7 @@ en:
         reason: "Reason"
         case_number: "Case number"
         certification_created_date: "Certification created date"
+        filter_by: "Filter by"
         filters:
           all: "All (%{count})"
           compliant: "Compliant (%{count})"
