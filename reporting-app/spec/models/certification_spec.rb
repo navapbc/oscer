@@ -42,4 +42,111 @@ RSpec.describe Certification, type: :model do
       end
     end
   end
+
+  describe '.exists_for?' do
+    let(:certification) do
+      create(:certification,
+        member_id: "M999",
+        case_number: "C-999",
+        certification_requirements: { "certification_date" => "2025-01-15" }
+      )
+    end
+
+    before do
+      certification # ensure creation
+    end
+
+    it 'returns true when certification exists with matching compound key' do
+      result = described_class.exists_for?(
+        member_id: "M999",
+        case_number: "C-999",
+        certification_date: "2025-01-15"
+      )
+
+      expect(result).to be true
+    end
+
+    it 'returns false when member_id does not match' do
+      result = described_class.exists_for?(
+        member_id: "M000",
+        case_number: "C-999",
+        certification_date: "2025-01-15"
+      )
+
+      expect(result).to be false
+    end
+
+    it 'returns false when case_number does not match' do
+      result = described_class.exists_for?(
+        member_id: "M999",
+        case_number: "C-000",
+        certification_date: "2025-01-15"
+      )
+
+      expect(result).to be false
+    end
+
+    it 'returns false when certification_date does not match' do
+      result = described_class.exists_for?(
+        member_id: "M999",
+        case_number: "C-999",
+        certification_date: "2025-01-20"
+      )
+
+      expect(result).to be false
+    end
+
+    it 'handles Date objects' do
+      result = described_class.exists_for?(
+        member_id: "M999",
+        case_number: "C-999",
+        certification_date: Date.parse("2025-01-15")
+      )
+
+      expect(result).to be true
+    end
+  end
+
+  describe '.from_batch_upload' do
+    let(:user) { create(:user) }
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
+    let!(:batch_cert) { create(:certification, member_id: "M888", case_number: "C-888") }
+    let!(:manual_cert) { create(:certification, member_id: "M889", case_number: "C-889") }
+
+    before do
+      CertificationOrigin.create!(
+        certification_id: batch_cert.id,
+        source_type: CertificationOrigin::SOURCE_TYPE_BATCH_UPLOAD,
+        source_id: batch_upload.id
+      )
+      CertificationOrigin.create!(
+        certification_id: manual_cert.id,
+        source_type: CertificationOrigin::SOURCE_TYPE_MANUAL
+      )
+    end
+
+    it 'returns only certifications from specified batch upload' do
+      results = described_class.from_batch_upload(batch_upload.id)
+
+      expect(results).to include(batch_cert)
+      expect(results).not_to include(manual_cert)
+    end
+  end
+
+  describe '#origin' do
+    let(:certification) { create(:certification) }
+
+    it 'returns nil when no origin exists' do
+      expect(certification.origin).to be_nil
+    end
+
+    it 'returns origin when it exists' do
+      origin = CertificationOrigin.create!(
+        certification_id: certification.id,
+        source_type: CertificationOrigin::SOURCE_TYPE_MANUAL
+      )
+
+      expect(certification.origin).to eq(origin)
+    end
+  end
 end

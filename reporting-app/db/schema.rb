@@ -65,6 +65,22 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_31_214909) do
     t.index ["certification_case_id"], name: "idx_on_certification_case_id_df9964575c", unique: true
   end
 
+  create_table "certification_batch_uploads", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "filename", null: false
+    t.string "status", default: "pending", null: false
+    t.uuid "uploader_id", null: false
+    t.integer "num_rows", default: 0, null: false
+    t.integer "num_rows_processed", default: 0, null: false
+    t.integer "num_rows_succeeded", default: 0, null: false
+    t.integer "num_rows_errored", default: 0, null: false
+    t.jsonb "results", default: {}
+    t.datetime "processed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_certification_batch_uploads_on_created_at"
+    t.index ["uploader_id"], name: "index_certification_batch_uploads_on_uploader_id"
+  end
+
   create_table "certification_cases", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "certification_id", null: false
     t.integer "status"
@@ -73,6 +89,16 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_31_214909) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["certification_id"], name: "index_certification_cases_on_certification_id"
+  end
+
+  create_table "certification_origins", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "certification_id", null: false
+    t.string "source_type", null: false
+    t.uuid "source_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["certification_id"], name: "index_certification_origins_on_certification_id", unique: true
+    t.index ["source_type", "source_id"], name: "index_certification_origins_on_source_type_and_source_id"
   end
 
   create_table "certifications", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

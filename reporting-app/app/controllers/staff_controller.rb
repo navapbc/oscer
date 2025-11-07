@@ -26,7 +26,10 @@ class StaffController < Strata::StaffController
   protected
 
   def header_links
-    [ { name: "Search", path: search_members_path } ] + super
+    [
+      { name: "Search", path: search_members_path },
+      { name: "Batch Uploads", path: certification_batch_uploads_path }
+    ] + super
   end
 
   def case_classes

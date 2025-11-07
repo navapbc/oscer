@@ -1,0 +1,55 @@
+<% content_for :title, t(".title") %>
+<h1><%= t(".heading") %></h1>
+<p><%= t(".instructions") %></p>
+<p>
+  <%= link_to t(".download_template"), "/certification_batch_upload_template.csv", class: "usa-link", download: true %>
+</p>
+<div class="usa-alert usa-alert--info" role="alert">
+  <div class="usa-alert__body">
+    <h2 class="usa-alert__heading"><%= t(".csv_format.heading") %></h2>
+    <p class="usa-alert__text"><%= t(".csv_format.description") %></p>
+    <div class="usa-accordion usa-accordion--bordered maxw-tablet">
+      <h4 class="usa-accordion__heading">
+        <button
+          type="button"
+          class="usa-accordion__button"
+          aria-expanded="false"
+          aria-controls="a1"
+        >
+          <%= t(".csv_format.view_required_columns") %>
+        </button>
+      </h4>
+      <div id="a1" class="usa-accordion__content usa-prose">
+        <h5><%= t(".csv_format.required_fields") %>:</h5>
+        <ul>
+          <li><code>member_id</code> - <%= t(".csv_format.fields.member_id") %></li>
+          <li><code>case_number</code> - <%= t(".csv_format.fields.case_number") %></li>
+          <li><code>member_email</code> - <%= t(".csv_format.fields.member_email") %></li>
+          <li><code>certification_date</code> - <%= t(".csv_format.fields.certification_date") %></li>
+          <li><code>certification_type</code> - <%= t(".csv_format.fields.certification_type") %></li>
+        </ul>
+        <h5><%= t(".csv_format.optional_fields") %>:</h5>
+        <ul>
+          <li><code>first_name, middle_name, last_name</code> - <%= t(".csv_format.fields.name") %></li>
+          <li><code>lookback_period</code> - <%= t(".csv_format.fields.lookback_period") %></li>
+          <li><code>number_of_months_to_certify</code> - <%= t(".csv_format.fields.number_of_months_to_certify") %></li>
+          <li><code>due_period_days</code> - <%= t(".csv_format.fields.due_period_days") %></li>
+          <li><code>address, county, zip_code</code> - <%= t(".csv_format.fields.address") %></li>
+          <li><code>date_of_birth</code> - <%= t(".csv_format.fields.date_of_birth") %></li>
+          <li><code>pregnancy_status</code> - <%= t(".csv_format.fields.pregnancy_status") %></li>
+          <li><code>race_ethnicity</code> - <%= t(".csv_format.fields.race_ethnicity") %></li>
+          <li><code>work_hours</code> - <%= t(".csv_format.fields.work_hours") %></li>
+          <li><code>other_income_sources</code> - <%= t(".csv_format.fields.other_income_sources") %></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+<%= form_with(url: certification_batch_uploads_path, multipart: true, class: "margin-top-4") do |f| %>
+  <div class="usa-form-group">
+    <%= f.label :csv_file, t(".csv_file_label"), class: "usa-label" %>
+    <%= f.file_field :csv_file, accept: ".csv", required: true, class: "usa-file-input" %>
+  </div>
+  <%= f.submit t(".upload_button"), class: "usa-button" %>
+  <%= link_to t(".cancel"), staff_path, class: "usa-button usa-button--unstyled" %>
+<% end %>

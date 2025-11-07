@@ -46,6 +46,25 @@ class Certification < ApplicationRecord
     self.find_by_member_account_email(email).or(self.find_by_member_contact_email(email))
   end
 
+  # Check if certification exists with compound key (for duplicate prevention)
+  def self.exists_for?(member_id:, case_number:, certification_date:)
+    where(
+      member_id: member_id,
+      case_number: case_number
+    ).where("certification_requirements->>'certification_date' = ?", certification_date.to_s).exists?
+  end
+
+  # Find certifications created via batch upload
+  def self.from_batch_upload(batch_upload_id)
+    joins("INNER JOIN certification_origins ON certifications.id = certification_origins.certification_id")
+      .where(certification_origins: { source_type: CertificationOrigin::SOURCE_TYPE_BATCH_UPLOAD, source_id: batch_upload_id })
+  end
+
+  # Get the origin/source of this certification
+  def origin
+    CertificationOrigin.find_by(certification_id: id)
+  end
+
   def member_name
     self&.member_data&.name
   end
