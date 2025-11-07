@@ -11,9 +11,6 @@ class CertificationOrigin < ApplicationRecord
   validates :certification_id, presence: true, uniqueness: true
   validates :source_type, presence: true, inclusion: { in: [ SOURCE_TYPE_BATCH_UPLOAD, SOURCE_TYPE_MANUAL, SOURCE_TYPE_API ] }
 
-  # Polymorphic-style accessors (without actual polymorphic association)
-  # This avoids coupling to specific source models
-
   # Get certifications by source
   scope :from_batch_upload, ->(batch_upload_id) { where(source_type: SOURCE_TYPE_BATCH_UPLOAD, source_id: batch_upload_id) }
   scope :manual_entries, -> { where(source_type: SOURCE_TYPE_MANUAL) }
