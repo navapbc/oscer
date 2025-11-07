@@ -7,5 +7,6 @@
 
   <%= build_activity_input_field(f, activity) %>
   <%= f.hidden_field :activity_type, value: activity.class.name.underscore %>
+  <%= f.hidden_field :category, value: activity.try(:category) %>
   <%= f.submit t(".continue"), big: true %>
 <% end %>
