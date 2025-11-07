@@ -4,4 +4,48 @@
 <dl>
   <dt class="text-bold display-inline-block"><%= t(".filename") %>:</dt>
   <dd class="margin-0 display-inline-block"><%= link_to @batch_upload.filename, rails_blob_path(@batch_upload.file, disposition: "attachment") %></dd>
+  <br />
+  <dt class="text-bold display-inline-block"><%= t(".uploaded_date") %>:</dt>
+  <dd class="margin-0 display-inline-block">
+    <time datetime="<%= @batch_upload.created_at.iso8601 %>"><%= l(@batch_upload.created_at, format: "%m/%d/%Y %I:%M%P") %></time>
+  </dd>
+  <br />
+  <dt class="text-bold display-inline-block"><%= t(".result") %>:</dt>
+  <dd class="margin-0 display-inline-block">
+    <%= link_to t(".results_message", num_rows_succeeded: @batch_upload.num_rows_succeeded, num_rows_errored: @batch_upload.num_rows_errored, total: @batch_upload.num_rows), @batch_upload %>
+  </dd>
 </dl>
+<p>
+  Filter by:
+</p>
+<div class="display-inline-block">
+  <%= link_to "All (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload), class: "usa-button" %>
+  <%= link_to "Compliant (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload, filter: "compliant"), class: "usa-button" %>
+  <%= link_to "Exempt (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload, filter: "exempt"), class: "usa-button" %>
+  <%= link_to "Member action required (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload, filter: "member_action_required"), class: "usa-button" %>
+  <%= link_to "Pending review (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload, filter: "pending_review"), class: "usa-button" %>
+</div>
+<hr class="margin-top-4 margin-bottom-0" />
+<table class="usa-table usa-table--striped usa-table--borderless margin-top-0 width-full">
+  <thead>
+    <tr>
+      <th scope="col"><%= t(".member_first_name") %></th>
+      <th scope="col"><%= t(".member_email") %></th>
+      <th scope="col"><%= t(".member_status") %></th>
+      <th scope="col"><%= t(".reason") %></th>
+      <th scope="col"><%= t(".case_number") %></th>
+      <th scope="col"><%= t(".certification_created_date") %></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @certifications.each do |certification| %>
+      <tr>
+        <td><%= certification.member_data&.name&.first %></td>
+        <td><%= certification.member_email %></td>
+        <td><%= @member_statuses[certification.id]&.status.humanize %></td>
+        <td><%= @member_statuses[certification.id]&.human_readable_reason_codes.join(", ") %></td>
+        <td><%= link_to certification.case_number, certification_case_path(@certification_cases[certification.id]) %></td>
+        <td><%= l(certification.created_at, format: "%m/%d/%Y") %></td>
+      </tr>
+    <% end %>
+  </tbody>

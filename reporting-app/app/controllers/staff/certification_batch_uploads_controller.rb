@@ -46,6 +46,10 @@ module Staff
 
     # GET /staff/certification_batch_uploads/:id/results
     def results
+      certification_origin = CertificationOrigin.from_batch_upload(@batch_upload.id)
+      @certifications = Certification.where(id: certification_origin.select(:certification_id))
+      @certification_cases = CertificationCase.where(certification_id: @certifications.select(:id)).index_by(&:certification_id)
+      @member_statuses = @certifications.map {|cert| { cert.id => MemberStatusService.determine(cert) } }.reduce({}, :merge)
     end
 
     # POST /staff/certification_batch_uploads/:id/process_batch
