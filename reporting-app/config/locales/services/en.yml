@@ -1,0 +1,12 @@
+en:
+  services:
+    member_status_service:
+      reason_codes:
+        age_under_19_exempt: "Age under 19"
+        age_over_65_exempt: "Age over 65"
+        pregnancy_exempt: "Pregnant"
+        american_indian_alaska_native_exempt: "American Indian or Alaska Native"
+        income_reported_compliant: "Income reported compliant"
+        hours_reported_compliant: "Hours reported compliant"
+        exemption_request_compliant: "Exemption request compliant"
+

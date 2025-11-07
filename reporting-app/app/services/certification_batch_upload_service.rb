@@ -24,6 +24,15 @@ class CertificationBatchUploadService
     # Update total rows if batch_upload provided
     @batch_upload&.update!(num_rows: csv_data.size)
 
+    # Validate required headers
+    required_headers = [ :member_id, :case_number, :member_email, :certification_date, :certification_type ]
+    missing_headers = required_headers - csv_data.headers
+
+    if missing_headers.any?
+      @errors << { row: 0, message: "Missing required columns: #{missing_headers.join(', ')}" }
+      return false
+    end
+
     csv_data.each_with_index do |row, index|
       process_row(row, index + 2) # +2 for header row and 0-indexing
 

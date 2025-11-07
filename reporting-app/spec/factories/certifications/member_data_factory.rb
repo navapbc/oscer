@@ -25,8 +25,18 @@ FactoryBot.define do
       account_email { Faker::Internet.email }
     end
 
+    trait :with_no_exemptions do
+      date_of_birth { cert_date - rand(19..64).years } # random age between 19 and 64 years old (ineligible for age exemption)
+      pregnancy_status { false }
+      race_ethnicity do
+        (
+          Demo::Certifications::BaseCreateForm::RACE_ETHNICITY_OPTIONS - [ "american_indian_or_alaska_native" ]
+        ).sample
+      end
+    end
+
     trait :partially_met_work_hours_requirement do
-      date_of_birth { cert_date - 35.years } # 35 years old (ineligible for age exemption)
+      with_no_exemptions
       payroll_accounts {
         [
           {
@@ -47,7 +57,7 @@ FactoryBot.define do
     end
 
     trait :fully_met_work_hours_requirement do
-      date_of_birth { cert_date - 35.years }
+      with_no_exemptions
       payroll_accounts {
         [
           {
@@ -67,7 +77,8 @@ FactoryBot.define do
     end
 
     trait :meets_age_based_exemption_requirement do
-      date_of_birth { cert_date - 18.years } # 18 years old (eligible for age exemption)
+      with_no_exemptions
+      date_of_birth { cert_date - rand(1..18).years } # random age between 1 and 18 years old (eligible for age exemption)
     end
   end
 end

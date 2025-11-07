@@ -26,6 +26,11 @@ RSpec.describe "dashboard/index", type: :view do
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.activity_report.report_activities_button'))
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.exemption_request.request_exemption_button'))
     end
+
+    it 'renders "get started" callout' do
+      render
+      expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.get_started.button'))
+    end
   end
 
   context "with an in-progress activity report" do
@@ -42,6 +47,11 @@ RSpec.describe "dashboard/index", type: :view do
       render
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.activity_report.continue_report_button'))
     end
+
+    it 'does not render the "get started" callout' do
+      render
+      expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.get_started.button'))
+    end
   end
 
   context "with an in-progress exemption request" do
@@ -57,6 +67,11 @@ RSpec.describe "dashboard/index", type: :view do
     it 'renders a button to continue the exemption request' do
       render
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.exemption_request.continue_request_button'))
+    end
+
+    it 'does not render the "get started" callout' do
+      render
+      expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.get_started.button'))
     end
   end
 
@@ -77,6 +92,11 @@ RSpec.describe "dashboard/index", type: :view do
       render
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.activity_report_submitted.view_activity_report_button'))
     end
+
+    it 'does not render the "get started" callout' do
+      render
+      expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.get_started.button'))
+    end
   end
 
   context "with a submitted exemption request" do
@@ -95,6 +115,11 @@ RSpec.describe "dashboard/index", type: :view do
     it 'has a button to view the submitted exemption request' do
       render
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.exemption_submitted.view_exemption_button'))
+    end
+
+    it 'does not render the "get started" callout' do
+      render
+      expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.get_started.button'))
     end
   end
 
@@ -117,6 +142,11 @@ RSpec.describe "dashboard/index", type: :view do
       render
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.activity_report_approved.view_completed_certification_button'))
     end
+
+    it 'does not render the "get started" callout' do
+      render
+      expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.get_started.button'))
+    end
   end
 
   context "with an approved exemption request" do
@@ -137,6 +167,11 @@ RSpec.describe "dashboard/index", type: :view do
     it 'has a button to view the certification' do
       render
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.exemption_approved.view_certification_button'))
+    end
+
+    it 'does not render the "get started" callout' do
+      render
+      expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.get_started.button'))
     end
   end
 

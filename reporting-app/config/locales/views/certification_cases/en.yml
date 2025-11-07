@@ -24,6 +24,8 @@ en:
       member_name: "Member name:"
       member_email: "Member email:"
       member_status: "Member Status:"
+      determination_method: "Determination Method:"
+      reason_codes: "Reason Codes:"
       missing: "Missing"
       no_information_requests: "No information requests"
       no_tasks: "No tasks"

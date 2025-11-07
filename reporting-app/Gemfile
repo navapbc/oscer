@@ -71,6 +71,7 @@ gem "rqrcode"
 
 # Notifications: AWS SES
 gem "aws-sdk-rails"
+gem "aws-actionmailer-ses"
 
 # File uploads: AWS S3
 gem "aws-sdk-s3", require: false
