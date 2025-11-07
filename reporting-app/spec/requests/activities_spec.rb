@@ -66,7 +66,7 @@ RSpec.describe "/activities", type: :request do
 
         it "renders a response with 422 status (unprocessable entity)" do
           post activity_report_application_form_activities_url(activity_report_application_form), params: { activity: invalid_attributes }
-          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response).to have_http_status(:unprocessable_content)
         end
 
         it "renders error messages" do
@@ -123,7 +123,7 @@ RSpec.describe "/activities", type: :request do
 
         it "renders a response with 422 status (unprocessable entity)" do
           post activity_report_application_form_activities_url(activity_report_application_form), params: { activity: invalid_attributes }
-          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response).to have_http_status(:unprocessable_content)
         end
 
         it "renders error messages" do
@@ -179,7 +179,7 @@ RSpec.describe "/activities", type: :request do
 
       it "renders a response with 422 status (unprocessable entity)" do
         post activity_report_application_form_activities_url(activity_report_application_form), params: { activity: invalid_attributes }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it "renders error messages" do
@@ -217,7 +217,7 @@ RSpec.describe "/activities", type: :request do
     context "with invalid parameters" do
       it "renders a response with 422 status (unprocessable entity)" do
         patch activity_report_application_form_activity_url(activity_report_application_form, existing_activity), params: { activity: { activity_type: "not_accurate_type", hours: "Not a number", name: "" } }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it "renders an error if the name is blank" do

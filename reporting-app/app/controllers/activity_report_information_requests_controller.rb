@@ -13,8 +13,8 @@ class ActivityReportInformationRequestsController < ApplicationController
         format.html { redirect_to dashboard_path, notice: "Information request fulfilled" }
         format.json { render :show, status: :ok, location: @information_request }
       else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @information_request.errors, status: :unprocessable_entity }
+        format.html { render :edit, status: :unprocessable_content }
+        format.json { render json: @information_request.errors, status: :unprocessable_content }
       end
     end
   end

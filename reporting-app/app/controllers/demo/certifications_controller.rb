@@ -17,21 +17,21 @@ class Demo::CertificationsController < ApplicationController
 
     if @form.invalid?
       flash.now[:errors] = @form.errors.full_messages
-      return render :new, status: :unprocessable_entity
+      return render :new, status: :unprocessable_content
     end
 
     @certification = @form.to_certification
 
     if !@certification
       flash.now[:errors] = @form.errors.full_messages
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
 
     if @certification.save
       redirect_to certification_path(@certification)
     else
       flash.now[:errors] = @certification.errors.full_messages
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 

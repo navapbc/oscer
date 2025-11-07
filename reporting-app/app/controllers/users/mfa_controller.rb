@@ -15,7 +15,7 @@ class Users::MfaController < ApplicationController
 
     if @form.invalid?
       flash.now[:errors] = @form.errors.full_messages
-      return render :preference, status: :unprocessable_entity
+      return render :preference, status: :unprocessable_content
     end
 
     if @form.mfa_preference == "software_token"

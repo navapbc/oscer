@@ -105,7 +105,7 @@ OasRails.configure do |config|
   # Example, if you add forbidden then it will be added only if the endpoint requires authentication.
   # Example: not_found will be setted to the endpoint only if the operation is a show/update/destroy action.
   config.set_default_responses = false
-  # config.possible_default_responses = [:not_found, :unauthorized, :forbidden, :internal_server_error, :unprocessable_entity]
+  # config.possible_default_responses = [:not_found, :unauthorized, :forbidden, :internal_server_error, :unprocessable_content]
   # config.response_body_of_default = "Hash{ errors: Array<String> }"
   # config.response_body_of_unprocessable_entity= "Hash{ errors: Array<String> }"
 end

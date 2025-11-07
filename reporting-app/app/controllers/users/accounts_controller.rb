@@ -14,14 +14,14 @@ class Users::AccountsController < ApplicationController
 
     if @email_form.invalid?
       flash.now[:errors] = @email_form.errors.full_messages
-      return render :edit, status: :unprocessable_entity
+      return render :edit, status: :unprocessable_content
     end
 
     begin
       auth_service.change_email(current_user.uid, @email_form.email)
     rescue Auth::Errors::BaseAuthError => e
       flash.now[:errors] = [ e.message ]
-      return render :edit, status: :unprocessable_entity
+      return render :edit, status: :unprocessable_content
     end
 
     redirect_to({ action: :edit }, notice: "Account updated successfully.")

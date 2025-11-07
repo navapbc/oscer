@@ -13,7 +13,7 @@ class Users::SessionsController < Devise::SessionsController
 
     if @form.invalid?
       flash.now[:errors] = @form.errors.full_messages
-      return render :new, status: :unprocessable_entity
+      return render :new, status: :unprocessable_content
     end
 
     begin
@@ -25,7 +25,7 @@ class Users::SessionsController < Devise::SessionsController
       return redirect_to users_verify_account_path
     rescue Auth::Errors::BaseAuthError => e
       flash.now[:errors] = [ e.message ]
-      return render :new, status: :unprocessable_entity
+      return render :new, status: :unprocessable_content
     end
 
     unless response[:user].present?
@@ -53,7 +53,7 @@ class Users::SessionsController < Devise::SessionsController
 
     if @form.invalid?
       flash.now[:errors] = @form.errors.full_messages
-      return render :challenge, status: :unprocessable_entity
+      return render :challenge, status: :unprocessable_content
     end
 
     begin
@@ -65,12 +65,12 @@ class Users::SessionsController < Devise::SessionsController
       )
     rescue Auth::Errors::BaseAuthError => e
       flash.now[:errors] = [ e.message ]
-      return render :challenge, status: :unprocessable_entity
+      return render :challenge, status: :unprocessable_content
     end
 
     unless response[:user].present?
       flash.now[:errors] = [ "Invalid code" ]
-      return render :challenge, status: :unprocessable_entity
+      return render :challenge, status: :unprocessable_content
     end
 
     session[:challenge_session] = nil

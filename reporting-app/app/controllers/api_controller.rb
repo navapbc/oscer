@@ -12,7 +12,7 @@ class ApiController < ActionController::Metal
 
   include Pundit::Authorization
 
-  def render_errors(errors, status = :unprocessable_entity)
+  def render_errors(errors, status = :unprocessable_content)
     # handle being given an ActiveModel (or any object) with an errors method
     if errors.respond_to?(:errors) && errors.errors.any?
       errors = errors.errors

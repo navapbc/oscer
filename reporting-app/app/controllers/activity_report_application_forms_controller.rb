@@ -38,7 +38,7 @@ class ActivityReportApplicationFormsController < ApplicationController
       else
         flash[:errors] = @activity_report_application_form.errors.full_messages
         format.html { redirect_to dashboard_path }
-        format.json { render json: @activity_report_application_form.errors, status: :unprocessable_entity }
+        format.json { render json: @activity_report_application_form.errors, status: :unprocessable_content }
       end
     end
   end
@@ -72,8 +72,8 @@ class ActivityReportApplicationFormsController < ApplicationController
         format.html { redirect_to @activity_report_application_form, notice: "Activity report application form was successfully updated." }
         format.json { render :show, status: :ok, location: review_activity_report_application_form_path(@activity_report_application_form) }
       else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @activity_report_application_form.errors, status: :unprocessable_entity }
+        format.html { render :edit, status: :unprocessable_content }
+        format.json { render json: @activity_report_application_form.errors, status: :unprocessable_content }
       end
     end
   end

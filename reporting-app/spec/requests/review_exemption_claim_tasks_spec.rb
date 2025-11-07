@@ -101,13 +101,13 @@ RSpec.describe "/review_exemption_claim_tasks", type: :request do
       expect(task).to be_on_hold
     end
 
-    it "renders :unprocessable_entity when staff_comment is blank" do
+    it "renders :unprocessable_content when staff_comment is blank" do
       form_params  =  { exemption_information_request: { staff_comment: "" } }
       expect {
         post create_information_request_review_exemption_claim_task_path(task), params: form_params
       }.not_to change(ExemptionInformationRequest, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
 
       task.reload
       expect(task).to be_pending

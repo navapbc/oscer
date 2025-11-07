@@ -21,7 +21,7 @@ module Staff
       if uploaded_file.blank?
         flash[:alert] = "Please select a CSV file to upload"
         @batch_upload = CertificationBatchUpload.new
-        render :new, status: :unprocessable_entity
+        render :new, status: :unprocessable_content
         return
       end
 
@@ -36,7 +36,7 @@ module Staff
         redirect_to certification_batch_uploads_path
       else
         flash[:alert] = "Failed to upload file: #{@batch_upload.errors.full_messages.join(', ')}"
-        render :new, status: :unprocessable_entity
+        render :new, status: :unprocessable_content
       end
     end
 

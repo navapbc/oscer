@@ -28,14 +28,14 @@ class CertificationsController < StaffController
     begin
       @certification.certification_requirements = certification_service.certification_requirements_from_input(requirement_params)
     rescue ActiveModel::ValidationError => e
-      render json: { certification_requirements: e.model.errors }, status: :unprocessable_entity
+      render json: { certification_requirements: e.model.errors }, status: :unprocessable_content
       return
     end
 
     if @certification.save
       render :show, status: :created, location: @certification
     else
-      render json: @certification.errors, status: :unprocessable_entity
+      render json: @certification.errors, status: :unprocessable_content
     end
   end
 
@@ -45,7 +45,7 @@ class CertificationsController < StaffController
     if @certification.update(certification_params)
       render :show, status: :ok, location: @certification
     else
-      render json: @certification.errors, status: :unprocessable_entity
+      render json: @certification.errors, status: :unprocessable_content
     end
   end
 
