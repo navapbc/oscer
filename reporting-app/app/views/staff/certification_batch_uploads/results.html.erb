@@ -19,11 +19,11 @@
   Filter by:
 </p>
 <div class="display-inline-block">
-  <%= link_to "All (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload), class: "usa-button" %>
-  <%= link_to "Compliant (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload, filter: "compliant"), class: "usa-button" %>
-  <%= link_to "Exempt (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload, filter: "exempt"), class: "usa-button" %>
-  <%= link_to "Member action required (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload, filter: "member_action_required"), class: "usa-button" %>
-  <%= link_to "Pending review (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload, filter: "pending_review"), class: "usa-button" %>
+  <%= link_to "All (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload), class: "usa-button #{'usa-button--base' if params[:filter].present?}" %>
+  <%= link_to "Compliant (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload, filter: "compliant"), class: "usa-button #{'usa-button--base' if params[:filter] != 'compliant'}" %>
+  <%= link_to "Exempt (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload, filter: "exempt"), class: "usa-button #{'usa-button--base' if params[:filter] != 'exempt'}" %>
+  <%= link_to "Member action required (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload, filter: "member_action_required"), class: "usa-button #{'usa-button--base' if params[:filter] != 'member_action_required'}" %>
+  <%= link_to "Pending review (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload, filter: "pending_review"), class: "usa-button #{'usa-button--base' if params[:filter] != 'pending_review'}" %>
 </div>
 <hr class="margin-top-4 margin-bottom-0" />
 <table class="usa-table usa-table--striped usa-table--borderless margin-top-0 width-full">
