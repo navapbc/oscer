@@ -19,11 +19,11 @@
   Filter by:
 </p>
 <div class="display-inline-block">
-  <%= link_to "All (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload), class: "usa-button #{'usa-button--base' if params[:filter].present?}" %>
-  <%= link_to "Compliant (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload, filter: "compliant"), class: "usa-button #{'usa-button--base' if params[:filter] != 'compliant'}" %>
-  <%= link_to "Exempt (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload, filter: "exempt"), class: "usa-button #{'usa-button--base' if params[:filter] != 'exempt'}" %>
-  <%= link_to "Member action required (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload, filter: "member_action_required"), class: "usa-button #{'usa-button--base' if params[:filter] != 'member_action_required'}" %>
-  <%= link_to "Pending review (#{@batch_upload.num_rows_succeeded})", results_certification_batch_upload_path(@batch_upload, filter: "pending_review"), class: "usa-button #{'usa-button--base' if params[:filter] != 'pending_review'}" %>
+  <%= link_to t('.filters.all', count: @certifications.length), results_certification_batch_upload_path(@batch_upload), class: "usa-button #{'usa-button--base' if params[:filter].present?}" %>
+  <%= link_to t('.filters.compliant', count: @certifications.select { |cert| @member_statuses[cert.id].status == MemberStatus::COMPLIANT }.length), results_certification_batch_upload_path(@batch_upload, filter: "compliant"), class: "usa-button #{'usa-button--base' if params[:filter] != 'compliant'}" %>
+  <%= link_to t('.filters.exempt', count: @certifications.select { |cert| @member_statuses[cert.id].status == MemberStatus::EXEMPT }.length), results_certification_batch_upload_path(@batch_upload, filter: "exempt"), class: "usa-button #{'usa-button--base' if params[:filter] != 'exempt'}" %>
+  <%= link_to t('.filters.member_action_required', count: @certifications.select { |cert| [MemberStatus::NOT_COMPLIANT, MemberStatus::AWAITING_REPORT].include?(@member_statuses[cert.id].status) }.length), results_certification_batch_upload_path(@batch_upload, filter: "member_action_required"), class: "usa-button #{'usa-button--base' if params[:filter] != 'member_action_required'}" %>
+  <%= link_to t('.filters.pending_review', count: @certifications.select { |cert| @member_statuses[cert.id].status == MemberStatus::PENDING_REVIEW }.length), results_certification_batch_upload_path(@batch_upload, filter: "pending_review"), class: "usa-button #{'usa-button--base' if params[:filter] != 'pending_review'}" %>
 </div>
 <hr class="margin-top-4 margin-bottom-0" />
 <table class="usa-table usa-table--striped usa-table--borderless margin-top-0 width-full">

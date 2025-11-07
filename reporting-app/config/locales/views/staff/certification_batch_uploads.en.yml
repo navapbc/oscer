@@ -96,3 +96,9 @@ en:
         reason: "Reason"
         case_number: "Case number"
         certification_created_date: "Certification created date"
+        filters:
+          all: "All (%{count})"
+          compliant: "Compliant (%{count})"
+          exempt: "Exempt (%{count})"
+          member_action_required: "Member action required (%{count})"
+          pending_review: "Pending review (%{count})"
