@@ -4,7 +4,7 @@ FactoryBot.define do
   factory :activity do
     month { Date.today.prev_month.beginning_of_month }
     name { Faker::Company.name }
-    category { Activity::ALLOWED_CATAGORIES.sample }
+    category { Activity::ALLOWED_CATEGORIES.sample }
 
     factory :hourly_activity, parent: :activity, class: HourlyActivity do
       type { "HourlyActivity" }
