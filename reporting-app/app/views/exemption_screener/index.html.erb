@@ -3,7 +3,7 @@
 <div class="border-bottom padding-bottom-1">
 <%= link_to(dashboard_path) do %>
   <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-    <use href="/assets/img/sprite.svg#navigate_before"></use>
+    <use xlink:href="<%= asset_path '@uswds/uswds/dist/img/sprite.svg' %>#navigate_before"></use>
   </svg>
   <%= t(".back") %>
 <% end %>
@@ -21,7 +21,7 @@
     <li class="usa-icon-list__item">
       <div class="usa-icon-list__icon">
         <svg class="usa-icon" aria-hidden="true" role="img">
-          <use href="/assets/img/sprite.svg#arrow_forward"></use>
+          <use xlink:href="<%= asset_path '@uswds/uswds/dist/img/sprite.svg' %>#arrow_forward"></use>
         </svg>
       </div>
 
