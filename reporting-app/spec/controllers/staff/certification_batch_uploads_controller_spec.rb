@@ -90,12 +90,13 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
 
     context "when batch upload fails to save" do
       let(:certification_batch_upload) { instance_double(CertificationBatchUpload) }
-      let(:file_attachment) { double("file_attachment") }
+      let(:file_attachment) { instance_double(ActiveStorage::Attached::One) }
+      let(:errors_double) { instance_double(ActiveModel::Errors, full_messages: [ "Filename can't be blank", "File must be attached" ]) }
 
       before do
         allow(CertificationBatchUpload).to receive(:new).and_return(certification_batch_upload)
         allow(file_attachment).to receive(:attach)
-        allow(certification_batch_upload).to receive_messages(file: file_attachment, save: false, errors: double(full_messages: [ "Filename can't be blank", "File must be attached" ]))
+        allow(certification_batch_upload).to receive_messages(file: file_attachment, save: false, errors: errors_double)
       end
 
       it "does not create a CertificationBatchUpload" do
@@ -116,18 +117,16 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
         expect(flash[:alert]).to eq("Failed to upload file: Filename can't be blank, File must be attached")
       end
 
-      context "when requesting JSON format" do
-        it "returns unprocessable_entity status" do
-          post :create, params: { csv_file: csv_file, locale: "en", format: :json }
+      it "returns unprocessable_entity status for JSON requests" do
+        post :create, params: { csv_file: csv_file, locale: "en", format: :json }
 
-          expect(response).to have_http_status(:unprocessable_entity)
-        end
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
 
-        it "returns error message in JSON" do
-          post :create, params: { csv_file: csv_file, locale: "en", format: :json }
+      it "returns error message in JSON for JSON requests" do
+        post :create, params: { csv_file: csv_file, locale: "en", format: :json }
 
-          expect(JSON.parse(response.body)).to eq({ "error" => "Failed to upload file: Filename can't be blank, File must be attached" })
-        end
+        expect(JSON.parse(response.body)).to eq({ "error" => "Failed to upload file: Filename can't be blank, File must be attached" })
       end
     end
   end
@@ -286,12 +285,10 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
           expect(flash[:notice]).to eq("Processing started for #{batch_upload.filename}. Results will be available shortly.")
         end
 
-        context "when requesting JSON format" do
-          it "returns accepted status" do
-            post :process_batch, params: { id: batch_upload.id, locale: "en", format: :json }
+        it "returns accepted status for JSON requests" do
+          post :process_batch, params: { id: batch_upload.id, locale: "en", format: :json }
 
-            expect(response).to have_http_status(:accepted)
-          end
+          expect(response).to have_http_status(:accepted)
         end
       end
 
@@ -312,18 +309,16 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
           expect(flash[:alert]).to eq("Failed to start processing job.")
         end
 
-        context "when requesting JSON format" do
-          it "returns internal server error status" do
-            post :process_batch, params: { id: batch_upload.id, locale: "en", format: :json }
+        it "returns internal server error status for JSON requests" do
+          post :process_batch, params: { id: batch_upload.id, locale: "en", format: :json }
 
-            expect(response).to have_http_status(:internal_server_error)
-          end
+          expect(response).to have_http_status(:internal_server_error)
+        end
 
-          it "returns error message in JSON" do
-            post :process_batch, params: { id: batch_upload.id, locale: "en", format: :json }
+        it "returns error message in JSON for JSON requests" do
+          post :process_batch, params: { id: batch_upload.id, locale: "en", format: :json }
 
-            expect(JSON.parse(response.body)).to eq({ "error" => "Failed to start processing job." })
-          end
+          expect(JSON.parse(response.body)).to eq({ "error" => "Failed to start processing job." })
         end
       end
     end
