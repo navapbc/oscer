@@ -40,7 +40,7 @@
   <tbody>
     <% @certifications_to_show.each do |certification| %>
       <tr>
-        <td><%= link_to certification.member_data&.name&.first, member_path(certification.member_id) if certification.member_data&.name&.first %></td>
+        <td><%= link_to certification.member_data.name.first, member_path(certification.member_id) if certification.member_data&.name&.first %></td>
         <td><%= certification.member_email %></td>
         <td><%= @member_statuses[certification.id]&.status.humanize %></td>
         <td><%= @member_statuses[certification.id]&.human_readable_reason_codes.join(", ") %></td>
