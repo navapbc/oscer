@@ -400,6 +400,10 @@ GEM
       activesupport (= 7.2.3)
       bundler (>= 1.15.0)
       railties (= 7.2.3)
+    rails-controller-testing (1.0.5)
+      actionpack (>= 5.0.1.rc1)
+      actionview (>= 5.0.1.rc1)
+      activesupport (>= 5.0.1.rc1)
     rails-dom-testing (2.3.0)
       activesupport (>= 5.0.0)
       minitest
@@ -624,6 +628,7 @@ DEPENDENCIES
   pundit (= 2.5.0)
   pundit-matchers
   rails (~> 7.2.0, >= 7.2.2.1)
+  rails-controller-testing
   rails-erd
   route_translator
   rqrcode
