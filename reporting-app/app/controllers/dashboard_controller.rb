@@ -7,6 +7,7 @@ class DashboardController < ApplicationController
   before_action :set_exemption_application_form, if: -> { @certification_case.present? }
   before_action :set_activity_report_application_form, if: -> { @certification_case.present? }
   before_action :set_information_requests, if: -> { @exemption_application_form.present? || @activity_report_application_form.present? }
+  before_action :set_member_status, if: -> { @certification.present? }
 
 
   # TODO: figure out authz
@@ -39,5 +40,9 @@ class DashboardController < ApplicationController
     # There should only be one information request possible for all application forms.
     @information_requests = InformationRequest.for_application_forms([ @exemption_application_form&.id, @activity_report_application_form&.id ].compact)
     @information_request = @information_requests.select { |request| request.member_comment.blank? && request.supporting_documents.empty? }.first
+  end
+
+  def set_member_status
+    @member_status = MemberStatusService.determine(@certification)
   end
 end
