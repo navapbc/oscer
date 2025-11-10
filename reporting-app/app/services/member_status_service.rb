@@ -23,38 +23,85 @@ class MemberStatusService
     # @return [MemberStatus] The member's current status with optional determination details
     # @raise [ArgumentError] If record is neither Certification nor CertificationCase
     def determine(record)
-      certification, certification_case = get_certification_and_case_from(record)
+      determine_many([ record ]).values.first
+    end
 
-      determination = latest_determination_for(certification)
+    # Determines member statuses for multiple records in batch (O(1) queries)
+    #
+    # @param records [Array, ActiveRecord::Relation] Array or relation of Certification and/or CertificationCase records
+    # @return [Hash] Hash keyed by [record.class.name, record.id] with MemberStatus values
+    # @raise [ArgumentError] If records contain types other than Certification or CertificationCase
+    def determine_many(records)
+      return {} if records.empty?
+
+      # Validate all records are correct type
+      records.each do |record|
+        raise ArgumentError, "Record must be a Certification or CertificationCase, got #{record.class}" unless valid_record_type?(record)
+      end
+
+      # Group by type
+      certifications = records.select { |r| r.is_a?(Certification) }
+      cases = records.select { |r| r.is_a?(CertificationCase) }
+
+      # Collect all certification IDs we need
+      cert_ids = certifications.map(&:id) | cases.map(&:certification_id).compact
+
+      # Bulk load all related data in single operation
+      data = bulk_load_data(cert_ids)
+
+      # Memoize human-readable translations
+      @translation_cache = {}
+
+      # Build results
+      results = {}
+      records.each do |record|
+        cert, case_record = build_pair(record, data[:certs_by_id], data[:cases_by_cert_id])
+        status = compute_status(cert, case_record, data[:determinations])
+        results[[ record.class.name, record.id ]] = status
+      end
+
+      results
+    end
+
+    private
+
+    # Bulk loads all related data needed for status determination in a single operation
+    #
+    # @param cert_ids [Array<String>] Array of certification IDs to load data for
+    # @return [Hash] Hash with keys :cases_by_cert_id, :certs_by_id, :determinations
+    def bulk_load_data(cert_ids)
+      {
+        cases_by_cert_id: CertificationCase.where(certification_id: cert_ids).index_by(&:certification_id),
+        certs_by_id: Certification.where(id: cert_ids).index_by(&:id),
+        determinations: Determination.for_certifications(cert_ids).latest_per_subject.index_by(&:subject_id)
+      }
+    end
+
+    def valid_record_type?(record)
+      record.is_a?(Certification) || record.is_a?(CertificationCase)
+    end
+
+    def build_pair(record, certs_by_id, cases_by_cert_id)
+      case record
+      when Certification
+        certification = record
+        certification_case = cases_by_cert_id[certification.id]
+      when CertificationCase
+        certification_case = record
+        certification = certs_by_id[record.certification_id]
+      end
+
+      [ certification, certification_case ]
+    end
+
+    def compute_status(certification, certification_case, latest_dets)
+      determination = latest_dets[certification&.id]
 
       if determination.present?
         status_from_determination(determination)
       else
         status_from_case_step(certification_case)
       end
-    end
-
-    private
-
-    def get_certification_and_case_from(record)
-      case record
-      when Certification
-        certification = record
-        certification_case = CertificationCase.find_by(certification_id: certification.id)
-      when CertificationCase
-        certification_case = record
-        certification = Certification.find_by(id: certification_case.certification_id)
-      else
-        raise ArgumentError, "Record must be a Certification or CertificationCase, got #{record.class}"
-      end
-
-      [ certification, certification_case ]
-    end
-
-    def latest_determination_for(certification)
-      return nil if certification.blank?
-
-      Determination.for_subject(certification).first
     end
 
     def status_from_determination(determination)
@@ -94,7 +141,9 @@ class MemberStatusService
     end
 
     def human_readable_reason_codes(reasons)
-      reasons.map { |reason| I18n.t("services.member_status_service.reason_codes.#{reason}", default: reason) }
+      reasons.map do |reason|
+        @translation_cache[reason] ||= I18n.t("services.member_status_service.reason_codes.#{reason}", default: reason)
+      end
     end
   end
 end
