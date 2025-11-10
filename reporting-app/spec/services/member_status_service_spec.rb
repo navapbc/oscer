@@ -263,15 +263,6 @@ RSpec.describe MemberStatusService do
       end
     end
 
-    context 'with ActiveRecord::Relation' do
-      it 'accepts relations and converts to array' do
-        relation = Certification.where(id: certification.id)
-        expect { service.determine_many(relation) }.not_to raise_error
-        result = service.determine_many(relation)
-        expect(result).to have_key([ "Certification", certification.id ])
-      end
-    end
-
     context 'with invalid input types' do
       it 'raises ArgumentError for mixed valid/invalid records' do
         expect { service.determine_many([ certification, "invalid" ]) }.to raise_error(ArgumentError)

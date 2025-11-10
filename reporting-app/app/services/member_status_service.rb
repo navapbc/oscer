@@ -32,21 +32,19 @@ class MemberStatusService
     # @return [Hash] Hash keyed by [record.class.name, record.id] with MemberStatus values
     # @raise [ArgumentError] If records contain types other than Certification or CertificationCase
     def determine_many(records)
-      records_array = records.is_a?(ActiveRecord::Relation) ? records.to_a : Array(records)
-      return {} if records_array.empty?
+      return {} if records.empty?
 
       # Validate all records are correct type
-      records_array.each do |record|
+      records.each do |record|
         raise ArgumentError, "Record must be a Certification or CertificationCase, got #{record.class}" unless valid_record_type?(record)
       end
 
       # Group by type
-      certifications = records_array.select { |r| r.is_a?(Certification) }
-      cases = records_array.select { |r| r.is_a?(CertificationCase) }
+      certifications = records.select { |r| r.is_a?(Certification) }
+      cases = records.select { |r| r.is_a?(CertificationCase) }
 
       # Collect all certification IDs we need
-      cert_ids = certifications.map(&:id) + cases.map(&:certification_id).compact
-      cert_ids = cert_ids.uniq
+      cert_ids = certifications.map(&:id) | cases.map(&:certification_id).compact
 
       # Bulk load all related data in single operation
       data = bulk_load_data(cert_ids)
@@ -56,7 +54,7 @@ class MemberStatusService
 
       # Build results
       results = {}
-      records_array.each do |record|
+      records.each do |record|
         cert, case_record = build_pair(record, data[:certs_by_id], data[:cases_by_cert_id])
         status = compute_status(cert, case_record, data[:determinations])
         results[[ record.class.name, record.id ]] = status
