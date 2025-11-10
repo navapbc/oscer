@@ -18,6 +18,10 @@ FactoryBot.define do
       end
     end
 
+    trait :waiting_on_member do
+      business_process_current_step { "report_activities" }
+    end
+
     trait :actionable do
       business_process_current_step { "review_activity_report" }
       after(:create) do |case_obj|
