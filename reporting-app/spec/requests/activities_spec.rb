@@ -7,7 +7,14 @@ RSpec.describe "/activities", type: :request do
 
   let(:user) { User.create!(email: Faker::Internet.email, uid: SecureRandom.uuid, provider: "login.gov") }
   let(:other_user) { User.create!(email: Faker::Internet.email, uid: SecureRandom.uuid, provider: "login.gov") }
-  let(:activity_report_application_form) { create(:activity_report_application_form, :with_activities, user_id: user.id) }
+  let(:activity_report_application_form) do
+    create(
+      :activity_report_application_form,
+      :with_activities,
+      user_id: user.id,
+      reporting_periods: [ Strata::YearMonth.new(year: 2025, month: 1), Strata::YearMonth.new(year: 2025, month: 2) ]
+    )
+  end
   let(:existing_activity) { create(:work_activity, activity_report_application_form_id: activity_report_application_form.id) }
 
   before do
