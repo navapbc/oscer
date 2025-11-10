@@ -7,6 +7,12 @@ RSpec.describe Activity, type: :model do
     let(:activity) { build(:work_activity) }
 
     describe 'category validation' do
+      it 'is invalid when category is nil' do
+        activity.category = nil
+        expect(activity).not_to be_valid
+        expect(activity.errors[:category]).to include("can't be blank")
+      end
+
       context 'when category is a valid value' do
         it 'validates with employment' do
           activity.category = 'employment'

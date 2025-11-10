@@ -51,7 +51,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_11_07_191002) do
     t.datetime "updated_at", null: false
     t.string "type"
     t.integer "income"
-    t.string "category"
+    t.string "category", default: "employment", null: false
     t.index ["activity_report_application_form_id"], name: "index_activities_on_activity_report_application_form_id"
     t.index ["category"], name: "index_activities_on_category"
   end
