@@ -26,8 +26,9 @@ export class ActivityTypePage extends BasePage {
   }
 
   async fillActivityType() {
-    await this.communityServiceRadioButton.click();
-    await this.hoursRadioButton.dispatchEvent('click'); // Have to use dispatchEvent here due to radio button being hidden by CSS custom styling
+     // Have to use dispatchEvent here due to radio button being hidden by CSS custom styling
+    await this.communityServiceRadioButton.dispatchEvent('click');
+    await this.hoursRadioButton.dispatchEvent('click');
     await this.submitButton.click();
     return new ActivityDetailsPage(this.page).waitForURLtoMatchPagePath();
   }
