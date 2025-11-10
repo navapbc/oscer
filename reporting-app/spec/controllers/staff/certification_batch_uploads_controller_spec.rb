@@ -262,7 +262,7 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
 
   describe "POST #process_batch" do
     let(:batch_upload) { create(:certification_batch_upload, status: batch_status) }
-    
+
     context "when batch upload is processable" do
       let(:batch_upload_job) { instance_double(ProcessCertificationBatchUploadJob) }
       let(:batch_status) { "pending" }
@@ -387,7 +387,7 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
 
         it "prevents reprocessing" do
           post :process_batch, params: { id: batch_upload.id, locale: "en" }
-          
+
           expect(ProcessCertificationBatchUploadJob).not_to have_received(:perform_later)
           expect(flash[:alert]).to include("Current status: failed")
         end
