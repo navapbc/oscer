@@ -28,7 +28,7 @@ export class ActivityTypePage extends BasePage {
   async fillActivityType() {
     // Wait for the page elements to be visible before interacting
     await this.educationRadioButton.waitFor({ state: 'visible' });
-    
+
     // Have to use dispatchEvent here due to radio button being hidden by CSS custom styling
     await this.educationRadioButton.dispatchEvent('click');
     await this.hoursRadioButton.dispatchEvent('click');
