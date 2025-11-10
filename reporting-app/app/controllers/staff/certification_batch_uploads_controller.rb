@@ -59,16 +59,19 @@ module Staff
 
     # POST /staff/certification_batch_uploads/:id/process_batch
     def process_batch
-      unless @batch_upload.processable?
-        flash[:alert] = "This batch cannot be processed. Current status: #{@batch_upload.status}"
-        redirect_to certification_batch_upload_path(@batch_upload)
-        return
+      respond_to do |format|
+        if @batch_upload.processable? == false
+          message = "This batch cannot be processed. Current status: #{@batch_upload.status}."
+          format.html { redirect_to certification_batch_upload_path(@batch_upload), alert: message }
+          format.json { render json: { error: message }, status: :unprocessable_entity }
+        elsif ProcessCertificationBatchUploadJob.perform_later(@batch_upload.id)
+          format.html { redirect_to certification_batch_uploads_path, notice: "Processing started for #{@batch_upload.filename}. Results will be available shortly." }
+          format.json { render status: :accepted }
+        else
+          format.html { redirect_to certification_batch_upload_path(@batch_upload), alert: "Failed to start processing job." }
+          format.json { render json: { error: "Failed to start processing job." }, status: :internal_server_error }
+        end
       end
-
-      ProcessCertificationBatchUploadJob.perform_later(@batch_upload.id)
-
-      flash[:notice] = "Processing started for #{@batch_upload.filename}. Results will be available shortly."
-      redirect_to certification_batch_uploads_path
     end
 
     private
