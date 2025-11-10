@@ -90,9 +90,12 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
 
     context "when batch upload fails to save" do
       let(:certification_batch_upload) { instance_double(CertificationBatchUpload) }
+      let(:file_attachment) { double("file_attachment") }
 
       before do
         allow(CertificationBatchUpload).to receive(:new).and_return(certification_batch_upload)
+        allow(certification_batch_upload).to receive(:file).and_return(file_attachment)
+        allow(file_attachment).to receive(:attach)
         allow(certification_batch_upload).to receive(:save).and_return(false)
         allow(certification_batch_upload).to receive(:errors).and_return(
           double(full_messages: [ "Filename can't be blank", "File must be attached" ])
