@@ -1,0 +1,52 @@
+<% content_for :title, t(".title") %>
+<h1><%= t(".title") %></h1>
+<%# Batch Info %>
+<dl class="margin-top-4">
+  <dt class="text-bold display-inline-block"><%= t(".filename") %>:</dt>
+  <dd class="margin-0 display-inline-block"><%= link_to @batch_upload.filename, rails_blob_path(@batch_upload.file, disposition: "attachment") %></dd>
+  <br />
+  <dt class="text-bold display-inline-block"><%= t(".uploaded_date") %>:</dt>
+  <dd class="margin-0 display-inline-block">
+    <time datetime="<%= @batch_upload.created_at.iso8601 %>"><%= l(@batch_upload.created_at, format: "%m/%d/%Y %I:%M%P") %></time>
+  </dd>
+  <br />
+  <dt class="text-bold display-inline-block"><%= t(".result") %>:</dt>
+  <dd class="margin-0 display-inline-block">
+    <%= link_to t(".results_message", num_rows_succeeded: @batch_upload.num_rows_succeeded, num_rows_errored: @batch_upload.num_rows_errored, total: @batch_upload.num_rows), @batch_upload %>
+  </dd>
+</dl>
+<p>
+  <%= t('.filter_by') %>
+</p>
+<div class="display-inline-block">
+  <%= link_to t('.filters.all', count: @certifications.length), results_certification_batch_upload_path(@batch_upload), class: "usa-button #{'usa-button--base' if params[:filter].present?}" %>
+  <%= link_to t('.filters.compliant', count: @compliant_certifications.length), results_certification_batch_upload_path(@batch_upload, filter: "compliant"), class: "usa-button #{'usa-button--base' if params[:filter] != 'compliant'}" %>
+  <%= link_to t('.filters.exempt', count: @exempt_certifications.length), results_certification_batch_upload_path(@batch_upload, filter: "exempt"), class: "usa-button #{'usa-button--base' if params[:filter] != 'exempt'}" %>
+  <%= link_to t('.filters.member_action_required', count: @member_action_required_certifications.length), results_certification_batch_upload_path(@batch_upload, filter: "member_action_required"), class: "usa-button #{'usa-button--base' if params[:filter] != 'member_action_required'}" %>
+  <%= link_to t('.filters.pending_review', count: @pending_review_certifications.length), results_certification_batch_upload_path(@batch_upload, filter: "pending_review"), class: "usa-button #{'usa-button--base' if params[:filter] != 'pending_review'}" %>
+</div>
+<hr class="margin-top-4 margin-bottom-0" />
+<table class="usa-table usa-table--striped usa-table--borderless margin-top-0 width-full">
+  <thead>
+    <tr>
+      <th scope="col"><%= t(".member_first_name") %></th>
+      <th scope="col"><%= t(".member_email") %></th>
+      <th scope="col"><%= t(".member_status") %></th>
+      <th scope="col"><%= t(".reason") %></th>
+      <th scope="col"><%= t(".case_number") %></th>
+      <th scope="col"><%= t(".certification_created_date") %></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @certifications_to_show.each do |certification| %>
+      <tr>
+        <td><%= link_to certification.member_data.name.first, member_path(certification.member_id) if certification.member_data&.name&.first %></td>
+        <td><%= certification.member_email %></td>
+        <td><%= @member_statuses[certification.id]&.status.humanize %></td>
+        <td><%= @member_statuses[certification.id]&.human_readable_reason_codes.join(", ") %></td>
+        <td><%= link_to certification.case_number, certification_case_path(@certification_cases[certification.id]) %></td>
+        <td><%= l(certification.created_at, format: "%m/%d/%Y") %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

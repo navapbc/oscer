@@ -47,7 +47,7 @@
             <% elsif batch_upload.processing? %>
               <span class="text-base-dark"><%= t(".processing") %>...</span>
             <% elsif batch_upload.completed? %>
-              <%= link_to t(".view_results"), certification_batch_upload_path(batch_upload), class: "usa-button usa-button--unstyled" %>
+              <%= link_to t(".view_results"), results_certification_batch_upload_path(batch_upload), class: "usa-button usa-button--unstyled" %>
             <% elsif batch_upload.failed? %>
               <%= link_to t(".view_error"), certification_batch_upload_path(batch_upload), class: "usa-button usa-button--unstyled text-error" %>
             <% end %>

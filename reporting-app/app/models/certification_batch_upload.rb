@@ -5,12 +5,19 @@ class CertificationBatchUpload < ApplicationRecord
   attribute :status, :string, default: :pending
   enum :status, { pending: "pending", processing: "processing", completed: "completed", failed: "failed" }
 
+  attribute :num_rows, :integer, default: 0
+  attribute :num_rows_processed, :integer, default: 0
+  attribute :num_rows_succeeded, :integer, default: 0
+  attribute :num_rows_errored, :integer, default: 0
+  attribute :results, :jsonb, default: {}
+
   belongs_to :uploader, class_name: "User"
   has_one_attached :file
 
   validates :filename, presence: true
   validates :file, presence: true, on: :create
 
+  default_scope { with_attached_file }
   scope :recent, -> { order(created_at: :desc) }
   scope :by_user, ->(user_id) { where(uploader_id: user_id) }
 
