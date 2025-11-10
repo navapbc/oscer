@@ -41,7 +41,6 @@ module Staff
           format.json { render json: { error: message }, status: :unprocessable_entity }
         end
       end
-
     end
 
     # GET /staff/certification_batch_uploads/:id
