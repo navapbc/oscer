@@ -9,6 +9,130 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
     sign_in user
   end
 
+  describe "POST #create" do
+    let(:csv_file) { fixture_file_upload('spec/fixtures/files/certification_batch_upload_test_file.csv', 'text/csv') }
+
+    context "when a valid CSV file is uploaded" do
+      it "creates a new CertificationBatchUpload" do
+        expect {
+          post :create, params: { csv_file: csv_file, locale: "en" }
+        }.to change(CertificationBatchUpload, :count).from(0).to(1)
+      end
+
+      it "sets the filename from the uploaded file" do
+        post :create, params: { csv_file: csv_file, locale: "en" }
+
+        batch_upload = CertificationBatchUpload.last
+
+        expect(batch_upload.filename).to eq(csv_file.original_filename)
+      end
+
+      it "sets the uploader to the current user" do
+        post :create, params: { csv_file: csv_file, locale: "en" }
+
+        batch_upload = CertificationBatchUpload.includes(:uploader).last
+
+        expect(batch_upload.uploader).to eq(user)
+      end
+
+      it "attaches the uploaded file" do
+        post :create, params: { csv_file: csv_file, locale: "en" }
+
+        batch_upload = CertificationBatchUpload.last
+
+        expect(batch_upload.file).to be_attached
+      end
+
+      it "redirects to certification_batch_uploads_path" do
+        post :create, params: { csv_file: csv_file, locale: "en" }
+
+        expect(response).to redirect_to(certification_batch_uploads_path)
+      end
+
+      it "sets a success notice" do
+        post :create, params: { csv_file: csv_file, locale: "en" }
+
+        expect(flash[:notice]).to eq("File uploaded successfully. You can now process it from the queue.")
+      end
+    end
+
+    context "when no file is uploaded" do
+      it "does not create a CertificationBatchUpload" do
+        expect {
+          post :create, params: { locale: "en" }
+        }.not_to change(CertificationBatchUpload, :count)
+      end
+
+      it "sets an alert message" do
+        post :create, params: { locale: "en" }
+
+        expect(flash.now[:alert]).to eq("Please select a CSV file to upload")
+      end
+
+      it "renders the new template" do
+        post :create, params: { locale: "en" }
+
+        expect(response).to render_template(:new)
+      end
+
+      it "returns unprocessable_content status" do
+        post :create, params: { locale: "en" }
+
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      it "assigns a new batch_upload instance" do
+        post :create, params: { locale: "en" }
+
+        expect(assigns(:batch_upload)).to be_a_new(CertificationBatchUpload)
+      end
+    end
+
+    context "when batch upload fails to save" do
+      let(:certification_batch_upload) { instance_double(CertificationBatchUpload) }
+
+      before do
+        allow(CertificationBatchUpload).to receive(:new).and_return(certification_batch_upload)
+        allow(certification_batch_upload).to receive(:save).and_return(false)
+        allow(certification_batch_upload).to receive(:errors).and_return(
+          double(full_messages: [ "Filename can't be blank", "File must be attached" ])
+        )
+      end
+
+      it "does not create a CertificationBatchUpload" do
+        expect {
+          post :create, params: { csv_file: csv_file, locale: "en" }
+        }.not_to change(CertificationBatchUpload, :count)
+      end
+
+      it "redirects to new_certification_batch_upload_path" do
+        post :create, params: { csv_file: csv_file, locale: "en" }
+
+        expect(response).to redirect_to(new_certification_batch_upload_path)
+      end
+
+      it "sets an error alert with validation messages" do
+        post :create, params: { csv_file: csv_file, locale: "en" }
+
+        expect(flash[:alert]).to eq("Failed to upload file: Filename can't be blank, File must be attached")
+      end
+
+      context "when requesting JSON format" do
+        it "returns unprocessable_entity status" do
+          post :create, params: { csv_file: csv_file, locale: "en", format: :json }
+
+          expect(response).to have_http_status(:unprocessable_entity)
+        end
+
+        it "returns error message in JSON" do
+          post :create, params: { csv_file: csv_file, locale: "en", format: :json }
+
+          expect(JSON.parse(response.body)).to eq({ "error" => "Failed to upload file: Filename can't be blank, File must be attached" })
+        end
+      end
+    end
+  end
+
   describe "GET #results" do
     let(:batch_upload) { create(:certification_batch_upload) }
     let(:compliant_cert) { create(:certification) }
