@@ -20,15 +20,12 @@ export class ActivityTypePage extends BasePage {
     this.employmentRadioButton = page.getByLabel('Employment', { exact: true });
     this.educationRadioButton = page.getByLabel('Education', { exact: true });
     this.communityServiceRadioButton = page.getByLabel('Community Service', { exact: true });
-    this.hoursRadioButton = page.getByLabel('Hours', { exact: true });
-    this.incomeRadioButton = page.getByLabel('Income', { exact: true });
+    this.hoursRadioButton = page.getByLabel('Report hours spent', { exact: true });
+    this.incomeRadioButton = page.getByLabel('Report income', { exact: true });
     this.submitButton = page.getByRole('button', { name: /continue/i });
   }
 
   async fillActivityType() {
-    // Wait for the page elements to be visible before interacting
-    await this.educationRadioButton.waitFor({ state: 'visible' });
-
     // Have to use dispatchEvent here due to radio button being hidden by CSS custom styling
     await this.educationRadioButton.dispatchEvent('click');
     await this.hoursRadioButton.dispatchEvent('click');
