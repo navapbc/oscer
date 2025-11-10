@@ -7,7 +7,7 @@ class CertificationCasesController < StaffController
   before_action :set_certification, only: %i[ show tasks documents notes ]
 
   def index
-    @cases = certification_service.fetch_open_actionable_cases
+    @cases = certification_service.fetch_open_cases
   end
 
   def closed
