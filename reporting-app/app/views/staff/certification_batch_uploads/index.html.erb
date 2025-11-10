@@ -1,4 +1,5 @@
 <% content_for :title, t(".title") %>
+<%= render partial: 'application/flash' %>
 <div class="display-flex flex-justify">
   <h1><%= t(".heading") %></h1>
   <%= link_to t(".upload_new"), new_certification_batch_upload_path, class: "usa-button" %>

@@ -1,4 +1,5 @@
 <% content_for :title, t(".title") %>
+<%= render partial: 'application/flash' %>
 <h1><%= @batch_upload.filename %></h1>
 <dl class="grid-row margin-bottom-2">
   <dt class="grid-col-3 text-bold"><%= t(".uploader") %>:</dt>
