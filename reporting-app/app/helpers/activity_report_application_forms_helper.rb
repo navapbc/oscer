@@ -6,9 +6,7 @@ module ActivityReportApplicationFormsHelper
   end
 
   def activity_report_current_step(form, flash_notice_present:)
-    return nil if form.submitted_at.present? && !flash_notice_present
-
-    if flash_notice_present && form.submitted_at.present?
+    if form.submitted_at.present?
       :submitted
     else
       :add_activities

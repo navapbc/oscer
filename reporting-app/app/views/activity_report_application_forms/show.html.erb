@@ -44,3 +44,6 @@
 <div class="margin-y-6">
   <%= render @activity_report_application_form %>
 </div>
+<% if @activity_report_application_form.submitted? %>
+  <%= link_to t("activity_report_application_forms.shared.back_to_dashboard"), dashboard_path, class: "usa-button usa-button--outline" %>
+<% end %>
