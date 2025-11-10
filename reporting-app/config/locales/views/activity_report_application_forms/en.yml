@@ -6,6 +6,7 @@ en:
       activity_type: "Activity Type"
       hours: "Hours"
       income: "Income"
+      back_to_dashboard: "Back to dashboard"
       status_messages:
         in_progress: "Complete and submit your activity report"
         in_progress_detail: "Add activities for each month that you are reporting."

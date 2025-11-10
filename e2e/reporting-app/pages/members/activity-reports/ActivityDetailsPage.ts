@@ -15,7 +15,7 @@ export class ActivityDetailsPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.employerNameField = page.getByLabel('Employer name');
+    this.employerNameField = page.getByLabel('Organization name');
     this.hoursField = page.getByLabel('Hours');
     this.monthField = page.getByLabel('Month');
     this.submitButton = page.getByRole('button', { name: /save and continue/i });

@@ -1,3 +1,11 @@
+<h1>
+  <%= t(".title_prefix") %>
+  <span class="activity-type-highlight">
+    <%= t(".#{activity.category}_label") %>
+  </span>
+  <%= t(".title_suffix") %>
+</h1>
+
 <%= strata_form_with(model: [activity_report_application_form, activity.becomes(Activity)]) do |f| %>
   <%= f.text_field :name, label: t(".name") %>
 
@@ -7,5 +15,6 @@
 
   <%= build_activity_input_field(f, activity) %>
   <%= f.hidden_field :activity_type, value: activity.class.name.underscore %>
+  <%= f.hidden_field :category, value: activity.try(:category) %>
   <%= f.submit t(".continue"), big: true %>
 <% end %>

@@ -2,6 +2,7 @@
 
 class Activity < ApplicationRecord
   include Strata::Attributes
+  ALLOWED_CATEGORIES = %w[community_service education employment]
 
   has_many_attached :supporting_documents
 
@@ -9,6 +10,8 @@ class Activity < ApplicationRecord
 
   strata_attribute :month, :date
   strata_attribute :name, :string
+  strata_attribute :category, :string
 
   validates :name, presence: true
+  validates :category, presence: true, inclusion: { in: ALLOWED_CATEGORIES }
 end

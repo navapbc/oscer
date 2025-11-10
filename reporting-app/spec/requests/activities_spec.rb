@@ -88,7 +88,8 @@ RSpec.describe "/activities", type: :request do
             name: Faker::Company.name,
             activity_type: "work_activity",
             hours: rand(1..79).to_s,
-            month: (Date.today - 2.months).beginning_of_month
+            month: (Date.today - 2.months).beginning_of_month,
+            category: "employment"
           }
 
           expect {
@@ -101,7 +102,8 @@ RSpec.describe "/activities", type: :request do
             name: Faker::Company.name,
             activity_type: "work_activity",
             hours: rand(1..79).to_s,
-            month: (Date.today - 2.months).beginning_of_month
+            month: (Date.today - 2.months).beginning_of_month,
+            category: "employment"
           }
 
           post activity_report_application_form_activities_url(activity_report_application_form), params: { activity: valid_attributes }
@@ -145,7 +147,8 @@ RSpec.describe "/activities", type: :request do
             name: Faker::Company.name,
             activity_type: "income_activity",
             income: rand(50..300).to_s,
-            month: (Date.today - 2.months).beginning_of_month
+            month: (Date.today - 2.months).beginning_of_month,
+            category: "employment"
           }
 
           expect {
@@ -158,7 +161,8 @@ RSpec.describe "/activities", type: :request do
             name: Faker::Company.name,
             activity_type: "income_activity",
             income: rand(1..79).to_s,
-            month: (Date.today - 2.months).beginning_of_month
+            month: (Date.today - 2.months).beginning_of_month,
+            category: "employment"
           }
 
           post activity_report_application_form_activities_url(activity_report_application_form), params: { activity: valid_attributes }
@@ -192,6 +196,25 @@ RSpec.describe "/activities", type: :request do
       it "renders error messages" do
         post activity_report_application_form_activities_url(activity_report_application_form), params: { activity: invalid_attributes }
         expect(response.body).to include("Name can&#39;t be blank")
+      end
+    end
+
+    context "with category persisted" do
+      it "persists the category on the created activity" do
+        valid_attributes = {
+          name: Faker::Company.name,
+          activity_type: "work_activity",
+          hours: rand(1..79).to_s,
+          month: (Date.today - 2.months).beginning_of_month,
+          category: "education"
+        }
+
+        expect {
+          post activity_report_application_form_activities_url(activity_report_application_form), params: { activity: valid_attributes }
+        }.to change(WorkActivity, :count).by(1)
+
+        created_activity = activity_report_application_form.activities.where(name: valid_attributes[:name]).first
+        expect(created_activity.category).to eq("education")
       end
     end
   end

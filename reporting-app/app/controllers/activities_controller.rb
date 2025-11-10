@@ -18,6 +18,7 @@ class ActivitiesController < ApplicationController
   # GET /activities/new/new_activity
   def new_activity
     @activity = activity_type_map(params[:activity_type] || activity_params[:activity_type])
+    @activity.category = params[:category] if params[:category].present?
     authorize @activity_report_application_form, :edit?
   end
 
@@ -114,6 +115,8 @@ class ActivitiesController < ApplicationController
     end
 
     def activity_type_map(type)
+      return nil if type.nil?
+
       case type
       when "work_activity"
         WorkActivity.new
@@ -131,7 +134,8 @@ class ActivitiesController < ApplicationController
         :name,
         :hours,
         :income,
-        :activity_type
+        :activity_type,
+        :category
       )
     end
 
@@ -139,6 +143,7 @@ class ActivitiesController < ApplicationController
       attrs = activity_params.to_h.slice(
         "month",
         "name",
+        "category",
       )
       attrs[:income] = activity_params[:income].to_i * 100 if activity_params.key?(:income)
       attrs[:hours] = activity_params[:hours].to_i if activity_params.key?(:hours)
