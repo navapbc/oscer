@@ -37,7 +37,7 @@ module Staff
           format.json { render :show, status: :created, location: @batch_upload }
         else
           message = "Failed to upload file: #{@batch_upload.errors.full_messages.join(', ')}"
-          format.html { render :new, status: :unprocessable_content, alert: message }
+          format.html { redirect_to new_certification_batch_upload_path, alert: message }
           format.json { render json: { error: message }, status: :unprocessable_entity }
         end
       end
