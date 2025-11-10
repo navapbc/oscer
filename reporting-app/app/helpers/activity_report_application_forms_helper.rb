@@ -14,15 +14,4 @@ module ActivityReportApplicationFormsHelper
       :add_activities
     end
   end
-
-  def activity_type_display(activity)
-    case activity.class.name
-    when "IncomeActivity"
-      "Income"
-    when "WorkActivity"
-      "Hourly Work"
-    else
-      activity.type.humanize
-    end
-  end
 end

@@ -11,7 +11,7 @@
     <% activities.each do |activity| %>
       <tr>
         <td class="border-0"><%= link_to activity.name, [activity_report_application_form, activity.becomes(Activity)] %></td>
-        <td class="border-0"><%= activity_type_display(activity) %></td>
+        <td class="border-0"><%= activity.category.humanize %></td>
         <td class="border-0 text-right bg-base-lightest"><%= activity_value.call(activity) %></td>
       </tr>
     <% end %>
