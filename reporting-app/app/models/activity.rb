@@ -12,5 +12,7 @@ class Activity < ApplicationRecord
   strata_attribute :category, :string
 
   validates :name, presence: true
-  validates :category, inclusion: { in: %w[employment education community_service] }
+  ALLOWED_CATEGORIES = %w[community_service education employment]
+  ...
+  validates :category, inclusion: { in: ALLOWED_CATEGORIES }
 end
