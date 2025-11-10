@@ -69,7 +69,7 @@ module Staff
           format.json { render json: { error: message }, status: :unprocessable_entity }
         elsif ProcessCertificationBatchUploadJob.perform_later(@batch_upload.id)
           format.html { redirect_to certification_batch_uploads_path, notice: "Processing started for #{@batch_upload.filename}. Results will be available shortly." }
-          format.json { render status: :accepted }
+          format.json { head :accepted }
         else
           format.html { redirect_to certification_batch_upload_path(@batch_upload), alert: "Failed to start processing job." }
           format.json { render json: { error: "Failed to start processing job." }, status: :internal_server_error }
