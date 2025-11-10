@@ -94,12 +94,8 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
 
       before do
         allow(CertificationBatchUpload).to receive(:new).and_return(certification_batch_upload)
-        allow(certification_batch_upload).to receive(:file).and_return(file_attachment)
         allow(file_attachment).to receive(:attach)
-        allow(certification_batch_upload).to receive(:save).and_return(false)
-        allow(certification_batch_upload).to receive(:errors).and_return(
-          double(full_messages: [ "Filename can't be blank", "File must be attached" ])
-        )
+        allow(certification_batch_upload).to receive_messages(file: file_attachment, save: false, errors: double(full_messages: [ "Filename can't be blank", "File must be attached" ]))
       end
 
       it "does not create a CertificationBatchUpload" do
