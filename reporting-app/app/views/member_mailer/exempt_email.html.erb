@@ -8,8 +8,10 @@
   <li><%= t('.what_this_means.item_2_html', renewal_date: @renewal_date) %></li>
 </ul>
 
-<p><%= t('.contact_if_needed') %></p>
+<p><%= t('.contact_if_needed_html', root_url: link_to(root_url, root_url)) %></p>
 
 <p><%= t('.questions') %></p>
 
 <%= render 'member_mailer/signature' %>
+
+<%= render 'demo_notice' %>

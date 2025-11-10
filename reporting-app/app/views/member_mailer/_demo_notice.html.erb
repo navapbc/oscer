@@ -1,0 +1,12 @@
+<p><strong><%= "*" * 10 %></strong></p>
+<p><strong><%= t(".header") %></strong></p>
+<p><%= t(".demo_message") %></p>
+<p><%= t(".learn_more.text") %></p>
+<ul>
+  <li><%= link_to t(".learn_more.link_1.text"), t(".learn_more.link_1.url") %></li>
+  <li><%= link_to t(".learn_more.link_2.text"), t(".learn_more.link_2.url") %></li>
+  <li><%= link_to t(".learn_more.link_3.text"), t(".learn_more.link_3.url") %></li>
+  <li><%= link_to t(".learn_more.link_4.text"), t(".learn_more.link_4.url") %></li>
+</ul>
+<p><%= t(".reach_out.text") %> <%= mail_to t(".reach_out.email"), t(".reach_out.email") %>.</p>
+<p><strong><%= "*" * 10 %></strong></p>

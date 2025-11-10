@@ -11,7 +11,8 @@ class MemberMailer < ApplicationMailer
 
     mail(
       to: certification.member_email,
-      subject: t(".subject", period: @period)
+      subject: t(".subject", period: @period),
+      from: t(".shared.from_display_name") + " <#{ENV["AWS_SES_FROM_EMAIL"] || ENV["SES_EMAIL"]}>"
     )
   end
 
@@ -23,7 +24,8 @@ class MemberMailer < ApplicationMailer
 
     mail(
       to: certification.member_email,
-      subject: t(".subject")
+      subject: t(".subject"),
+      from: t(".shared.from_display_name") + " <#{ENV["AWS_SES_FROM_EMAIL"] || ENV["SES_EMAIL"]}>"
     )
   end
 end
