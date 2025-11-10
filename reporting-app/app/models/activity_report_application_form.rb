@@ -69,6 +69,12 @@ class ActivityReportApplicationForm < Strata::ApplicationForm
     super(months.map { |v| { "year" => v.year, "month" => v.month } })
   end
 
+  def reporting_period_dates
+    reporting_periods
+      .sort_by { |ym| [ -ym.year, -ym.month ] }
+      .map { |ym| Date.new(ym.year, ym.month, 1) }
+  end
+
   private
 
   def validate_reporting_periods_in_range

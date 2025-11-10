@@ -9,7 +9,6 @@ RSpec.describe "activities/edit", type: :view do
   before do
     assign(:activity_report_application_form, activity_report_application_form)
     assign(:activity, activity)
-    assign(:months, [ [ "January 2024", Date.new(2024, 1, 1) ] ])
   end
 
   it "renders the edit activity form" do

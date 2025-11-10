@@ -10,4 +10,8 @@ module ActivityHelper
       raise "Unknown activity type: #{activity.class.name}"
     end
   end
+
+  def month_select_options(dates)
+    dates.map { |date| [ date.strftime("%B %Y"), date ] }
+  end
 end

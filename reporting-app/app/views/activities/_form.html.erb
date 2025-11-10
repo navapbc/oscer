@@ -1,6 +1,10 @@
 <%= strata_form_with(model: [activity_report_application_form, activity.becomes(Activity)]) do |f| %>
   <%= f.text_field :name, label: t(".name") %>
-  <%= f.select :month, months, { prompt: t(".select_prompt") } %>
+
+  <%= f.select :month,
+    month_select_options(activity_report_application_form.reporting_period_dates),
+    { prompt: t(".select_prompt") } %>
+
   <%= build_activity_input_field(f, activity) %>
   <%= f.hidden_field :activity_type, value: activity.class.name.underscore %>
   <%= f.submit t(".continue"), big: true %>
