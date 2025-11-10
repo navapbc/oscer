@@ -2,6 +2,8 @@
 
 module DashboardHelper
   def determine_dashboard_view
+    return "exemption_approved" if @member_status&.status == MemberStatus::EXEMPT
+
     if @certification.nil?
       "no_certification"
     elsif are_activity_report_or_exemption_incomplete?
