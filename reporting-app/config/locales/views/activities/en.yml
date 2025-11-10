@@ -37,7 +37,7 @@ en:
       employment_help_text: "Time spent working for yourself or another organization"
       education_label: "Education"
       education_help_text: "Time spent conducting a job search, performing a skills training, or attending school"
-      community_service_label: "Community service"
+      community_service_label: "Community Service"
       community_service_help_text: "Unpaid work for a qualifying organization that helps your community counts when hours are recorded"
       reporting_method_help_text: "Select a reporting method for this activity"
       hours_label: "Report hours spent"

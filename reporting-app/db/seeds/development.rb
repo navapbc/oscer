@@ -20,7 +20,7 @@ user = User.first || User.create!(email: "staff@example.com", uid: SecureRandom.
 
   app_form.activities.create!(
     name: "Community Meeting",
-    type: "WorkActivity",
+    type: "HourlyActivity",
     category: "community_service",
     month: Date.today.prev_month.beginning_of_month,
     hours: rand(1..5),
@@ -30,7 +30,7 @@ user = User.first || User.create!(email: "staff@example.com", uid: SecureRandom.
   )
   app_form.activities.create!(
     name: "Outreach Event",
-    type: "WorkActivity",
+    type: "HourlyActivity",
     category: "community_service",
     month: Date.today.prev_month.beginning_of_month,
     hours: rand(1..5),
@@ -52,14 +52,14 @@ user = User.first || User.create!(email: "staff@example.com", uid: SecureRandom.
   )
   app_form.activities.create!(
     name: "Policy Discussion",
-    type: "WorkActivity",
+    type: "HourlyActivity",
     category: "community_service",
     month: Date.today.prev_month.prev_month.beginning_of_month,
     hours: rand(1..10)
   )
   app_form.activities.create!(
     name: "Volunteer Coordination",
-    type: "WorkActivity",
+    type: "HourlyActivity",
     category: "community_service",
     month: Date.today.prev_month.prev_month.beginning_of_month,
     hours: rand(15..60),

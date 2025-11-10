@@ -13,5 +13,5 @@ class Activity < ApplicationRecord
   strata_attribute :category, :string
 
   validates :name, presence: true
-  validates :category, inclusion: { in: ALLOWED_CATEGORIES }
+  validates :category, presence: true, inclusion: { in: ALLOWED_CATEGORIES }
 end
