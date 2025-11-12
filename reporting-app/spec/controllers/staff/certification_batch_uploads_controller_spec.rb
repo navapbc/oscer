@@ -69,12 +69,6 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
         expect(flash.now[:alert]).to eq("Please select a CSV file to upload")
       end
 
-      it "renders the new template" do
-        post :create, params: { locale: "en" }
-
-        expect(response).to render_template(:new)
-      end
-
       it "returns unprocessable_content status" do
         post :create, params: { locale: "en" }
 
@@ -84,7 +78,7 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
       it "assigns a new batch_upload instance" do
         post :create, params: { locale: "en" }
 
-        expect(assigns(:batch_upload)).to be_a_new(CertificationBatchUpload)
+        expect(controller.instance_variable_get(:@batch_upload)).to be_a_new(CertificationBatchUpload)
       end
     end
 
@@ -190,26 +184,26 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
       it "calculates member statuses for all certifications" do
         get :results, params: { id: batch_upload.id, locale: "en" }
 
-        expect(assigns(:member_statuses)).to be_present
-        expect(assigns(:member_statuses)[compliant_cert.id].status).to eq(MemberStatus::COMPLIANT)
-        expect(assigns(:member_statuses)[exempt_cert.id].status).to eq(MemberStatus::EXEMPT)
-        expect(assigns(:member_statuses)[not_compliant_cert.id].status).to eq(MemberStatus::NOT_COMPLIANT)
-        expect(assigns(:member_statuses)[pending_review_cert.id].status).to eq(MemberStatus::PENDING_REVIEW)
+        expect(controller.instance_variable_get(:@member_statuses)).to be_present
+        expect(controller.instance_variable_get(:@member_statuses)[compliant_cert.id].status).to eq(MemberStatus::COMPLIANT)
+        expect(controller.instance_variable_get(:@member_statuses)[exempt_cert.id].status).to eq(MemberStatus::EXEMPT)
+        expect(controller.instance_variable_get(:@member_statuses)[not_compliant_cert.id].status).to eq(MemberStatus::NOT_COMPLIANT)
+        expect(controller.instance_variable_get(:@member_statuses)[pending_review_cert.id].status).to eq(MemberStatus::PENDING_REVIEW)
       end
 
       it "groups certifications by status" do
         get :results, params: { id: batch_upload.id, locale: "en" }
 
-        expect(assigns(:compliant_certifications)).to contain_exactly(compliant_cert)
-        expect(assigns(:exempt_certifications)).to contain_exactly(exempt_cert)
-        expect(assigns(:member_action_required_certifications)).to contain_exactly(not_compliant_cert)
-        expect(assigns(:pending_review_certifications)).to contain_exactly(pending_review_cert)
+        expect(controller.instance_variable_get(:@compliant_certifications)).to contain_exactly(compliant_cert)
+        expect(controller.instance_variable_get(:@exempt_certifications)).to contain_exactly(exempt_cert)
+        expect(controller.instance_variable_get(:@member_action_required_certifications)).to contain_exactly(not_compliant_cert)
+        expect(controller.instance_variable_get(:@pending_review_certifications)).to contain_exactly(pending_review_cert)
       end
 
       it "shows all certifications by default" do
         get :results, params: { id: batch_upload.id, locale: "en" }
 
-        expect(assigns(:certifications_to_show)).to contain_exactly(compliant_cert, exempt_cert, not_compliant_cert, pending_review_cert)
+        expect(controller.instance_variable_get(:@certifications_to_show)).to contain_exactly(compliant_cert, exempt_cert, not_compliant_cert, pending_review_cert)
       end
 
       it "renders successfully" do
@@ -223,7 +217,7 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
       it "shows only compliant certifications" do
         get :results, params: { id: batch_upload.id, filter: "compliant", locale: "en" }
 
-        expect(assigns(:certifications_to_show)).to contain_exactly(compliant_cert)
+        expect(controller.instance_variable_get(:@certifications_to_show)).to contain_exactly(compliant_cert)
       end
     end
 
@@ -231,7 +225,7 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
       it "shows only exempt certifications" do
         get :results, params: { id: batch_upload.id, filter: "exempt", locale: "en" }
 
-        expect(assigns(:certifications_to_show)).to contain_exactly(exempt_cert)
+        expect(controller.instance_variable_get(:@certifications_to_show)).to contain_exactly(exempt_cert)
       end
     end
 
@@ -242,7 +236,7 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
       it "shows certifications requiring member action" do
         get :results, params: { id: batch_upload.id, filter: "member_action_required", locale: "en" }
 
-        expect(assigns(:certifications_to_show)).to contain_exactly(not_compliant_cert, pending_review_cert)
+        expect(controller.instance_variable_get(:@certifications_to_show)).to contain_exactly(not_compliant_cert, pending_review_cert)
       end
     end
 
@@ -250,7 +244,7 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
       it "shows only pending review certifications" do
         get :results, params: { id: batch_upload.id, filter: "pending_review", locale: "en" }
 
-        expect(assigns(:certifications_to_show)).to contain_exactly(pending_review_cert)
+        expect(controller.instance_variable_get(:@certifications_to_show)).to contain_exactly(pending_review_cert)
       end
     end
   end

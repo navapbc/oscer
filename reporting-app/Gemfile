@@ -99,7 +99,6 @@ group :development, :test do
 
   # Testing framework
   gem "rspec-rails", "~> 8.0.0"
-  gem "rails-controller-testing"
 
   # Mocking HTTP calls
   gem "webmock"
