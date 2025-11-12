@@ -29,8 +29,8 @@ en:
         item_1: "You do not need to report work or community engagement activities for this period. No action is required."
         item_2_html: "We'll <strong>check and notify you again</strong> about your coverage on your next renewal date on %{renewal_date}."
         item_2: "We'll check and notify you again about your coverage on your next renewal date on %{renewal_date}."
-      contact_if_needed_html: "You can confirm your exemption status by visiting %{root_url} and logging in or creating an account."
-      contact_if_needed: "You can confirm your exemption status by visiting %{root_url} and logging in or creating an account."
+      contact_if_needed_html: "You can confirm your exemption status by visiting %{root_url} and logging in or creating an account. We'll contact you if we need anyting else."
+      contact_if_needed: "You can confirm your exemption status by visiting %{root_url} and logging in or creating an account. We'll contact you if we need anyting else."
       questions: "Questions? Call us: [Call Center Number] (TTY: [TTY Number]) [Hours/Timezone]"
     signature:
       sincerely: "Sincerely,"
@@ -40,7 +40,7 @@ en:
       header: "THIS IS A DEMONSTRATION NOTIFICATION FROM OSCER, not an official notice."
       demo_message: "OSCER is an open source community engagement reporting tool from Nava PBC. Nava is working with States and Medicaid offices to support HR1 implementation to ensure everyone eligible for Medicaid benefits can access the coverage they need."
       learn_more:
-        text: "Learn more about OSCER."
+        text: "Learn more about OSCER"
         link_1:
           text: "Webpage"
           url: "https://www.navapbc.com/hr1/medicaid"
