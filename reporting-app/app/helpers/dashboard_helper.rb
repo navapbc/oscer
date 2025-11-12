@@ -2,9 +2,9 @@
 
 module DashboardHelper
   def determine_dashboard_view
-    return "exemption_approved" if @member_status&.status == MemberStatus::EXEMPT
-
-    if @certification.nil?
+    if member_status_exempt?
+      "exemption_approved"
+    elsif @certification.nil?
       "no_certification"
     elsif are_activity_report_or_exemption_incomplete?
       "new_certification"
@@ -24,6 +24,11 @@ module DashboardHelper
       # Fallback for unexpected states
       "new_certification"
     end
+  end
+
+  def member_status_exempt?
+    return false if @member_status.blank?
+    @member_status.status == MemberStatus::EXEMPT
   end
 
   def application_exists?
