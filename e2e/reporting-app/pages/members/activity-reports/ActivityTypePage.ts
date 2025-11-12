@@ -17,11 +17,11 @@ export class ActivityTypePage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.employmentRadioButton = page.getByLabel('Employment', { exact: true });
-    this.educationRadioButton = page.getByLabel('Education', { exact: true });
-    this.communityServiceRadioButton = page.getByLabel('Community Service', { exact: true });
-    this.hoursRadioButton = page.getByLabel('Report hours spent', { exact: true });
-    this.incomeRadioButton = page.getByLabel('Report income', { exact: true });
+    this.employmentRadioButton = page.getByLabel('Employment');
+    this.educationRadioButton = page.getByLabel('Education');
+    this.communityServiceRadioButton = page.getByLabel('Community Service');
+    this.hoursRadioButton = page.getByLabel('Report hours spent');
+    this.incomeRadioButton = page.getByLabel('Report income');
     this.submitButton = page.getByRole('button', { name: /continue/i });
   }
 
