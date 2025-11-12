@@ -6,8 +6,10 @@
 - <%= t('.what_this_means.item_1') %>
 - <%= t('.what_this_means.item_2', renewal_date: @renewal_date) %>
 
-<%= t('.contact_if_needed') %>
+<%= t('.contact_if_needed', root_url: root_url) %>
 
 <%= t('.questions') %>
 
 <%= render 'member_mailer/signature' %>
+
+<%= render 'member_mailer/demo_notice' %>

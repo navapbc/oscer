@@ -5,7 +5,7 @@ en:
     action_required_email:
       subject: "Action Needed: Please Submit Your Community Engagement Activities to Ensure Medicaid Coverage."
       need_information: "We need information to ensure you receive Medicaid coverage."
-      login_instructions_html: "<strong>You must report your work or community engagement activities by %{due_date}</strong> or your coverage may end. Please log in to your account at %{login_link} and do one of the following:"
+      login_instructions_html: "<strong>You must report your work or community engagement activities by %{due_date}</strong> or your coverage may end. Please create an account or log in to your account at %{login_link} and do one of the following:"
       login_instructions: "You must report your work or community engagement activities by %{due_date} or your coverage may end. Please log in to your account at %{login_link} and do one of the following:"
       report_activities:
         title: "Report your activities (have evidence ready)"
@@ -29,9 +29,32 @@ en:
         item_1: "You do not need to report work or community engagement activities for this period. No action is required."
         item_2_html: "We'll <strong>check and notify you again</strong> about your coverage on your next renewal date on %{renewal_date}."
         item_2: "We'll check and notify you again about your coverage on your next renewal date on %{renewal_date}."
-      contact_if_needed: "We'll contact you if we need anything else."
+      contact_if_needed_html: "You can confirm your exemption status by visiting %{root_url} and logging in or creating an account. We'll contact you if we need anyting else."
+      contact_if_needed: "You can confirm your exemption status by visiting %{root_url} and logging in or creating an account. We'll contact you if we need anyting else."
       questions: "Questions? Call us: [Call Center Number] (TTY: [TTY Number]) [Hours/Timezone]"
     signature:
       sincerely: "Sincerely,"
       agency_name: "[Agency Name]"
       support_contact: "[Support Contact Information]"
+    demo_notice:
+      header: "THIS IS A DEMONSTRATION NOTIFICATION FROM OSCER, not an official notice."
+      demo_message: "OSCER is an open source community engagement reporting tool from Nava PBC. Nava is working with States and Medicaid offices to support HR1 implementation to ensure everyone eligible for Medicaid benefits can access the coverage they need."
+      learn_more:
+        text: "Learn more about OSCER"
+        link_1:
+          text: "Webpage"
+          url: "https://www.navapbc.com/hr1/medicaid"
+        link_2:
+          text: "GitHub Repository"
+          url: "https://github.com/navapbc/oscer"
+        link_3:
+          text: "Sandbox"
+          url: "https://medicaid.navateam.com/"
+        link_4:
+          text: "Roadmap"
+          url: "https://www.navapbc.com/hr1/medicaid"
+      reach_out:
+        text: "Reach out to us with any questions or to discuss implementation in your State:"
+        email: "medicaid@navapbc.com"
+    shared:
+      from_display_name: "Medicaid Coverage Notification"
