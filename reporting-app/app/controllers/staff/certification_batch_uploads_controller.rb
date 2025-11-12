@@ -19,7 +19,7 @@ module Staff
       uploaded_file = params[:csv_file]
 
       if uploaded_file.blank?
-        flash[:alert] = "Please select a CSV file to upload"
+        flash.now[:alert] = "Please select a CSV file to upload"
         @batch_upload = CertificationBatchUpload.new
         render :new, status: :unprocessable_content
         return
@@ -31,12 +31,15 @@ module Staff
       )
       @batch_upload.file.attach(uploaded_file)
 
-      if @batch_upload.save
-        flash[:notice] = "File uploaded successfully. You can now process it from the queue."
-        redirect_to certification_batch_uploads_path
-      else
-        flash[:alert] = "Failed to upload file: #{@batch_upload.errors.full_messages.join(', ')}"
-        render :new, status: :unprocessable_content
+      respond_to do |format|
+        if @batch_upload.save
+          format.html { redirect_to certification_batch_uploads_path, notice: "File uploaded successfully. You can now process it from the queue." }
+          format.json { render :show, status: :created, location: @batch_upload }
+        else
+          message = "Failed to upload file: #{@batch_upload.errors.full_messages.join(', ')}"
+          format.html { redirect_to new_certification_batch_upload_path, alert: message }
+          format.json { render json: { error: message }, status: :unprocessable_entity }
+        end
       end
     end
 
@@ -59,16 +62,19 @@ module Staff
 
     # POST /staff/certification_batch_uploads/:id/process_batch
     def process_batch
-      unless @batch_upload.processable?
-        flash[:alert] = "This batch cannot be processed. Current status: #{@batch_upload.status}"
-        redirect_to certification_batch_upload_path(@batch_upload)
-        return
+      respond_to do |format|
+        if @batch_upload.processable? == false
+          message = "This batch cannot be processed. Current status: #{@batch_upload.status}."
+          format.html { redirect_to certification_batch_upload_path(@batch_upload), alert: message }
+          format.json { render json: { error: message }, status: :unprocessable_entity }
+        elsif ProcessCertificationBatchUploadJob.perform_later(@batch_upload.id)
+          format.html { redirect_to certification_batch_uploads_path, notice: "Processing started for #{@batch_upload.filename}. Results will be available shortly." }
+          format.json { head :accepted }
+        else
+          format.html { redirect_to certification_batch_upload_path(@batch_upload), alert: "Failed to start processing job." }
+          format.json { render json: { error: "Failed to start processing job." }, status: :internal_server_error }
+        end
       end
-
-      ProcessCertificationBatchUploadJob.perform_later(@batch_upload.id)
-
-      flash[:notice] = "Processing started for #{@batch_upload.filename}. Results will be available shortly."
-      redirect_to certification_batch_uploads_path
     end
 
     private
