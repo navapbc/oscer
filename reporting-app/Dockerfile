@@ -2,7 +2,7 @@
 
 # Make sure RUBY_VERSION matches the Ruby version in .ruby-version and Gemfile
 # renovate: datasource=docker depName=registry.docker.com/library/ruby
-ARG RUBY_VERSION=3.4.6
+ARG RUBY_VERSION=3.4.7
 
 
 ##########################################################################################

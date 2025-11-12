@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 
-ruby "3.4.6"
+ruby "3.4.7"
 
 # Strata Government Digital Services SDK Rails engine
 # The access token was generated on Tues, August 19, 2025 and expires on Thursday, August 20, 2026
