@@ -43,11 +43,18 @@ class MemberStatusService
       certifications = records.select { |r| r.is_a?(Certification) }
       cases = records.select { |r| r.is_a?(CertificationCase) }
 
+      # Extract already-hydrated certifications from cases
+      hydrated_certs = cases.map(&:certification).compact
+
       # Collect all certification IDs we need
       cert_ids = certifications.map(&:id) | cases.map(&:certification_id).compact
 
-      # Bulk load all related data in single operation
-      data = bulk_load_data(cert_ids)
+      # Bulk load all related data, reusing already-loaded records
+      data = bulk_load_data(
+        cert_ids,
+        already_loaded_certs: certifications + hydrated_certs,
+        already_loaded_cases: cases
+      )
 
       # Memoize human-readable translations
       @translation_cache = {}
@@ -68,11 +75,31 @@ class MemberStatusService
     # Bulk loads all related data needed for status determination in a single operation
     #
     # @param cert_ids [Array<String>] Array of certification IDs to load data for
+    # @param already_loaded_certs [Array<Certification>] Certifications already in memory to reuse
+    # @param already_loaded_cases [Array<CertificationCase>] Cases already in memory to reuse
     # @return [Hash] Hash with keys :cases_by_cert_id, :certs_by_id, :determinations
-    def bulk_load_data(cert_ids)
+    def bulk_load_data(cert_ids, already_loaded_certs: [], already_loaded_cases: [])
+      # Build index of already-loaded certifications
+      certs_by_id = already_loaded_certs.index_by(&:id)
+
+      # Only load certifications we don't already have
+      missing_cert_ids = cert_ids - certs_by_id.keys
+      if missing_cert_ids.any?
+        certs_by_id.merge!(Certification.where(id: missing_cert_ids).index_by(&:id))
+      end
+
+      # Build index of already-loaded cases
+      cases_by_cert_id = already_loaded_cases.index_by(&:certification_id)
+
+      # Only load cases we don't already have
+      missing_case_cert_ids = cert_ids - cases_by_cert_id.keys
+      if missing_case_cert_ids.any?
+        cases_by_cert_id.merge!(CertificationCase.where(certification_id: missing_case_cert_ids).index_by(&:certification_id))
+      end
+
       {
-        cases_by_cert_id: CertificationCase.where(certification_id: cert_ids).index_by(&:certification_id),
-        certs_by_id: Certification.where(id: cert_ids).index_by(&:id),
+        cases_by_cert_id: cases_by_cert_id,
+        certs_by_id: certs_by_id,
         determinations: Determination.for_certifications(cert_ids).latest_per_subject.index_by(&:subject_id)
       }
     end

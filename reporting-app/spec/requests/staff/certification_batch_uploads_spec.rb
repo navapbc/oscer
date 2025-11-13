@@ -121,4 +121,130 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
       end
     end
   end
+
+  describe "GET /staff/staff/certification_batch_uploads/:id/results" do
+    let(:batch_upload) { create(:certification_batch_upload, :completed, uploader: user) }
+
+    context "with multiple certifications of different statuses" do
+      let(:compliant_cert) { create(:certification) }
+      let(:exempt_cert) { create(:certification) }
+      let(:not_compliant_cert) { create(:certification) }
+      let(:pending_review_cert) { create(:certification) }
+      let(:awaiting_report_cert) { create(:certification) }
+
+      let(:compliant_origin) do
+        create(:certification_origin,
+               certification_id: compliant_cert.id,
+               source_type: CertificationOrigin::SOURCE_TYPE_BATCH_UPLOAD,
+               source_id: batch_upload.id)
+      end
+      let(:exempt_origin) do
+        create(:certification_origin,
+               certification_id: exempt_cert.id,
+               source_type: CertificationOrigin::SOURCE_TYPE_BATCH_UPLOAD,
+               source_id: batch_upload.id)
+      end
+      let(:not_compliant_origin) do
+        create(:certification_origin,
+               certification_id: not_compliant_cert.id,
+               source_type: CertificationOrigin::SOURCE_TYPE_BATCH_UPLOAD,
+               source_id: batch_upload.id)
+      end
+      let(:pending_review_origin) do
+        create(:certification_origin,
+               certification_id: pending_review_cert.id,
+               source_type: CertificationOrigin::SOURCE_TYPE_BATCH_UPLOAD,
+               source_id: batch_upload.id)
+      end
+      let(:awaiting_report_origin) do
+        create(:certification_origin,
+               certification_id: awaiting_report_cert.id,
+               source_type: CertificationOrigin::SOURCE_TYPE_BATCH_UPLOAD,
+               source_id: batch_upload.id)
+      end
+
+      let(:compliant_determination) do
+        create(:determination,
+               subject_type: "Certification",
+               subject_id: compliant_cert.id,
+               outcome: MemberStatus::COMPLIANT,
+               reasons: [ "hours_reported_compliant" ])
+      end
+      let(:exempt_determination) do
+        create(:determination,
+               subject_type: "Certification",
+               subject_id: exempt_cert.id,
+               outcome: MemberStatus::EXEMPT,
+               reasons: [ "age_under_19_exempt" ])
+      end
+      let(:not_compliant_determination) do
+        create(:determination,
+               subject_type: "Certification",
+               subject_id: not_compliant_cert.id,
+               outcome: MemberStatus::NOT_COMPLIANT,
+               reasons: [ "hours_reported_compliant" ])
+      end
+
+      # pending_review status comes from CertificationCase business process step
+      let(:pending_review_case) do
+        create(:certification_case,
+               certification: pending_review_cert,
+               business_process_current_step: CertificationBusinessProcess::REVIEW_ACTIVITY_REPORT_STEP)
+      end
+
+      # awaiting_report_cert has no determination and no case - will default to AWAITING_REPORT
+
+      before do
+        # Force creation of all test data
+        compliant_origin
+        exempt_origin
+        not_compliant_origin
+        pending_review_origin
+        awaiting_report_origin
+        compliant_determination
+        exempt_determination
+        not_compliant_determination
+        pending_review_case
+      end
+
+      it "uses batch query (O(1)) to determine member statuses" do
+        # Expected queries (11 total):
+        # 1. Load batch upload
+        # 2-5. ActiveStorage queries (attachments, blobs, variant_records)
+        # 6. Load uploader user
+        # 7. Load certification origins for batch
+        # 8. Load certification cases
+        # 9. Load strata tasks (for business process steps)
+        # 10. Load certifications (batch hydration)
+        # 11. Load determinations (batch query from MemberStatusService)
+        # The key is that this is O(1) - constant regardless of # of certifications
+        expect {
+          get results_certification_batch_upload_path(batch_upload)
+        }.not_to exceed_query_limit(11)
+      end
+
+      it "correctly displays filter counts" do
+        get results_certification_batch_upload_path(batch_upload)
+
+        expect(response).to be_successful
+        # Verify filter buttons show correct counts
+        expect(response.body).to include("All (5)")
+        expect(response.body).to include("Compliant (1)")
+        expect(response.body).to include("Exempt (1)")
+        expect(response.body).to include("Member action required (2)")
+        expect(response.body).to include("Pending review (1)")
+      end
+
+      it "correctly displays member statuses in the table" do
+        get results_certification_batch_upload_path(batch_upload)
+
+        expect(response).to be_successful
+        expect(response.body).to include("Compliant")
+        expect(response.body).to include("Exempt")
+        expect(response.body).to include("Not compliant")
+        expect(response.body).to include("Pending review")
+        expect(response.body).to include("Awaiting report")
+      end
+    end
+  end
 end

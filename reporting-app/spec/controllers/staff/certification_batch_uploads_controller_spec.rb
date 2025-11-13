@@ -132,10 +132,21 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
     let(:not_compliant_cert) { create(:certification) }
     let(:pending_review_cert) { create(:certification) }
 
+    let(:compliant_case) { create(:certification_case, certification: compliant_cert) }
+    let(:exempt_case) { create(:certification_case, certification: exempt_cert) }
+    let(:not_compliant_case) { create(:certification_case, certification: not_compliant_cert) }
+    let(:pending_review_case) { create(:certification_case, certification: pending_review_cert) }
+
     # Default status for pending_review_cert (can be overridden in specific contexts)
     let(:pending_review_cert_status) { MemberStatus::PENDING_REVIEW }
 
     before do
+      # Create cases (which will create certifications as dependencies)
+      compliant_case
+      exempt_case
+      not_compliant_case
+      pending_review_case
+
       # Create certification origins linking certifications to batch upload
       CertificationOrigin.create!(
         certification_id: compliant_cert.id,
@@ -158,52 +169,48 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
         source_id: batch_upload.id
       )
 
-      # Stub MemberStatusService to return different statuses
-      allow(MemberStatusService).to receive(:determine).with(compliant_cert).and_return(
-        MemberStatus.new(status: MemberStatus::COMPLIANT, determination_method: "automated", reason_codes: [])
-      )
-      allow(MemberStatusService).to receive(:determine).with(exempt_cert).and_return(
-        MemberStatus.new(status: MemberStatus::EXEMPT, determination_method: "automated", reason_codes: [ "age_under_19_exempt" ])
-      )
-      allow(MemberStatusService).to receive(:determine).with(not_compliant_cert).and_return(
-        MemberStatus.new(status: MemberStatus::NOT_COMPLIANT, determination_method: "automated", reason_codes: [])
-      )
-      allow(MemberStatusService).to receive(:determine).with(pending_review_cert).and_return(
-        MemberStatus.new(status: pending_review_cert_status, determination_method: "manual", reason_codes: [])
+      # Stub MemberStatusService.determine_many to return statuses keyed by [class_name, id]
+      allow(MemberStatusService).to receive(:determine_many).and_return(
+        {
+          [ "CertificationCase", compliant_case.id ] => MemberStatus.new(status: MemberStatus::COMPLIANT, determination_method: "automated", reason_codes: []),
+          [ "CertificationCase", exempt_case.id ] => MemberStatus.new(status: MemberStatus::EXEMPT, determination_method: "automated", reason_codes: [ "age_under_19_exempt" ]),
+          [ "CertificationCase", not_compliant_case.id ] => MemberStatus.new(status: MemberStatus::NOT_COMPLIANT, determination_method: "automated", reason_codes: []),
+          [ "CertificationCase", pending_review_case.id ] => MemberStatus.new(status: pending_review_cert_status, determination_method: "manual", reason_codes: [])
+        }
       )
     end
 
     context "when accessing without filters" do
-      it "loads certifications from the batch upload" do
+      it "loads certification cases from the batch upload" do
         get :results, params: { id: batch_upload.id, locale: "en" }
 
-        certifications = controller.instance_variable_get(:@certifications)
-        expect(certifications).to contain_exactly(compliant_cert, exempt_cert, not_compliant_cert, pending_review_cert)
+        cases = controller.instance_variable_get(:@certification_cases)
+        expect(cases).to contain_exactly(compliant_case, exempt_case, not_compliant_case, pending_review_case)
       end
 
-      it "calculates member statuses for all certifications" do
+      it "calculates member statuses for all certification cases" do
         get :results, params: { id: batch_upload.id, locale: "en" }
 
         expect(controller.instance_variable_get(:@member_statuses)).to be_present
-        expect(controller.instance_variable_get(:@member_statuses)[compliant_cert.id].status).to eq(MemberStatus::COMPLIANT)
-        expect(controller.instance_variable_get(:@member_statuses)[exempt_cert.id].status).to eq(MemberStatus::EXEMPT)
-        expect(controller.instance_variable_get(:@member_statuses)[not_compliant_cert.id].status).to eq(MemberStatus::NOT_COMPLIANT)
-        expect(controller.instance_variable_get(:@member_statuses)[pending_review_cert.id].status).to eq(MemberStatus::PENDING_REVIEW)
+        expect(controller.instance_variable_get(:@member_statuses)[[ "CertificationCase", compliant_case.id ]].status).to eq(MemberStatus::COMPLIANT)
+        expect(controller.instance_variable_get(:@member_statuses)[[ "CertificationCase", exempt_case.id ]].status).to eq(MemberStatus::EXEMPT)
+        expect(controller.instance_variable_get(:@member_statuses)[[ "CertificationCase", not_compliant_case.id ]].status).to eq(MemberStatus::NOT_COMPLIANT)
+        expect(controller.instance_variable_get(:@member_statuses)[[ "CertificationCase", pending_review_case.id ]].status).to eq(MemberStatus::PENDING_REVIEW)
       end
 
-      it "groups certifications by status" do
+      it "groups certification cases by status" do
         get :results, params: { id: batch_upload.id, locale: "en" }
 
-        expect(controller.instance_variable_get(:@compliant_certifications)).to contain_exactly(compliant_cert)
-        expect(controller.instance_variable_get(:@exempt_certifications)).to contain_exactly(exempt_cert)
-        expect(controller.instance_variable_get(:@member_action_required_certifications)).to contain_exactly(not_compliant_cert)
-        expect(controller.instance_variable_get(:@pending_review_certifications)).to contain_exactly(pending_review_cert)
+        expect(controller.instance_variable_get(:@compliant_cases)).to contain_exactly(compliant_case)
+        expect(controller.instance_variable_get(:@exempt_cases)).to contain_exactly(exempt_case)
+        expect(controller.instance_variable_get(:@member_action_required_cases)).to contain_exactly(not_compliant_case)
+        expect(controller.instance_variable_get(:@pending_review_cases)).to contain_exactly(pending_review_case)
       end
 
-      it "shows all certifications by default" do
+      it "shows all certification cases by default" do
         get :results, params: { id: batch_upload.id, locale: "en" }
 
-        expect(controller.instance_variable_get(:@certifications_to_show)).to contain_exactly(compliant_cert, exempt_cert, not_compliant_cert, pending_review_cert)
+        expect(controller.instance_variable_get(:@cases_to_show)).to contain_exactly(compliant_case, exempt_case, not_compliant_case, pending_review_case)
       end
 
       it "renders successfully" do
@@ -214,18 +221,18 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
     end
 
     context "when filtering by compliant" do
-      it "shows only compliant certifications" do
+      it "shows only compliant certification cases" do
         get :results, params: { id: batch_upload.id, filter: "compliant", locale: "en" }
 
-        expect(controller.instance_variable_get(:@certifications_to_show)).to contain_exactly(compliant_cert)
+        expect(controller.instance_variable_get(:@cases_to_show)).to contain_exactly(compliant_case)
       end
     end
 
     context "when filtering by exempt" do
-      it "shows only exempt certifications" do
+      it "shows only exempt certification cases" do
         get :results, params: { id: batch_upload.id, filter: "exempt", locale: "en" }
 
-        expect(controller.instance_variable_get(:@certifications_to_show)).to contain_exactly(exempt_cert)
+        expect(controller.instance_variable_get(:@cases_to_show)).to contain_exactly(exempt_case)
       end
     end
 
@@ -233,18 +240,18 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
       # Override to use AWAITING_REPORT status for this test
       let(:pending_review_cert_status) { MemberStatus::AWAITING_REPORT }
 
-      it "shows certifications requiring member action" do
+      it "shows certification cases requiring member action" do
         get :results, params: { id: batch_upload.id, filter: "member_action_required", locale: "en" }
 
-        expect(controller.instance_variable_get(:@certifications_to_show)).to contain_exactly(not_compliant_cert, pending_review_cert)
+        expect(controller.instance_variable_get(:@cases_to_show)).to contain_exactly(not_compliant_case, pending_review_case)
       end
     end
 
     context "when filtering by pending_review" do
-      it "shows only pending review certifications" do
+      it "shows only pending review certification cases" do
         get :results, params: { id: batch_upload.id, filter: "pending_review", locale: "en" }
 
-        expect(controller.instance_variable_get(:@certifications_to_show)).to contain_exactly(pending_review_cert)
+        expect(controller.instance_variable_get(:@cases_to_show)).to contain_exactly(pending_review_case)
       end
     end
   end

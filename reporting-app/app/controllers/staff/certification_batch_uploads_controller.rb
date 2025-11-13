@@ -50,14 +50,22 @@ module Staff
     # GET /staff/certification_batch_uploads/:id/results
     def results
       certification_origin = CertificationOrigin.from_batch_upload(@batch_upload.id)
-      @certifications = Certification.where(id: certification_origin.select(:certification_id))
-      @member_statuses = @certifications.map { |cert| { cert.id => MemberStatusService.determine(cert) } }.reduce({}, :merge)
-      @compliant_certifications = @certifications.select { |cert| @member_statuses[cert.id].status == MemberStatus::COMPLIANT }
-      @exempt_certifications = @certifications.select { |cert| @member_statuses[cert.id].status == MemberStatus::EXEMPT }
-      @member_action_required_certifications = @certifications.select { |cert| [ MemberStatus::NOT_COMPLIANT, MemberStatus::AWAITING_REPORT ].include?(@member_statuses[cert.id].status) }
-      @pending_review_certifications = @certifications.select { |cert| @member_statuses[cert.id].status == MemberStatus::PENDING_REVIEW }
-      set_certifications_to_show
-      @certification_cases = CertificationCase.where(certification_id: @certifications_to_show.map(&:id)).index_by(&:certification_id)
+      certification_ids = certification_origin.select(:certification_id).map(&:certification_id)
+
+      # Load cases with hydrated certifications to avoid duplicate queries
+      certification_service = CertificationService.new
+      @certification_cases = certification_service.fetch_cases_by_certification_ids(certification_ids, hydrate: true)
+
+      # Determine member statuses using hydrated cases
+      @member_statuses = MemberStatusService.determine_many(@certification_cases)
+
+      # Categorize cases by status
+      @compliant_cases = @certification_cases.select { |kase| @member_statuses[[ "CertificationCase", kase.id ]].status == MemberStatus::COMPLIANT }
+      @exempt_cases = @certification_cases.select { |kase| @member_statuses[[ "CertificationCase", kase.id ]].status == MemberStatus::EXEMPT }
+      @member_action_required_cases = @certification_cases.select { |kase| [ MemberStatus::NOT_COMPLIANT, MemberStatus::AWAITING_REPORT ].include?(@member_statuses[[ "CertificationCase", kase.id ]].status) }
+      @pending_review_cases = @certification_cases.select { |kase| @member_statuses[[ "CertificationCase", kase.id ]].status == MemberStatus::PENDING_REVIEW }
+
+      set_cases_to_show
     end
 
     # POST /staff/certification_batch_uploads/:id/process_batch
@@ -83,18 +91,18 @@ module Staff
       @batch_upload = CertificationBatchUpload.includes(:uploader).find(params[:id])
     end
 
-    def set_certifications_to_show
+    def set_cases_to_show
       case params[:filter]
       when "compliant"
-        @certifications_to_show = @compliant_certifications
+        @cases_to_show = @compliant_cases
       when "exempt"
-        @certifications_to_show = @exempt_certifications
+        @cases_to_show = @exempt_cases
       when "member_action_required"
-        @certifications_to_show = @member_action_required_certifications
+        @cases_to_show = @member_action_required_cases
       when "pending_review"
-        @certifications_to_show = @pending_review_certifications
+        @cases_to_show = @pending_review_cases
       else
-        @certifications_to_show = @certifications
+        @cases_to_show = @certification_cases
       end
     end
   end
