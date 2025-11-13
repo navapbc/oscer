@@ -29,7 +29,6 @@ class Users::SessionsController < Devise::SessionsController
     end
 
     unless response[:user].present?
-      puts response.inspect
       session[:challenge_session] = response[:session]
       session[:challenge_email] = @form.email
       return redirect_to session_challenge_path
