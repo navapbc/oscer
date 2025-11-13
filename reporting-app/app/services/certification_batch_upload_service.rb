@@ -19,7 +19,7 @@ class CertificationBatchUploadService
   def process_csv(file)
     return false unless file.present?
 
-    csv_data = CSV.read(file.path, headers: true, header_converters: :symbol)
+    csv_data = CSV.read(file.path, headers: true, header_converters: :symbol, encoding: "UTF-8")
 
     # Update total rows if batch_upload provided
     @batch_upload&.update!(num_rows: csv_data.size)
