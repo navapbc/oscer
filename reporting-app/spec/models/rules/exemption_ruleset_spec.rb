@@ -57,9 +57,19 @@ RSpec.describe Rules::ExemptionRuleset do
       end
     end
 
-    context 'when race_ethnicity is "american_indian_or_alaska_native"' do
-      it 'returns true' do
-        expect(ruleset.is_american_indian_or_alaska_native("american_indian_or_alaska_native")).to be true
+    [
+      "american_indian_or_alaska_native",
+      "american_indian",
+      "alaska_native",
+      "AmErIcAn_InDiAn",
+      "ALASKA_NATIVE",
+      "american indian",
+      "alaska native"
+    ].each do |race_ethnicity_value|
+      context "when race_ethnicity is #{race_ethnicity_value.inspect}" do
+        it 'returns true' do
+          expect(ruleset.is_american_indian_or_alaska_native(race_ethnicity_value)).to be true
+        end
       end
     end
 
