@@ -121,7 +121,7 @@ module ActiveModel
 
           if value_info[:final].count != value_info[:raw].count
             # TODO: should this be a separate error type?
-            errors.add(attr_info[:name], "invalid_item_value")
+            errors.add(attr_info[:name], :invalid_item_value)
             return
           end
 
