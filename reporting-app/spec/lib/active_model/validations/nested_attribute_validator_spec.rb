@@ -2,6 +2,16 @@
 
 require 'rails_helper'
 
+class SimpleModelNested
+  include ActiveModel::Model
+  include ActiveModel::Attributes
+  include ActiveModel::AsJsonAttributeType
+
+  attribute :foo, :string
+
+  validates :foo, presence: true
+end
+
 class ValueToTestNested
   include ActiveModel::Model
   include ActiveModel::Attributes
@@ -9,15 +19,8 @@ class ValueToTestNested
   validates_with ActiveModel::Validations::NestedAttributeValidator
 
   attribute :dates, :array, of: ActiveModel::Type::Date
-end
-
-class SimpleModelNested
-  include ActiveModel::Model
-  include ActiveModel::Attributes
-
-  attribute :foo, :string
-
-  validates :foo, presence: true
+  attribute :model, SimpleModelNested.to_type
+  attribute :models, :array, of: SimpleModelNested.to_type
 end
 
 RSpec.describe ActiveModel::Validations::NestedAttributeValidator do
@@ -29,6 +32,10 @@ RSpec.describe ActiveModel::Validations::NestedAttributeValidator do
     it "is valid - array with values" do
       expect(ValueToTestNested.new(dates: [ Date.new(2025, 10, 21) ])).to be_valid
     end
+
+    it "is valid - nested model" do
+      expect(ValueToTestNested.new(model: SimpleModelNested.new(foo: "bar"))).to be_valid
+    end
   end
 
   context "when given invalid data" do
@@ -37,7 +44,11 @@ RSpec.describe ActiveModel::Validations::NestedAttributeValidator do
     end
 
     it "does error on things with validation" do
-      expect(ValueToTestNested.new(dates: [ SimpleModelNested.new() ])).not_to be_valid
+      expect(ValueToTestNested.new(model: SimpleModelNested.new())).not_to be_valid
+    end
+
+    it "does error on array of things with validation" do
+      expect(ValueToTestNested.new(models: [ SimpleModelNested.new() ])).not_to be_valid
     end
   end
 end
