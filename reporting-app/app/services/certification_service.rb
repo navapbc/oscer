@@ -34,6 +34,12 @@ class CertificationService
     hydrate_cases_with_certifications!(CertificationCase.find(case_ids))
   end
 
+  def fetch_cases_by_certification_ids(certification_ids, hydrate: false)
+    cases = CertificationCase.where(certification_id: certification_ids)
+    hydrate_cases_with_certifications!(cases) if hydrate
+    cases
+  end
+
   def member_user(certification)
     email = certification.member_email
     if not email
