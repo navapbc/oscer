@@ -635,9 +635,9 @@ DEPENDENCIES
   rspec-rails (~> 8.0.0)
   rubocop-rails-omakase
   rubocop-rspec
+  rubocop-rspec_rails
   ruby-lsp
   ruby-lsp-rails
-  rubocop-rspec_rails
   selenium-webdriver
   simplecov
   sprockets-rails

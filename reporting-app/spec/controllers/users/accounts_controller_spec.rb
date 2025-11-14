@@ -64,7 +64,7 @@ RSpec.describe Users::AccountsController do
         locale: "en"
       }
 
-      expect(response.status).to eq(422)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 end

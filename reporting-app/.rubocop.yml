@@ -23,7 +23,13 @@ RSpec/NoExpectationExample:
     - assert_
     - is_expected_in_block
 
+RSpecRails/HaveHttpStatus:
+  Enabled: true
 RSpecRails/HttpStatusNameConsistency:
+  Enabled: true
+RSpecRails/InferredSpecType:
+  Enabled: false
+RSpecRails/NegationBeValid:
   Enabled: true
 
 Style/FrozenStringLiteralComment:
