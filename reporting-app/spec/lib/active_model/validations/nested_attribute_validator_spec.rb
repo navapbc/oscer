@@ -8,7 +8,7 @@ class ValueToTestNested
 
   validates_with ActiveModel::Validations::NestedAttributeValidator
 
-  attribute :dates, :array, of: ActiveModel::Type::Date.new
+  attribute :dates, :array, of: ActiveModel::Type::Date
 end
 
 class SimpleModelNested
