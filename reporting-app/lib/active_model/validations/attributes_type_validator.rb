@@ -52,7 +52,8 @@ module ActiveModel
         end
       end
 
-      private
+      # TODO: make the necessary methods into public utils or class methods or whatever
+      # private
 
       def check_attr_type(record, attribute_name, value)
         raw_value = record.read_attribute_before_type_cast(attribute_name)
@@ -134,11 +135,18 @@ module ActiveModel
           end
 
           if item_type.present?
+            # TODO: make utility for is_active_model_attribute_class_or_instance?()
+            if item_type.is_a?(ActiveModel::Type::Value) || item_type <= ActiveModel::Type::Value
+              attr_type = item_type
+            else
+              attr_type = attr_info[:type]
+            end
+
             value_info[:final].each_with_index do |item, index|
               check_value_for_types(
                 record,
                 errors,
-                attr_info.merge({ name: attr_info[:name] + "[#{index}]" }),
+                { name: attr_info[:name] + "[#{index}]", type: attr_type },
                 { final: item, raw: value_info[:raw][index] },
                 get_underlying_types_for_attribute_type(item_type)
               )
