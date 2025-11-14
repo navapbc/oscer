@@ -41,11 +41,11 @@
     <% @cases_to_show.each do |kase| %>
       <% certification = kase.certification %>
       <tr>
-        <td><%= link_to certification.member_data.name.first, member_path(certification.member_id) if certification&.member_data&.name&.first %></td>
-        <td><%= certification&.member_email %></td>
+        <td><%= link_to certification.member_data.name.first, member_path(certification.member_id) if certification.member_name&.first %></td>
+        <td><%= certification.member_email %></td>
         <td><%= @member_statuses[[kase.class.name, kase.id]]&.status.humanize %></td>
         <td><%= @member_statuses[[kase.class.name, kase.id]]&.human_readable_reason_codes.join(", ") %></td>
-        <td><%= link_to certification&.case_number, certification_case_path(kase) %></td>
+        <td><%= link_to certification.case_number, certification_case_path(kase) %></td>
         <td><%= l(certification.created_at, format: "%m/%d/%Y") if certification %></td>
       </tr>
     <% end %>
