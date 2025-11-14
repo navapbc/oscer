@@ -2,11 +2,11 @@
 
 class Users::AccountsController < ApplicationController
   before_action :authenticate_user!
+  before_action :set_password_form
   skip_after_action :verify_authorized
 
   def edit
     @email_form = Users::UpdateEmailForm.new({ email: current_user.email })
-    @password_form = Users::ForgotPasswordForm.new({ email: current_user.email })
   end
 
   def update_email
@@ -28,11 +28,16 @@ class Users::AccountsController < ApplicationController
   end
 
   private
-    def auth_service
-      AuthService.new
-    end
 
-    def user_email_params
-      params.require(:users_update_email_form).permit(:email)
-    end
+  def set_password_form
+    @password_form = Users::ForgotPasswordForm.new({ email: current_user.email })
+  end
+
+  def auth_service
+    AuthService.new
+  end
+
+  def user_email_params
+    params.require(:users_update_email_form).permit(:email)
+  end
 end
