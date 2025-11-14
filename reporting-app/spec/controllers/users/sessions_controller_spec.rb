@@ -37,7 +37,7 @@ RSpec.describe Users::SessionsController do
         locale: "en"
       }
 
-      expect(response.status).to eq(422)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to have_selector("h1", text: /sign in/i)
       expect(response.body).to have_selector(".usa-alert--error")
     end
@@ -108,7 +108,7 @@ RSpec.describe Users::SessionsController do
         locale: "en"
       }
 
-      expect(response.status).to eq(422)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 
@@ -141,7 +141,7 @@ RSpec.describe Users::SessionsController do
         locale: "en"
       }
 
-      expect(response.status).to eq(422)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to have_selector(".usa-alert--error")
     end
 
