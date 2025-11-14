@@ -39,6 +39,7 @@ class ModelToTestAttrs
   attribute :date, :date
   attribute :union, ModelToTestAttrsOneOrOther.to_type
   attribute :array, :array, of: ActiveModel::Type::Integer
+  attribute :array_of_arrays, :array, of: ArrayType.new(of: ActiveModel::Type::Integer)
 end
 
 class StrataModelToTestAttrs < Strata::ValueObject
@@ -170,6 +171,34 @@ RSpec.describe ActiveModel::Validations::AttributesTypeValidator do
 
         it "rejects if partial invalid values" do
           expect(test_class.new(array: [ 1, "bar" ])).not_to be_valid
+        end
+      end
+    end
+  end
+
+  describe "Non-Strata supported attribute types" do
+    context "when given valid data" do
+      it "allows nested array type - empty" do
+        expect(ModelToTestAttrs.new(array_of_arrays: [])).to be_valid
+      end
+
+      it "allows nested array type - nested empty" do
+        expect(ModelToTestAttrs.new(array_of_arrays: [ [] ])).to be_valid
+      end
+
+      it "allows nested array type - not empty" do
+        expect(ModelToTestAttrs.new(array_of_arrays: [ [ 1 ] ])).to be_valid
+      end
+    end
+
+    context "when given invalid data" do
+      context "with nested array type handling" do
+        it "rejects if only invalid values" do
+          expect(ModelToTestAttrs.new(array_of_arrays: [ [ "foo" ], [ "bar" ] ])).not_to be_valid
+        end
+
+        it "rejects if partial invalid values" do
+          expect(ModelToTestAttrs.new(array_of_arrays: [ [ 1 ], [ "bar" ] ])).not_to be_valid
         end
       end
     end
