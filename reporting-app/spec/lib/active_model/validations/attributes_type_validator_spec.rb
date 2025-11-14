@@ -38,7 +38,7 @@ class ModelToTestAttrs
   attribute :bool, :boolean
   attribute :date, :date
   attribute :union, ModelToTestAttrsOneOrOther.to_type
-  attribute :array, :array, of: ActiveModel::Type::Integer.new
+  attribute :array, :array, of: ActiveModel::Type::Integer
 end
 
 class StrataModelToTestAttrs < Strata::ValueObject

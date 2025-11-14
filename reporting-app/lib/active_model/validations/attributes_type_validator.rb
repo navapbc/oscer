@@ -214,7 +214,12 @@ module ActiveModel
         # TODO: Could more flexibly do attr_type.respond_to?(:type), but that's
         # kinda generic
         if attr_type.is_a?(ActiveModel::Type::Value)
-          symbol = attr_type.type()
+          symbol = attr_type.type
+        end
+
+        # if we were given an attribute type class itself
+        if attr_type.is_a?(Class) && attr_type <= ActiveModel::Type::Value
+          symbol = attr_type.new.type
         end
 
         # all ActiveModel::Type::Value instances _should_ respond with something
