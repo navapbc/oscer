@@ -17,6 +17,7 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
         csv_content = <<~CSV
           member_id,case_number,member_email,first_name,last_name,certification_date,certification_type
           M200,C-200,test@example.com,Test,User,2025-01-15,new_application
+          M300,C-300,test2@example.com,Aurélie,Castañeda,2025-02-20,new_application
         CSV
         batch_upload.file.attach(
           io: StringIO.new(csv_content),
@@ -30,14 +31,14 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
         batch_upload.reload
 
         expect(batch_upload).to be_completed
-        expect(batch_upload.num_rows_succeeded).to eq(1)
+        expect(batch_upload.num_rows_succeeded).to eq(2)
         expect(batch_upload.num_rows_errored).to eq(0)
       end
 
       it 'creates certifications' do
         expect {
           described_class.perform_now(batch_upload.id)
-        }.to change(Certification, :count).by(1)
+        }.to change(Certification, :count).from(0).to(2)
       end
 
       it 'stores results' do
