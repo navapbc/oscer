@@ -13,9 +13,9 @@ class ProcessCertificationBatchUploadJob < ApplicationJob
     batch_upload.start_processing!
 
     # Download attached file to temporary location
-    temp_file = Tempfile.new([ "batch_upload", ".csv" ])
+    temp_file = Tempfile.new([ "batch_upload", ".csv" ], encoding: "UTF-8")
     begin
-      temp_file.write(batch_upload.file.download)
+      temp_file.write(batch_upload.file.download.force_encoding("UTF-8"))
       temp_file.rewind
 
       # Process the CSV
