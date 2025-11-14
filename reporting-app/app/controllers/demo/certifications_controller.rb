@@ -25,9 +25,7 @@ class Demo::CertificationsController < ApplicationController
     if !@certification
       flash.now[:errors] = @form.errors.full_messages
       render :new, status: :unprocessable_content
-    end
-
-    if @certification.save
+    elsif @certification.save
       redirect_to certification_path(@certification)
     else
       flash.now[:errors] = @certification.errors.full_messages
