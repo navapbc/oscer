@@ -34,12 +34,33 @@ class ArrayType < ActiveModel::Type::Value
       return @of.cast(item)
     end
 
+    for t in item_types
+      begin
+        res = cast_item_type(item, t)
+        if !res.nil?
+            return res
+        end
+      rescue
+        # continue iteration
+      end
+    end
+
+    nil
+  end
+
+  def cast_item_type(item, item_type)
     case item
     when Hash
-      if @of.respond_to?(:new_filtered)
-        @of.new_filtered(item)
+      if item_type.respond_to?(:new_filtered)
+        item_type.new_filtered(item)
       else
-        @of.new(item)
+        item_type.new(item)
+      end
+    when String
+      if item_type.respond_to?(:parse)
+        item_type.parse(item)
+      else
+        nil
       end
     else
       nil
