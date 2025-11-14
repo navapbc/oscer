@@ -111,10 +111,10 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
         expect(flash[:alert]).to eq("Failed to upload file: Filename can't be blank, File must be attached")
       end
 
-      it "returns unprocessable_entity status for JSON requests" do
+      it "returns unprocessable_content status for JSON requests" do
         post :create, params: { csv_file: csv_file, locale: "en", format: :json }
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it "returns error message in JSON for JSON requests" do
@@ -346,7 +346,7 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
         it "returns unprocessable entity status" do
           post :process_batch, params: { id: batch_upload.id, locale: "en", format: :json }
 
-          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response).to have_http_status(:unprocessable_content)
         end
 
         it "returns error message in JSON" do
