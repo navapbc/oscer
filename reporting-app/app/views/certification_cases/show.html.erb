@@ -82,7 +82,7 @@
 
   <% component.with_heading { t(".tasks") } %>
   <% component.with_body do %>
-    <%= render partial: 'tasks_section', locals: { tasks: @case.tasks } %>
+    <%= render partial: 'tasks_section', locals: { tasks: @tasks } %>
   <% end %>
 
   <% component.with_heading { t(".information_requests") } %>
