@@ -34,9 +34,9 @@ class CertificationService
     hydrate_cases_with_certifications!(CertificationCase.find(case_ids))
   end
 
-  def fetch_cases_by_certification_ids(certification_ids, hydrate: false)
+  def fetch_cases_by_certification_ids(certification_ids)
     cases = CertificationCase.where(certification_id: certification_ids)
-    hydrate_cases_with_certifications!(cases) if hydrate
+    hydrate_cases_with_certifications!(cases)
     cases
   end
 

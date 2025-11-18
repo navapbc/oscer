@@ -54,7 +54,7 @@ module Staff
 
       # Load cases with hydrated certifications to avoid duplicate queries
       certification_service = CertificationService.new
-      @certification_cases = certification_service.fetch_cases_by_certification_ids(certification_ids, hydrate: true)
+      @certification_cases = certification_service.fetch_cases_by_certification_ids(certification_ids)
 
       # Determine member statuses using hydrated cases
       @member_statuses = MemberStatusService.determine_many(@certification_cases)
