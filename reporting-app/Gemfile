@@ -116,6 +116,7 @@ group :development do
   # Linting
   gem "rubocop-rails-omakase", require: false
   gem "rubocop-rspec", require: false
+  gem "rubocop-rspec_rails", require: false
 
   # Test notifications locally without sending the emails
   gem "letter_opener"
