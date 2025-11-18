@@ -19,11 +19,11 @@
   <%= t('.filter_by') %>
 </p>
 <div class="display-inline-block">
-  <%= link_to t('.filters.all', count: @certifications.length), results_certification_batch_upload_path(@batch_upload), class: "usa-button #{'usa-button--base' if params[:filter].present?}" %>
-  <%= link_to t('.filters.compliant', count: @compliant_certifications.length), results_certification_batch_upload_path(@batch_upload, filter: "compliant"), class: "usa-button #{'usa-button--base' if params[:filter] != 'compliant'}" %>
-  <%= link_to t('.filters.exempt', count: @exempt_certifications.length), results_certification_batch_upload_path(@batch_upload, filter: "exempt"), class: "usa-button #{'usa-button--base' if params[:filter] != 'exempt'}" %>
-  <%= link_to t('.filters.member_action_required', count: @member_action_required_certifications.length), results_certification_batch_upload_path(@batch_upload, filter: "member_action_required"), class: "usa-button #{'usa-button--base' if params[:filter] != 'member_action_required'}" %>
-  <%= link_to t('.filters.pending_review', count: @pending_review_certifications.length), results_certification_batch_upload_path(@batch_upload, filter: "pending_review"), class: "usa-button #{'usa-button--base' if params[:filter] != 'pending_review'}" %>
+  <%= link_to t('.filters.all', count: @certification_cases.length), results_certification_batch_upload_path(@batch_upload), class: "usa-button #{'usa-button--base' if params[:filter].present?}" %>
+  <%= link_to t('.filters.compliant', count: @compliant_cases.length), results_certification_batch_upload_path(@batch_upload, filter: "compliant"), class: "usa-button #{'usa-button--base' if params[:filter] != 'compliant'}" %>
+  <%= link_to t('.filters.exempt', count: @exempt_cases.length), results_certification_batch_upload_path(@batch_upload, filter: "exempt"), class: "usa-button #{'usa-button--base' if params[:filter] != 'exempt'}" %>
+  <%= link_to t('.filters.member_action_required', count: @member_action_required_cases.length), results_certification_batch_upload_path(@batch_upload, filter: "member_action_required"), class: "usa-button #{'usa-button--base' if params[:filter] != 'member_action_required'}" %>
+  <%= link_to t('.filters.pending_review', count: @pending_review_cases.length), results_certification_batch_upload_path(@batch_upload, filter: "pending_review"), class: "usa-button #{'usa-button--base' if params[:filter] != 'pending_review'}" %>
 </div>
 <hr class="margin-top-4 margin-bottom-0" />
 <table class="usa-table usa-table--striped usa-table--borderless margin-top-0 width-full">
@@ -38,14 +38,15 @@
     </tr>
   </thead>
   <tbody>
-    <% @certifications_to_show.each do |certification| %>
+    <% @cases_to_show.each do |kase| %>
+      <% certification = kase.certification %>
       <tr>
-        <td><%= link_to certification.member_data.name.first, member_path(certification.member_id) if certification.member_data&.name&.first %></td>
+        <td><%= link_to certification.member_data.name.first, member_path(certification.member_id) if certification.member_name&.first %></td>
         <td><%= certification.member_email %></td>
-        <td><%= @member_statuses[certification.id]&.status.humanize %></td>
-        <td><%= @member_statuses[certification.id]&.human_readable_reason_codes.join(", ") %></td>
-        <td><%= link_to certification.case_number, certification_case_path(@certification_cases[certification.id]) %></td>
-        <td><%= l(certification.created_at, format: "%m/%d/%Y") %></td>
+        <td><%= @member_statuses[[kase.class.name, kase.id]]&.status.humanize %></td>
+        <td><%= @member_statuses[[kase.class.name, kase.id]]&.human_readable_reason_codes.join(", ") %></td>
+        <td><%= link_to certification.case_number, certification_case_path(kase) %></td>
+        <td><%= l(certification.created_at, format: "%m/%d/%Y") if certification %></td>
       </tr>
     <% end %>
   </tbody>
