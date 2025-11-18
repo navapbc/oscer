@@ -1,6 +1,6 @@
 GIT
   remote: https://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:x-oauth-basic@github.com/navapbc/flex-sdk.git
-  revision: f836ed41a67a855552959d290cf32ed0901bcc0d
+  revision: d9799d699f4b111b09398578b9c4ea281aa1e863
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -292,7 +292,7 @@ GEM
     matrix (0.4.3)
     method_source (1.1.0)
     mini_mime (1.1.5)
-    minitest (5.26.1)
+    minitest (5.26.2)
     msgpack (1.8.0)
     nenv (0.3.0)
     net-http (0.6.0)
