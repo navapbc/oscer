@@ -38,7 +38,7 @@ module Staff
         else
           message = "Failed to upload file: #{@batch_upload.errors.full_messages.join(', ')}"
           format.html { redirect_to new_certification_batch_upload_path, alert: message }
-          format.json { render json: { error: message }, status: :unprocessable_entity }
+          format.json { render json: { error: message }, status: :unprocessable_content }
         end
       end
     end
@@ -66,7 +66,7 @@ module Staff
         if @batch_upload.processable? == false
           message = "This batch cannot be processed. Current status: #{@batch_upload.status}."
           format.html { redirect_to certification_batch_upload_path(@batch_upload), alert: message }
-          format.json { render json: { error: message }, status: :unprocessable_entity }
+          format.json { render json: { error: message }, status: :unprocessable_content }
         elsif ProcessCertificationBatchUploadJob.perform_later(@batch_upload.id)
           format.html { redirect_to certification_batch_uploads_path, notice: "Processing started for #{@batch_upload.filename}. Results will be available shortly." }
           format.json { head :accepted }
