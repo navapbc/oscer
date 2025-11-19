@@ -1,8 +1,12 @@
 plugins:
   - rubocop-rspec
+  - rubocop-rspec_rails
 inherit_gem:
   pundit: config/rubocop-rspec.yml
   rubocop-rails-omakase: rubocop.yml
+
+AllCops:
+  NewCops: disable
 
 RSpec/IncludeExamples:
   Enabled: true
@@ -18,6 +22,9 @@ RSpec/NoExpectationExample:
   AllowedPatterns:
     - assert_
     - is_expected_in_block
+
+RSpecRails/HttpStatusNameConsistency:
+  Enabled: true
 
 Style/FrozenStringLiteralComment:
   Enabled: true

@@ -501,6 +501,10 @@ GEM
     rubocop-rspec (3.7.0)
       lint_roller (~> 1.1)
       rubocop (~> 1.72, >= 1.72.1)
+    rubocop-rspec_rails (2.32.0)
+      lint_roller (~> 1.1)
+      rubocop (~> 1.72, >= 1.72.1)
+      rubocop-rspec (~> 3.5)
     ruby-graphviz (1.2.5)
       rexml
     ruby-lsp (0.26.1)
@@ -633,6 +637,7 @@ DEPENDENCIES
   rubocop-rspec
   ruby-lsp
   ruby-lsp-rails
+  rubocop-rspec_rails
   selenium-webdriver
   simplecov
   sprockets-rails
