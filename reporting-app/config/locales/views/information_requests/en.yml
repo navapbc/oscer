@@ -14,3 +14,9 @@ en:
       staff_comment: "Staff Comment:"
       supporting_documents: "Supporting documents:"
       title: "Information Request"
+    list:
+      heading: "Requests for Information"
+      staff_comment: "Staff Comment"
+      member_comment: "Member Comment"
+      due_date: "Due Date"
+      supporting_documents: "Supporting Documents"

@@ -7,10 +7,13 @@ RSpec.describe "/exemption_information_requests", type: :request do
 
   let(:user) { create(:user) }
   let(:other_user) { create(:user) }
-  let(:application_form) { create(:exemption_application_form, user_id: user.id) }
+  let(:certification_case) { create(:certification_case) }
+  let(:application_form) { create(:exemption_application_form, user_id: user.id, certification_case_id: certification_case.id) }
+  let(:task) { create(:review_exemption_claim_task, case: certification_case, status: :on_hold) }
   let(:information_request) { create(:exemption_information_request, application_form_id: application_form.id, application_form_type: application_form.class.name) }
 
   before do
+    task
     information_request.save!
     login_as user
   end
@@ -50,9 +53,32 @@ RSpec.describe "/exemption_information_requests", type: :request do
         expect(information_request.member_comment).to eq("Here is the information you requested.")
       end
 
+      it "sets the task status to pending" do
+        expect(task.status).to eq("on_hold")
+        patch exemption_information_request_url(information_request), params: { exemption_information_request: valid_attributes }
+        expect(task.reload.status).to eq("pending")
+      end
+
       it "redirects to the dashboard" do
         patch exemption_information_request_url(information_request), params: { exemption_information_request: valid_attributes }
         expect(response).to redirect_to(dashboard_path)
+      end
+    end
+
+    context "when no on_hold task exists" do
+      before do
+        task.update!(status: :completed)
+      end
+
+      it "renders the edit form with an error" do
+        patch exemption_information_request_url(information_request), params: { exemption_information_request: valid_attributes }
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      it "does not update the information_request" do
+        original_comment = information_request.member_comment
+        patch exemption_information_request_url(information_request), params: { exemption_information_request: valid_attributes }
+        expect(information_request.reload.member_comment).to eq(original_comment)
       end
     end
 

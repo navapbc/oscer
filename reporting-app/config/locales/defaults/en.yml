@@ -70,3 +70,10 @@ en:
     pending_review: "Pending review"
     awaiting_report: "Awaiting report"
     not_compliant: "Not compliant"
+  strata:
+    tasks:
+      index:
+        tabs:
+          assigned: "Assigned"
+          on_hold: "On Hold"
+          completed: "Completed"

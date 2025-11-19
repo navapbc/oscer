@@ -39,9 +39,14 @@ class TasksController < Strata::TasksController
   protected
 
   def filter_tasks_by_status(tasks, status)
-    status == "completed" \
-        ? tasks.without_status(:pending) \
-        : tasks.with_status(:pending)
+    case status
+    when "completed"
+      tasks.with_status(:completed)
+    when "on_hold"
+      tasks.with_status(:on_hold)
+    else
+      tasks.with_status(:pending)
+    end
   end
 
   def set_application_form
