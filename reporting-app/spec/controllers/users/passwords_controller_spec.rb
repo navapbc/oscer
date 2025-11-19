@@ -35,7 +35,7 @@ RSpec.describe Users::PasswordsController do
         locale: "en"
       }
 
-      expect(response.status).to eq(422)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "handles auth provider errors" do
@@ -44,7 +44,7 @@ RSpec.describe Users::PasswordsController do
         locale: "en"
       }
 
-      expect(response.status).to eq(422)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "handles submission by bots" do
@@ -53,7 +53,7 @@ RSpec.describe Users::PasswordsController do
         locale: "en"
       }
 
-      expect(response.status).to eq(422)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 
@@ -91,7 +91,7 @@ RSpec.describe Users::PasswordsController do
         locale: "en"
       }
 
-      expect(response.status).to eq(422)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "handles auth provider errors" do
@@ -104,7 +104,7 @@ RSpec.describe Users::PasswordsController do
         locale: "en"
       }
 
-      expect(response.status).to eq(422)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "handles submission by bots" do
@@ -118,7 +118,7 @@ RSpec.describe Users::PasswordsController do
         locale: "en"
       }
 
-      expect(response.status).to eq(422)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 end
