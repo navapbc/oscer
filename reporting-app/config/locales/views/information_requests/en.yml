@@ -1,5 +1,6 @@
 en:
   information_requests:
+    success: "Additional information submitted successfully."
     edit:
       title: "Provide additional information"
       instructions_heading: "Instructions"
@@ -14,3 +15,11 @@ en:
       staff_comment: "Staff Comment:"
       supporting_documents: "Supporting documents:"
       title: "Information Request"
+    list:
+      due_date: "Due date"
+      heading: "Requests for Information"
+      member_comment: "Member comment"
+      no_documents: "No documents"
+      not_applicable: "N/A"
+      staff_comment: "Staff comment"
+      supporting_documents: "Supporting documents"

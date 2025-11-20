@@ -72,20 +72,23 @@ RSpec.describe "/staff/tasks", type: :request do
   describe "GET /index" do
     let(:pending_task) { build(:review_activity_report_task, case: certification_case, status: :pending) }
     let(:completed_task) { build(:review_activity_report_task, case: certification_case, status: :completed) }
+    let(:on_hold_task) { build(:review_activity_report_task, case: certification_case, status: :on_hold) }
 
     before do
       pending_task.save!
       completed_task.save!
+      on_hold_task.save!
     end
 
     context "when filtering by pending status" do
       before do
-        get "/staff/tasks", params: { status: "pending" }
+        get "/staff/tasks", params: { filter_status: "pending" }
       end
 
       it "includes only pending tasks" do
         expect(response.body).to include(pending_task.id)
         expect(response.body).not_to include(completed_task.id)
+        expect(response.body).not_to include(on_hold_task.id)
       end
     end
 
@@ -98,9 +101,26 @@ RSpec.describe "/staff/tasks", type: :request do
         expect(response).to have_http_status(:success)
       end
 
-      it "returns non-pending tasks" do
+      it "includes only completed tasks" do
         expect(response.body).not_to include(pending_task.id)
         expect(response.body).to include(completed_task.id)
+        expect(response.body).not_to include(on_hold_task.id)
+      end
+    end
+
+    context "when filtering by on_hold status" do
+      before do
+        get "/staff/tasks", params: { filter_status: "on_hold" }
+      end
+
+      it "returns http success" do
+        expect(response).to have_http_status(:success)
+      end
+
+      it "includes only on_hold tasks" do
+        expect(response.body).not_to include(pending_task.id)
+        expect(response.body).not_to include(completed_task.id)
+        expect(response.body).to include(on_hold_task.id)
       end
     end
 
@@ -116,6 +136,7 @@ RSpec.describe "/staff/tasks", type: :request do
       it "defaults to showing pending tasks" do
         expect(response.body).to include(pending_task.id)
         expect(response.body).not_to include(completed_task.id)
+        expect(response.body).not_to include(on_hold_task.id)
       end
     end
   end

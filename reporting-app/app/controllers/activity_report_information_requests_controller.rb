@@ -9,8 +9,9 @@ class ActivityReportInformationRequestsController < ApplicationController
 
   def update
     respond_to do |format|
-      if @information_request.update(information_request_params)
-        format.html { redirect_to dashboard_path, notice: "Information request fulfilled" }
+      result = TaskService.fulfill_information_request(@information_request, information_request_params)
+      if result[:success]
+        format.html { redirect_to dashboard_path, notice: t("information_requests.success") }
         format.json { render :show, status: :ok, location: @information_request }
       else
         format.html { render :edit, status: :unprocessable_content }
