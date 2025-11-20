@@ -3,6 +3,7 @@
 class TasksController < Strata::TasksController
   before_action :set_certification, only: [ :show ]
   before_action :set_member, only: [ :show ]
+  before_action :set_information_requests, only: [ :show ]
 
   def assign
     set_task
@@ -61,6 +62,12 @@ class TasksController < Strata::TasksController
 
   def set_member
     @member = Member.from_certification(@certification)
+  end
+
+  def set_information_requests
+    @information_requests = InformationRequest
+      .for_application_forms([ @application_form.id ])
+      .order(created_at: :desc)
   end
 
   def information_request_params

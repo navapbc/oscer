@@ -1,6 +1,3 @@
-<%
-  information_requests = InformationRequest.for_application_forms([application_form.id]).order(created_at: :desc)
-%>
 <% if information_requests.any? %>
   <h2><%= t("information_requests.list.heading") %></h2>
   <table class="usa-table usa-table--borderless width-full">
@@ -16,7 +13,7 @@
       <% information_requests.each do |information_request| %>
         <tr>
           <td><%= information_request.staff_comment %></td>
-          <td><%= information_request.member_comment || "N/A" %></td>
+          <td><%= information_request.member_comment || t("information_requests.list.not_applicable") %></td>
           <td><%= information_request.due_date&.strftime("%m/%d/%Y") %></td>
           <td>
             <% if information_request.supporting_documents.any? %>
@@ -29,7 +26,7 @@
                 <% end %>
               </ul>
             <% else %>
-              <span>No documents</span>
+              <span><%= t("information_requests.list.no_documents") %></span>
             <% end %>
           </td>
         </tr>

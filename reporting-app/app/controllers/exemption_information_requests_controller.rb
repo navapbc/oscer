@@ -11,7 +11,7 @@ class ExemptionInformationRequestsController < ApplicationController
     respond_to do |format|
       result = TaskService.fulfill_information_request(@information_request, information_request_params)
       if result[:success]
-        format.html { redirect_to dashboard_path, notice: "Information request fulfilled" }
+        format.html { redirect_to dashboard_path, notice: t("information_requests.success") }
         format.json { render :show, status: :ok, location: @information_request }
       else
         format.html { render :edit, status: :unprocessable_content }

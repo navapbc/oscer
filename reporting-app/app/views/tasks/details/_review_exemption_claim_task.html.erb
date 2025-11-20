@@ -1,6 +1,7 @@
 <%= render partial: 'application/flash' %>
 <%= render partial: 'exemption_application_forms/exemption_application_form', locals: { exemption_application_form: application_form } %>
-<%= render partial: 'information_requests/information_requests_list', locals: { application_form: application_form } %>
+<%= render partial: 'information_requests/information_requests_list',
+  locals: { application_form: application_form, information_requests: information_requests } %>
 <% if task.pending? %>
   <h2><%= t(".exemption_decision.heading") %></h2>
   <%= strata_form_with(model: task) do |f| %>
