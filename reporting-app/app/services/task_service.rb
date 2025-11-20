@@ -15,4 +15,22 @@ module TaskService
   rescue ActiveRecord::RecordInvalid => e
     { success: false, information_request_record: e.record }
   end
+
+  def self.fulfill_information_request(information_request, params)
+    ActiveRecord::Base.transaction do
+      information_request.update!(params)
+      application_form = information_request.application_form_type.constantize.find(information_request.application_form_id)
+      task = information_request.class.task_class.find_by!(
+        case_id: application_form.certification_case_id,
+        status: :on_hold
+      )
+      task.pending!
+    end
+
+    { success: true }
+  rescue ActiveRecord::RecordInvalid
+    { success: false, information_request: information_request }
+  rescue ActiveRecord::RecordNotFound
+    { success: false, information_request: information_request }
+  end
 end

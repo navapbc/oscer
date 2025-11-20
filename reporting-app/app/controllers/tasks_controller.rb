@@ -3,6 +3,7 @@
 class TasksController < Strata::TasksController
   before_action :set_certification, only: [ :show ]
   before_action :set_member, only: [ :show ]
+  before_action :set_information_requests, only: [ :show ]
 
   def assign
     set_task
@@ -39,9 +40,14 @@ class TasksController < Strata::TasksController
   protected
 
   def filter_tasks_by_status(tasks, status)
-    status == "completed" \
-        ? tasks.without_status(:pending) \
-        : tasks.with_status(:pending)
+    case status
+    when "completed"
+      tasks.with_status(:completed)
+    when "on_hold"
+      tasks.with_status(:on_hold)
+    else
+      tasks.with_status(:pending)
+    end
   end
 
   def set_application_form
@@ -56,6 +62,12 @@ class TasksController < Strata::TasksController
 
   def set_member
     @member = Member.from_certification(@certification)
+  end
+
+  def set_information_requests
+    @information_requests = InformationRequest
+      .for_application_forms([ @application_form.id ])
+      .order(created_at: :desc)
   end
 
   def information_request_params

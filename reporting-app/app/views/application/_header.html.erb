@@ -1,7 +1,7 @@
 <div class="usa-overlay"></div>
 <header class="usa-header usa-header--basic">
   <div class="usa-nav-container">
-    <div class="usa-navbar">
+    <div class="usa-navbar flex-row gap-1">
       <div class="usa-logo desktop:width-tablet">
         <em class="usa-logo__text">
           <a href="<%= url_for root_path %>">
@@ -10,6 +10,7 @@
         </em>
       </div>
 
+      <%= render partial: "application/language-toggle", locals: { container_class: "display-block desktop:display-none" } %>
       <button type="button" class="usa-menu-btn">Menu</button>
     </div>
 
@@ -30,14 +31,10 @@
                 <%= button_to t('header.logout'), destroy_user_session_path, method: :delete, class: "usa-nav-link" %>
               </li>
             <% end %>
-
-          <li class="usa-nav__primary-item">
-            <%= render partial: "application/language-toggle", locals: { container_class: "display-block desktop:display-none relative" } %>
-          </li>
         </ul>
       </div>
     </nav>
 
-    <%= render partial: "application/language-toggle", locals: { container_class: "usa-language-container display-none desktop:display-block" } %>
+    <%= render partial: "application/language-toggle", locals: { container_class: "usa-language-container display-none desktop:display-block padding-bottom-1" } %>
   </div>
 </header>
