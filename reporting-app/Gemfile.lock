@@ -626,7 +626,7 @@ DEPENDENCIES
   pg (~> 1.1)
   pg-aws_rds_iam (~> 0.7.0)
   puma (>= 5.0)
-  pundit (= 2.5.0)
+  pundit
   pundit-matchers
   rails (~> 7.2.0, >= 7.2.2.1)
   rails-erd
@@ -652,4 +652,4 @@ RUBY VERSION
    ruby 3.4.7p58
 
 BUNDLED WITH
-   2.6.9
+   2.7.1
