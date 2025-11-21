@@ -80,9 +80,6 @@ class CertificationsController < StaffController
           if cert_params[:certification_requirements].present? && cert_params[:certification_requirements].is_a?(String)
             parsed_requirements = JSON.parse(cert_params[:certification_requirements])
 
-            # Permit all Requirements and RequirementParams attributes, plus nested params hash
-            permitted_keys = (Certifications::Requirements.attribute_names | Certifications::RequirementParams.attribute_names).map(&:to_sym)
-
             cert_params[:certification_requirements] =
               ActionController::Parameters.new(parsed_requirements).permit(
                 *Certifications::Requirements.attribute_names.map(&:to_sym).excluding(:months_that_can_be_certified, :params),
