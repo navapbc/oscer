@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/navapbc/flex-sdk.git
-  revision: d9799d699f4b111b09398578b9c4ea281aa1e863
+  revision: 3d17783d76ac29184e71d0c4543771d2135bb8a7
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
