@@ -85,9 +85,9 @@ class CertificationsController < StaffController
 
             cert_params[:certification_requirements] =
               ActionController::Parameters.new(parsed_requirements).permit(
-                *permitted_keys,
+                *Certifications::Requirements.attribute_names.map(&:to_sym).excluding(:months_that_can_be_certified, :params),
                 months_that_can_be_certified: [],
-                params: permitted_keys
+                params: Certifications::RequirementParams.attribute_names.map(&:to_sym)
               )
           end
 
