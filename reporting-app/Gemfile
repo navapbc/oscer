@@ -5,7 +5,7 @@ source "https://rubygems.org"
 ruby "3.4.7"
 
 # Strata Government Digital Services SDK Rails engine
-gem "strata", git: "https://github.com/navapbc/flex-sdk.git"
+gem "strata", git: "https://github.com/navapbc/strata-sdk-rails.git"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 7.2.0", ">= 7.2.2.1"

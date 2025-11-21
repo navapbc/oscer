@@ -1,5 +1,5 @@
 GIT
-  remote: https://github.com/navapbc/flex-sdk.git
+  remote: https://github.com/navapbc/strata-sdk-rails.git
   revision: 3d17783d76ac29184e71d0c4543771d2135bb8a7
   specs:
     strata (0.1.0)
