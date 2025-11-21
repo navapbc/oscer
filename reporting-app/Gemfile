@@ -63,9 +63,7 @@ gem "bootsnap", require: false
 gem "aws-sdk-cognitoidentityprovider", "~> 1.88"
 gem "devise"
 gem "jwt"
-# Pin pundit to 2.5.0 until lint config issue introduced in 2.5.1 is resolved
-# https://github.com/varvet/pundit/issues/865
-gem "pundit", "2.5.0"
+gem "pundit"
 gem "pundit-matchers"
 gem "rqrcode"
 
