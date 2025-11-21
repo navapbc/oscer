@@ -5,8 +5,7 @@ source "https://rubygems.org"
 ruby "3.4.7"
 
 # Strata Government Digital Services SDK Rails engine
-# The access token was generated on Tues, August 19, 2025 and expires on Thursday, August 20, 2026
-gem "strata", git: "https://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:x-oauth-basic@github.com/navapbc/flex-sdk.git"
+gem "strata", git: "https://github.com/navapbc/flex-sdk.git"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 7.2.0", ">= 7.2.2.1"
