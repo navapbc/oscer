@@ -78,10 +78,14 @@ class CertificationsController < StaffController
         begin
           # handle HTML form input of the JSON blob as a string
           if cert_params[:certification_requirements].present? && cert_params[:certification_requirements].is_a?(String)
+            parsed_requirements = JSON.parse(cert_params[:certification_requirements])
+
             cert_params[:certification_requirements] =
-              ActionController::Parameters.new(
-                JSON.parse(cert_params[:certification_requirements])
-              ).permit((Certifications::Requirements.attribute_names | Certifications::RequirementParams.attribute_names).map(&:to_sym))
+              ActionController::Parameters.new(parsed_requirements).permit(
+                *Certifications::Requirements.attribute_names.map(&:to_sym).excluding(:months_that_can_be_certified, :params),
+                months_that_can_be_certified: [],
+                params: Certifications::RequirementParams.attribute_names.map(&:to_sym)
+              )
           end
 
           # handle HTML form input of the JSON blob as a string
