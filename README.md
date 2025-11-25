@@ -128,6 +128,37 @@ OSCER is designed to be cloud-agnostic. We provide infrastructure templates for 
 - The application architecture remains the same
 - You'll need to create infrastructure code for your chosen provider's services
 
+## Exploring the Application
+
+After starting the application, you can explore OSCER's different interfaces and workflows:
+
+### Demo Overview
+**URL:** http://localhost:3000/demo  
+Start here to see entrypoints to the different experiences in OSCER and understand the application's structure.
+
+### Creating a Certification Request
+**URL:** http://localhost:3000/demo/certifications/new
+
+A certification request is the case that a member responds to. In production, these are created in bulk through batch processes or API, but for testing you can create them manually.
+
+**To experience the full workflow:**
+1. Create a certification request using an email address you can access
+2. Configure different scenarios (lookback months, exemption triggers, etc.)
+3. Test automated exemptions by indicating pregnancy or other qualifying conditions
+4. Submit the request
+
+**Note:** You can reuse the same email address for multiple certification requests—the system will automatically reset for that email.
+
+### Member Dashboard (or Client View)
+**URL:** http://localhost:3000/dashboard
+
+This is the member-facing interface where clients respond to their certification requests. Follow the instructions on the dashboard to create an activity report or exemption request. Once submitted, you can navigate to the staff portal to view the submitted request. You must complete a certification request (see above) before you'll see any data in this view.
+
+### Staff Portal
+**URL:** http://localhost:3000/staff
+
+This is the administrative interface where staff can review and process member certification responses.
+
 ## Documentation
 
 - **[System Architecture](docs/system-architecture.md)** - High-level system overview
@@ -135,6 +166,11 @@ OSCER is designed to be cloud-agnostic. We provide infrastructure templates for 
 - **[Infrastructure Guide](docs/infra/)** - Deployment and infrastructure management
 - **[Contributing Guidelines](CONTRIBUTING.md)** - How to contribute to the project
 - **[Security Policy](SECURITY.md)** - Security practices and reporting
+
+## OSCER Public Demos  
+
+See our previous demos and walkthroughs on our [YouTube playlist](https://www.youtube.com/playlist?list=PLLbut-Ow2h4nbfYS4Is8EGBVWKbvB9MWV).
+
 
 ## Contributing
 
