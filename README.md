@@ -152,7 +152,7 @@ A certification request is the case that a member responds to. In production, th
 ### Member Dashboard (or Client View)
 **URL:** http://localhost:3000/dashboard
 
-This is the member-facing interface where clients respond to their certification requests. You must complete a certification request (see above) before you'll see any data in this view.
+This is the member-facing interface where clients respond to their certification requests. Follow the instructions on the dashboard to create an activity report or exemption request. Once submitted, you can navigate to the staff portal to view the submitted request. You must complete a certification request (see above) before you'll see any data in this view.
 
 ### Staff Portal
 **URL:** http://localhost:3000/staff
