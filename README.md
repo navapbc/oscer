@@ -102,8 +102,6 @@ The platform consists of:
    - Open http://localhost:3000 in your browser
    - Default authentication is set to mock mode for development
 
-
-
 ### Cloud Deployment Options
 
 OSCER is designed to be cloud-agnostic. We provide infrastructure templates for different cloud providers:
@@ -135,13 +133,13 @@ OSCER is designed to be cloud-agnostic. We provide infrastructure templates for 
 After starting the application, you can explore OSCER's different interfaces and workflows:
 
 ### Demo Overview
-**URL:** https://medicaid.navateam.com/demo  
-Start here to see all available views in OSCER and understand the application's structure.
+**URL:** http://localhost:3000/demo  
+Start here to see entrypoints to the different experiences in OSCER and understand the application's structure.
 
 ### Creating a Certification Request
-**URL:** https://medicaid.navateam.com/demo/certifications/new
+**URL:** http://localhost:3000/demo/certifications/new
 
-A certification request is the case that a beneficiary responds to. In production, these are created in bulk through batch processes or API, but for testing you can create them manually.
+A certification request is the case that a member responds to. In production, these are created in bulk through batch processes or API, but for testing you can create them manually.
 
 **To experience the full workflow:**
 1. Create a certification request using an email address you can access
@@ -151,15 +149,15 @@ A certification request is the case that a beneficiary responds to. In productio
 
 **Note:** You can reuse the same email address for multiple certification requests—the system will automatically reset for that email.
 
-### Member Dashboard (Client View)
-**URL:** https://medicaid.navateam.com/dashboard
+### Member Dashboard (or Client View)
+**URL:** http://localhost:3000/dashboard
 
-This is the beneficiary-facing interface where clients respond to their certification requests. You must complete a certification request (see above) before you'll see any data in this view.
+This is the member-facing interface where clients respond to their certification requests. You must complete a certification request (see above) before you'll see any data in this view.
 
 ### Staff Portal
-**URL:** https://medicaid.navateam.com/staff
+**URL:** http://localhost:3000/staff
 
-This is the administrative interface where staff can review and process beneficiary certification responses.
+This is the administrative interface where staff can review and process member certification responses.
 
 ## Documentation
 
