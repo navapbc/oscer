@@ -19,7 +19,6 @@ As a [type of user], I want [goal] so that [benefit].
 ## Acceptance Criteria
 Include activities or user scenarios/stories that must be completed to finish the story. 
 
-
 - [ ] 
 - [ ] 
 - [ ] 
