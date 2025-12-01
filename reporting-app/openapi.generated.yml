@@ -18,11 +18,9 @@ components:
           - "$ref": "#/components/schemas/CertificationRequirementParameters"
           - "$ref": "#/components/schemas/CertificationRequirementTypeParameters"
         member_data:
-          type:
-          - object
-          - 'null'
-          description: Description of beneficiary
-          properties: {}
+          oneOf:
+          - "$ref": "#/components/schemas/CertificationMemberData"
+          - type: 'null'
       required:
       - member_id
       - certification_requirements
@@ -36,10 +34,46 @@ components:
               lookback_period: 3
               number_of_months_to_certify: 1
               due_period_days: 30
+              due_date: '2025-10-26'
+              months_that_can_be_certified:
+              - '2025-07-01'
+              - '2025-08-01'
+              - '2025-09-01'
             member_data:
+              account_email: john@doe.com
               contact:
                 email: john@doe.com
                 phone: "+123456789"
+              name:
+                first: Johnathan
+                middle: Alfred
+                last: Doe
+                suffix: Jr.
+              date_of_birth: '1980-01-01'
+              race_ethnicity: Hispanic
+              pregnancy_status: false
+        without_explicit_months_that_can_be_certified_and_due_date:
+          value:
+            member_id: '123'
+            case_number: C-111
+            certification_requirements:
+              certification_date: '2025-09-26'
+              lookback_period: 3
+              number_of_months_to_certify: 1
+              due_period_days: 30
+            member_data:
+              account_email: john@doe.com
+              contact:
+                email: john@doe.com
+                phone: "+123456789"
+              name:
+                first: Johnathan
+                middle: Alfred
+                last: Doe
+                suffix: Jr.
+              date_of_birth: '1980-01-01'
+              race_ethnicity: Hispanic
+              pregnancy_status: false
         certification_type:
           value:
             member_id: '123'
@@ -48,9 +82,18 @@ components:
               certification_date: '2025-09-26'
               certification_type: new_application
             member_data:
+              account_email: john@doe.com
               contact:
                 email: john@doe.com
                 phone: "+123456789"
+              name:
+                first: Johnathan
+                middle: Alfred
+                last: Doe
+                suffix: Jr.
+              date_of_birth: '1980-01-01'
+              race_ethnicity: Hispanic
+              pregnancy_status: false
     CertificationRequirements:
       type: object
       description: Description of certification needs
@@ -77,12 +120,6 @@ components:
           type: string
           format: date
           description: Date by which the Member must have submitted their evidence
-        params:
-          type:
-          - object
-          - 'null'
-          description: Input parameters, if any.
-          properties: {}
       required:
       - certification_date
       - months_that_can_be_certified
@@ -176,6 +213,22 @@ components:
           - 'null'
           items:
             "$ref": "#/components/schemas/CertificationMemberDataPayrollAccount"
+        date_of_birth:
+          type:
+          - string
+          - 'null'
+          format: date
+          description: The date of birth of the member
+        race_ethnicity:
+          type:
+          - string
+          - 'null'
+          description: The race or ethnicity of the member
+        pregnancy_status:
+          type:
+          - boolean
+          - 'null'
+          description: The pregnancy status of the member
     CertificationMemberDataPayrollAccount:
       type: object
       description: Description of a payroll
@@ -236,7 +289,7 @@ components:
           - "$ref": "#/components/schemas/CertificationRequirements"
           - type: 'null'
         member_data:
-          oneOf:
+          anyOf:
           - "$ref": "#/components/schemas/CertificationMemberData"
           - type: 'null'
         created_at:
@@ -267,9 +320,18 @@ components:
             number_of_months_to_certify: 1
             due_period_days: 30
         member_data:
+          account_email: john@doe.com
           contact:
             email: john@doe.com
             phone: "+123456789"
+          name:
+            first: Johnathan
+            middle: Alfred
+            last: Doe
+            suffix: Jr.
+          date_of_birth: '1980-01-01'
+          race_ethnicity: Hispanic
+          pregnancy_status: false
         created_at: '1970-01-01T00:00:00.000Z'
         updated_at: '1970-01-01T00:00:00.000Z'
     ErrorResponseBody:
@@ -292,43 +354,43 @@ components:
       required:
       - status
   responses:
-    2a02b6b9f2bf8af2f69dc1b305fd2ea1:
+    daf4ceca5584c5672bbf11e47e9084d1:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    6a42a42fa0c1cf33a5f054f4227f54d2:
+    25331b17ebc7b4043680ac0ec6d28fed:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    38188a97a450b2b1b918bdc340abcde3:
+    d29a985ce3a3399c3b74d3cce4ad3a8a:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    9698be85435e0bbc1a043ce1a4ef1523:
+    f5d81a7000b97ec8621d1a4abeb811c9:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    1720e8d4272c47d808ae092e196a7ab7:
+    a2ddd687b743a1201da02ce398d5a60e:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    84d98a6bd862cc8319624388a6a874e4:
+    d2300d37b3c15fd06cfb5f31ec1803b3:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    e17ffcaa22d966f8d8fb6d62bd597c98:
+    55c1497bcb5f8ff01e8c81977a97a811:
       description: Response
       content:
         application/json:
@@ -344,7 +406,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    a9c14ab9cae8249365a3dcbb916b7dec:
+    92315a5cbcfcc9f291207ea5d2704d04:
       description: The Certification data.
       content:
         application/json:
@@ -353,6 +415,8 @@ components:
           examples:
             fully_specified_certification_requirements:
               "$ref": "#/components/schemas/CertificationCreateRequestBody/examples/fully_specified_certification_requirements"
+            without_explicit_months_and_due_date:
+              "$ref": "#/components/schemas/CertificationCreateRequestBody/examples/without_explicit_months_that_can_be_certified_and_due_date"
             certification_type:
               "$ref": "#/components/schemas/CertificationCreateRequestBody/examples/certification_type"
       required: false
@@ -397,14 +461,14 @@ paths:
       description: "#"
       operationId: POST__api_certifications
       requestBody:
-        "$ref": "#/components/requestBodies/a9c14ab9cae8249365a3dcbb916b7dec"
+        "$ref": "#/components/requestBodies/92315a5cbcfcc9f291207ea5d2704d04"
       responses:
         '201':
-          "$ref": "#/components/responses/2a02b6b9f2bf8af2f69dc1b305fd2ea1"
+          "$ref": "#/components/responses/daf4ceca5584c5672bbf11e47e9084d1"
         '400':
-          "$ref": "#/components/responses/6a42a42fa0c1cf33a5f054f4227f54d2"
+          "$ref": "#/components/responses/25331b17ebc7b4043680ac0ec6d28fed"
         '422':
-          "$ref": "#/components/responses/38188a97a450b2b1b918bdc340abcde3"
+          "$ref": "#/components/responses/d29a985ce3a3399c3b74d3cce4ad3a8a"
   "/api/certifications/{id}":
     get:
       tags:
@@ -416,9 +480,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/9698be85435e0bbc1a043ce1a4ef1523"
+          "$ref": "#/components/responses/f5d81a7000b97ec8621d1a4abeb811c9"
         '404':
-          "$ref": "#/components/responses/1720e8d4272c47d808ae092e196a7ab7"
+          "$ref": "#/components/responses/a2ddd687b743a1201da02ce398d5a60e"
   "/api/health":
     get:
       tags:
@@ -428,6 +492,6 @@ paths:
       operationId: GET__api_health
       responses:
         '200':
-          "$ref": "#/components/responses/84d98a6bd862cc8319624388a6a874e4"
+          "$ref": "#/components/responses/d2300d37b3c15fd06cfb5f31ec1803b3"
         '503':
-          "$ref": "#/components/responses/e17ffcaa22d966f8d8fb6d62bd597c98"
+          "$ref": "#/components/responses/55c1497bcb5f8ff01e8c81977a97a811"
