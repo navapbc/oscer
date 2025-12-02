@@ -1,9 +1,0 @@
-<%= render partial: "application/breadcrumbs", locals: { crumbs: [
-  { name: t("certifications.index.title"), url: certifications_path },
-  ], current_name: t(".title")  } %>
-
-<% content_for :title, t(".title") %>
-
-<h1><%= t(".title") %></h1>
-
-<%= render "form", certification_form: @certification_form, submit_text: t(".submit") %>

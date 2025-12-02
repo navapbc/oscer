@@ -6,7 +6,6 @@ en:
     member_data: "Member data"
     index:
       title: "Certifications"
-      create: "Create Certification"
       columns:
         col_certification_id: "Certification ID"
         col_case_number: "Medicaid case number"
@@ -17,9 +16,6 @@ en:
     show:
       title: "Certification"
       submit: "Update"
-    new:
-      title: "New Certification"
-      submit: "Create"
     demo_create:
       title: "Certification Request"
       submit: "Request Certification"

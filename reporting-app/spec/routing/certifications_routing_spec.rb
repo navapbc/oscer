@@ -12,10 +12,6 @@ RSpec.describe CertificationsController, type: :routing do
       expect(get: "/staff/certifications/1").to route_to("certifications#show", id: "1")
     end
 
-    it "routes to #create" do
-      expect(post: "/staff/certifications").to route_to("certifications#create")
-    end
-
     it "routes to #update via PUT" do
       expect(put: "/staff/certifications/1").to route_to("certifications#update", id: "1")
     end

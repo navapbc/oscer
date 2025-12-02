@@ -56,7 +56,7 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :certifications
+    resources :certifications, only: [ :index, :show, :edit, :update ]
 
     resources :certification_cases, only: [ :index, :show ] do
       collection do

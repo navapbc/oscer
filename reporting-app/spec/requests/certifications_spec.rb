@@ -75,53 +75,6 @@ RSpec.describe "/certifications", type: :request do
     end
   end
 
-  describe "POST /create" do
-    context "with valid parameters" do
-      it "creates a new Certification" do
-        expect {
-          post certifications_url,
-               params: { certification: valid_html_request_attributes }, headers: valid_headers
-        }.to change(Certification, :count).by(1)
-      end
-
-      it "renders a HTML response with the new certification" do
-        post certifications_url,
-             params: { certification: valid_html_request_attributes }, headers: valid_headers
-        expect(response).to have_http_status(:created)
-      end
-    end
-
-    context "with no member info" do
-      it "creates a new Certification" do
-        expect {
-          post certifications_url,
-               params: { certification: valid_html_request_attributes.deep_merge({ member_id: "no_user" }) }, headers: valid_headers
-        }.to change(Certification, :count).by(1)
-      end
-
-      it "renders a HTML response with the new certification" do
-        post certifications_url,
-             params: { certification: valid_html_request_attributes.deep_merge({ member_id: "no_user" }) }, headers: valid_headers
-        expect(response).to have_http_status(:created)
-      end
-    end
-
-    context "with invalid parameters" do
-      it "does not create a new Certification" do
-        expect {
-          post certifications_url,
-               params: { certification: invalid_request_attributes }
-        }.not_to change(Certification, :count)
-      end
-
-      it "renders a JSON response with errors for the new certification" do
-        post certifications_url,
-             params: { certification: invalid_request_attributes }, headers: valid_headers
-        expect(response).to be_client_error
-      end
-    end
-  end
-
   describe "PATCH /update" do
     context "with valid parameters" do
       let(:new_attributes) {
