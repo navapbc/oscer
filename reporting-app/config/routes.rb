@@ -49,7 +49,7 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :users, controller: "staff/users", only: [ :index, :show, :edit, :update ]
+    resources :users, controller: "staff/users", only: [ :index ]
 
     resources :certification_batch_uploads, only: [ :index, :new, :create, :show ], controller: "staff/certification_batch_uploads" do
       member do

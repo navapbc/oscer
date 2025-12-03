@@ -24,7 +24,6 @@
         <th scope="col" data-sortable>Role</th>
         <th scope="col" data-sortable>Program</th>
         <th scope="col" data-sortable>Region</th>
-        <th scope="col">Action</th>
       </tr>
     </thead>
     <tbody>
@@ -36,9 +35,6 @@
           <td><%= user.role %></td>
           <td><%= user.program %></td>
           <td><%= user.region %></td>
-          <td>
-            <%= link_to "Edit", "/staff/users/#{user.id}/edit", class: "usa-link" %>
-          </td>
         </tr>
       <% end %>
     </tbody>
