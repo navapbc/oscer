@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddUserRoleAttributes < ActiveRecord::Migration[7.2]
   def change
     add_column :users, :roles, :string, array: true, null: false, default: []

@@ -92,6 +92,11 @@ class AuthService
         uid: uid,
         email: email,
         provider: provider,
+        first_name: Faker::Name.first_name,
+        last_name: Faker::Name.last_name,
+        roles: [ "caseworker" ],
+        program: "Medicaid",
+        region: "Northwest"
       )
       user
     end
