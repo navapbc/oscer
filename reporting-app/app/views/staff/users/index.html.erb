@@ -1,0 +1,56 @@
+<div class="display-flex flex-justify-start flex-align-center margin-bottom-3">
+  <h1 class="margin-0 margin-right-2">Organization Settings</h1>
+  <p>
+    View and edit staff members and their roles, regions, and programs.
+  </p>
+</div>
+<div class="display-flex flex-justify-start flex-align-center margin-bottom-3">
+  <h1 class="margin-0 margin-right-2">Manage Team Members</h1>
+  <p>
+    Caseworkers are responsible for reviewing and processing applications for Medicaid.
+  </p>
+  <p>
+    Supervisors are responsible for managing the organization and its users.
+  </p>
+  <p>
+    Members are able to view and edit their own information.
+  </p>
+</div>
+
+<% if @users.any? %>
+  <table class="usa-table usa-table--striped width-full">
+    <thead>
+      <tr>
+        <th scope="col" data-sortable>Last name</th>
+        <th scope="col" data-sortable>First name</th>
+        <th scope="col" data-sortable>Email</th>
+        <th scope="col" data-sortable>Role</th>
+        <th scope="col" data-sortable>Program</th>
+        <th scope="col" data-sortable>Region</th>
+        <th scope="col">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @users.each do |user| %>
+        <tr>
+          <td><%= user.last_name %></td>
+          <td><%= user.first_name %></td>
+          <td><%= user.email %></td>
+          <td><%= user.role %></td>
+          <td><%= user.program %></td>
+          <td><%= user.region %></td>
+          <td>
+            <%= link_to "Edit", "/staff/users/#{user.id}/edit", class: "usa-link" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="usa-alert usa-alert--info">
+    <div class="usa-alert__body">
+      <p class="usa-alert__text">No users found.</p>
+    </div>
+  </div>
+<% end %>
+
