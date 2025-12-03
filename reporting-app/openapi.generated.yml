@@ -31,9 +31,7 @@ components:
             case_number: C-111
             certification_requirements:
               certification_date: '2025-09-26'
-              lookback_period: 3
               number_of_months_to_certify: 1
-              due_period_days: 30
               due_date: '2025-10-26'
               months_that_can_be_certified:
               - '2025-07-01'
@@ -354,43 +352,43 @@ components:
       required:
       - status
   responses:
-    daf4ceca5584c5672bbf11e47e9084d1:
+    5980516e18e35c101a85e5e3e96350a1:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    25331b17ebc7b4043680ac0ec6d28fed:
+    7eceb0042655c4e8b3f80b86b8cf8187:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    d29a985ce3a3399c3b74d3cce4ad3a8a:
+    33310b1322b0879ffa3ee03090902ea5:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    f5d81a7000b97ec8621d1a4abeb811c9:
+    68ddcd094f8e97b4348509eab42527db:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    a2ddd687b743a1201da02ce398d5a60e:
+    2eee28421409dee1898a4b4044448fda:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    d2300d37b3c15fd06cfb5f31ec1803b3:
+    53116f80d606465d3aa037ea28ee4418:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    55c1497bcb5f8ff01e8c81977a97a811:
+    53e3ddee2f8302234772f4c7f8040b5d:
       description: Response
       content:
         application/json:
@@ -406,7 +404,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    92315a5cbcfcc9f291207ea5d2704d04:
+    a291df8daf5cbc4181a5e82737e0cef4:
       description: The Certification data.
       content:
         application/json:
@@ -461,14 +459,14 @@ paths:
       description: "#"
       operationId: POST__api_certifications
       requestBody:
-        "$ref": "#/components/requestBodies/92315a5cbcfcc9f291207ea5d2704d04"
+        "$ref": "#/components/requestBodies/a291df8daf5cbc4181a5e82737e0cef4"
       responses:
         '201':
-          "$ref": "#/components/responses/daf4ceca5584c5672bbf11e47e9084d1"
+          "$ref": "#/components/responses/5980516e18e35c101a85e5e3e96350a1"
         '400':
-          "$ref": "#/components/responses/25331b17ebc7b4043680ac0ec6d28fed"
+          "$ref": "#/components/responses/7eceb0042655c4e8b3f80b86b8cf8187"
         '422':
-          "$ref": "#/components/responses/d29a985ce3a3399c3b74d3cce4ad3a8a"
+          "$ref": "#/components/responses/33310b1322b0879ffa3ee03090902ea5"
   "/api/certifications/{id}":
     get:
       tags:
@@ -480,9 +478,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/f5d81a7000b97ec8621d1a4abeb811c9"
+          "$ref": "#/components/responses/68ddcd094f8e97b4348509eab42527db"
         '404':
-          "$ref": "#/components/responses/a2ddd687b743a1201da02ce398d5a60e"
+          "$ref": "#/components/responses/2eee28421409dee1898a4b4044448fda"
   "/api/health":
     get:
       tags:
@@ -492,6 +490,6 @@ paths:
       operationId: GET__api_health
       responses:
         '200':
-          "$ref": "#/components/responses/d2300d37b3c15fd06cfb5f31ec1803b3"
+          "$ref": "#/components/responses/53116f80d606465d3aa037ea28ee4418"
         '503':
-          "$ref": "#/components/responses/55c1497bcb5f8ff01e8c81977a97a811"
+          "$ref": "#/components/responses/53e3ddee2f8302234772f4c7f8040b5d"
