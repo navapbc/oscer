@@ -9,41 +9,33 @@
   <h2 class="margin-top-0 margin-bottom-1">Manage Team Members</h2>
   <p class="margin-top-0">
     Supervisors are responsible for managing the organization and its users.
-    Caseworkers are responsible for reviewing and processing applications for Medicaid.
+    Caseworkers are responsible for reviewing and processing applications.
     Members are able to view and edit their own information.
   </p>
 </div>
 
-<% if @users.any? %>
-  <table class="usa-table usa-table--striped width-full">
-    <thead>
+<table class="usa-table usa-table--striped width-full">
+  <thead>
+    <tr>
+      <th scope="col" data-sortable>Last name</th>
+      <th scope="col" data-sortable>First name</th>
+      <th scope="col" data-sortable>Email</th>
+      <th scope="col" data-sortable>Role</th>
+      <th scope="col" data-sortable>Program</th>
+      <th scope="col" data-sortable>Region</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @users.each do |user| %>
       <tr>
-        <th scope="col" data-sortable>Last name</th>
-        <th scope="col" data-sortable>First name</th>
-        <th scope="col" data-sortable>Email</th>
-        <th scope="col" data-sortable>Role</th>
-        <th scope="col" data-sortable>Program</th>
-        <th scope="col" data-sortable>Region</th>
+        <td><%= user.last_name %></td>
+        <td><%= user.first_name %></td>
+        <td><%= user.email %></td>
+        <td><%= user.role %></td>
+        <td><%= user.program %></td>
+        <td><%= user.region %></td>
       </tr>
-    </thead>
-    <tbody>
-      <% @users.each do |user| %>
-        <tr>
-          <td><%= user.last_name %></td>
-          <td><%= user.first_name %></td>
-          <td><%= user.email %></td>
-          <td><%= user.role %></td>
-          <td><%= user.program %></td>
-          <td><%= user.region %></td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
-<% else %>
-  <div class="usa-alert usa-alert--info">
-    <div class="usa-alert__body">
-      <p class="usa-alert__text">No users found.</p>
-    </div>
-  </div>
-<% end %>
+    <% end %>
+  </tbody>
+</table>
 
