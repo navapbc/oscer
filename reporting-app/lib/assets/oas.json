@@ -38,9 +38,7 @@
               "case_number": "C-111",
               "certification_requirements": {
                 "certification_date": "2025-09-26",
-                "lookback_period": 3,
                 "number_of_months_to_certify": 1,
-                "due_period_days": 30,
                 "due_date": "2025-10-26",
                 "months_that_can_be_certified": [
                   "2025-07-01",
