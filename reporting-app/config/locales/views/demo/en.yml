@@ -22,3 +22,8 @@ en:
       staff_portal:
         title: "Staff Portal"
         description: "This is the administrative interface where staff can review and process member certification responses."
+      additional_resources:
+        title: "Additional Resources"
+        github_repo: "GitHub repo: "
+        github_repo_url: "https://github.com/navapbc/OSCER/blob/main/README.md"
+        api_docs: "API docs: "

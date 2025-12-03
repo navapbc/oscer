@@ -25,17 +25,27 @@
       <p><em><%= t(".creating_certification_request.note") %></em></p>
     </section>
 
-    <section id="member-dashboard" class="margin-top-4">
+    <section id="member-dashboard" class="margin-y-2">
       <h2><%= t(".member_dashboard.title") %></h2>
       <code><%= dashboard_path %></code>
       <p><%= t(".member_dashboard.description") %></p>
       <p><em><%= t(".member_dashboard.note") %></em></p>
     </section>
 
-    <section id="staff-portal" class="margin-top-4">
+    <section id="staff-portal" class="margin-y-2">
       <h2><%= t(".staff_portal.title") %></h2>
       <code><%= staff_path %></code>
       <p><%= t(".staff_portal.description") %></p>
+    </section>
+
+    <section id="additional-resources" class="margin-y-2">
+      <h2><%= t(".additional_resources.title") %></h2>
+      <p class="text-no-wrap">
+        <%= t(".additional_resources.github_repo") %> <%= link_to nil, t(".additional_resources.github_repo_url") %>
+      </p>
+      <p class="text-no-wrap margin-top-0">
+        <%= t(".additional_resources.api_docs") %> <%= link_to nil, api_oas_rails_url %>
+      </p>
     </section>
   </div>
 
