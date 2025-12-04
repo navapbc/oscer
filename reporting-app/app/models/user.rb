@@ -14,7 +14,7 @@ class User < ApplicationRecord
 
   validates :provider, presence: true
   validates :role, inclusion: { in: [ "caseworker", "supervisor" ] }, allow_nil: true # Should be configurable in the future
-  validates :region, inclusion: { in: [ "Northwest", "Northeast", "Southwest", "Southeast" ] }, allow_nil: true # Should be configurable in the future
+  validates :region, inclusion: { in: [ "Northwest", "Northeast", "Southwest", "Southeast", "All" ] }, allow_nil: true # Should be configurable in the future
 
   def access_token_expires_within_minutes?(access_token, minutes)
     return true unless access_token.present?
