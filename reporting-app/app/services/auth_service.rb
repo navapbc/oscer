@@ -91,7 +91,7 @@ class AuthService
       user = User.create!(
         uid: uid,
         email: email,
-        provider: provider
+        provider: provider,
       )
       user
     end

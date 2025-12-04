@@ -6,6 +6,7 @@ FactoryBot.define do
     uid { Faker::Internet.uuid }
     provider { "factory_bot" }
     mfa_preference { "opt_out" }
+    full_name { nil }
     role { nil }
     region { nil }
   end

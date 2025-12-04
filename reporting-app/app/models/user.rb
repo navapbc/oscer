@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class User < ApplicationRecord
-  attribute :program, default: "Medicaid"
+  attribute :full_name
   attribute :region
   attribute :role
 
@@ -13,8 +13,6 @@ class User < ApplicationRecord
   has_many :tasks
 
   validates :provider, presence: true
-  validates :role, inclusion: { in: [ "caseworker", "supervisor" ] }, allow_nil: true # Should be configurable in the future
-  validates :region, inclusion: { in: [ "Northwest", "Northeast", "Southwest", "Southeast", "All" ] }, allow_nil: true # Should be configurable in the future
 
   def access_token_expires_within_minutes?(access_token, minutes)
     return true unless access_token.present?

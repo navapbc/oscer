@@ -177,6 +177,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_03_234727) do
     t.datetime "updated_at", null: false
     t.string "role"
     t.string "region"
+    t.string "full_name"
     t.index ["uid"], name: "index_users_on_uid", unique: true
   end
 

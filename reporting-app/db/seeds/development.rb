@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Create sample batch uploads for testing
-user = User.first || User.create!(email: "staff@example.com", uid: SecureRandom.uuid, provider: "login.gov", role: "supervisor", region: "All")
+user = User.first || User.create!(email: "staff@example.com", uid: SecureRandom.uuid, provider: "login.gov")
 
 5.times do |index|
   certification = FactoryBot.create(
