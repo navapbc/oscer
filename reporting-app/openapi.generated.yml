@@ -284,7 +284,15 @@ components:
           description: An identifier for the case associated with the certification
         certification_requirements:
           oneOf:
-          - "$ref": "#/components/schemas/CertificationRequirements"
+          - allOf:
+            - "$ref": "#/components/schemas/CertificationRequirements"
+            - type: object
+              properties:
+                params:
+                  type:
+                  - object
+                  - 'null'
+                  description: Additional parameters for the certification requirements
           - type: 'null'
         member_data:
           anyOf:
@@ -352,43 +360,43 @@ components:
       required:
       - status
   responses:
-    5980516e18e35c101a85e5e3e96350a1:
+    5649fe1af2ba1b2387d50bc57793d2c4:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    7eceb0042655c4e8b3f80b86b8cf8187:
+    7393ad9cb4433f13e8400556d66b8cc7:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    33310b1322b0879ffa3ee03090902ea5:
+    9e226226d647cdd2b2f9de2f1e6820a0:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    68ddcd094f8e97b4348509eab42527db:
+    63af00b74faf68e65aea0823fd314b1e:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    2eee28421409dee1898a4b4044448fda:
+    312d6e66dd34f4cc44652c73271b12fd:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    53116f80d606465d3aa037ea28ee4418:
+    481f92c30a59b9144510e9a4caaf9f07:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    53e3ddee2f8302234772f4c7f8040b5d:
+    751fcb3d29beebba44f8d6b6a496945f:
       description: Response
       content:
         application/json:
@@ -404,7 +412,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    a291df8daf5cbc4181a5e82737e0cef4:
+    1c0c4e36f0e0064bc5da62d78a57a273:
       description: The Certification data.
       content:
         application/json:
@@ -459,14 +467,14 @@ paths:
       description: "#"
       operationId: POST__api_certifications
       requestBody:
-        "$ref": "#/components/requestBodies/a291df8daf5cbc4181a5e82737e0cef4"
+        "$ref": "#/components/requestBodies/1c0c4e36f0e0064bc5da62d78a57a273"
       responses:
         '201':
-          "$ref": "#/components/responses/5980516e18e35c101a85e5e3e96350a1"
+          "$ref": "#/components/responses/5649fe1af2ba1b2387d50bc57793d2c4"
         '400':
-          "$ref": "#/components/responses/7eceb0042655c4e8b3f80b86b8cf8187"
+          "$ref": "#/components/responses/7393ad9cb4433f13e8400556d66b8cc7"
         '422':
-          "$ref": "#/components/responses/33310b1322b0879ffa3ee03090902ea5"
+          "$ref": "#/components/responses/9e226226d647cdd2b2f9de2f1e6820a0"
   "/api/certifications/{id}":
     get:
       tags:
@@ -478,9 +486,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/68ddcd094f8e97b4348509eab42527db"
+          "$ref": "#/components/responses/63af00b74faf68e65aea0823fd314b1e"
         '404':
-          "$ref": "#/components/responses/2eee28421409dee1898a4b4044448fda"
+          "$ref": "#/components/responses/312d6e66dd34f4cc44652c73271b12fd"
   "/api/health":
     get:
       tags:
@@ -490,6 +498,6 @@ paths:
       operationId: GET__api_health
       responses:
         '200':
-          "$ref": "#/components/responses/53116f80d606465d3aa037ea28ee4418"
+          "$ref": "#/components/responses/481f92c30a59b9144510e9a4caaf9f07"
         '503':
-          "$ref": "#/components/responses/53e3ddee2f8302234772f4c7f8040b5d"
+          "$ref": "#/components/responses/751fcb3d29beebba44f8d6b6a496945f"
