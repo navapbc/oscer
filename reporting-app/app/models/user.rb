@@ -4,23 +4,18 @@ class User < ApplicationRecord
   devise :auth_service_authenticatable, :timeoutable
   attr_accessor :access_token
 
-  # == Enums ========================================================
-  # See `technical-foundation.md#enums` for important note about enums.
   enum :mfa_preference, { opt_out: 0, software_token: 1 }, validate: { allow_nil: true }
 
-  # == Relationships ========================================================
   has_many :tasks
 
-  # == Validations ==========================================================
   validates :provider, presence: true
-  validates :role, inclusion: { in: [ "caseworker", "supervisor" ] } # Should be configurable in the future
-  validates :program, inclusion: { in: [ "Medicaid", "SNAP" ] }
+  validates :role, inclusion: { in: [ "caseworker", "supervisor" ] }, allow_nil: true # Should be configurable in the future
   validates :region, inclusion: { in: [ "Northwest", "Northeast", "Southwest", "Southeast" ] } # Should be configurable in the future
 
-  # == Methods ==============================================================
+  attribute :program, default: "Medicaid"
+  attribute :region
+  attribute :role
 
-  # Check if the access token is expired or will expire within the next `minutes` minutes.
-  # Access token is only stored in the session, so it needs passed in, rather than accessed from the model.
   def access_token_expires_within_minutes?(access_token, minutes)
     return true unless access_token.present?
 

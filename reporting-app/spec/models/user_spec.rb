@@ -41,19 +41,6 @@ RSpec.describe User, type: :model do
       end
     end
 
-    describe "program validation" do
-      it "accepts valid program values" do
-        expect(build(:user, program: "Medicaid")).to be_valid
-        expect(build(:user, program: "SNAP")).to be_valid
-      end
-
-      it "rejects invalid program values" do
-        user = build(:user, program: "Invalid Program")
-        expect(user).not_to be_valid
-        expect(user.errors[:program]).to be_present
-      end
-    end
-
     describe "region validation" do
       it "accepts valid region values" do
         expect(build(:user, region: "Northwest")).to be_valid
