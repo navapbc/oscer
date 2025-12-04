@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe "/review_exemption_claim_tasks", type: :request do
   include Warden::Test::Helpers
 
-  let(:user) { User.create!(email: "test@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
+  let(:user) { create(:user, email: "test@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
   let(:certification_case) { create(:certification_case, business_process_current_step: "review_exemption_claim") }
   let(:task) { create(:review_exemption_claim_task, case: certification_case) }
 

@@ -17,8 +17,8 @@ require 'rails_helper'
 RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
   include Warden::Test::Helpers
 
-  let(:user) { User.create!(email: "test@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
-  let(:other_user) { User.create!(email: "test-other@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
+  let(:user) { create(:user, email: "test@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
+  let(:other_user) { create(:user, email: "test-other@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
   let(:certification_requirements) do
     build(
       :certification_certification_requirements,
