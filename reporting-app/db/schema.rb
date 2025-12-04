@@ -175,7 +175,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_03_234727) do
     t.integer "mfa_preference"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "roles", default: [], null: false, array: true
+    t.string "role"
     t.string "program", default: "Medicaid", null: false
     t.string "region", default: "Northwest", null: false
     t.string "first_name"
