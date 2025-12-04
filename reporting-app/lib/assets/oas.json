@@ -15,12 +15,8 @@
           "certification_requirements": {
             "oneOf": [
               { "$ref": "#/components/schemas/CertificationRequirements" },
-              {
-                "$ref": "#/components/schemas/CertificationRequirementParameters"
-              },
-              {
-                "$ref": "#/components/schemas/CertificationRequirementTypeParameters"
-              }
+              { "$ref": "#/components/schemas/CertificationRequirementParameters" },
+              { "$ref": "#/components/schemas/CertificationRequirementTypeParameters" }
             ]
           },
           "member_data": {
@@ -30,7 +26,10 @@
             ]
           }
         },
-        "required": ["member_id", "certification_requirements"],
+        "required": [
+          "member_id",
+          "certification_requirements"
+        ],
         "examples": {
           "fully_specified_certification_requirements": {
             "value": {
@@ -198,7 +197,10 @@
             "description": "The type of certification"
           }
         },
-        "required": ["certification_date", "certification_type"]
+        "required": [
+          "certification_date",
+          "certification_type"
+        ]
       },
       "CertificationMemberData": {
         "type": "object",
@@ -302,7 +304,10 @@
             "format": "decimal"
           }
         },
-        "required": ["period_start", "period_end"]
+        "required": [
+          "period_start",
+          "period_end"
+        ]
       },
       "CertificationResponseBody": {
         "type": "object",
@@ -322,7 +327,20 @@
           },
           "certification_requirements": {
             "oneOf": [
-              { "$ref": "#/components/schemas/CertificationRequirements" },
+              {
+                "allOf": [
+                  { "$ref": "#/components/schemas/CertificationRequirements" },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "params": {
+                        "type": ["object", "null"],
+                        "description": "Additional parameters for the certification requirements"
+                      }
+                    }
+                  }
+                ]
+              },
               { "type": "null" }
             ]
           },
@@ -341,7 +359,12 @@
             "format": "date-time"
           }
         },
-        "required": ["id", "member_id", "created_at", "updated_at"],
+        "required": [
+          "id",
+          "member_id",
+          "created_at",
+          "updated_at"
+        ],
         "example": {
           "id": "63680317-0e33-40a7-8e1a-249a2f5855d9",
           "member_id": "123",
@@ -387,7 +410,10 @@
           "errors": {
             "type": "array",
             "items": {
-              "oneOf": [{ "type": "string" }, { "type": "object" }]
+              "oneOf": [
+                { "type": "string" },
+                { "type": "object" }
+              ]
             }
           }
         },
