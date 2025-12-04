@@ -20,9 +20,10 @@
             ]
           },
           "member_data": {
-            "type": ["object", "null"],
-            "description": "Description of beneficiary",
-            "properties": {}
+            "oneOf": [
+              { "$ref": "#/components/schemas/CertificationMemberData" },
+              { "type": "null" }
+            ]
           }
         },
         "required": [
@@ -36,15 +37,57 @@
               "case_number": "C-111",
               "certification_requirements": {
                 "certification_date": "2025-09-26",
+                "number_of_months_to_certify": 1,
+                "due_date": "2025-10-26",
+                "months_that_can_be_certified": [
+                  "2025-07-01",
+                  "2025-08-01",
+                  "2025-09-01"
+                ]
+              },
+              "member_data": {
+                "account_email": "john@doe.com",
+                "contact": {
+                  "email": "john@doe.com",
+                  "phone": "+123456789"
+                },
+                "name": {
+                  "first": "Johnathan",
+                  "middle": "Alfred",
+                  "last": "Doe",
+                  "suffix": "Jr."
+                },
+                "date_of_birth": "1980-01-01",
+                "race_ethnicity": "Hispanic",
+                "pregnancy_status": false
+              }
+            }
+          },
+          "without_explicit_months_that_can_be_certified_and_due_date": {
+            "value": {
+              "member_id": "123",
+              "case_number": "C-111",
+              "certification_requirements": {
+                "certification_date": "2025-09-26",
                 "lookback_period": 3,
                 "number_of_months_to_certify": 1,
                 "due_period_days": 30
               },
               "member_data": {
+                "account_email": "john@doe.com",
                 "contact": {
                   "email": "john@doe.com",
                   "phone": "+123456789"
-                }
+                },
+                "name": {
+                  "first": "Johnathan",
+                  "middle": "Alfred",
+                  "last": "Doe",
+                  "suffix": "Jr."
+                },
+                "date_of_birth": "1980-01-01",
+                "race_ethnicity": "Hispanic",
+                "pregnancy_status": false
               }
             }
           },
@@ -57,10 +100,20 @@
                 "certification_type": "new_application"
               },
               "member_data": {
+                "account_email": "john@doe.com",
                 "contact": {
                   "email": "john@doe.com",
                   "phone": "+123456789"
-                }
+                },
+                "name": {
+                  "first": "Johnathan",
+                  "middle": "Alfred",
+                  "last": "Doe",
+                  "suffix": "Jr."
+                },
+                "date_of_birth": "1980-01-01",
+                "race_ethnicity": "Hispanic",
+                "pregnancy_status": false
               }
             }
           }
@@ -95,11 +148,6 @@
             "type": "string",
             "format": "date",
             "description": "Date by which the Member must have submitted their evidence"
-          },
-          "params": {
-            "type": ["object", "null"],
-            "description": "Input parameters, if any.",
-            "properties": {}
           }
         },
         "required": [
@@ -200,6 +248,19 @@
             "items": {
               "$ref": "#/components/schemas/CertificationMemberDataPayrollAccount"
             }
+          },
+          "date_of_birth": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "The date of birth of the member"
+          },
+          "race_ethnicity": {
+            "type": ["string", "null"],
+            "description": "The race or ethnicity of the member"
+          },
+          "pregnancy_status": {
+            "type": ["boolean", "null"],
+            "description": "The pregnancy status of the member"
           }
         }
       },
@@ -266,12 +327,25 @@
           },
           "certification_requirements": {
             "oneOf": [
-              { "$ref": "#/components/schemas/CertificationRequirements" },
+              {
+                "allOf": [
+                  { "$ref": "#/components/schemas/CertificationRequirements" },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "params": {
+                        "type": ["object", "null"],
+                        "description": "Additional parameters for the certification requirements"
+                      }
+                    }
+                  }
+                ]
+              },
               { "type": "null" }
             ]
           },
           "member_data": {
-            "oneOf": [
+            "anyOf": [
               { "$ref": "#/components/schemas/CertificationMemberData" },
               { "type": "null" }
             ]
@@ -311,10 +385,20 @@
             }
           },
           "member_data": {
+            "account_email": "john@doe.com",
             "contact": {
               "email": "john@doe.com",
               "phone": "+123456789"
-            }
+            },
+            "name": {
+              "first": "Johnathan",
+              "middle": "Alfred",
+              "last": "Doe",
+              "suffix": "Jr."
+            },
+            "date_of_birth": "1980-01-01",
+            "race_ethnicity": "Hispanic",
+            "pregnancy_status": false
           },
           "created_at": "1970-01-01T00:00:00.000Z",
           "updated_at": "1970-01-01T00:00:00.000Z"
@@ -327,8 +411,8 @@
             "type": "array",
             "items": {
               "oneOf": [
-                {"type": "string"},
-                {"type": "object"}
+                { "type": "string" },
+                { "type": "object" }
               ]
             }
           }

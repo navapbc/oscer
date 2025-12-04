@@ -11,7 +11,11 @@ RSpec.describe "/api/certifications", type: :request do
     {
       member_id: "foobar",
       member_data: {
-        account_email: member_user.email
+        account_email: member_user.email,
+        name: {
+          first: "John",
+          last: "Doe"
+        }
       },
       certification_requirements: build(:certification_certification_requirement_params, :with_direct_params).as_json
     }

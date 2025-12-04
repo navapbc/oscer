@@ -17,6 +17,7 @@ class Api::CertificationsController < ApiController
   #
   # @request_body The Certification data. [Reference:#/components/schemas/CertificationCreateRequestBody]
   # @request_body_example Fully specified certification requirements [Reference:#/components/schemas/CertificationCreateRequestBody/examples/fully_specified_certification_requirements]
+  # @request_body_example Without explicit months and due date [Reference:#/components/schemas/CertificationCreateRequestBody/examples/without_explicit_months_that_can_be_certified_and_due_date]
   # @request_body_example Certification type [Reference:#/components/schemas/CertificationCreateRequestBody/examples/certification_type]
   # @response Created Certification.(201) [Reference:#/components/schemas/CertificationResponseBody]
   # @response User error.(400) [Reference:#/components/schemas/ErrorResponseBody]
