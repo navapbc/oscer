@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 class User < ApplicationRecord
+  attribute :program, default: "Medicaid"
+  attribute :region
+  attribute :role
+
   devise :auth_service_authenticatable, :timeoutable
   attr_accessor :access_token
 
@@ -10,11 +14,7 @@ class User < ApplicationRecord
 
   validates :provider, presence: true
   validates :role, inclusion: { in: [ "caseworker", "supervisor" ] }, allow_nil: true # Should be configurable in the future
-  validates :region, inclusion: { in: [ "Northwest", "Northeast", "Southwest", "Southeast" ] } # Should be configurable in the future
-
-  attribute :program, default: "Medicaid"
-  attribute :region
-  attribute :role
+  validates :region, inclusion: { in: [ "Northwest", "Northeast", "Southwest", "Southeast" ] }, allow_nil: true # Should be configurable in the future
 
   def access_token_expires_within_minutes?(access_token, minutes)
     return true unless access_token.present?

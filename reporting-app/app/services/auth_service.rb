@@ -91,10 +91,7 @@ class AuthService
       user = User.create!(
         uid: uid,
         email: email,
-        provider: provider,
-        first_name: Faker::Name.first_name,
-        last_name: Faker::Name.last_name,
-        region: "Northwest"
+        provider: provider
       )
       user
     end

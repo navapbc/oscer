@@ -176,9 +176,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_03_234727) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "role"
-    t.string "region", default: "Northwest", null: false
-    t.string "first_name"
-    t.string "last_name"
+    t.string "region"
     t.index ["uid"], name: "index_users_on_uid", unique: true
   end
 
