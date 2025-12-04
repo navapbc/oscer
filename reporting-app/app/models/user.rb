@@ -13,6 +13,9 @@ class User < ApplicationRecord
 
   # == Validations ==========================================================
   validates :provider, presence: true
+  validates :role, inclusion: { in: [ "caseworker", "supervisor" ] } # Should be configurable in the future
+  validates :program, inclusion: { in: [ "Medicaid", "SNAP" ] }
+  validates :region, inclusion: { in: [ "Northwest", "Northeast", "Southwest", "Southeast" ] } # Should be configurable in the future
 
   # == Methods ==============================================================
 
