@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: 3d17783d76ac29184e71d0c4543771d2135bb8a7
+  revision: 3727e33bdc273b8626b80a7b600ebf6b98b40aca
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -155,7 +155,7 @@ GEM
     chunky_png (1.4.0)
     coderay (1.1.3)
     concurrent-ruby (1.3.5)
-    connection_pool (2.5.4)
+    connection_pool (3.0.1)
     crack (1.0.0)
       bigdecimal
       rexml
@@ -429,7 +429,7 @@ GEM
       ffi (~> 1.0)
     rbs (3.9.5)
       logger
-    rdoc (6.15.1)
+    rdoc (6.16.1)
       erb
       psych (>= 4.0.0)
       tsort
@@ -541,7 +541,7 @@ GEM
       sprockets (>= 3.0.0)
     stimulus-rails (1.3.4)
       railties (>= 6.0.0)
-    stringio (3.1.8)
+    stringio (3.1.9)
     thor (1.4.0)
     timeliness (0.5.3)
     timeout (0.4.4)

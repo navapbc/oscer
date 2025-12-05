@@ -62,7 +62,7 @@ The platform consists of:
 ## Getting Started  
 
 If you are interested in:  
-- Getting OSCER set up locally, see instructions below or go to our [Getting Started guide]([docs/how-to-guides/getting-started](https://github.com/navapbc/oscer/blob/main/docs/how-to-guides/getting-started.md)).
+- Getting OSCER set up locally, see instructions below or go to our [Getting Started guide](docs/how-to-guides/getting-started.md).
 
 ### Prerequisites
 
