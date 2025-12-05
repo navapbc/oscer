@@ -3,6 +3,8 @@
 class Demo::CertificationsController < ApplicationController
   layout "demo"
 
+  before_action :set_regions
+
   skip_after_action :verify_authorized
   skip_after_action :verify_policy_scoped
 
@@ -36,8 +38,13 @@ class Demo::CertificationsController < ApplicationController
   end
 
   private
-    def form_params
-      params.require(:demo_certifications_create_form)
-            .permit(Demo::Certifications::CreateForm.attribute_names.map(&:to_sym))
-    end
+
+  def set_regions
+    @regions = User.regions
+  end
+
+  def form_params
+    params.require(:demo_certifications_create_form)
+          .permit(Demo::Certifications::CreateForm.attribute_names.map(&:to_sym))
+  end
 end

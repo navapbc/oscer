@@ -6,6 +6,8 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
 
   attribute :due_date, :date
 
+  attribute :region, :string
+
   validates :certification_date, presence: true
   validates :lookback_period, presence: true
   validates :number_of_months_to_certify, presence: true
@@ -33,6 +35,7 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
       "months_that_can_be_certified": self.months_that_can_be_certified,
       "number_of_months_to_certify": self.number_of_months_to_certify,
       "due_date": self.due_date,
+      "region": self.region,
       "params": self.as_json
     })
   end
