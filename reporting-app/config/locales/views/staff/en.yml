@@ -10,7 +10,7 @@ en:
     users:
       index:
         title: "Organization Settings"
-        description: "View and edit staff members and their roles, regions, and programs."
+        description: "View staff members and their roles, regions, and programs."
         manage_team_members: "Manage Team Members"
         manage_team_members_description: "Supervisors are responsible for managing the organization and its users. Caseworkers are responsible for reviewing and processing applications."
         table:
