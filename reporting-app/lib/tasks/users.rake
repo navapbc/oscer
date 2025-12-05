@@ -7,15 +7,9 @@ namespace :users do
     user = User.find_by(email:)
     raise "Error: User with email '#{email}' not found" unless user
 
-    # Build update hash only with explicitly provided values
-    update_hash = {}
-    update_hash[:full_name] = args[:full_name] if args[:full_name] != ""
-    update_hash[:role] = args[:role] if args[:role] != ""
-    update_hash[:region] = args[:region] if args[:region] != ""
+    args.with_defaults(full_name: nil, role: nil, region: nil)
 
-    if update_hash.empty?
-      Rails.logger.info "No attributes provided to update for user '#{email}'"
-    elsif user.update(update_hash)
+    if user.update(args.to_h)
       Rails.logger.info "Successfully updated user '#{email}' with: #{user.changes.inspect}"
     else
       error_messages = user.errors.full_messages.join(", ")
