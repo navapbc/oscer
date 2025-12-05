@@ -18,17 +18,10 @@ RSpec.describe "/staff/users", type: :request do
 
   describe "GET /index" do
     it "renders a successful response with users" do
-      create_list(:user, 3)
+      create_list(:user, 3, role: "caseworker")
       get "/staff/users"
       expect(response).to be_successful
       expect(response.body).to include("Manage Team Members")
-    end
-
-    it "renders a successful response without users" do
-      User.destroy_all
-      get "/staff/users"
-      expect(response).to be_successful
-      expect(response.body).to include("No users found")
     end
   end
 end

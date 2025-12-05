@@ -27,11 +27,11 @@
   <tbody>
     <% @users.each do |user| %>
       <tr>
-        <td><%= user.last_name %></td>
-        <td><%= user.first_name %></td>
+        <td><%= user.full_name&.split(" ")&.last %></td>
+        <td><%= user.full_name&.split(" ")&.first %></td>
         <td><%= user.email %></td>
         <td><%= user.role %></td>
-        <td><%= user.program %></td>
+        <td>Medicaid</td>
         <td><%= user.region %></td>
       </tr>
     <% end %>

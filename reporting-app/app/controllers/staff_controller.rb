@@ -30,7 +30,7 @@ class StaffController < Strata::StaffController
       { name: "Search", path: search_members_path },
       { name: "Batch Uploads", path: certification_batch_uploads_path }
     ] + super + [
-      { name: "Organization Settings", path: users_path }
+      { name: "Organization Settings", path: users_path } # TODO: Add organization settings link to SDK
     ]
   end
 

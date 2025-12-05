@@ -2,11 +2,8 @@
 
 module Staff
   class UsersController < StaffController
-    before_action :set_user, only: [ :show, :edit, :update ]
-
     def index
-      # TODO: grab only users that have a role
-      @users = User.all
+      @users = User.staff_members
     end
   end
 end
