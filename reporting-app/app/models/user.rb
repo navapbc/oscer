@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 class User < ApplicationRecord
-  attribute :full_name
-  attribute :region
-  attribute :role
+  attribute :full_name, :string
+  attribute :region, :string
+  attribute :role, :string
 
   devise :auth_service_authenticatable, :timeoutable
   attr_accessor :access_token
