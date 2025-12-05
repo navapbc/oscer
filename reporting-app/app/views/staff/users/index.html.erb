@@ -1,27 +1,26 @@
 <div class="margin-bottom-5">
-  <h1 class="margin-top-0 margin-bottom-1">Organization Settings</h1>
+  <h1 class="margin-top-0 margin-bottom-1"><%= t(".title") %></h1>
   <p class="margin-top-0">
-    View and edit staff members and their roles, regions, and programs.
+    <%= t(".description") %>
   </p>
 </div>
 
 <div class="margin-bottom-3">
-  <h2 class="margin-top-0 margin-bottom-1">Manage Team Members</h2>
+  <h2 class="margin-top-0 margin-bottom-1"><%= t(".manage_team_members") %></h2>
   <p class="margin-top-0">
-    Supervisors are responsible for managing the organization and its users.
-    Caseworkers are responsible for reviewing and processing applications.
+    <%= t(".manage_team_members_description") %>
   </p>
 </div>
 
 <table class="usa-table usa-table--striped width-full">
   <thead>
     <tr>
-      <th scope="col" data-sortable>Last name</th>
-      <th scope="col" data-sortable>First name</th>
-      <th scope="col" data-sortable>Email</th>
-      <th scope="col" data-sortable>Role</th>
-      <th scope="col" data-sortable>Program</th>
-      <th scope="col" data-sortable>Region</th>
+      <th scope="col" data-sortable><%= t(".table.last_name") %></th>
+      <th scope="col" data-sortable><%= t(".table.first_name") %></th>
+      <th scope="col" data-sortable><%= t(".table.email") %></th>
+      <th scope="col" data-sortable><%= t(".table.role") %></th>
+      <th scope="col" data-sortable><%= t(".table.program") %></th>
+      <th scope="col" data-sortable><%= t(".table.region") %></th>
     </tr>
   </thead>
   <tbody>
@@ -31,7 +30,7 @@
         <td><%= user.full_name&.split(" ")&.first %></td>
         <td><%= user.email %></td>
         <td><%= user.role %></td>
-        <td>Medicaid</td>
+        <td><%= t(".table.program_medicaid") %></td>
         <td><%= user.region %></td>
       </tr>
     <% end %>
