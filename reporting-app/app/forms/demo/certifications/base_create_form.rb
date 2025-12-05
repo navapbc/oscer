@@ -37,10 +37,10 @@ module Demo
       # TODO: would maybe prefer to use ISO8601 duration values here instead of integers of days
       attribute :due_period_days, :integer, default: DUE_PERIOD_OPTIONS[1]
 
-      attribute :region, :enum, options: Region.keys
+      attribute :region, :string
 
       validates :certification_date, presence: true
-      validates :region, inclusion: { in: Region.keys, message: "is not a valid option" }, allow_blank: true
+      validates :region, inclusion: { in: proc { User.regions }, message: "is not a valid option" }, allow_blank: true
 
       # Name validations
       validates :member_name_first, presence: true

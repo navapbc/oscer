@@ -14,6 +14,10 @@ class User < ApplicationRecord
 
   validates :provider, presence: true
 
+  def self.regions
+    where.not(region: nil).distinct.pluck(:region)
+  end
+
   def access_token_expires_within_minutes?(access_token, minutes)
     return true unless access_token.present?
 

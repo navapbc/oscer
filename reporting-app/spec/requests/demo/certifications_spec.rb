@@ -200,6 +200,10 @@ RSpec.describe "/demo/certifications", type: :request do
     end
 
     context "with region" do
+      before do
+        create(:user, region: "northeast")
+      end
+
       it "creates a certification with a valid region" do
         create_attrs = valid_request_attributes.merge({ region: "northeast" })
 
