@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe "/demo/certifications", type: :request do
   include Warden::Test::Helpers
 
-  let(:user) { User.create!(email: "foo@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
+  let(:user) { create(:user, email: "foo@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
 
   let(:valid_request_attributes) {
     {

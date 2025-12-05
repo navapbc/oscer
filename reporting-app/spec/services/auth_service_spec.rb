@@ -22,7 +22,7 @@ RSpec.describe AuthService do
   describe "#change_email" do
     it "updates the user's email" do
       auth_service = described_class.new(mock_auth_adapter)
-      User.create!(uid: mock_uid, email: "test@example.com", provider: "mock")
+      create(:user, uid: mock_uid, email: "test@example.com", provider: "mock")
 
       auth_service.change_email(mock_uid, "new@example.com")
 
@@ -43,7 +43,7 @@ RSpec.describe AuthService do
 
     it "updates the user's email if it has changed" do
       auth_service = described_class.new(mock_auth_adapter)
-      User.create!(uid: mock_uid, email: "oldie@example.com", provider: "mock")
+      create(:user, uid: mock_uid, email: "oldie@example.com", provider: "mock")
 
       response = auth_service.initiate_auth("new@example.com", "password")
 

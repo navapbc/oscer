@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe "ExemptionScreeners", type: :request do
   include Warden::Test::Helpers
 
-  let(:user) { User.create!(email: "test@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
+  let(:user) { create(:user, email: "test@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
   let(:certification) { create(:certification, :connected_to_email, email: user.email) }
   let(:certification_case) { create(:certification_case, certification: certification) }
 
