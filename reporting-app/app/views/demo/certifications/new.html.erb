@@ -1,6 +1,7 @@
 <% content_for :title, t("certifications.demo_create.title") %>
 
 <h1><%= t("certifications.demo_create.title") %></h1>
+<p><%= t("certifications.demo_create.intro") %></p>
 
 <% tabs = [
   { name: "Generic", path: new_demo_certification_path, active: !@form.certification_type },

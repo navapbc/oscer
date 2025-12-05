@@ -1,0 +1,29 @@
+en:
+  demo:
+    index:
+      title: "Exploring the application"
+      intro: "All routes below are relative to your current environment (e.g., localhost:3000 or medicaid.navateam.com). You can explore OSCER's different interfaces and workflows with the following instructions:"
+      demo_overview:
+        title: "Demo Overview"
+        description: "Start here to see entrypoints to the different experiences in OSCER and understand the application's structure."
+      creating_certification_request:
+        title: "Creating a Certification Request"
+        description: "A certification request is the case that a member responds to. In production, these are created in bulk through batch processes or API, but for testing you can create them manually."
+        workflow_intro: "To experience the full workflow:"
+        step_1: "Create a certification request using an email address you can access"
+        step_2: "Configure different scenarios (lookback months, exemption triggers, etc.)"
+        step_3: "Test automated exemptions by indicating pregnancy or other qualifying conditions"
+        step_4: "Submit the request"
+        note: "Note: You can reuse the same email address for multiple certification requests—the system will automatically reset for that email."
+      member_dashboard:
+        title: "Member Dashboard (or Client View)"
+        description: "This is the member-facing interface where clients respond to their certification requests. Follow the instructions on the dashboard to create an activity report or exemption request. Once submitted, you can navigate to the staff portal to view the submitted request. You must complete a certification request (see above) before you'll see any data in this view."
+        note: "Note: Requires a certification request to be created first."
+      staff_portal:
+        title: "Staff Portal"
+        description: "This is the administrative interface where staff can review and process member certification responses."
+      additional_resources:
+        title: "Additional Resources"
+        github_repo: "GitHub repo: "
+        github_repo_url: "https://github.com/navapbc/OSCER/blob/main/README.md"
+        api_docs: "API docs: "

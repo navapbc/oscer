@@ -18,6 +18,7 @@ en:
       submit: "Update"
     demo_create:
       title: "Certification Request"
+      intro: "A certification request is the case that a member responds to. In production, these are created in bulk through batch processes or API, but for testing you can create them manually. You can create it below."
       submit: "Request Certification"
       # could use pluralize stuff for these options, but at the moment these are
       # fixed values and could potentially have mixed units, so be explicit for now
