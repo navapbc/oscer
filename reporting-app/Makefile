@@ -219,10 +219,6 @@ precompile-assets:
 openapi-spec: ## Generate OpenAPI spec
 	$(RUBY_RUN_CMD) bin/rake oas:generate[yaml,openapi.generated.yml]
 
-update-user: ## Update a user by email with full_name, role, and/or region attributes
-	@:$(call check_defined, EMAIL, the user email to update)
-	$(RAILS_RUN_CMD) users:update -- --email=$(EMAIL) $(if $(filter command,$(origin FULL_NAME)),--full_name="$(FULL_NAME)") $(if $(filter command,$(origin ROLE)),--role=$(ROLE)) $(if $(filter command,$(origin REGION)),--region=$(REGION))
-
 ##################################################
 # Miscellaneous Utilities
 ##################################################

@@ -111,32 +111,21 @@ You will need to set the other cognito variables as well; setting `AUTH_ADAPTER`
 
 **Update a user's attributes by email:**
 
-You can update a user's `full_name`, `role`, and `region` attributes using the `users:update` rake task. Only the email is required; other attributes are optional.
-
-Using the Makefile (recommended):
+You can update a user's `full_name`, `role`, and `region` attributes using the `users:update` rake task. All positional arguments are required.
 
 ```bash
-make update-user EMAIL=user@example.com FULL_NAME="John Doe" ROLE=admin REGION=Southeast
-```
-
-Or run directly with rails:
-
-```bash
-bin/rails users:update -- --email=user@example.com --full_name="John Doe" --role=admin --region=Southeast
+bin/rails 'users:update[user@email.gov,John Doe,admin,Southwest]'
 ```
 
 To clear an attribute (set it to nil), pass an empty value:
 
-Using the Makefile:
-
 ```bash
-make update-user EMAIL=user@example.com FULL_NAME=
+bin/rails 'users:update[user@email.gov,,,Southwest]'
 ```
 
-Or run directly with rails:
-
+Passing no arguments after email will set all values to nil.
 ```bash
-bin/rails users:update -- --email=user@example.com --full_name=
+bin/rails 'users:update[user@email.gov]'
 ```
 
 #### IDE tips
