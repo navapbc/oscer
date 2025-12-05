@@ -14,6 +14,8 @@ class User < ApplicationRecord
 
   validates :provider, presence: true
 
+  scope :staff_members, -> { where.not(role: nil) }
+
   def access_token_expires_within_minutes?(access_token, minutes)
     return true unless access_token.present?
 

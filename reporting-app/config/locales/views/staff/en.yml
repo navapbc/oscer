@@ -7,3 +7,17 @@ en:
       my_tasks: "My tasks"
       task_type: "Task type"
       title: "Dashboard"
+    users:
+      index:
+        title: "Organization Settings"
+        description: "View staff members and their roles, regions, and programs."
+        manage_team_members: "Manage Team Members"
+        manage_team_members_description: "Supervisors are responsible for managing the organization and its users. Caseworkers are responsible for reviewing and processing applications."
+        table:
+          last_name: "Last name"
+          first_name: "First name"
+          email: "Email"
+          role: "Role"
+          program: "Program"
+          region: "Region"
+          program_medicaid: "Medicaid"
