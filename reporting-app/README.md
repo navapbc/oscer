@@ -107,6 +107,27 @@ AUTH_ADAPTER=cognito
 
 You will need to set the other cognito variables as well; setting `AUTH_ADAPTER` alone will merely set the auth flow to cognito, not enable cognito log in.
 
+#### User Management Tasks
+
+**Update a user's attributes by email:**
+
+You can update a user's `full_name`, `role`, and `region` attributes using the `users:update` rake task. All positional arguments are required.
+
+```bash
+bin/rails 'users:update[user@email.gov,John Doe,admin,Southwest]'
+```
+
+To clear an attribute (set it to nil), pass an empty value:
+
+```bash
+bin/rails 'users:update[user@email.gov,,,Southwest]'
+```
+
+Passing no arguments after email will set all values to nil.
+```bash
+bin/rails 'users:update[user@email.gov]'
+```
+
 #### IDE tips
 
 <details>
