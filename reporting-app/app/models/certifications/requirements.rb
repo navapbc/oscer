@@ -20,6 +20,7 @@ class Certifications::Requirements < ValueObject
   attribute :months_that_can_be_certified, :array, of: ActiveModel::Type::Date.new
   attribute :number_of_months_to_certify, :integer
   attribute :due_date, :date
+  attribute :region, :string
 
   # input params
   attribute :params, Certifications::RequirementParams.to_type

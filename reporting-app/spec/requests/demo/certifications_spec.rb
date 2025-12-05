@@ -199,6 +199,38 @@ RSpec.describe "/demo/certifications", type: :request do
       end
     end
 
+    context "with region" do
+      it "creates a certification with a valid region" do
+        create_attrs = valid_request_attributes.merge({ region: "northeast" })
+
+        expect {
+          post demo_certifications_url,
+               params: { demo_certifications_create_form: create_attrs }
+        }.to change(Certification, :count).by(1)
+
+        cert = Certification.order(created_at: :desc).last
+        expect(cert.certification_requirements.region).to eq("northeast")
+      end
+
+      it "creates a certification without a region" do
+        expect {
+          post demo_certifications_url,
+               params: { demo_certifications_create_form: valid_request_attributes }
+        }.to change(Certification, :count).by(1)
+
+        cert = Certification.order(created_at: :desc).last
+        expect(cert.certification_requirements.region).to be_nil
+      end
+
+      it "renders form with errors when region is invalid" do
+        create_attrs = valid_request_attributes.merge({ region: "invalid_region" })
+
+        post demo_certifications_url,
+             params: { demo_certifications_create_form: create_attrs }
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+    end
+
     context "with validation errors" do
       it "renders form with errors when certification_date is missing" do
         post demo_certifications_url,
