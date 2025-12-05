@@ -1,9 +1,0 @@
-regions:
-  northeast:
-    name: "Northeast"
-  northwest:
-    name: "Northwest"
-  southeast:
-    name: "Southeast"
-  southwest:
-    name: "Southwest"

@@ -21,9 +21,7 @@
 
   <%= f.hidden_field :certification_type, value: @form.certification_type %>
 
-  <%= f.select :region,
-    Region.all.map { |region| [region.name, region.key] },
-    {  prompt: 'Select Region' } %>
+  <%= f.select :region, @regions, {  prompt: 'Select Region' } %>
 
   <%= f.date_picker :certification_date %>
 

@@ -16,6 +16,10 @@ class User < ApplicationRecord
 
   scope :staff_members, -> { where.not(role: nil) }
 
+  def self.regions
+    where.not(region: nil).distinct.pluck(:region)
+  end
+
   def access_token_expires_within_minutes?(access_token, minutes)
     return true unless access_token.present?
 
