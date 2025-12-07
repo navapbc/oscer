@@ -111,22 +111,18 @@ You will need to set the other cognito variables as well; setting `AUTH_ADAPTER`
 
 **Update a user's attributes by email:**
 
-You can update a user's `full_name`, `role`, and `region` attributes using the `users:update` rake task. All positional arguments are required.
+You can update a user's attributes for OSCER's attribute access control via rails runner.
 
+Updating a user's attributes
 ```bash
-bin/rails 'users:update[user@email.gov,John Doe,admin,Southwest]'
+bin/rails runner "User.find_by(email: 'person@test.gov').update(full_name: 'Marko Polo', region: 'Northwest', role: 'admin')"
 ```
 
-To clear an attribute (set it to nil), pass an empty value:
-
+Setting a user's attributes back to nil
 ```bash
-bin/rails 'users:update[user@email.gov,,,Southwest]'
+bin/rails runner "User.find_by(email: 'person@test.gov').update(full_name: nil)"
 ```
 
-Passing no arguments after email will set all values to nil.
-```bash
-bin/rails 'users:update[user@email.gov]'
-```
 
 #### IDE tips
 
