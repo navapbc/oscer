@@ -14,8 +14,7 @@ en:
         manage_team_members: "Manage Team Members"
         manage_team_members_description: "Supervisors are responsible for managing the organization and its users. Caseworkers are responsible for reviewing and processing applications."
         table:
-          last_name: "Last name"
-          first_name: "First name"
+          full_name: "Full name"
           email: "Email"
           role: "Role"
           program: "Program"
