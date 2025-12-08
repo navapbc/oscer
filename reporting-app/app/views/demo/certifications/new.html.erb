@@ -21,6 +21,8 @@
 
   <%= f.hidden_field :certification_type, value: @form.certification_type %>
 
+  <%= f.select :region, @regions, {  prompt: 'Select Region' } %>
+
   <%= f.date_picker :certification_date %>
 
   <%= f.select :lookback_period, Demo::Certifications::CreateForm::LOOKBACK_PERIOD_OPTIONS.map { |i| [ t("certifications.demo_create.lookback_period_options.#{i}"), i ] }, {}, disabled: @form.locked_type_params? %>
