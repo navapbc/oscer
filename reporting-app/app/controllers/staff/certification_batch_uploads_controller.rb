@@ -14,7 +14,8 @@ module Staff
 
     # GET /staff/certification_batch_uploads/new
     def new
-      @batch_upload = authorize CertificationBatchUpload.new
+      authorize CertificationBatchUpload
+      @batch_upload = CertificationBatchUpload.new
     end
 
     # POST /staff/certification_batch_uploads

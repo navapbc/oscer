@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
 class AdminPolicy < ApplicationPolicy
-  def admin?
-    user.role == "admin"
-  end
-
   def index?
     admin?
   end
@@ -34,8 +30,21 @@ class AdminPolicy < ApplicationPolicy
   end
 
   class Scope
-    def resolve
-      scope.all if admin?
+    attr_reader :user, :scope
+
+    def initialize(user, scope)
+      @user = user
+      @scope = scope
     end
+
+    def resolve
+      user.role == "admin" ? scope.all : scope.none
+    end
+  end
+
+  private
+
+  def admin?
+    user.role == "admin"
   end
 end
