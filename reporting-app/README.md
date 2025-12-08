@@ -107,6 +107,23 @@ AUTH_ADAPTER=cognito
 
 You will need to set the other cognito variables as well; setting `AUTH_ADAPTER` alone will merely set the auth flow to cognito, not enable cognito log in.
 
+#### User Management Tasks
+
+**Update a user's attributes by email:**
+
+You can update a user's attributes for OSCER's attribute access control via rails runner.
+
+Updating a user's attributes
+```bash
+bin/rails runner "User.find_by(email: 'person@test.gov').update(full_name: 'Marko Polo', region: 'Northwest', role: 'admin')"
+```
+
+Setting a user's attributes back to nil
+```bash
+bin/rails runner "User.find_by(email: 'person@test.gov').update(full_name: nil)"
+```
+
+
 #### IDE tips
 
 <details>
