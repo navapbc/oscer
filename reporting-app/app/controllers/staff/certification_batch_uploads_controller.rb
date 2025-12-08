@@ -3,6 +3,7 @@
 module Staff
   class CertificationBatchUploadsController < StaffController
     before_action :set_batch_upload, only: [ :show, :process_batch, :results ]
+    after_action :verify_authorized
 
     rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
 
@@ -55,7 +56,7 @@ module Staff
 
     # GET /staff/certification_batch_uploads/:id/results
     def results
-      authorize @batch_upload, :results?
+      authorize @batch_upload
       certification_origin = CertificationOrigin.from_batch_upload(@batch_upload.id)
       certification_ids = certification_origin.select(:certification_id).map(&:certification_id)
 
@@ -77,7 +78,7 @@ module Staff
 
     # POST /staff/certification_batch_uploads/:id/process_batch
     def process_batch
-      authorize @batch_upload, :process_batch?
+      authorize @batch_upload
       respond_to do |format|
         if @batch_upload.processable? == false
           message = "This batch cannot be processed. Current status: #{@batch_upload.status}."
