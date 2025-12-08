@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe "/certifications", type: :request do
   include Warden::Test::Helpers
 
-  let(:staff_user) { create(:user) }
+  let(:staff_user) { create(:user, :as_caseworker) }
   let(:member_user) { create(:user) }
 
   let(:valid_html_request_attributes) {

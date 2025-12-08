@@ -2,6 +2,10 @@
 
 module Staff
   class CertificationBatchUploadsController < StaffController
+    # TODO: implement admin policy - only admins should access batch uploads
+    skip_before_action :authorize_staff_access
+    skip_after_action :verify_authorized
+    skip_after_action :verify_policy_scoped
     before_action :set_batch_upload, only: [ :show, :process_batch, :results ]
     after_action :verify_authorized # TODO: Move to StaffController in follow-up PR
 

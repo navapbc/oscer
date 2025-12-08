@@ -13,5 +13,9 @@ FactoryBot.define do
     trait :as_admin do
       role { "admin" }
     end
+
+    trait :as_caseworker do
+      role { "caseworker" }
+    end
   end
 end

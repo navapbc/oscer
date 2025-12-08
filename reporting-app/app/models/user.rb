@@ -32,4 +32,12 @@ class User < ApplicationRecord
   def admin?
     role == "admin"
   end
+
+  def caseworker?
+    role == "caseworker"
+  end
+
+  def staff?
+    admin? || caseworker?
+  end
 end

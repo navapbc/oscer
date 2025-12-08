@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe "/information_requests", type: :request do
   include Warden::Test::Helpers
 
-  let(:user) { create(:user) }
+  let(:user) { create(:user, role: "admin") }
   let(:certification_case) { create(:certification_case) }
   let(:application_form) do
     build(

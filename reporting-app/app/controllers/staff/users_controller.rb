@@ -6,7 +6,7 @@ module Staff
 
     def index
       authorize :admin
-      @users = User.staff_members
+      @users = policy_scope(User.staff_members)
     end
   end
 end

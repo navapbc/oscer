@@ -2,19 +2,18 @@
 
 class StaffController < Strata::StaffController
   before_action :authenticate_user!
-
-  # TODO implement staff policy
-  skip_after_action :verify_authorized
-  skip_after_action :verify_policy_scoped
+  before_action :authorize_staff_access
 
   rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
 
   def index
     # TODO: Move to a scope in Strata::Task
     # Strata::Task.for_assignee(current_user.id)
-    @tasks = Strata::Task
-      .pending
-      .where(assignee_id: current_user.id)
+    @tasks = policy_scope(
+      Strata::Task
+        .pending
+        .where(assignee_id: current_user.id)
+    )
 
     # TODO: This is inefficiently querying for the cases twice,
     # but we eventually plan on separating out Case and Task into separate aggregates.
@@ -42,6 +41,10 @@ class StaffController < Strata::StaffController
   end
 
   private
+
+  def authorize_staff_access
+    authorize :staff, policy_class: StaffPolicy
+  end
 
   def certification_service
     CertificationService.new

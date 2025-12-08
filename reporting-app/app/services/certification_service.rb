@@ -65,8 +65,6 @@ class CertificationService
     requirement_params.to_requirements
   end
 
-  private
-
   def hydrate_cases_with_certifications!(cases)
     certification_ids = cases.map(&:certification_id)
     certifications_by_id = Certification.where(id: certification_ids).index_by(&:id)

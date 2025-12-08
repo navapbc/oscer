@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe "/review_activity_report_tasks", type: :request do
   include Warden::Test::Helpers
 
-  let(:user) { create(:user) }
+  let(:user) { create(:user, :as_caseworker) }
   let(:kase) { create(:certification_case, business_process_current_step: "review_activity_report") }
   let(:task) { create(:review_activity_report_task, case: kase) }
 
