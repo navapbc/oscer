@@ -5,14 +5,14 @@ require "rails_helper"
 RSpec.describe AdminPolicy, type: :policy do
   subject { described_class.new(user, record) }
 
-  let(:admin_user) { create(:user, role: "admin") }
-  let(:non_admin_user) { create(:user, role: "staff") }
+  let(:admin_user) { create(:user, :as_admin) }
+  let(:non_admin_user) { create(:user) }
   let(:record) { create(:certification_batch_upload) }
   let(:resolved_scope) do
     described_class::Scope.new(user, CertificationBatchUpload.all).resolve
   end
 
-  it_behaves_like "policy that requires a logged in user"
+  it_behaves_like "application policy"
 
   describe "when user is an admin" do
     let(:user) { admin_user }
