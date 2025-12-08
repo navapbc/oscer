@@ -96,7 +96,7 @@ module Staff
     private
 
     def user_not_authorized
-      redirect_to staff_path, alert: "You are not authorized to perform this action."
+      redirect_to staff_path, alert: "Unauthorized to access /staff/certification_batch_uploads. Please contact an administrator."
     end
 
     def set_batch_upload
