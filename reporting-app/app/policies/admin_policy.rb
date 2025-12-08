@@ -44,7 +44,5 @@ class AdminPolicy < ApplicationPolicy
 
   private
 
-  def admin?
-    user.role == "admin"
-  end
+  delegate :admin?, to: :user
 end

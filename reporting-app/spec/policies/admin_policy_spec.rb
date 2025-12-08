@@ -12,6 +12,8 @@ RSpec.describe AdminPolicy, type: :policy do
     described_class::Scope.new(user, CertificationBatchUpload.all).resolve
   end
 
+  it_behaves_like "policy that requires a logged in user"
+
   describe "when user is an admin" do
     let(:user) { admin_user }
 
@@ -30,15 +32,6 @@ RSpec.describe AdminPolicy, type: :policy do
 
     it "includes no records in the resolved scope" do
       expect(resolved_scope).to be_empty
-    end
-  end
-
-  describe "when user is nil" do
-    let(:user) { nil }
-    let(:policy) { subject }
-
-    it "raises NotAuthorizedError" do
-      expect { policy }.to raise_error(Pundit::NotAuthorizedError, "must be logged in")
     end
   end
 end
