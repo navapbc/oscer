@@ -4,18 +4,22 @@ module Staff
   class CertificationBatchUploadsController < StaffController
     before_action :set_batch_upload, only: [ :show, :process_batch, :results ]
 
+    rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
+
     # GET /staff/certification_batch_uploads
     def index
+      authorize CertificationBatchUpload
       @batch_uploads = CertificationBatchUpload.includes(:uploader).recent
     end
 
     # GET /staff/certification_batch_uploads/new
     def new
-      @batch_upload = CertificationBatchUpload.new
+      @batch_upload = authorize CertificationBatchUpload.new
     end
 
     # POST /staff/certification_batch_uploads
     def create
+      authorize CertificationBatchUpload
       uploaded_file = params[:csv_file]
 
       if uploaded_file.blank?
@@ -45,10 +49,12 @@ module Staff
 
     # GET /staff/certification_batch_uploads/:id
     def show
+      authorize @batch_upload
     end
 
     # GET /staff/certification_batch_uploads/:id/results
     def results
+      authorize @batch_upload, :results?
       certification_origin = CertificationOrigin.from_batch_upload(@batch_upload.id)
       certification_ids = certification_origin.select(:certification_id).map(&:certification_id)
 
@@ -70,6 +76,7 @@ module Staff
 
     # POST /staff/certification_batch_uploads/:id/process_batch
     def process_batch
+      authorize @batch_upload, :process_batch?
       respond_to do |format|
         if @batch_upload.processable? == false
           message = "This batch cannot be processed. Current status: #{@batch_upload.status}."
@@ -86,6 +93,10 @@ module Staff
     end
 
     private
+
+    def user_not_authorized
+      redirect_to staff_path, alert: "You are not authorized to perform this action."
+    end
 
     def set_batch_upload
       @batch_upload = CertificationBatchUpload.includes(:uploader).find(params[:id])
