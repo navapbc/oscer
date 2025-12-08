@@ -164,7 +164,7 @@ This is the administrative interface where staff can review and process member c
 
 ## Documentation
 
-- **[Getting Started]([docs/how-to-guides/](https://github.com/navapbc/oscer/blob/main/docs/how-to-guides/)** - Instructions for getting started
+- **[Getting Started](docs/how-to-guides/getting-started.md)** - Instructions for getting started
 - **[System Architecture](docs/system-architecture.md)** - High-level system overview
 - **[Reporting App Documentation](docs/reporting-app/)** - Detailed application documentation
 - **[Infrastructure Guide](docs/infra/)** - Deployment and infrastructure management
