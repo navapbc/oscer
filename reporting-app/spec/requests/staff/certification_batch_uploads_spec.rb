@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe "Staff::CertificationBatchUploads", type: :request do
   include Warden::Test::Helpers
 
-  let(:user) { create(:user, role: "admin") }
+  let(:user) { create(:user, :as_admin) }
 
   before do
     login_as user

@@ -38,7 +38,7 @@ class AdminPolicy < ApplicationPolicy
     end
 
     def resolve
-      user.role == "admin" ? scope.all : scope.none
+      user.admin? ? scope.all : scope.none
     end
   end
 
