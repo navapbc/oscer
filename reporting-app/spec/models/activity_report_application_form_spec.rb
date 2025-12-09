@@ -7,7 +7,6 @@ RSpec.describe ActivityReportApplicationForm, type: :model do
     describe "certification_case_id uniqueness" do
       let(:certification) { create(:certification) }
       let(:certification_case) { create(:certification_case, certification: certification) }
-      let(:user) { create(:user) }
 
       it "requires unique certification_case_id" do
         create(:activity_report_application_form, certification_case_id: certification_case.id)

@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe "exemption_screener/index", type: :view do
-  let(:user) { create(:user, email: "test@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
+  let(:user) { create(:user) }
   let(:certification) { create(:certification, :connected_to_email, email: user.email) }
   let(:certification_case) { create(:certification_case, certification: certification) }
 

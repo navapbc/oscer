@@ -5,8 +5,7 @@ require 'rails_helper'
 RSpec.describe "/activities", type: :request do
   include Warden::Test::Helpers
 
-  let(:user) { create(:user, email: Faker::Internet.email, uid: SecureRandom.uuid, provider: "login.gov") }
-  let(:other_user) { create(:user, email: Faker::Internet.email, uid: SecureRandom.uuid, provider: "login.gov") }
+  let(:user) { create(:user) }
   let(:activity_report_application_form) do
     create(
       :activity_report_application_form,
