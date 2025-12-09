@@ -5,8 +5,7 @@ require 'rails_helper'
 RSpec.describe "/staff/users", type: :request do
   include Warden::Test::Helpers
 
-  let(:staff_user) { User.create!(email: "staff@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
-  let(:other_user) { User.create!(email: "other@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
+  let(:staff_user) { create(:user) }
 
   before do
     login_as staff_user

@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe "/staff/certification_cases", type: :request do
   include Warden::Test::Helpers
 
-  let(:user) { create(:user, email: "staff@example.com", uid: SecureRandom.uuid, provider: "login.gov") }
+  let(:user) { create(:user) }
   let(:certification_case) { create(:certification_case) }
 
   before do

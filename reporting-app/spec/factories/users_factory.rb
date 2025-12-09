@@ -4,7 +4,7 @@ FactoryBot.define do
   factory :user do
     email { Faker::Internet.email }
     uid { Faker::Internet.uuid }
-    provider { "factory_bot" }
+    provider { "login.gov" }
     mfa_preference { "opt_out" }
     full_name { nil }
     role { nil }
