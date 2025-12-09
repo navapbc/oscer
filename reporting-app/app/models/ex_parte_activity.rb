@@ -14,7 +14,7 @@ class ExParteActivity < ApplicationRecord
 
   SOURCE_TYPE_API = "api"
   SOURCE_TYPE_BATCH = "batch_upload"
-  ALLOWED_SOURCE_TYPES = [SOURCE_TYPE_API, SOURCE_TYPE_BATCH].freeze
+  ALLOWED_SOURCE_TYPES = [ SOURCE_TYPE_API, SOURCE_TYPE_BATCH ].freeze
 
   MAX_HOURS = 744
 

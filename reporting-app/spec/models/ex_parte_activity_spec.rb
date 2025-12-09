@@ -17,116 +17,116 @@ RSpec.describe ExParteActivity, type: :model do
   end
 
   describe "validations" do
-    subject { build(:ex_parte_activity) }
+    subject(:activity) { build(:ex_parte_activity) }
 
     describe "member_id" do
       it "is required" do
-        subject.member_id = nil
-        expect(subject).not_to be_valid
-        expect(subject.errors[:member_id]).to include("can't be blank")
+        activity.member_id = nil
+        expect(activity).not_to be_valid
+        expect(activity.errors[:member_id]).to include("can't be blank")
       end
     end
 
     describe "category" do
       it "is required" do
-        subject.category = nil
-        expect(subject).not_to be_valid
-        expect(subject.errors[:category]).to include("can't be blank")
+        activity.category = nil
+        expect(activity).not_to be_valid
+        expect(activity.errors[:category]).to include("can't be blank")
       end
 
       it "accepts valid categories" do
         ExParteActivity::ALLOWED_CATEGORIES.each do |category|
-          subject.category = category
-          expect(subject).to be_valid
+          activity.category = category
+          expect(activity).to be_valid
         end
       end
 
       it "rejects invalid categories" do
-        subject.category = "invalid_category"
-        expect(subject).not_to be_valid
-        expect(subject.errors[:category]).to include("is not included in the list")
+        activity.category = "invalid_category"
+        expect(activity).not_to be_valid
+        expect(activity.errors[:category]).to include("is not included in the list")
       end
     end
 
     describe "hours" do
       it "is required" do
-        subject.hours = nil
-        expect(subject).not_to be_valid
-        expect(subject.errors[:hours]).to include("can't be blank")
+        activity.hours = nil
+        expect(activity).not_to be_valid
+        expect(activity.errors[:hours]).to include("can't be blank")
       end
 
       it "must be greater than 0" do
-        subject.hours = 0
-        expect(subject).not_to be_valid
-        expect(subject.errors[:hours]).to include("must be greater than 0")
+        activity.hours = 0
+        expect(activity).not_to be_valid
+        expect(activity.errors[:hours]).to include("must be greater than 0")
       end
 
       it "must be less than or equal to MAX_HOURS" do
-        subject.hours = ExParteActivity::MAX_HOURS + 1
-        expect(subject).not_to be_valid
+        activity.hours = ExParteActivity::MAX_HOURS + 1
+        expect(activity).not_to be_valid
       end
 
       it "accepts valid hours" do
-        subject.hours = 40.5
-        expect(subject).to be_valid
+        activity.hours = 40.5
+        expect(activity).to be_valid
       end
     end
 
     describe "period dates" do
       it "requires period_start" do
-        subject.period_start = nil
-        expect(subject).not_to be_valid
+        activity.period_start = nil
+        expect(activity).not_to be_valid
       end
 
       it "requires period_end" do
-        subject.period_end = nil
-        expect(subject).not_to be_valid
+        activity.period_end = nil
+        expect(activity).not_to be_valid
       end
 
       it "rejects period_end before period_start" do
-        subject.period_start = Date.new(2025, 1, 15)
-        subject.period_end = Date.new(2025, 1, 1)
-        expect(subject).not_to be_valid
-        expect(subject.errors[:period_end]).to include("must be on or after period start")
+        activity.period_start = Date.new(2025, 1, 15)
+        activity.period_end = Date.new(2025, 1, 1)
+        expect(activity).not_to be_valid
+        expect(activity.errors[:period_end]).to include("must be on or after period start")
       end
 
       it "accepts period_end equal to period_start" do
-        subject.period_start = Date.new(2025, 1, 15)
-        subject.period_end = Date.new(2025, 1, 15)
-        expect(subject).to be_valid
+        activity.period_start = Date.new(2025, 1, 15)
+        activity.period_end = Date.new(2025, 1, 15)
+        expect(activity).to be_valid
       end
     end
 
     describe "source_type" do
       it "is required" do
-        subject.source_type = nil
-        expect(subject).not_to be_valid
+        activity.source_type = nil
+        expect(activity).not_to be_valid
       end
 
       it "accepts valid source types" do
         ExParteActivity::ALLOWED_SOURCE_TYPES.each do |source|
-          subject.source_type = source
-          expect(subject).to be_valid
+          activity.source_type = source
+          expect(activity).to be_valid
         end
       end
 
       it "rejects invalid source types" do
-        subject.source_type = "invalid"
-        expect(subject).not_to be_valid
+        activity.source_type = "invalid"
+        expect(activity).not_to be_valid
       end
     end
 
     describe "reported_at" do
       it "is required" do
-        subject.reported_at = nil
-        expect(subject).not_to be_valid
+        activity.reported_at = nil
+        expect(activity).not_to be_valid
       end
     end
 
     describe "certification_id" do
       it "is optional" do
-        subject.certification_id = nil
-        expect(subject).to be_valid
+        activity.certification_id = nil
+        expect(activity).to be_valid
       end
     end
   end
@@ -139,7 +139,7 @@ RSpec.describe ExParteActivity, type: :model do
         entry = create(:ex_parte_activity, certification: certification)
         create(:ex_parte_activity) # different certification
 
-        expect(described_class.for_certification(certification.id)).to eq([entry])
+        expect(described_class.for_certification(certification.id)).to eq([ entry ])
       end
     end
 
@@ -150,7 +150,7 @@ RSpec.describe ExParteActivity, type: :model do
         create(:ex_parte_activity, member_id: member_id, certification: certification) # linked
         create(:ex_parte_activity, :pending, member_id: "OTHER") # different member
 
-        expect(described_class.pending_for_member(member_id)).to eq([pending])
+        expect(described_class.pending_for_member(member_id)).to eq([ pending ])
       end
     end
 
@@ -159,7 +159,7 @@ RSpec.describe ExParteActivity, type: :model do
         employment = create(:ex_parte_activity, :employment)
         create(:ex_parte_activity, :community_service)
 
-        expect(described_class.by_category("employment")).to eq([employment])
+        expect(described_class.by_category("employment")).to eq([ employment ])
       end
     end
 
@@ -173,7 +173,7 @@ RSpec.describe ExParteActivity, type: :model do
                period_end: Date.new(2025, 3, 31)) # outside
 
         result = described_class.in_period(Date.new(2025, 1, 1), Date.new(2025, 1, 31))
-        expect(result).to eq([within])
+        expect(result).to eq([ within ])
       end
     end
   end
