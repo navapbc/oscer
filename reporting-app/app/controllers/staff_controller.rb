@@ -7,6 +7,8 @@ class StaffController < Strata::StaffController
   skip_after_action :verify_authorized
   skip_after_action :verify_policy_scoped
 
+  rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
+
   def index
     # TODO: Move to a scope in Strata::Task
     # Strata::Task.for_assignee(current_user.id)
@@ -27,11 +29,10 @@ class StaffController < Strata::StaffController
 
   def header_links
     batch_uploads_link = current_user.admin? ? [ { name: "Batch Uploads", path: certification_batch_uploads_path } ] : []
+    organization_settings_link = current_user.admin? ? [ { name: "Organization Settings", path: users_path } ] : []
     [
       { name: "Search", path: search_members_path }
-    ] + batch_uploads_link + super + [
-      { name: "Organization Settings", path: users_path } # TODO: Add organization settings link to SDK
-    ]
+    ] + batch_uploads_link + super + organization_settings_link
   end
 
   def case_classes
@@ -43,5 +44,9 @@ class StaffController < Strata::StaffController
 
   def certification_service
     CertificationService.new
+  end
+
+  def user_not_authorized
+    render plain: "Unauthorized", status: :forbidden
   end
 end

@@ -3,9 +3,7 @@
 module Staff
   class CertificationBatchUploadsController < StaffController
     before_action :set_batch_upload, only: [ :show, :process_batch, :results ]
-    after_action :verify_authorized
-
-    rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
+    after_action :verify_authorized # TODO: Move to StaffController in follow-up PR
 
     # GET /staff/certification_batch_uploads
     def index
@@ -95,10 +93,6 @@ module Staff
     end
 
     private
-
-    def user_not_authorized
-      redirect_to staff_path, alert: "Unauthorized to access /staff/certification_batch_uploads. Please contact an administrator."
-    end
 
     def set_batch_upload
       @batch_upload = CertificationBatchUpload.includes(:uploader).find(params[:id])

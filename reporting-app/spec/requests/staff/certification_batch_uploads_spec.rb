@@ -247,4 +247,17 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
       end
     end
   end
+
+  describe "GET /staff/staff/certification_batch_uploads" do
+    context "when the user is not an admin" do
+      before do
+        login_as create(:user)
+      end
+
+      it "renders a 403 response" do
+        get certification_batch_uploads_path
+        expect(response).to have_http_status(:forbidden)
+      end
+    end
+  end
 end
