@@ -47,6 +47,6 @@ class StaffController < Strata::StaffController
   end
 
   def user_not_authorized
-    render plain: "Unauthorized", status: :forbidden
+    redirect_to "/staff" # TODO: render unauthorized template in follow-up PR
   end
 end

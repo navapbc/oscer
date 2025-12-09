@@ -17,7 +17,7 @@ RSpec.describe "/staff/users", type: :request do
 
       it "renders a 403 response" do
         get "/staff/users"
-        expect(response).to have_http_status(:forbidden)
+        expect(response).to redirect_to("/staff")
       end
     end
 

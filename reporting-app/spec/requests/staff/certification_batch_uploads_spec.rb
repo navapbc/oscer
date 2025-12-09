@@ -256,7 +256,7 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
 
       it "renders a 403 response" do
         get certification_batch_uploads_path
-        expect(response).to have_http_status(:forbidden)
+        expect(response).to redirect_to("/staff")
       end
     end
   end
