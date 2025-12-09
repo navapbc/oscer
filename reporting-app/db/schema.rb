@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_12_03_234727) do
+ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -114,6 +114,29 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_03_234727) do
     t.index ["member_id"], name: "index_certifications_on_member_id"
   end
 
+  create_table "ex_parte_activities", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "member_id", null: false
+    t.uuid "certification_id"
+    t.string "category", null: false
+    t.decimal "hours", precision: 8, scale: 2, null: false
+    t.date "period_start", null: false
+    t.date "period_end", null: false
+    t.boolean "outside_period", default: false, null: false
+    t.string "source_type", null: false
+    t.uuid "source_id"
+    t.datetime "reported_at", null: false
+    t.jsonb "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["certification_id"], name: "index_ex_parte_activities_on_certification_id"
+    t.index ["member_id", "certification_id"], name: "idx_ex_parte_activities_pending", where: "(certification_id IS NULL)"
+    t.index ["member_id"], name: "index_ex_parte_activities_on_member_id"
+    t.index ["outside_period"], name: "index_ex_parte_activities_on_outside_period"
+    t.index ["period_start", "period_end"], name: "index_ex_parte_activities_on_period_start_and_period_end"
+    t.index ["reported_at"], name: "index_ex_parte_activities_on_reported_at"
+    t.index ["source_type", "source_id"], name: "index_ex_parte_activities_on_source_type_and_source_id"
+  end
+
   create_table "exemption_application_forms", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "user_id"
     t.integer "status"
@@ -123,6 +146,23 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_03_234727) do
     t.datetime "updated_at", null: false
     t.uuid "certification_case_id"
     t.index ["certification_case_id"], name: "index_exemption_application_forms_on_certification_case_id", unique: true
+  end
+
+  create_table "hours_data_batch_uploads", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "filename", null: false
+    t.string "status", default: "pending", null: false
+    t.uuid "uploader_id", null: false
+    t.integer "num_rows", default: 0
+    t.integer "num_rows_processed", default: 0
+    t.integer "num_rows_succeeded", default: 0
+    t.integer "num_rows_errored", default: 0
+    t.jsonb "results", default: {}
+    t.datetime "processed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_hours_data_batch_uploads_on_created_at"
+    t.index ["status"], name: "index_hours_data_batch_uploads_on_status"
+    t.index ["uploader_id"], name: "index_hours_data_batch_uploads_on_uploader_id"
   end
 
   create_table "information_requests", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -186,5 +226,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_03_234727) do
   add_foreign_key "activities", "activity_report_application_forms"
   add_foreign_key "activity_report_application_forms", "certification_cases"
   add_foreign_key "certification_cases", "certifications"
+  add_foreign_key "ex_parte_activities", "certifications", on_delete: :nullify
   add_foreign_key "exemption_application_forms", "certification_cases"
+  add_foreign_key "hours_data_batch_uploads", "users", column: "uploader_id"
 end
