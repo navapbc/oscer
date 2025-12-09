@@ -28,6 +28,7 @@ class StaffController < Strata::StaffController
   protected
 
   def header_links
+    # TODO: Use staff policy in follow-up PR
     batch_uploads_link = current_user.admin? ? [ { name: "Batch Uploads", path: certification_batch_uploads_path } ] : []
     organization_settings_link = current_user.admin? ? [ { name: "Organization Settings", path: users_path } ] : []
     [
