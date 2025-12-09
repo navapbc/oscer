@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe "Staff::CertificationBatchUploads", type: :request do
   include Warden::Test::Helpers
 
-  let(:user) { create(:user) }
+  let(:user) { create(:user, :as_admin) }
 
   before do
     login_as user
@@ -244,6 +244,19 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
         expect(response.body).to include("Not compliant")
         expect(response.body).to include("Pending review")
         expect(response.body).to include("Awaiting report")
+      end
+    end
+  end
+
+  describe "GET /staff/staff/certification_batch_uploads" do
+    context "when the user is not an admin" do
+      before do
+        login_as create(:user)
+      end
+
+      it "renders a 403 response" do
+        get certification_batch_uploads_path
+        expect(response).to redirect_to("/staff")
       end
     end
   end
