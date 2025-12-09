@@ -26,10 +26,10 @@ class StaffController < Strata::StaffController
   protected
 
   def header_links
+    batch_uploads_link = current_user.admin? ? [ { name: "Batch Uploads", path: certification_batch_uploads_path } ] : []
     [
-      { name: "Search", path: search_members_path },
-      { name: "Batch Uploads", path: certification_batch_uploads_path }
-    ] + super + [
+      { name: "Search", path: search_members_path }
+    ] + batch_uploads_link + super + [
       { name: "Organization Settings", path: users_path } # TODO: Add organization settings link to SDK
     ]
   end
