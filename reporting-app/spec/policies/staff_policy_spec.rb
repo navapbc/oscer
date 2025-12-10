@@ -25,7 +25,7 @@ RSpec.describe StaffPolicy, type: :policy do
   context "when user has caseworker role" do
     let(:current_user) { caseworker_user }
 
-    it { is_expected.to forbid_actions([:admin, :destroy]) }
+    it { is_expected.to forbid_actions([ :admin, :destroy ]) }
   end
 
   context "when user has other role" do
