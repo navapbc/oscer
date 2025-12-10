@@ -1,20 +1,22 @@
 # frozen_string_literal: true
 
 class StaffController < Strata::StaffController
-  before_action :authenticate_user!
+  class_attribute :authorization_resource, default: :staff
 
-  # TODO implement staff policy
-  skip_after_action :verify_authorized
-  skip_after_action :verify_policy_scoped
+  before_action :authenticate_user!
+  before_action :authorize_staff_access
+  after_action :verify_authorized
 
   rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
 
   def index
     # TODO: Move to a scope in Strata::Task
     # Strata::Task.for_assignee(current_user.id)
-    @tasks = Strata::Task
-      .pending
-      .where(assignee_id: current_user.id)
+    @tasks = policy_scope(
+      Strata::Task
+        .pending
+        .where(assignee_id: current_user.id)
+    )
 
     # TODO: This is inefficiently querying for the cases twice,
     # but we eventually plan on separating out Case and Task into separate aggregates.
@@ -28,9 +30,8 @@ class StaffController < Strata::StaffController
   protected
 
   def header_links
-    # TODO: Use staff policy in follow-up PR
-    batch_uploads_link = current_user.admin? ? [ { name: "Batch Uploads", path: certification_batch_uploads_path } ] : []
-    organization_settings_link = current_user.admin? ? [ { name: "Organization Settings", path: users_path } ] : []
+    batch_uploads_link = policy(CertificationBatchUpload).index? ? [ { name: "Batch Uploads", path: certification_batch_uploads_path } ] : []
+    organization_settings_link = policy(:admin).index? ? [ { name: "Organization Settings", path: users_path } ] : []
     [
       { name: "Search", path: search_members_path }
     ] + batch_uploads_link + super + organization_settings_link
@@ -43,11 +44,21 @@ class StaffController < Strata::StaffController
 
   private
 
+  def authorize_staff_access
+    authorize authorization_resource
+  end
+
   def certification_service
     CertificationService.new
   end
 
   def user_not_authorized
-    redirect_to "/staff" # TODO: render unauthorized template in follow-up PR
+    # TODO: render unauthorized template in follow-up PR
+    if policy(:staff).index?
+      redirect_to staff_path
+      return
+    end
+
+    redirect_to dashboard_path
   end
 end

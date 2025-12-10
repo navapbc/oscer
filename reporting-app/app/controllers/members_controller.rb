@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class MembersController < StaffController
+  skip_after_action :verify_policy_scoped, only: :index
+
   def index
     redirect_to search_members_path
   end

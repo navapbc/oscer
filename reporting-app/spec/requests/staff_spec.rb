@@ -5,8 +5,8 @@ require 'rails_helper'
 RSpec.describe "/staff", type: :request do
   include Warden::Test::Helpers
 
-  let(:user) { create(:user) }
-  let(:other_user) { create(:user) }
+  let(:user) { create(:user, role: "admin") }
+  let(:other_user) { create(:user, :as_caseworker) }
   let(:certification_case) { create(:certification_case) }
 
   before do

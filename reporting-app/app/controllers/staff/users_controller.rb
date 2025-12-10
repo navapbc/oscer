@@ -1,12 +1,9 @@
 # frozen_string_literal: true
 
 module Staff
-  class UsersController < StaffController
-    after_action :verify_authorized # TODO: Move to StaffController in follow-up PR
-
+  class UsersController < AdminController
     def index
-      authorize :admin
-      @users = User.staff_members
+      @users = policy_scope(User.staff_members, policy_scope_class: AdminPolicy::Scope)
     end
   end
 end
