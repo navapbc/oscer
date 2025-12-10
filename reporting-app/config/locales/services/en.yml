@@ -9,4 +9,5 @@ en:
         income_reported_compliant: "Income reported compliant"
         hours_reported_compliant: "Hours reported compliant"
         exemption_request_compliant: "Exemption request compliant"
+        hours_insufficient: "Insufficient community engagement hours"
 

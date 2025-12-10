@@ -118,6 +118,49 @@ class CertificationCase < Strata::Case
     end
   end
 
+  # Called by HoursComplianceDeterminationService at EX_PARTE_CE_CHECK step
+  # @param outcome [Symbol] :compliant or :not_compliant
+  # @param hours_data [Hash] aggregated hours data
+  def determine_ce_hours_compliance(outcome, hours_data)
+    certification = Certification.find(self.certification_id)
+
+    if outcome == :compliant
+      transaction do
+        self.activity_report_approval_status = "approved"
+        self.activity_report_approval_status_updated_at = Time.current
+        close!
+
+        certification.record_determination!(
+          decision_method: :automated,
+          reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_compliant] ],
+          outcome: :compliant,
+          determination_data: build_hours_determination_data(hours_data),
+          determined_at: certification.certification_requirements.certification_date
+        )
+      end
+
+      Strata::EventManager.publish("DeterminedRequirementsMet", { case_id: id })
+    else
+      Strata::EventManager.publish("DeterminedRequirementsNotMet", { case_id: id })
+    end
+  end
+
+  private
+
+  def build_hours_determination_data(hours_data)
+    {
+      calculation_type: "hours_based",
+      calculation_method: "business_process",
+      total_hours: hours_data[:total_hours],
+      target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
+      hours_by_category: hours_data[:hours_by_category],
+      hours_by_source: hours_data[:hours_by_source],
+      ex_parte_activity_ids: hours_data[:ex_parte_activity_ids],
+      activity_ids: hours_data[:activity_ids],
+      calculated_at: Time.current.iso8601
+    }
+  end
+
   def member_status
     MemberStatusService.determine(self).status
   end

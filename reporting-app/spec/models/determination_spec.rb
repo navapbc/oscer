@@ -28,6 +28,7 @@ RSpec.describe Determination, type: :model do
           income_reported_compliant
           hours_reported_compliant
           exemption_request_compliant
+          hours_insufficient
         ]
         expect(Determination::VALID_REASONS).to match_array(expected_reasons)
       end
