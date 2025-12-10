@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class AdminPolicy < ApplicationPolicy
+class AdminPolicy < StaffPolicy
   def index?
     admin?
   end
@@ -13,20 +13,8 @@ class AdminPolicy < ApplicationPolicy
     admin?
   end
 
-  def new?
-    create?
-  end
-
   def update?
     admin?
-  end
-
-  def edit?
-    update?
-  end
-
-  def destroy?
-    false
   end
 
   class Scope
@@ -41,8 +29,4 @@ class AdminPolicy < ApplicationPolicy
       user.admin? ? scope.all : scope.none
     end
   end
-
-  private
-
-  delegate :admin?, to: :user
 end

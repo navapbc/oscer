@@ -17,7 +17,7 @@ RSpec.describe "/staff/users", type: :request do
 
       it "renders a 403 response" do
         get "/staff/users"
-        expect(response).to redirect_to("/staff")
+        expect(response).to redirect_to("/dashboard")
       end
     end
 

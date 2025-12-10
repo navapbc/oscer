@@ -249,14 +249,25 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
   end
 
   describe "GET /staff/staff/certification_batch_uploads" do
-    context "when the user is not an admin" do
+    context "when the user is a caseworker" do
+      before do
+        login_as create(:user, :as_caseworker)
+      end
+
+      it "renders a 403 response" do
+        get certification_batch_uploads_path
+        expect(response).to redirect_to("/staff")
+      end
+    end
+
+    context "when the user is a member" do
       before do
         login_as create(:user)
       end
 
       it "renders a 403 response" do
         get certification_batch_uploads_path
-        expect(response).to redirect_to("/staff")
+        expect(response).to redirect_to("/dashboard")
       end
     end
   end

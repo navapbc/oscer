@@ -3,11 +3,6 @@
 # Policy for staff-only access to controllers
 # Allows users with "admin" or "caseworker" roles
 class StaffPolicy < ApplicationPolicy
-  def initialize(user, record)
-    @user = user
-    @record = record
-  end
-
   def index?
     staff?
   end
@@ -20,19 +15,7 @@ class StaffPolicy < ApplicationPolicy
     staff?
   end
 
-  def new?
-    create?
-  end
-
   def update?
-    staff?
-  end
-
-  def edit?
-    update?
-  end
-
-  def destroy?
     staff?
   end
 
@@ -47,9 +30,10 @@ class StaffPolicy < ApplicationPolicy
       # TODO: Restrict scope based on caseworker's region
       # https://github.com/navapbc/oscer/issues/60
       # https://github.com/navapbc/oscer/issues/61
-      scope.all
+      user.staff? ? scope.all : scope.none
     end
   end
 
+  delegate :admin?, to: :user
   delegate :staff?, to: :user
 end

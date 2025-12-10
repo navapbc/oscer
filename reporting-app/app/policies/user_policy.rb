@@ -3,6 +3,10 @@
 # Policy for User access
 # Inherits from StaffPolicy to ensure staff-only access
 class UserPolicy < StaffPolicy
+  def index?
+    admin?
+  end
+
   class Scope < StaffPolicy::Scope
     def resolve
       # Admin users can see all users

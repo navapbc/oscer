@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
 class StaffController < Strata::StaffController
+  class_attribute :authorization_resource, default: :staff
+
   before_action :authenticate_user!
   before_action :authorize_staff_access
+  after_action :verify_authorized
 
   rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
 
@@ -27,9 +30,8 @@ class StaffController < Strata::StaffController
   protected
 
   def header_links
-    # TODO: Use staff policy in follow-up PR
-    batch_uploads_link = current_user.admin? ? [ { name: "Batch Uploads", path: certification_batch_uploads_path } ] : []
-    organization_settings_link = current_user.admin? ? [ { name: "Organization Settings", path: users_path } ] : []
+    batch_uploads_link = policy(CertificationBatchUpload).index? ? [ { name: "Batch Uploads", path: certification_batch_uploads_path } ] : []
+    organization_settings_link = policy(User).index? ? [ { name: "Organization Settings", path: users_path } ] : []
     [
       { name: "Search", path: search_members_path }
     ] + batch_uploads_link + super + organization_settings_link
@@ -43,7 +45,7 @@ class StaffController < Strata::StaffController
   private
 
   def authorize_staff_access
-    authorize :staff, policy_class: StaffPolicy
+    authorize authorization_resource
   end
 
   def certification_service
@@ -51,6 +53,12 @@ class StaffController < Strata::StaffController
   end
 
   def user_not_authorized
-    redirect_to "/staff" # TODO: render unauthorized template in follow-up PR
+    # TODO: render unauthorized template in follow-up PR
+    if policy(:staff).index?
+      redirect_to staff_path
+      return
+    end
+
+    redirect_to dashboard_path
   end
 end
