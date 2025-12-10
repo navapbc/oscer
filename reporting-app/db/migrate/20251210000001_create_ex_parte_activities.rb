@@ -34,16 +34,16 @@ class CreateExParteActivities < ActiveRecord::Migration[7.2]
     add_index :ex_parte_activities, :certification_id,
               name: "index_ex_parte_activities_on_certification_id",
               comment: "Lookup entries by certification"
-    add_index :ex_parte_activities, [:source_type, :source_id],
+    add_index :ex_parte_activities, [ :source_type, :source_id ],
               name: "index_ex_parte_activities_on_source",
               comment: "Source tracking (batch upload lookups)"
-    add_index :ex_parte_activities, [:period_start, :period_end],
+    add_index :ex_parte_activities, [ :period_start, :period_end ],
               name: "index_ex_parte_activities_on_period",
               comment: "Date range queries"
     add_index :ex_parte_activities, :reported_at,
               name: "index_ex_parte_activities_on_reported_at",
               comment: "Sorting by submission time"
-    add_index :ex_parte_activities, [:member_id, :certification_id],
+    add_index :ex_parte_activities, [ :member_id, :certification_id ],
               where: "certification_id IS NULL",
               name: "idx_ex_parte_activities_pending",
               comment: "Partial index for pending entries (certification_id IS NULL)"
