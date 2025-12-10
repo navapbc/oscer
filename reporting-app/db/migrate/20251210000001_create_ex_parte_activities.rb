@@ -19,12 +19,8 @@ class CreateExParteActivities < ActiveRecord::Migration[7.2]
                 comment: "True if activity dates are outside certification lookback period"
       t.string :source_type, null: false,
                comment: "Source type: 'api' or 'batch_upload'"
-      t.uuid :source_id,
-             comment: "Source record ID (e.g., HoursDataBatchUpload ID for batch_upload)"
-      t.datetime :reported_at, null: false,
-                 comment: "When the data was submitted"
-      t.jsonb :metadata, default: {},
-              comment: "Additional context (employer, verification_status, etc.)"
+      t.string :source_id,
+               comment: "Source record ID (e.g., batch upload ID)"
       t.timestamps
     end
 
@@ -40,9 +36,6 @@ class CreateExParteActivities < ActiveRecord::Migration[7.2]
     add_index :ex_parte_activities, [ :period_start, :period_end ],
               name: "index_ex_parte_activities_on_period",
               comment: "Date range queries"
-    add_index :ex_parte_activities, :reported_at,
-              name: "index_ex_parte_activities_on_reported_at",
-              comment: "Sorting by submission time"
     add_index :ex_parte_activities, [ :member_id, :certification_id ],
               where: "certification_id IS NULL",
               name: "idx_ex_parte_activities_pending",

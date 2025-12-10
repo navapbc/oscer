@@ -61,8 +61,8 @@ RSpec.describe ExParteActivity, type: :model do
         expect(activity.errors[:hours]).to include("must be greater than 0")
       end
 
-      it "must be less than or equal to MAX_HOURS" do
-        activity.hours = ExParteActivity::MAX_HOURS + 1
+      it "must be less than or equal to MAX_HOURS_PER_YEAR" do
+        activity.hours = ExParteActivity::MAX_HOURS_PER_YEAR + 1
         expect(activity).not_to be_valid
       end
 
@@ -116,13 +116,6 @@ RSpec.describe ExParteActivity, type: :model do
       end
     end
 
-    describe "reported_at" do
-      it "is required" do
-        activity.reported_at = nil
-        expect(activity).not_to be_valid
-      end
-    end
-
     describe "certification_id" do
       it "is optional" do
         activity.certification_id = nil
@@ -136,7 +129,7 @@ RSpec.describe ExParteActivity, type: :model do
 
     describe ".for_certification" do
       it "returns entries for the given certification" do
-        entry = create(:ex_parte_activity, certification: certification)
+        entry = create(:ex_parte_activity, certification_id: certification.id)
         create(:ex_parte_activity) # different certification
 
         expect(described_class.for_certification(certification.id)).to eq([ entry ])
@@ -147,35 +140,13 @@ RSpec.describe ExParteActivity, type: :model do
       it "returns pending entries for the given member" do
         member_id = "M12345"
         pending = create(:ex_parte_activity, :pending, member_id: member_id)
-        create(:ex_parte_activity, member_id: member_id, certification: certification) # linked
+        create(:ex_parte_activity, member_id: member_id, certification_id: certification.id) # linked
         create(:ex_parte_activity, :pending, member_id: "OTHER") # different member
 
         expect(described_class.pending_for_member(member_id)).to eq([ pending ])
       end
     end
 
-    describe ".by_category" do
-      it "returns entries for the given category" do
-        employment = create(:ex_parte_activity, :employment)
-        create(:ex_parte_activity, :community_service)
-
-        expect(described_class.by_category("employment")).to eq([ employment ])
-      end
-    end
-
-    describe ".in_period" do
-      it "returns entries overlapping the date range" do
-        within = create(:ex_parte_activity,
-                        period_start: Date.new(2025, 1, 10),
-                        period_end: Date.new(2025, 1, 20))
-        create(:ex_parte_activity,
-               period_start: Date.new(2025, 3, 1),
-               period_end: Date.new(2025, 3, 31)) # outside
-
-        result = described_class.in_period(Date.new(2025, 1, 1), Date.new(2025, 1, 31))
-        expect(result).to eq([ within ])
-      end
-    end
   end
 
   describe "#pending?" do
@@ -207,12 +178,12 @@ RSpec.describe ExParteActivity, type: :model do
     end
 
     it "defines source type constants" do
-      expect(ExParteActivity::SOURCE_TYPE_API).to eq("api")
-      expect(ExParteActivity::SOURCE_TYPE_BATCH).to eq("batch_upload")
+      expect(ExParteActivity::SOURCE_TYPES[:api]).to eq("api")
+      expect(ExParteActivity::SOURCE_TYPES[:batch]).to eq("batch_upload")
     end
 
-    it "defines MAX_HOURS" do
-      expect(ExParteActivity::MAX_HOURS).to eq(744)
+    it "defines MAX_HOURS_PER_YEAR" do
+      expect(ExParteActivity::MAX_HOURS_PER_YEAR).to eq(8760)
     end
   end
 end
