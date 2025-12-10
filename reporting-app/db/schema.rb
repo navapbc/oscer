@@ -129,7 +129,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
     t.index ["certification_id"], name: "index_ex_parte_activities_on_certification_id", comment: "Lookup entries by certification"
     t.index ["member_id", "certification_id"], name: "idx_ex_parte_activities_pending", where: "(certification_id IS NULL)", comment: "Partial index for pending entries (certification_id IS NULL)"
     t.index ["member_id"], name: "index_ex_parte_activities_on_member_id", comment: "Lookup entries by member (for pending entry lookups)"
-    t.index ["outside_period"], name: "index_ex_parte_activities_on_outside_period", comment: "Filter by outside_period flag"
     t.index ["period_start", "period_end"], name: "index_ex_parte_activities_on_period", comment: "Date range queries"
     t.index ["source_type", "source_id"], name: "index_ex_parte_activities_on_source", comment: "Source tracking (batch upload lookups)"
   end

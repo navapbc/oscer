@@ -40,9 +40,6 @@ class CreateExParteActivities < ActiveRecord::Migration[7.2]
               where: "certification_id IS NULL",
               name: "idx_ex_parte_activities_pending",
               comment: "Partial index for pending entries (certification_id IS NULL)"
-    add_index :ex_parte_activities, :outside_period,
-              name: "index_ex_parte_activities_on_outside_period",
-              comment: "Filter by outside_period flag"
 
     add_foreign_key :ex_parte_activities, :certifications,
                     column: :certification_id,
