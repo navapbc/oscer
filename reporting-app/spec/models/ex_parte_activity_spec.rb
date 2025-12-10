@@ -146,7 +146,6 @@ RSpec.describe ExParteActivity, type: :model do
         expect(described_class.pending_for_member(member_id)).to eq([ pending ])
       end
     end
-
   end
 
   describe "#pending?" do
