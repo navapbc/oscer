@@ -10,7 +10,7 @@
 #   (ExParteActivityService) when creating entries, not by callbacks.
 #
 class ExParteActivity < ApplicationRecord
-  ALLOWED_CATEGORIES = %w[employment community_service education].freeze
+  ALLOWED_CATEGORIES = ActivityCategories::ALL
 
   SOURCE_TYPES = {
     api: "api",
