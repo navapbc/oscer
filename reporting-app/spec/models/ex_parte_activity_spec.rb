@@ -84,15 +84,19 @@ RSpec.describe ExParteActivity, type: :model do
       end
 
       it "rejects period_end before period_start" do
-        activity.period_start = Date.new(2025, 1, 15)
-        activity.period_end = Date.new(2025, 1, 1)
+        activity.period = Strata::DateRange.new(
+          start: Strata::USDate.new(2025, 1, 15),
+          end: Strata::USDate.new(2025, 1, 1)
+        )
         expect(activity).not_to be_valid
-        expect(activity.errors[:period_end]).to include("must be on or after period start")
+        expect(activity.errors[:period]).to include("start date cannot be after end date")
       end
 
       it "accepts period_end equal to period_start" do
-        activity.period_start = Date.new(2025, 1, 15)
-        activity.period_end = Date.new(2025, 1, 15)
+        activity.period = Strata::DateRange.new(
+          start: Strata::USDate.new(2025, 1, 15),
+          end: Strata::USDate.new(2025, 1, 15)
+        )
         expect(activity).to be_valid
       end
     end

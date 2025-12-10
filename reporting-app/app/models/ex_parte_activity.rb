@@ -10,6 +10,8 @@
 #   (ExParteActivityService) when creating entries, not by callbacks.
 #
 class ExParteActivity < ApplicationRecord
+  include Strata::Attributes
+
   ALLOWED_CATEGORIES = ActivityCategories::ALL
 
   SOURCE_TYPES = {
@@ -21,6 +23,11 @@ class ExParteActivity < ApplicationRecord
   # 365 days * 24 hours = 8,760 hours
   MAX_HOURS_PER_YEAR = 365 * 24
 
+  # --- Strata Attributes ---
+
+  # DateRange provides built-in validation (start <= end)
+  strata_attribute :period, :us_date, range: true
+
   # --- Validations ---
 
   validates :member_id, presence: true
@@ -30,8 +37,6 @@ class ExParteActivity < ApplicationRecord
   validates :period_start, presence: true
   validates :period_end, presence: true
   validates :source_type, presence: true, inclusion: { in: ALLOWED_SOURCE_TYPES }
-
-  validate :period_end_after_start
 
   # --- Scopes ---
 
@@ -46,13 +51,5 @@ class ExParteActivity < ApplicationRecord
 
   def link_to_certification!(cert_id)
     update!(certification_id: cert_id)
-  end
-
-  private
-
-  def period_end_after_start
-    return unless period_start && period_end
-
-    errors.add(:period_end, "must be on or after period start") if period_end < period_start
   end
 end
