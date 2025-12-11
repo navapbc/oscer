@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 
 class TaskPolicy < ApplicationPolicy
-  def initialize(user, record)
-    @user = user
-    @record = record
-  end
-
   def index?
     staff?
   end
