@@ -2,7 +2,7 @@
 
 class Activity < ApplicationRecord
   include Strata::Attributes
-  ALLOWED_CATEGORIES = %w[community_service education employment]
+  ALLOWED_CATEGORIES = ActivityCategories::ALL
 
   has_many_attached :supporting_documents
 
