@@ -6,8 +6,8 @@
 # reported hours from ActivityReportApplicationForm. Ex parte hours are
 # auto-verified and don't require staff review.
 #
-# @note The `outside_period` flag should be set by the service layer
-#   (ExParteActivityService) when creating entries, not by callbacks.
+# Activities are linked to certifications through member_id - since there's
+# only one active certification per member at a time, the relationship is implicit.
 #
 class ExParteActivity < ApplicationRecord
   include Strata::Attributes
@@ -40,16 +40,5 @@ class ExParteActivity < ApplicationRecord
 
   # --- Scopes ---
 
-  scope :for_certification, ->(cert_id) { where(certification_id: cert_id) }
-  scope :pending_for_member, ->(member_id) { where(member_id: member_id, certification_id: nil) }
-
-  # --- Instance Methods ---
-
-  def pending?
-    certification_id.nil?
-  end
-
-  def link_to_certification!(cert_id)
-    update!(certification_id: cert_id)
-  end
+  scope :for_member, ->(member_id) { where(member_id: member_id) }
 end
