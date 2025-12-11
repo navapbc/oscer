@@ -1,62 +1,44 @@
 # frozen_string_literal: true
 
-# ExParteActivity stores hours data submitted via API or batch upload.
+# ExParteActivity stores trusted hours data from the state system (ex parte verification).
 #
-# These are "ex parte" (automated/external) hours as opposed to manually
+# These are "ex parte" (automated/external) hours as opposed to member
 # reported hours from ActivityReportApplicationForm. Ex parte hours are
 # auto-verified and don't require staff review.
 #
-# @note The `outside_period` flag should be set by the service layer
-#   (ExParteActivityService) when creating entries, not by callbacks.
+# Activities are linked to certifications through member_id - since there's
+# only one active certification per member at a time, the relationship is implicit.
 #
 class ExParteActivity < ApplicationRecord
-  ALLOWED_CATEGORIES = %w[employment community_service education].freeze
+  include Strata::Attributes
 
-  SOURCE_TYPE_API = "api"
-  SOURCE_TYPE_BATCH = "batch_upload"
-  ALLOWED_SOURCE_TYPES = [ SOURCE_TYPE_API, SOURCE_TYPE_BATCH ].freeze
+  ALLOWED_CATEGORIES = ActivityCategories::ALL
 
-  MAX_HOURS = 744
+  SOURCE_TYPES = {
+    api: "api",
+    batch: "batch_upload"
+  }.freeze
+  ALLOWED_SOURCE_TYPES = SOURCE_TYPES.values.freeze
 
-  # --- Associations ---
+  # 365 days * 24 hours = 8,760 hours
+  MAX_HOURS_PER_YEAR = 365 * 24
 
-  belongs_to :certification, optional: true
+  # --- Strata Attributes ---
+
+  # DateRange provides built-in validation (start <= end)
+  strata_attribute :period, :us_date, range: true
 
   # --- Validations ---
 
   validates :member_id, presence: true
   validates :category, presence: true, inclusion: { in: ALLOWED_CATEGORIES }
   validates :hours, presence: true,
-                    numericality: { greater_than: 0, less_than_or_equal_to: MAX_HOURS }
+                    numericality: { greater_than: 0, less_than_or_equal_to: MAX_HOURS_PER_YEAR }
   validates :period_start, presence: true
   validates :period_end, presence: true
   validates :source_type, presence: true, inclusion: { in: ALLOWED_SOURCE_TYPES }
-  validates :reported_at, presence: true
-
-  validate :period_end_after_start
 
   # --- Scopes ---
 
-  scope :for_certification, ->(cert_id) { where(certification_id: cert_id) }
-  scope :pending_for_member, ->(member_id) { where(member_id: member_id, certification_id: nil) }
-  scope :by_category, ->(category) { where(category: category) }
-  scope :in_period, ->(start_date, end_date) { where("period_start <= ? AND period_end >= ?", end_date, start_date) }
-
-  # --- Instance Methods ---
-
-  def pending?
-    certification_id.nil?
-  end
-
-  def link_to_certification!(cert_id)
-    update!(certification_id: cert_id)
-  end
-
-  private
-
-  def period_end_after_start
-    return unless period_start && period_end
-
-    errors.add(:period_end, "must be on or after period start") if period_end < period_start
-  end
+  scope :for_member, ->(member_id) { where(member_id: member_id) }
 end

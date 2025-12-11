@@ -9,5 +9,13 @@ FactoryBot.define do
     full_name { nil }
     role { nil }
     region { nil }
+
+    trait :as_admin do
+      role { "admin" }
+    end
+
+    trait :as_caseworker do
+      role { "caseworker" }
+    end
   end
 end

@@ -28,4 +28,16 @@ class User < ApplicationRecord
 
     expiration_time < Time.now + minutes.minutes
   end
+
+  def admin?
+    role == "admin"
+  end
+
+  def caseworker?
+    role == "caseworker"
+  end
+
+  def staff?
+    admin? || caseworker?
+  end
 end

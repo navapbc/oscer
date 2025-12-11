@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 module Staff
-  class CertificationBatchUploadsController < StaffController
+  class CertificationBatchUploadsController < AdminController
+    self.authorization_resource = CertificationBatchUpload
+
     before_action :set_batch_upload, only: [ :show, :process_batch, :results ]
 
     # GET /staff/certification_batch_uploads
     def index
-      @batch_uploads = CertificationBatchUpload.includes(:uploader).recent
+      @batch_uploads = policy_scope(CertificationBatchUpload).includes(:uploader).recent
     end
 
     # GET /staff/certification_batch_uploads/new
@@ -88,7 +90,7 @@ module Staff
     private
 
     def set_batch_upload
-      @batch_upload = CertificationBatchUpload.includes(:uploader).find(params[:id])
+      @batch_upload = policy_scope(CertificationBatchUpload).includes(:uploader).find(params[:id])
     end
 
     def set_cases_to_show

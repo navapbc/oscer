@@ -1,9 +1,19 @@
 # frozen_string_literal: true
 
 class TasksController < Strata::TasksController
+  before_action :authorize_staff_access
   before_action :set_certification, only: [ :show ]
   before_action :set_member, only: [ :show ]
   before_action :set_information_requests, only: [ :show ]
+
+  # Override parent index to use policy_scope for authorization.
+  # The parent Strata::TasksController uses Strata::Task.all internally,
+  # so we override to inject policy_scope into task queries.
+  def index
+    @task_types = policy_scope(Strata::Task).unscope(:order).distinct.pluck(:type)
+    @tasks = filter_tasks
+    @unassigned_tasks = policy_scope(Strata::Task).incomplete.unassigned
+  end
 
   def assign
     set_task
@@ -72,5 +82,9 @@ class TasksController < Strata::TasksController
 
   def information_request_params
     raise NotImplementedError, "Subclasses must implement information_request_params"
+  end
+
+  def authorize_staff_access
+    authorize :staff, policy_class: Strata::TaskPolicy
   end
 end

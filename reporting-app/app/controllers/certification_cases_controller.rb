@@ -7,11 +7,13 @@ class CertificationCasesController < StaffController
   before_action :set_certification, only: %i[ show tasks documents notes ]
 
   def index
-    @cases = certification_service.fetch_open_cases
+    @cases = policy_scope(CertificationCase).open
+    certification_service.hydrate_cases_with_certifications!(@cases)
   end
 
   def closed
-    @cases = certification_service.fetch_closed_cases
+    @cases = policy_scope(CertificationCase).closed
+    certification_service.hydrate_cases_with_certifications!(@cases)
     render :index
   end
 
