@@ -68,4 +68,8 @@ class Certification < ApplicationRecord
   def member_name
     self&.member_data&.name
   end
+
+  def region
+    self&.certification_requirements&.region
+  end
 end
