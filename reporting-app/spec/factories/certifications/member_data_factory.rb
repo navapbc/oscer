@@ -37,20 +37,16 @@ FactoryBot.define do
 
     trait :partially_met_work_hours_requirement do
       with_no_exemptions
-      payroll_accounts {
+      activities {
         [
           {
-            "company_name": "Acme",
-            "paychecks":
-              [
-                {
-                  "period_start": cert_date.beginning_of_month,
-                  "period_end": cert_date.end_of_month,
-                  "gross": 123.45,
-                  "net": 50.00,
-                  "hours_worked": 10
-                }
-              ]
+            "type": "hourly",
+            "category": "employment",
+            "hours": 10,
+            "period_start": cert_date.beginning_of_month,
+            "period_end": cert_date.end_of_month,
+            "employer": "Acme",
+            "verification_status": "verified"
           }
         ]
       }
@@ -58,27 +54,40 @@ FactoryBot.define do
 
     trait :fully_met_work_hours_requirement do
       with_no_exemptions
-      payroll_accounts {
-        [
+      activities {
+        num_months.times.map { |i|
           {
-            "company_name": "Acme",
-            "paychecks": num_months.times.map { |i|
-              {
-                "period_start": cert_date.beginning_of_month << i,
-                "period_end": cert_date.end_of_month << i,
-                "gross": 2000.00,
-                "net": 1000.00,
-                "hours_worked": 80
-              }
-            }
+            "type": "hourly",
+            "category": "employment",
+            "hours": 80,
+            "period_start": cert_date.beginning_of_month << i,
+            "period_end": cert_date.end_of_month << i,
+            "employer": "Acme",
+            "verification_status": "verified"
           }
-        ]
+        }
       }
     end
 
     trait :meets_age_based_exemption_requirement do
       with_no_exemptions
       date_of_birth { cert_date - rand(1..18).years } # random age between 1 and 18 years old (eligible for age exemption)
+    end
+
+    trait :with_activities do
+      activities {
+        [
+          {
+            "type": "hourly",
+            "category": "community_service",
+            "hours": 20,
+            "period_start": cert_date.beginning_of_month,
+            "period_end": cert_date.end_of_month,
+            "employer": "Community Center",
+            "verification_status": "verified"
+          }
+        ]
+      }
     end
   end
 end
