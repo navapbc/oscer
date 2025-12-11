@@ -34,7 +34,7 @@ class TaskPolicy < ApplicationPolicy
       scope
       .joins("INNER JOIN certification_cases ON certification_cases.id = strata_tasks.case_id")
       .joins("INNER JOIN certifications ON certifications.id = certification_cases.certification_id")
-      .where("certifications.certification_requirements->>'region' = ?", user.region) 
+      .where("certifications.certification_requirements->>'region' = ?", user.region)
     end
   end
 
