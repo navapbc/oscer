@@ -39,6 +39,10 @@ class TasksController < Strata::TasksController
 
   protected
 
+  def filter_tasks
+    policy_scope super, policy_scope_class: TaskPolicy::Scope
+  end
+
   def filter_tasks_by_status(tasks, status)
     case status
     when "completed"
@@ -62,6 +66,11 @@ class TasksController < Strata::TasksController
 
   def set_member
     @member = Member.from_certification(@certification)
+  end
+
+  def set_task
+    super
+    authorize @task
   end
 
   def set_information_requests
