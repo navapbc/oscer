@@ -5,8 +5,8 @@ require 'rails_helper'
 RSpec.describe "/staff/tasks", type: :request do
   include Warden::Test::Helpers
 
-  let(:user) { create(:user) }
-  let(:certification) { create(:certification) }
+  let(:user) { create(:user, region: "Southeast", role: "caseworker") }
+  let(:certification) { create(:certification, certification_requirements: build(:certification_certification_requirements, region: "Southeast")) }
   let(:certification_case) { create(:certification_case, certification_id: certification.id) }
 
   before do
