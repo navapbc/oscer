@@ -41,7 +41,7 @@ class HoursComplianceDeterminationService
     def reason_code_for(outcome)
       case outcome
       when :compliant then Determination::REASON_CODE_MAPPING[:hours_reported_compliant]
-      when :not_compliant then Determination::REASON_CODE_MAPPING[:hours_insufficient]
+      when :not_compliant then Determination::REASON_CODE_MAPPING[:hours_reported_insufficient]
       end
     end
 
@@ -63,23 +63,33 @@ class HoursComplianceDeterminationService
     # @param certification [Certification]
     # @return [Hash] with total_hours, hours_by_category, hours_by_source, etc.
     def aggregate_hours_for_certification(certification)
-      ex_parte_hours = aggregate_ex_parte_hours(certification.member_id)
-      manual_hours = aggregate_manual_hours(certification)
+      lookback_period = certification.certification_requirements.continuous_lookback_period
+      ex_parte_hours = aggregate_ex_parte_hours(certification.member_id, lookback_period)
+      member_hours = aggregate_member_hours(certification)
 
       {
-        total_hours: ex_parte_hours[:total] + manual_hours[:total],
-        hours_by_category: merge_category_hours(ex_parte_hours[:by_category], manual_hours[:by_category]),
+        total_hours: ex_parte_hours[:total] + member_hours[:total],
+        hours_by_category: merge_category_hours(ex_parte_hours[:by_category], member_hours[:by_category]),
         hours_by_source: {
           ex_parte: ex_parte_hours[:total],
-          activity: manual_hours[:total]
+          activity: member_hours[:total]
         },
         ex_parte_activity_ids: ex_parte_hours[:ids],
-        activity_ids: manual_hours[:ids]
+        activity_ids: member_hours[:ids]
       }
     end
 
-    def aggregate_ex_parte_hours(member_id)
+    def aggregate_ex_parte_hours(member_id, lookback_period)
       entries = ExParteActivity.for_member(member_id)
+
+      # Filter to activities within the certification's lookback period
+      if lookback_period.present?
+        entries = entries.where(
+          "period_start >= ? AND period_end <= ?",
+          lookback_period.start.to_date,
+          lookback_period.end.to_date.end_of_month
+        )
+      end
 
       {
         total: entries.sum(:hours).to_f,
@@ -88,8 +98,8 @@ class HoursComplianceDeterminationService
       }
     end
 
-    def aggregate_manual_hours(certification)
-      # Only include hours from approved activity reports
+    def aggregate_member_hours(certification)
+      # Only include hours from approved activity reports (member-reported hours)
       certification_case = CertificationCase.find_by(certification_id: certification.id)
       return empty_hours_result unless certification_case
       return empty_hours_result unless certification_case.activity_report_approval_status == "approved"
@@ -109,9 +119,9 @@ class HoursComplianceDeterminationService
       { total: 0.0, by_category: {}, ids: [] }
     end
 
-    def merge_category_hours(ex_parte, manual)
-      (ex_parte.keys | manual.keys).each_with_object({}) do |category, result|
-        result[category] = (ex_parte[category] || 0.0) + (manual[category] || 0.0)
+    def merge_category_hours(ex_parte, member)
+      (ex_parte.keys | member.keys).each_with_object({}) do |category, result|
+        result[category] = (ex_parte[category] || 0.0) + (member[category] || 0.0)
       end
     end
   end

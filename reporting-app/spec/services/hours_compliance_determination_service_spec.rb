@@ -3,13 +3,23 @@
 require "rails_helper"
 
 RSpec.describe HoursComplianceDeterminationService do
+  # Helper to create ex_parte_activity with periods matching the certification's lookback
+  def create_ex_parte_activity_for(certification, **attrs)
+    lookback = certification.certification_requirements.continuous_lookback_period
+    period_start = lookback.start.to_date
+    period_end = lookback.start.to_date.end_of_month
+
+    create(:ex_parte_activity, member_id: certification.member_id,
+           period_start: period_start, period_end: period_end, **attrs)
+  end
+
   describe ".determine" do
     let(:certification) { create(:certification) }
     let(:certification_case) { create(:certification_case, certification_id: certification.id) }
 
     context "when hours meet target" do
       before do
-        create(:ex_parte_activity, member_id: certification.member_id, hours: 85)
+        create_ex_parte_activity_for(certification, hours: 85)
         allow(Strata::EventManager).to receive(:publish)
       end
 
@@ -57,7 +67,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
     context "when hours are below target" do
       before do
-        create(:ex_parte_activity, member_id: certification.member_id, hours: 50)
+        create_ex_parte_activity_for(certification, hours: 50)
         allow(Strata::EventManager).to receive(:publish)
       end
 
@@ -85,7 +95,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
     context "when hours exactly meet target" do
       before do
-        create(:ex_parte_activity, member_id: certification.member_id, hours: 80)
+        create_ex_parte_activity_for(certification, hours: 80)
       end
 
       it "is compliant" do
@@ -121,7 +131,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
     context "when hours meet target" do
       before do
-        create(:ex_parte_activity, member_id: certification.member_id, hours: 90)
+        create_ex_parte_activity_for(certification, hours: 90)
       end
 
       it "creates a compliant determination" do
@@ -148,7 +158,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
     context "when hours are below target" do
       before do
-        create(:ex_parte_activity, member_id: certification.member_id, hours: 40)
+        create_ex_parte_activity_for(certification, hours: 40)
       end
 
       it "creates a not_compliant determination" do
@@ -156,7 +166,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
         determination = Determination.where(subject_id: certification.id).last
         expect(determination.outcome).to eq("not_compliant")
-        expect(determination.reasons).to include("hours_insufficient")
+        expect(determination.reasons).to include("hours_reported_insufficient")
       end
     end
   end
@@ -167,9 +177,9 @@ RSpec.describe HoursComplianceDeterminationService do
 
     context "with multiple ex_parte activities" do
       before do
-        create(:ex_parte_activity, member_id: certification.member_id, category: "employment", hours: 40)
-        create(:ex_parte_activity, member_id: certification.member_id, category: "community_service", hours: 30)
-        create(:ex_parte_activity, member_id: certification.member_id, category: "education", hours: 15)
+        create_ex_parte_activity_for(certification, category: "employment", hours: 40)
+        create_ex_parte_activity_for(certification, category: "community_service", hours: 30)
+        create_ex_parte_activity_for(certification, category: "education", hours: 15)
       end
 
       it "sums hours across all entries" do
@@ -213,6 +223,30 @@ RSpec.describe HoursComplianceDeterminationService do
 
         determination = Determination.where(subject_id: certification.id).last
         expect(determination.determination_data["ex_parte_activity_ids"].length).to eq(3)
+      end
+    end
+
+    context "with activities outside lookback period" do
+      before do
+        # Create activity within lookback period
+        create_ex_parte_activity_for(certification, hours: 50)
+
+        # Create activity outside lookback period (far in the past)
+        create(:ex_parte_activity,
+               member_id: certification.member_id,
+               hours: 100,
+               period_start: 2.years.ago.to_date,
+               period_end: 2.years.ago.to_date.end_of_month)
+      end
+
+      it "only counts hours within the lookback period" do
+        allow(Strata::EventManager).to receive(:publish)
+
+        described_class.determine(certification_case)
+
+        determination = Determination.where(subject_id: certification.id).last
+        # Should only count 50 hours (within period), not 150 (50 + 100)
+        expect(determination).to be_nil # 50 hours < 80 target = not compliant, no determination
       end
     end
   end

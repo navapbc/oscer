@@ -145,6 +145,10 @@ class CertificationCase < Strata::Case
     end
   end
 
+  def member_status
+    MemberStatusService.determine(self).status
+  end
+
   private
 
   def build_hours_determination_data(hours_data)
@@ -159,9 +163,5 @@ class CertificationCase < Strata::Case
       activity_ids: hours_data[:activity_ids],
       calculated_at: Time.current.iso8601
     }
-  end
-
-  def member_status
-    MemberStatusService.determine(self).status
   end
 end
