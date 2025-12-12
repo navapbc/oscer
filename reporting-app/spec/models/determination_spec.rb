@@ -27,7 +27,7 @@ RSpec.describe Determination, type: :model do
           american_indian_alaska_native_exempt
           income_reported_compliant
           hours_reported_compliant
-          hours_insufficient
+          hours_reported_insufficient
           exemption_request_compliant
         ]
         expect(Determination::VALID_REASONS).to match_array(expected_reasons)
@@ -67,16 +67,14 @@ RSpec.describe Determination, type: :model do
         expect(determination.errors[:reasons]).to include(match(/must contain only valid reason values/))
       end
 
-      context 'hours-based reason codes' do
-        it 'accepts hours_reported_compliant' do
-          determination = build(:determination, reasons: ['hours_reported_compliant'])
-          expect(determination).to be_valid
-        end
+      it 'accepts hours_reported_compliant' do
+        determination = build(:determination, reasons: [ 'hours_reported_compliant' ])
+        expect(determination).to be_valid
+      end
 
-        it 'accepts hours_insufficient' do
-          determination = build(:determination, reasons: ['hours_insufficient'])
-          expect(determination).to be_valid
-        end
+      it 'accepts hours_insufficient' do
+        determination = build(:determination, reasons: [ 'hours_reported_insufficient' ])
+        expect(determination).to be_valid
       end
     end
   end
