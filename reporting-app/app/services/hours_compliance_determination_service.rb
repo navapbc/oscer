@@ -63,7 +63,7 @@ class HoursComplianceDeterminationService
     # @param certification [Certification]
     # @return [Hash] with total_hours, hours_by_category, hours_by_source, etc.
     def aggregate_hours_for_certification(certification)
-      ex_parte_hours = aggregate_ex_parte_hours(certification.id)
+      ex_parte_hours = aggregate_ex_parte_hours(certification.member_id)
       manual_hours = aggregate_manual_hours(certification)
 
       {
@@ -78,8 +78,8 @@ class HoursComplianceDeterminationService
       }
     end
 
-    def aggregate_ex_parte_hours(certification_id)
-      entries = ExParteActivity.for_certification(certification_id)
+    def aggregate_ex_parte_hours(member_id)
+      entries = ExParteActivity.for_member(member_id)
 
       {
         total: entries.sum(:hours).to_f,

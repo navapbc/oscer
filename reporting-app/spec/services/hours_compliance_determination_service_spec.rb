@@ -9,7 +9,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
     context "when hours meet target" do
       before do
-        create(:ex_parte_activity, certification: certification, hours: 85)
+        create(:ex_parte_activity, member_id: certification.member_id, hours: 85)
         allow(Strata::EventManager).to receive(:publish)
       end
 
@@ -57,7 +57,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
     context "when hours are below target" do
       before do
-        create(:ex_parte_activity, certification: certification, hours: 50)
+        create(:ex_parte_activity, member_id: certification.member_id, hours: 50)
         allow(Strata::EventManager).to receive(:publish)
       end
 
@@ -85,7 +85,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
     context "when hours exactly meet target" do
       before do
-        create(:ex_parte_activity, certification: certification, hours: 80)
+        create(:ex_parte_activity, member_id: certification.member_id, hours: 80)
       end
 
       it "is compliant" do
@@ -121,7 +121,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
     context "when hours meet target" do
       before do
-        create(:ex_parte_activity, certification: certification, hours: 90)
+        create(:ex_parte_activity, member_id: certification.member_id, hours: 90)
       end
 
       it "creates a compliant determination" do
@@ -148,7 +148,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
     context "when hours are below target" do
       before do
-        create(:ex_parte_activity, certification: certification, hours: 40)
+        create(:ex_parte_activity, member_id: certification.member_id, hours: 40)
       end
 
       it "creates a not_compliant determination" do
@@ -167,9 +167,9 @@ RSpec.describe HoursComplianceDeterminationService do
 
     context "with multiple ex_parte activities" do
       before do
-        create(:ex_parte_activity, certification: certification, category: "employment", hours: 40)
-        create(:ex_parte_activity, certification: certification, category: "community_service", hours: 30)
-        create(:ex_parte_activity, certification: certification, category: "education", hours: 15)
+        create(:ex_parte_activity, member_id: certification.member_id, category: "employment", hours: 40)
+        create(:ex_parte_activity, member_id: certification.member_id, category: "community_service", hours: 30)
+        create(:ex_parte_activity, member_id: certification.member_id, category: "education", hours: 15)
       end
 
       it "sums hours across all entries" do

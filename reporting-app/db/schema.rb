@@ -20,8 +20,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
     t.uuid "record_id", null: false
     t.uuid "blob_id", null: false
     t.datetime "created_at", null: false
-    t.index [ "blob_id" ], name: "index_active_storage_attachments_on_blob_id"
-    t.index [ "record_type", "record_id", "name", "blob_id" ], name: "index_active_storage_attachments_uniqueness", unique: true
+    t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
+    t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
   end
 
   create_table "active_storage_blobs", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -33,13 +33,13 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
     t.bigint "byte_size", null: false
     t.string "checksum"
     t.datetime "created_at", null: false
-    t.index [ "key" ], name: "index_active_storage_blobs_on_key", unique: true
+    t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
   end
 
   create_table "active_storage_variant_records", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "blob_id", null: false
     t.string "variation_digest", null: false
-    t.index [ "blob_id", "variation_digest" ], name: "index_active_storage_variant_records_uniqueness", unique: true
+    t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
   create_table "activities", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -52,8 +52,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
     t.string "type"
     t.integer "income"
     t.string "category", default: "employment", null: false
-    t.index [ "activity_report_application_form_id" ], name: "index_activities_on_activity_report_application_form_id"
-    t.index [ "category" ], name: "index_activities_on_category"
+    t.index ["activity_report_application_form_id"], name: "index_activities_on_activity_report_application_form_id"
+    t.index ["category"], name: "index_activities_on_category"
   end
 
   create_table "activity_report_application_forms", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -64,7 +64,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
     t.datetime "submitted_at"
     t.uuid "certification_case_id"
     t.jsonb "reporting_periods"
-    t.index [ "certification_case_id" ], name: "idx_on_certification_case_id_df9964575c", unique: true
+    t.index ["certification_case_id"], name: "idx_on_certification_case_id_df9964575c", unique: true
   end
 
   create_table "certification_batch_uploads", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -79,8 +79,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
     t.datetime "processed_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index [ "created_at" ], name: "index_certification_batch_uploads_on_created_at"
-    t.index [ "uploader_id" ], name: "index_certification_batch_uploads_on_uploader_id"
+    t.index ["created_at"], name: "index_certification_batch_uploads_on_created_at"
+    t.index ["uploader_id"], name: "index_certification_batch_uploads_on_uploader_id"
   end
 
   create_table "certification_cases", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -90,7 +90,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
     t.jsonb "facts"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index [ "certification_id" ], name: "index_certification_cases_on_certification_id"
+    t.index ["certification_id"], name: "index_certification_cases_on_certification_id"
   end
 
   create_table "certification_origins", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -99,8 +99,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
     t.uuid "source_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index [ "certification_id" ], name: "index_certification_origins_on_certification_id", unique: true
-    t.index [ "source_type", "source_id" ], name: "index_certification_origins_on_source_type_and_source_id"
+    t.index ["certification_id"], name: "index_certification_origins_on_certification_id", unique: true
+    t.index ["source_type", "source_id"], name: "index_certification_origins_on_source_type_and_source_id"
   end
 
   create_table "certifications", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -110,8 +110,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
     t.jsonb "member_data"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index [ "case_number" ], name: "index_certifications_on_case_number"
-    t.index [ "member_id" ], name: "index_certifications_on_member_id"
+    t.index ["case_number"], name: "index_certifications_on_case_number"
+    t.index ["member_id"], name: "index_certifications_on_member_id"
   end
 
   create_table "ex_parte_activities", id: :uuid, default: -> { "gen_random_uuid()" }, comment: "Hours data from external sources (API/batch) for compliance calculation", force: :cascade do |t|
@@ -124,9 +124,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
     t.string "source_id", comment: "Source record ID (e.g., batch upload ID)"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index [ "member_id" ], name: "index_ex_parte_activities_on_member_id", comment: "Lookup entries by member"
-    t.index [ "period_start", "period_end" ], name: "index_ex_parte_activities_on_period", comment: "Date range queries"
-    t.index [ "source_type", "source_id" ], name: "index_ex_parte_activities_on_source", comment: "Source tracking (batch upload lookups)"
+    t.index ["member_id"], name: "index_ex_parte_activities_on_member_id", comment: "Lookup entries by member"
+    t.index ["period_start", "period_end"], name: "index_ex_parte_activities_on_period", comment: "Date range queries"
+    t.index ["source_type", "source_id"], name: "index_ex_parte_activities_on_source", comment: "Source tracking (batch upload lookups)"
   end
 
   create_table "exemption_application_forms", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -137,24 +137,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.uuid "certification_case_id"
-    t.index [ "certification_case_id" ], name: "index_exemption_application_forms_on_certification_case_id", unique: true
-  end
-
-  create_table "hours_data_batch_uploads", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
-    t.string "filename", null: false
-    t.string "status", default: "pending", null: false
-    t.uuid "uploader_id", null: false
-    t.integer "num_rows", default: 0
-    t.integer "num_rows_processed", default: 0
-    t.integer "num_rows_succeeded", default: 0
-    t.integer "num_rows_errored", default: 0
-    t.jsonb "results", default: {}
-    t.datetime "processed_at"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index [ "created_at" ], name: "index_hours_data_batch_uploads_on_created_at"
-    t.index [ "status" ], name: "index_hours_data_batch_uploads_on_status"
-    t.index [ "uploader_id" ], name: "index_hours_data_batch_uploads_on_uploader_id"
+    t.index ["certification_case_id"], name: "index_exemption_application_forms_on_certification_case_id", unique: true
   end
 
   create_table "information_requests", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -178,10 +161,10 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
     t.datetime "determined_at", null: false
     t.datetime "created_at", null: false
     t.string "reasons", default: [], null: false, array: true
-    t.index [ "created_at" ], name: "index_strata_determinations_on_created_at"
-    t.index [ "determined_at" ], name: "index_strata_determinations_on_determined_at"
-    t.index [ "determined_by_id" ], name: "index_strata_determinations_on_determined_by_id"
-    t.index [ "subject_id", "subject_type" ], name: "index_strata_determinations_on_polymorphic_subject"
+    t.index ["created_at"], name: "index_strata_determinations_on_created_at"
+    t.index ["determined_at"], name: "index_strata_determinations_on_determined_at"
+    t.index ["determined_by_id"], name: "index_strata_determinations_on_determined_by_id"
+    t.index ["subject_id", "subject_type"], name: "index_strata_determinations_on_polymorphic_subject"
   end
 
   create_table "strata_tasks", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -194,10 +177,10 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "case_type"
-    t.index [ "assignee_id" ], name: "index_strata_tasks_on_assignee_id"
-    t.index [ "case_id", "case_type" ], name: "index_strata_tasks_on_case_id_and_case_type"
-    t.index [ "status" ], name: "index_strata_tasks_on_status"
-    t.index [ "type" ], name: "index_strata_tasks_on_type"
+    t.index ["assignee_id"], name: "index_strata_tasks_on_assignee_id"
+    t.index ["case_id", "case_type"], name: "index_strata_tasks_on_case_id_and_case_type"
+    t.index ["status"], name: "index_strata_tasks_on_status"
+    t.index ["type"], name: "index_strata_tasks_on_type"
   end
 
   create_table "users", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -210,7 +193,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
     t.string "role"
     t.string "region"
     t.string "full_name"
-    t.index [ "uid" ], name: "index_users_on_uid", unique: true
+    t.index ["uid"], name: "index_users_on_uid", unique: true
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
@@ -218,7 +201,5 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
   add_foreign_key "activities", "activity_report_application_forms"
   add_foreign_key "activity_report_application_forms", "certification_cases"
   add_foreign_key "certification_cases", "certifications"
-  add_foreign_key "ex_parte_activities", "certifications", on_delete: :nullify
   add_foreign_key "exemption_application_forms", "certification_cases"
-  add_foreign_key "hours_data_batch_uploads", "users", column: "uploader_id"
 end
