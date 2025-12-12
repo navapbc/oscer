@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+target_project_dir=$(realpath "$1")
+target_app_name=$2
+app_dev_env_domain_name=${3:-""}
+
+target_app_dir=${target_project_dir}/${target_app_name}
+target_app_infra_dir=${target_project_dir}/infra/${target_app_name}
+
+mkdir -p "${target_app_dir}"
+mkdir -p "${target_app_infra_dir}"/app-config
+
+# TODO: should actually probably package up all the relevant files into a single
+# archive then extract that all at once, but as start
+
+# copy app code
+git archive --format=tar HEAD:reporting-app | tar -xf - -C "${target_app_dir}"
+# copy over critical infra app config (both general template-application-rails and reporting-app needs)
+cp -f infra/reporting-app/app-config/{main.tf,dev.tf} "${target_app_infra_dir}"/app-config/
+cp -f infra/reporting-app/app-config/env-config/{service.tf,environment_variables.tf} "${target_app_infra_dir}"/app-config/env-config/
+
+# remove "sandbox" environment
+sed -i.bak 's/ "sandbox",//' "${target_app_infra_dir}"/app-config/main.tf
+sed -i.bak '/sandbox = module.sandbox_config/d' "${target_app_infra_dir}"/app-config/main.tf
+
+# swap out domain name
+app_dev_env_domain_name_tf_value=$([[ -n "${app_dev_env_domain_name}" ]] && echo "\"${app_dev_env_domain_name}\"" || echo "null")
+sed -i.bak "s/\"dev.medicaid.navateam.com\"/${app_dev_env_domain_name_tf_value}/" "${target_app_infra_dir}"/app-config/dev.tf
+
+# remove the backup files created by sed
+find "${target_app_infra_dir}" -iname "*.bak" -exec rm {} \;
