@@ -132,10 +132,11 @@ RSpec.describe HoursComplianceDeterminationService do
     before do
       allow(Strata::EventManager).to receive(:publish)
       allow(NotificationService).to receive(:send_email_notification)
+      # CertificationCase must exist for calculate to work (mirrors production behavior)
+      create(:certification_case, certification_id: certification.id)
     end
 
     let(:certification) { create(:certification) }
-    let!(:certification_case) { create(:certification_case, certification_id: certification.id) }
 
     context "when hours meet target" do
       before do
