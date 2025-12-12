@@ -26,13 +26,23 @@ class Demo::CertificationsController < ApplicationController
 
     if !@certification
       flash.now[:errors] = @form.errors.full_messages
-      render :new, status: :unprocessable_content
+      return render :new, status: :unprocessable_content
     end
 
-    if @certification.save
+    begin
+      ActiveRecord::Base.transaction do
+        # Create ex parte activities FIRST (before certification)
+        create_ex_parte_activities
+
+        # Save certification
+        unless @certification.save
+          raise ActiveRecord::RecordInvalid.new(@certification)
+        end
+      end
+
       redirect_to certification_path(@certification)
-    else
-      flash.now[:errors] = @certification.errors.full_messages
+    rescue ActiveRecord::RecordInvalid => e
+      flash.now[:errors] = e.record.errors.full_messages
       render :new, status: :unprocessable_content
     end
   end
@@ -46,5 +56,31 @@ class Demo::CertificationsController < ApplicationController
   def form_params
     params.require(:demo_certifications_create_form)
           .permit(Demo::Certifications::CreateForm.attribute_names.map(&:to_sym))
+  end
+
+  def create_ex_parte_activities
+    return unless @certification.member_data&.activities.present?
+
+    hourly_activities = @certification.member_data.activities.select { |a| a.type == "hourly" }
+
+    hourly_activities.each do |activity_data|
+      ex_parte_activity = build_ex_parte_activity(activity_data)
+
+      unless ex_parte_activity.save
+        raise ActiveRecord::RecordInvalid.new(ex_parte_activity)
+      end
+    end
+  end
+
+  def build_ex_parte_activity(activity_data)
+    ExParteActivity.new(
+      member_id: @certification.member_id,
+      category: activity_data.category,
+      hours: activity_data.hours,
+      period_start: activity_data.period_start,
+      period_end: activity_data.period_end,
+      source_type: ExParteActivity::SOURCE_TYPES[:manual],
+      source_id: nil
+    )
   end
 end
