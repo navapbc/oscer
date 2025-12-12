@@ -11,7 +11,7 @@ user = User.first || User.create!(email: "staff@example.com", uid: SecureRandom.
   certification = FactoryBot.create(
     :certification,
     member_data: FactoryBot.build(:certification_member_data, :with_full_name, :with_account_email),
-    certification_requirements: FactoryBot.build(:certification_certification_requirements)
+    certification_requirements: FactoryBot.build(:certification_certification_requirements, region: "Southeast")
   )
   certification_case = CertificationCase.find_by!(certification_id: certification.id)
   app_form = ActivityReportApplicationForm.create!(
