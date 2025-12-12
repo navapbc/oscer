@@ -69,6 +69,7 @@ RSpec.describe HoursComplianceDeterminationService do
       before do
         create_ex_parte_activity_for(certification, hours: 50)
         allow(Strata::EventManager).to receive(:publish)
+        allow(NotificationService).to receive(:send_email_notification)
       end
 
       it "publishes DeterminedRequirementsNotMet event" do
@@ -113,6 +114,7 @@ RSpec.describe HoursComplianceDeterminationService do
     context "with no hours data" do
       before do
         allow(Strata::EventManager).to receive(:publish)
+        allow(NotificationService).to receive(:send_email_notification)
       end
 
       it "publishes DeterminedRequirementsNotMet event" do
@@ -241,6 +243,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
       it "only counts hours within the lookback period" do
         allow(Strata::EventManager).to receive(:publish)
+        allow(NotificationService).to receive(:send_email_notification)
 
         described_class.determine(certification_case)
 

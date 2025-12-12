@@ -105,16 +105,8 @@ class CertificationCase < Strata::Case
       )
     else
       Strata::EventManager.publish("DeterminedNotExempt", { case_id: id })
-
-      # TODO: move action required email to after exparte determination step is complete
-      # once it has been implemented
-      # Send action required notification email
-      NotificationService.send_email_notification(
-        MemberMailer,
-        { certification: certification },
-        :action_required_email,
-        [ certification.member_email ]
-      )
+      # Note: action_required_email is now sent in determine_ce_hours_compliance
+      # after we know if ex parte hours are sufficient
     end
   end
 
@@ -140,8 +132,19 @@ class CertificationCase < Strata::Case
       end
 
       Strata::EventManager.publish("DeterminedRequirementsMet", { case_id: id })
+
+      # TODO: Consider adding compliant_email notification
+      # Currently no email is sent when member meets requirements via ex parte hours
     else
       Strata::EventManager.publish("DeterminedRequirementsNotMet", { case_id: id })
+
+      # Send action required email - member needs to submit activity report
+      NotificationService.send_email_notification(
+        MemberMailer,
+        { certification: certification },
+        :action_required_email,
+        [ certification.member_email ]
+      )
     end
   end
 
