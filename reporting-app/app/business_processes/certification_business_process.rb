@@ -12,7 +12,7 @@ class CertificationBusinessProcess < Strata::BusinessProcess
     ExemptionDeterminationService.determine(kase)
   })
   system_process(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, ->(kase) {
-    Strata::EventManager.publish("DeterminedRequirementsNotMet", { case_id: kase.id })
+    HoursComplianceDeterminationService.determine(kase)
   })
 
   applicant_task(REPORT_ACTIVITIES_STEP)
