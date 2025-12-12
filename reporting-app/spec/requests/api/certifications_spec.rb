@@ -189,6 +189,31 @@ RSpec.describe "/api/certifications", type: :request do
         cert = Certification.find(response.parsed_body[:id])
         expect(cert.member_data).to eq(member_data)
       end
+
+      it "accepts activities in member_data" do
+        member_data = build(:certification_member_data,
+                            :with_full_name,
+                            :with_account_email,
+                            :with_activities
+                           )
+        expect {
+          post api_certifications_url,
+              params: valid_json_request_attributes.merge({
+                member_data: member_data.as_json
+              }),
+              headers: valid_headers
+        }.to change(Certification, :count).from(0).to(1)
+
+        expect(response).to be_successful
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+
+        cert = Certification.find(response.parsed_body[:id])
+        expect(cert.member_data).to eq(member_data)
+        expect(cert.member_data.activities).not_to be_nil
+        expect(cert.member_data.activities.first.type).to eq("hourly")
+        expect(cert.member_data.activities.first.category).to eq("community_service")
+        expect(cert.member_data.activities.first.hours).to eq(20)
+      end
     end
 
     context "with invalid parameters" do
@@ -221,6 +246,97 @@ RSpec.describe "/api/certifications", type: :request do
         post api_certifications_url,
              params: valid_json_request_attributes.merge({
                certification_requirements: { "months_to_be_certified": [ "2025-10-16", "FOOBAR" ] }
+             }),
+             headers: valid_headers,
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.content_type).to match(a_string_including("application/json"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "invalid activities - missing required field" do
+        post api_certifications_url,
+             params: valid_json_request_attributes.merge({
+               member_data: {
+                 activities: [
+                   {
+                     "type": "hourly",
+                     "category": "community_service"
+                     # missing required fields: hours, period_start, period_end
+                   }
+                 ]
+               }
+             }),
+             headers: valid_headers,
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.content_type).to match(a_string_including("application/json"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "invalid activities - invalid verification_status" do
+        post api_certifications_url,
+             params: valid_json_request_attributes.merge({
+               member_data: {
+                 activities: [
+                   {
+                     "type": "hourly",
+                     "category": "community_service",
+                     "hours": 20,
+                     "period_start": Date.today.to_s,
+                     "period_end": Date.today.to_s,
+                     "verification_status": "invalid_status"
+                   }
+                 ]
+               }
+             }),
+             headers: valid_headers,
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.content_type).to match(a_string_including("application/json"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "invalid activities - invalid type" do
+        post api_certifications_url,
+             params: valid_json_request_attributes.merge({
+               member_data: {
+                 activities: [
+                   {
+                     "type": "invalid_type",
+                     "category": "community_service",
+                     "hours": 20,
+                     "period_start": Date.today.to_s,
+                     "period_end": Date.today.to_s
+                   }
+                 ]
+               }
+             }),
+             headers: valid_headers,
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.content_type).to match(a_string_including("application/json"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "invalid activities - invalid category" do
+        post api_certifications_url,
+             params: valid_json_request_attributes.merge({
+               member_data: {
+                 activities: [
+                   {
+                     "type": "hourly",
+                     "category": "invalid_category",
+                     "hours": 20,
+                     "period_start": Date.today.to_s,
+                     "period_end": Date.today.to_s
+                   }
+                 ]
+               }
              }),
              headers: valid_headers,
              as: :json

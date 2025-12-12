@@ -115,6 +115,9 @@ RSpec.describe "/demo/certifications", type: :request do
           "first": create_attrs[:member_name_first],
           "last": create_attrs[:member_name_last]
         }))
+        expect(cert.member_data.activities).not_to be_nil
+        expect(cert.member_data.activities.length).to eq(1)
+        expect(cert.member_data.activities.first.hours).to eq(10)
       end
 
       it "creates Certification with 'Fully met work hours requirement'" do
@@ -133,6 +136,8 @@ RSpec.describe "/demo/certifications", type: :request do
           "first": create_attrs[:member_name_first],
           "last": create_attrs[:member_name_last]
         }))
+        expect(cert.member_data.activities).not_to be_nil
+        expect(cert.member_data.activities.sum(&:hours)).to eq(80)
       end
 
       it "creates a new Certification with 'Meets age-based exemption requirement' scenario and uses scenario DOB" do
