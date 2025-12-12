@@ -15,48 +15,24 @@ class HoursComplianceDeterminationService
       kase.determine_ce_hours_compliance(outcome, hours_data)
     end
 
-    # FALLBACK: Called by CalculateComplianceJob for existing certifications
+    # Called by CalculateComplianceJob for async recalculation of existing certifications
+    # Records determination without triggering workflow events/notifications
     # @param certification_id [String]
-    # @return [Determination]
+    # @return [void]
     def calculate(certification_id)
       certification = Certification.find(certification_id)
+      kase = CertificationCase.find_by!(certification_id: certification_id)
+
       hours_data = aggregate_hours_for_certification(certification)
       outcome = determine_outcome(hours_data[:total_hours])
 
-      certification.record_determination!(
-        decision_method: :automated,
-        reasons: [ reason_code_for(outcome) ],
-        outcome: outcome,
-        determination_data: build_determination_data(hours_data, "async_recalculation"),
-        determined_at: Time.current
-      )
+      kase.determine_ce_hours_compliance(outcome, hours_data, trigger_workflow: false)
     end
 
     private
 
     def determine_outcome(total_hours)
       total_hours >= TARGET_HOURS ? :compliant : :not_compliant
-    end
-
-    def reason_code_for(outcome)
-      case outcome
-      when :compliant then Determination::REASON_CODE_MAPPING[:hours_reported_compliant]
-      when :not_compliant then Determination::REASON_CODE_MAPPING[:hours_reported_insufficient]
-      end
-    end
-
-    def build_determination_data(hours_data, calculation_method)
-      {
-        calculation_type: "hours_based",
-        calculation_method: calculation_method,
-        total_hours: hours_data[:total_hours],
-        target_hours: TARGET_HOURS,
-        hours_by_category: hours_data[:hours_by_category],
-        hours_by_source: hours_data[:hours_by_source],
-        ex_parte_activity_ids: hours_data[:ex_parte_activity_ids],
-        activity_ids: hours_data[:activity_ids],
-        calculated_at: Time.current.iso8601
-      }
     end
 
     # Aggregate hours from both ExParteActivity and approved Activity records
@@ -84,10 +60,14 @@ class HoursComplianceDeterminationService
 
       # Filter to activities within the certification's lookback period
       if lookback_period.present?
+        # Convert Strata::USDate to plain Date for SQL comparison
+        start_date = Date.parse(lookback_period.start.to_s)
+        end_date = Date.parse(lookback_period.end.to_s).end_of_month
+
         entries = entries.where(
           "period_start >= ? AND period_end <= ?",
-          lookback_period.start.to_date,
-          lookback_period.end.to_date.end_of_month
+          start_date,
+          end_date
         )
       end
 

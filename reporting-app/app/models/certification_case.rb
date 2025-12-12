@@ -110,31 +110,38 @@ class CertificationCase < Strata::Case
     end
   end
 
-  # Called by HoursComplianceDeterminationService at EX_PARTE_CE_CHECK step
+  # Called by HoursComplianceDeterminationService for hours compliance determination
   # @param outcome [Symbol] :compliant or :not_compliant
   # @param hours_data [Hash] aggregated hours data
-  def determine_ce_hours_compliance(outcome, hours_data)
+  # @param trigger_workflow [Boolean] whether to trigger events/notifications (default: true)
+  #   - true: Called from business process, triggers state changes, events, notifications
+  #   - false: Called from async recalculation, only records determination
+  def determine_ce_hours_compliance(outcome, hours_data, trigger_workflow: true)
     certification = Certification.find(self.certification_id)
+    calculation_method = trigger_workflow ? "business_process" : "async_recalculation"
+    reason_code = outcome == :compliant ? :hours_reported_compliant : :hours_reported_insufficient
 
-    if outcome == :compliant
-      transaction do
+    transaction do
+      if trigger_workflow && outcome == :compliant
         self.activity_report_approval_status = "approved"
         self.activity_report_approval_status_updated_at = Time.current
         close!
-
-        certification.record_determination!(
-          decision_method: :automated,
-          reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_compliant] ],
-          outcome: :compliant,
-          determination_data: build_hours_determination_data(hours_data),
-          determined_at: certification.certification_requirements.certification_date
-        )
       end
 
-      Strata::EventManager.publish("DeterminedRequirementsMet", { case_id: id })
+      certification.record_determination!(
+        decision_method: :automated,
+        reasons: [ Determination::REASON_CODE_MAPPING[reason_code] ],
+        outcome: outcome == :compliant ? :compliant : :not_compliant,
+        determination_data: build_hours_determination_data(hours_data, calculation_method),
+        determined_at: trigger_workflow ? certification.certification_requirements.certification_date : Time.current
+      )
+    end
 
-      # TODO: Consider adding compliant_email notification
-      # Currently no email is sent when member meets requirements via ex parte hours
+    return unless trigger_workflow
+
+    if outcome == :compliant
+      Strata::EventManager.publish("DeterminedRequirementsMet", { case_id: id })
+      # TODO: add compliant_email notification
     else
       Strata::EventManager.publish("DeterminedRequirementsNotMet", { case_id: id })
 
@@ -154,10 +161,10 @@ class CertificationCase < Strata::Case
 
   private
 
-  def build_hours_determination_data(hours_data)
+  def build_hours_determination_data(hours_data, calculation_method)
     {
       calculation_type: "hours_based",
-      calculation_method: "business_process",
+      calculation_method: calculation_method,
       total_hours: hours_data[:total_hours],
       target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
       hours_by_category: hours_data[:hours_by_category],

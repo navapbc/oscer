@@ -14,13 +14,18 @@ RSpec.describe HoursComplianceDeterminationService do
   end
 
   describe ".determine" do
+    # Stub EventManager BEFORE creating certification to prevent auto-triggering business process
+    before do
+      allow(Strata::EventManager).to receive(:publish)
+      allow(NotificationService).to receive(:send_email_notification)
+    end
+
     let(:certification) { create(:certification) }
     let(:certification_case) { create(:certification_case, certification_id: certification.id) }
 
     context "when hours meet target" do
       before do
         create_ex_parte_activity_for(certification, hours: 85)
-        allow(Strata::EventManager).to receive(:publish)
       end
 
       it "publishes DeterminedRequirementsMet event" do
@@ -68,8 +73,6 @@ RSpec.describe HoursComplianceDeterminationService do
     context "when hours are below target" do
       before do
         create_ex_parte_activity_for(certification, hours: 50)
-        allow(Strata::EventManager).to receive(:publish)
-        allow(NotificationService).to receive(:send_email_notification)
       end
 
       it "publishes DeterminedRequirementsNotMet event" do
@@ -81,10 +84,12 @@ RSpec.describe HoursComplianceDeterminationService do
         )
       end
 
-      it "does not create a determination" do
-        expect {
-          described_class.determine(certification_case)
-        }.not_to change { Determination.where(subject_id: certification.id).count }
+      it "creates a not_compliant determination" do
+        described_class.determine(certification_case)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.outcome).to eq("not_compliant")
+        expect(determination.reasons).to include("hours_reported_insufficient")
       end
 
       it "does not close the case" do
@@ -112,11 +117,6 @@ RSpec.describe HoursComplianceDeterminationService do
     end
 
     context "with no hours data" do
-      before do
-        allow(Strata::EventManager).to receive(:publish)
-        allow(NotificationService).to receive(:send_email_notification)
-      end
-
       it "publishes DeterminedRequirementsNotMet event" do
         described_class.determine(certification_case)
 
@@ -129,7 +129,13 @@ RSpec.describe HoursComplianceDeterminationService do
   end
 
   describe ".calculate" do
+    before do
+      allow(Strata::EventManager).to receive(:publish)
+      allow(NotificationService).to receive(:send_email_notification)
+    end
+
     let(:certification) { create(:certification) }
+    let!(:certification_case) { create(:certification_case, certification_id: certification.id) }
 
     context "when hours meet target" do
       before do
@@ -174,6 +180,11 @@ RSpec.describe HoursComplianceDeterminationService do
   end
 
   describe "hours aggregation" do
+    before do
+      allow(Strata::EventManager).to receive(:publish)
+      allow(NotificationService).to receive(:send_email_notification)
+    end
+
     let(:certification) { create(:certification) }
     let(:certification_case) { create(:certification_case, certification_id: certification.id) }
 
@@ -185,8 +196,6 @@ RSpec.describe HoursComplianceDeterminationService do
       end
 
       it "sums hours across all entries" do
-        allow(Strata::EventManager).to receive(:publish)
-
         described_class.determine(certification_case)
 
         determination = Determination.where(subject_id: certification.id).last
@@ -194,8 +203,6 @@ RSpec.describe HoursComplianceDeterminationService do
       end
 
       it "groups hours by category" do
-        allow(Strata::EventManager).to receive(:publish)
-
         described_class.determine(certification_case)
 
         determination = Determination.where(subject_id: certification.id).last
@@ -207,8 +214,6 @@ RSpec.describe HoursComplianceDeterminationService do
       end
 
       it "tracks hours by source" do
-        allow(Strata::EventManager).to receive(:publish)
-
         described_class.determine(certification_case)
 
         determination = Determination.where(subject_id: certification.id).last
@@ -219,8 +224,6 @@ RSpec.describe HoursComplianceDeterminationService do
       end
 
       it "includes entry IDs in determination_data" do
-        allow(Strata::EventManager).to receive(:publish)
-
         described_class.determine(certification_case)
 
         determination = Determination.where(subject_id: certification.id).last
@@ -242,14 +245,13 @@ RSpec.describe HoursComplianceDeterminationService do
       end
 
       it "only counts hours within the lookback period" do
-        allow(Strata::EventManager).to receive(:publish)
-        allow(NotificationService).to receive(:send_email_notification)
-
         described_class.determine(certification_case)
 
         determination = Determination.where(subject_id: certification.id).last
         # Should only count 50 hours (within period), not 150 (50 + 100)
-        expect(determination).to be_nil # 50 hours < 80 target = not compliant, no determination
+        # 50 hours < 80 target = not compliant
+        expect(determination.outcome).to eq("not_compliant")
+        expect(determination.determination_data["total_hours"]).to eq(50.0)
       end
     end
   end

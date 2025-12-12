@@ -219,18 +219,18 @@ RSpec.describe CertificationCase, type: :model do
         )
       end
 
-      it 'sends action required notification email' do
+      it 'does not send action required notification email (moved to hours compliance check)' do
         eligibility_fact = Strata::RulesEngine::Fact.new(
           "no-op", false
         )
         certification_case.determine_ex_parte_exemption(eligibility_fact)
 
-        certification = Certification.find(certification_case.certification_id)
-        expect(NotificationService).to have_received(:send_email_notification).with(
+        # action_required_email is now sent in determine_ce_hours_compliance, not here
+        expect(NotificationService).not_to have_received(:send_email_notification).with(
           MemberMailer,
-          { certification: certification },
+          anything,
           :action_required_email,
-          [ certification.member_email ]
+          anything
         )
       end
     end
