@@ -8,5 +8,6 @@ en:
         american_indian_alaska_native_exempt: "American Indian or Alaska Native"
         income_reported_compliant: "Income reported compliant"
         hours_reported_compliant: "Hours reported compliant"
+        hours_insufficient: "Insufficient community engagement hours"
         exemption_request_compliant: "Exemption request compliant"
 
