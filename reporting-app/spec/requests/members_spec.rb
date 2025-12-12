@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe "Members", type: :request do
   include Warden::Test::Helpers
 
-  let(:user) { create(:user, role: "admin") }
+  let(:user) { create(:user, :as_admin) }
   let(:member_id) { "MEMBER123" }
   let(:member_email) { "test@example.com" }
   let(:certification) do
