@@ -1,25 +1,23 @@
 # frozen_string_literal: true
 
 module Staff
-  class CertificationBatchUploadsController < StaffController
+  class CertificationBatchUploadsController < AdminController
+    self.authorization_resource = CertificationBatchUpload
+
     before_action :set_batch_upload, only: [ :show, :process_batch, :results ]
-    after_action :verify_authorized # TODO: Move to StaffController in follow-up PR
 
     # GET /staff/certification_batch_uploads
     def index
-      authorize CertificationBatchUpload
-      @batch_uploads = CertificationBatchUpload.includes(:uploader).recent
+      @batch_uploads = policy_scope(CertificationBatchUpload).includes(:uploader).recent
     end
 
     # GET /staff/certification_batch_uploads/new
     def new
-      authorize CertificationBatchUpload
       @batch_upload = CertificationBatchUpload.new
     end
 
     # POST /staff/certification_batch_uploads
     def create
-      authorize CertificationBatchUpload
       uploaded_file = params[:csv_file]
 
       if uploaded_file.blank?
@@ -49,12 +47,10 @@ module Staff
 
     # GET /staff/certification_batch_uploads/:id
     def show
-      authorize @batch_upload
     end
 
     # GET /staff/certification_batch_uploads/:id/results
     def results
-      authorize @batch_upload
       certification_origin = CertificationOrigin.from_batch_upload(@batch_upload.id)
       certification_ids = certification_origin.select(:certification_id).map(&:certification_id)
 
@@ -76,7 +72,6 @@ module Staff
 
     # POST /staff/certification_batch_uploads/:id/process_batch
     def process_batch
-      authorize @batch_upload
       respond_to do |format|
         if @batch_upload.processable? == false
           message = "This batch cannot be processed. Current status: #{@batch_upload.status}."
@@ -95,7 +90,7 @@ module Staff
     private
 
     def set_batch_upload
-      @batch_upload = CertificationBatchUpload.includes(:uploader).find(params[:id])
+      @batch_upload = policy_scope(CertificationBatchUpload).includes(:uploader).find(params[:id])
     end
 
     def set_cases_to_show

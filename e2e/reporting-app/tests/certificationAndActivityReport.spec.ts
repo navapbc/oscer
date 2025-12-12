@@ -25,5 +25,6 @@ test('Certification request and activity report flow', async ({ page, emailServi
 
   await new StaffDashboardPage(page).go();
 
-  expect(page.url()).toContain('/staff');
+  // The staff dashboard redirects to /dashboard for non-staff users
+  expect(page.url()).toContain('/dashboard');
 });
