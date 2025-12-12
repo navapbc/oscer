@@ -5,7 +5,7 @@ original_delivery_method = ActionMailer::Base.delivery_method
 ActionMailer::Base.delivery_method = :test
 
 # Create sample batch uploads for testing
-user = User.first || User.create!(email: "staff@example.com", uid: SecureRandom.uuid, provider: "login.gov", region: "Southeast", role: "admin")
+user = User.first || User.create!(:as_admin, email: "staff@example.com", uid: SecureRandom.uuid, provider: "login.gov", region: "Southeast")
 
 5.times do |index|
   certification = FactoryBot.create(

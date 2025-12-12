@@ -8,8 +8,8 @@ RSpec.describe TaskPolicy, type: :policy do
   let(:region) { "Southeast" }
   let(:other_region) { "Northeast" }
 
-  let(:staff_user) { create(:user, role: "caseworker", region: region) }
-  let(:other_region_staff_user) { create(:user, role: "caseworker", region: other_region) }
+  let(:staff_user) { create(:user, :as_caseworker, region: region) }
+  let(:other_region_staff_user) { create(:user, :as_caseworker, region: other_region) }
   let(:non_staff_user) { create(:user, role: nil, region: nil) }
 
   let(:certification) do
