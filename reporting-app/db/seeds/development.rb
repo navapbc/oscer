@@ -1,12 +1,17 @@
 # frozen_string_literal: true
 
+# Disable email delivery during seeding to prevent letter_opener from opening browser tabs
+original_delivery_method = ActionMailer::Base.delivery_method
+ActionMailer::Base.delivery_method = :test
+
 # Create sample batch uploads for testing
-user = User.first || User.create!(email: "staff@example.com", uid: SecureRandom.uuid, provider: "login.gov")
+user = User.first || User.create!(email: "staff@example.com", uid: SecureRandom.uuid, provider: "login.gov", region: "Southeast", role: "admin")
 
 5.times do |index|
   certification = FactoryBot.create(
     :certification,
-    member_data: FactoryBot.build(:certification_member_data, :with_full_name, :with_account_email)
+    member_data: FactoryBot.build(:certification_member_data, :with_full_name, :with_account_email),
+    certification_requirements: FactoryBot.build(:certification_certification_requirements)
   )
   certification_case = CertificationCase.find_by!(certification_id: certification.id)
   app_form = ActivityReportApplicationForm.create!(
@@ -168,3 +173,6 @@ CertificationOrigin.create!(
   source_type: CertificationOrigin::SOURCE_TYPE_BATCH_UPLOAD,
   source_id: failed_batch.id
 )
+
+# Restore original delivery method
+ActionMailer::Base.delivery_method = original_delivery_method
