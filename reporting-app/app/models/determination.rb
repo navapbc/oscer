@@ -38,7 +38,7 @@ class Determination < Strata::Determination
     is_american_indian_or_alaska_native: "american_indian_alaska_native_exempt",
     income_reported_compliant: "income_reported_compliant",
     hours_reported_compliant: "hours_reported_compliant",
-    hours_insufficient: "hours_insufficient",
+    hours_reported_insufficient: "hours_reported_insufficient",
     exemption_request_compliant: "exemption_request_compliant"
   }.freeze
 
