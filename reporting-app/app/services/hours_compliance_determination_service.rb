@@ -82,20 +82,7 @@ class HoursComplianceDeterminationService
     end
 
     def aggregate_ex_parte_hours(member_id, lookback_period)
-      entries = ExParteActivity.for_member(member_id)
-
-      # Filter to activities within the certification's lookback period
-      if lookback_period.present?
-        # Convert Strata::USDate to plain Date for SQL comparison
-        start_date = Date.parse(lookback_period.start.to_s)
-        end_date = Date.parse(lookback_period.end.to_s).end_of_month
-
-        entries = entries.where(
-          "period_start >= ? AND period_end <= ?",
-          start_date,
-          end_date
-        )
-      end
+      entries = ExParteActivity.for_member(member_id).within_period(lookback_period)
 
       {
         total: entries.sum(:hours).to_f,

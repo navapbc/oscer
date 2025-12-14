@@ -22,6 +22,12 @@ class CertificationCasesController < StaffController
     @activity_report = ActivityReportApplicationForm.find_by(certification_case_id: @case.id)
     @member_status = MemberStatusService.determine(@case)
     @tasks = @case.tasks.order(created_at: :desc)
+
+    # Hours data for the "Hours reported" table
+    @hours_summary = HoursComplianceDeterminationService.aggregate_hours_for_certification(@certification)
+    @target_hours = HoursComplianceDeterminationService::TARGET_HOURS
+    @ex_parte_activities = fetch_ex_parte_activities
+    @member_activities = fetch_member_activities
   end
 
   private
@@ -44,5 +50,16 @@ class CertificationCasesController < StaffController
     [ ActivityReportApplicationForm, ExemptionApplicationForm ].map do |form_class|
       form_class.find_by_certification_case_id(@case.id)&.id
     end.compact
+  end
+
+  def fetch_ex_parte_activities
+    lookback_period = @certification.certification_requirements.continuous_lookback_period
+    ExParteActivity.for_member(@certification.member_id).within_period(lookback_period)
+  end
+
+  def fetch_member_activities
+    return [] unless @activity_report
+
+    @activity_report.activities.where.not(hours: nil)
   end
 end
