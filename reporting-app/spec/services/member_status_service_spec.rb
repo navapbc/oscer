@@ -15,6 +15,14 @@ RSpec.describe MemberStatusService do
   let(:certification) { create(:certification) }
   let(:certification_case) { create(:certification_case, certification_id: certification.id) }
 
+  before do
+    # Prevent auto-triggering business process during test setup
+    allow(Strata::EventManager).to receive(:publish).and_call_original
+    allow(HoursComplianceDeterminationService).to receive(:determine)
+    allow(ExemptionDeterminationService).to receive(:determine)
+    allow(NotificationService).to receive(:send_email_notification)
+  end
+
   describe '#determine' do
     context 'with Certification input' do
       it 'accepts a Certification object' do

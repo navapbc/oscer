@@ -10,6 +10,11 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
 
   before do
     login_as user
+    # Prevent auto-triggering business process during test setup
+    allow(Strata::EventManager).to receive(:publish).and_call_original
+    allow(HoursComplianceDeterminationService).to receive(:determine)
+    allow(ExemptionDeterminationService).to receive(:determine)
+    allow(NotificationService).to receive(:send_email_notification)
   end
 
   describe "GET /staff/staff/certification_batch_uploads/new" do
