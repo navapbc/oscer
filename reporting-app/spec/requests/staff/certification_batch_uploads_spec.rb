@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'rails_helper'
+require 'support/query_count_matchers'
 
 RSpec.describe "Staff::CertificationBatchUploads", type: :request do
   include Warden::Test::Helpers
@@ -195,6 +196,12 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
       # awaiting_report_cert has no determination and no case - will default to AWAITING_REPORT
 
       before do
+        # Stub services to prevent auto-triggering during certification creation
+        allow(Strata::EventManager).to receive(:publish).and_call_original
+        allow(HoursComplianceDeterminationService).to receive(:determine)
+        allow(ExemptionDeterminationService).to receive(:determine)
+        allow(NotificationService).to receive(:send_email_notification)
+
         # Force creation of all test data
         compliant_origin
         exempt_origin

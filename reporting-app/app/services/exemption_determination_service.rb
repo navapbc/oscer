@@ -2,11 +2,20 @@
 
 class ExemptionDeterminationService
   class << self
+    # Called by CertificationBusinessProcess at EX_PARTE_EXEMPTION_CHECK step
+    # Service handles: evaluation, recording via model, and publishing events
+    # Business process handles: transitions and notifications
+    # @param kase [CertificationCase]
     def determine(kase)
       certification = Certification.find(kase.certification_id)
       eligibility_fact = evaluate_exemption_eligibility(certification)
 
-      kase.determine_ex_parte_exemption(eligibility_fact)
+      if eligibility_fact.value
+        kase.record_exemption_determination(eligibility_fact)
+        Strata::EventManager.publish("DeterminedExempt", { case_id: kase.id })
+      else
+        Strata::EventManager.publish("DeterminedNotExempt", { case_id: kase.id })
+      end
     end
 
     private

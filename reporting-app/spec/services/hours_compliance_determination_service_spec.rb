@@ -28,12 +28,12 @@ RSpec.describe HoursComplianceDeterminationService do
         create_ex_parte_activity_for(certification, hours: 85)
       end
 
-      it "publishes DeterminedRequirementsMet event" do
+      it "publishes DeterminedHoursMet event" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedRequirementsMet",
-          { case_id: certification_case.id }
+          "DeterminedHoursMet",
+          hash_including(case_id: certification_case.id)
         )
       end
 
@@ -51,12 +51,6 @@ RSpec.describe HoursComplianceDeterminationService do
         expect(certification_case.reload).to be_closed
       end
 
-      it "sets activity_report_approval_status to approved" do
-        described_class.determine(certification_case)
-
-        expect(certification_case.reload.activity_report_approval_status).to eq("approved")
-      end
-
       it "includes determination_data with calculation details" do
         described_class.determine(certification_case)
 
@@ -64,7 +58,6 @@ RSpec.describe HoursComplianceDeterminationService do
         data = determination.determination_data
 
         expect(data["calculation_type"]).to eq("hours_based")
-        expect(data["calculation_method"]).to eq("business_process")
         expect(data["total_hours"]).to eq(85.0)
         expect(data["target_hours"]).to eq(80)
       end
@@ -75,12 +68,12 @@ RSpec.describe HoursComplianceDeterminationService do
         create_ex_parte_activity_for(certification, hours: 50)
       end
 
-      it "publishes DeterminedRequirementsNotMet event" do
+      it "publishes DeterminedActionRequired event" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedRequirementsNotMet",
-          { case_id: certification_case.id }
+          "DeterminedActionRequired",
+          hash_including(case_id: certification_case.id)
         )
       end
 
@@ -104,25 +97,23 @@ RSpec.describe HoursComplianceDeterminationService do
         create_ex_parte_activity_for(certification, hours: 80)
       end
 
-      it "is compliant" do
-        allow(Strata::EventManager).to receive(:publish)
-
+      it "publishes DeterminedHoursMet event" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedRequirementsMet",
-          { case_id: certification_case.id }
+          "DeterminedHoursMet",
+          hash_including(case_id: certification_case.id)
         )
       end
     end
 
     context "with no hours data" do
-      it "publishes DeterminedRequirementsNotMet event" do
+      it "publishes DeterminedActionRequired event" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedRequirementsNotMet",
-          { case_id: certification_case.id }
+          "DeterminedActionRequired",
+          hash_including(case_id: certification_case.id)
         )
       end
     end
@@ -152,14 +143,13 @@ RSpec.describe HoursComplianceDeterminationService do
         expect(determination.decision_method).to eq("automated")
       end
 
-      it "includes determination_data with async calculation_method" do
+      it "includes determination_data with calculation details" do
         described_class.calculate(certification.id)
 
         determination = Determination.where(subject_id: certification.id).last
         data = determination.determination_data
 
         expect(data["calculation_type"]).to eq("hours_based")
-        expect(data["calculation_method"]).to eq("async_recalculation")
         expect(data["total_hours"]).to eq(90.0)
         expect(data["target_hours"]).to eq(80)
       end

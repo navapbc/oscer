@@ -1,0 +1,16 @@
+<%= render partial: 'member_mailer/greeting', locals: { first_name: @first_name } %>
+
+<%= t('.good_news', period: @period) %>
+
+<%= t('.what_this_means.title') %>
+- <%= t('.what_this_means.item_1') %>
+- <%= t('.what_this_means.item_2', renewal_date: @renewal_date) %>
+
+<%= t('.contact_if_needed', root_url: root_url) %>
+
+<%= t('.questions') %>
+
+<%= render 'member_mailer/signature' %>
+
+<%= render 'demo_notice' %>
+

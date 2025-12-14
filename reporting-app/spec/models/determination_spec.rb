@@ -80,6 +80,12 @@ RSpec.describe Determination, type: :model do
   end
 
   describe 'scopes' do
+    # Stub business process to prevent auto-triggering determinations when creating certifications
+    before do
+      allow(Strata::EventManager).to receive(:publish)
+      allow(NotificationService).to receive(:send_email_notification)
+    end
+
     describe '.for_certifications' do
       let(:compliant_cert) { create(:certification) }
       let(:exempt_cert) { create(:certification) }

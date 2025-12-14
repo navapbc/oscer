@@ -11,6 +11,7 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
 
   before do
     login_as user
+    allow(NotificationService).to receive(:send_email_notification)
   end
 
   after do
@@ -19,7 +20,14 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
 
   describe "PATCH /update" do
     context "with approve action" do
-      before { patch review_activity_report_task_url(task), params: { review_activity_report_task: { activity_report_decision: "yes" } } }
+      before do
+        # Stub determination service to simulate compliant result (sufficient hours)
+        allow(HoursComplianceDeterminationService).to receive(:determine_after_activity_report) do |k|
+          k.close!
+          Strata::EventManager.publish("DeterminedHoursMet", { case_id: k.id, certification_id: k.certification_id })
+        end
+        patch review_activity_report_task_url(task), params: { review_activity_report_task: { activity_report_decision: "yes" } }
+      end
 
       it "marks task as completed" do
         task.reload
@@ -27,7 +35,7 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
         expect(task).to be_completed
       end
 
-      it "marks case as approved" do
+      it "marks case as approved and transitions to end" do
         kase.reload
 
         expect(kase.activity_report_approval_status).to eq("approved")
@@ -49,12 +57,12 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
         expect(task).to be_completed
       end
 
-      it "marks case as denied" do
+      it "marks case as denied and returns to report_activities (member can resubmit)" do
         kase.reload
 
         expect(kase.activity_report_approval_status).to eq("denied")
-        expect(kase.business_process_instance.current_step).to eq("end")
-        expect(kase).to be_closed
+        expect(kase.business_process_instance.current_step).to eq("report_activities")
+        expect(kase).to be_open
       end
 
       it "redirects back to the task" do
