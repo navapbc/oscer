@@ -1,4 +1,66 @@
+<%# Blue Banner Section %>
+<section class="usa-section usa-section--light padding-y-3 margin-bottom-4" aria-label="Get started">
+  <div class="grid-container">
+    <div class="grid-row flex-column tablet:flex-row gap-4">
+      <div class="usa-hero__callout grid-col">
+        <h2 class="usa-hero__heading font-heading-xl">
+          <span class="usa-hero__heading--alt"><%= t("dashboard.new_certification.get_started.header") %></span> <%= @certification.certification_requirements.due_date&.strftime('%b %d, %Y') %>
+        </h2>
+        <p class="text-base-lightest">
+         <%= t("dashboard.new_certification.get_started.prompt") %>
+        </p>
+        <%= link_to t("dashboard.new_certification.get_started.button"), exemption_screener_path(certification_case_id: @certification_case&.id), class: "usa-button" %>
+      </div>
+
+      <div class="grid-col display-flex flex-align-center">
+        <p class="font-serif-md">
+          <%= t("dashboard.new_certification.get_started.info") %>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <div class="grid-container">
-  <p class="usa-intro"><%= t(".intro") %></p>
-  <%= link_to t(".view_completed_certification_button"), certification_path(certification), class: "usa-button" %>
+  <%# Current Period Compliance Status Section %>
+  <h2 class="font-heading-xl margin-bottom-2">
+    <%= t("dashboard.new_certification.current_period.header", period: @current_period&.strftime("%B %Y")) %>
+  </h2>
+  <p class="margin-bottom-4">
+    <%= t("dashboard.new_certification.current_period.requirement_info", 
+          target_hours: @target_hours, 
+          period_end_date: @period_end_date&.strftime("%B %d, %Y")) %>
+  </p>
+
+  <%# Total Hours Reported %>
+  <div class="margin-bottom-3">
+    <p class="margin-bottom-05 text-base"><%= t("dashboard.new_certification.current_period.total_hours_label") %></p>
+    <p class="display-flex flex-align-center margin-top-0">
+      <svg class="usa-icon usa-icon--size-4 text-green margin-right-1" aria-hidden="true" focusable="false" role="img">
+        <use xlink:href="<%= asset_path('@uswds/uswds/dist/img/sprite.svg') %>#check_circle"></use>
+      </svg>
+      <span class="font-body-lg text-bold"><%= t("dashboard.new_certification.current_period.hours_value", hours: @total_hours_reported) %></span>
+    </p>
+  </div>
+
+  <%# Additional Hours Needed %>
+  <div class="margin-bottom-4">
+    <p class="margin-bottom-05 text-base"><%= t("dashboard.new_certification.current_period.additional_hours_label", target_hours: @target_hours) %></p>
+    <div class="margin-top-0">
+      <svg class="usa-icon usa-icon--size-4 text-green margin-right-05" aria-hidden="true" focusable="false" role="img" style="vertical-align: middle;">
+        <use xlink:href="<%= asset_path('@uswds/uswds/dist/img/sprite.svg') %>#check_circle"></use>
+      </svg>
+      <span class="font-body-lg text-bold" style="vertical-align: middle;"><%= t("dashboard.new_certification.current_period.requirements_met", period: @current_period&.strftime("%B %Y")) %></span>
+    </div>
+  </div>
+
+  <%# Action Button %>
+  <div class="margin-bottom-4">
+    <%= link_to t(".view_activity_report_button"), activity_report_application_form_path(@activity_report_application_form), class: "usa-button" %>
+  </div>
+
+  <%# Previously Completed Requirements Section %>
+  <h2 class="font-heading-lg margin-top-6 margin-bottom-2"><%= t("dashboard.new_certification.previous_requirements.header") %></h2>
+  <p class="margin-bottom-2"><%= t("dashboard.new_certification.previous_requirements.intro") %></p>
+  <%= link_to t("dashboard.new_certification.previous_requirements.button"), certifications_path, class: "usa-button usa-button--outline" %>
 </div>

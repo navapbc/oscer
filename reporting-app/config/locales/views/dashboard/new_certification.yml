@@ -2,10 +2,24 @@ en:
   dashboard:
     new_certification:
       get_started:
-        header: "Report activities by"
+        header: "Report this month's activities by"
         prompt: "Begin reporting your Community Engagement activities, or find out if you qualify for an exemption."
         button: "Get started"
         info: "Medicaid beneficiaries need to regularly report activities like volunteering, education, and hours worked in order to keep their coverage. Certain life situations may allow you to apply for an exemption so that you don't have to report."
+      current_period:
+        header: "Current period: %{period}"
+        requirement_info: "For this period, you will need to report at least %{target_hours} hours of Community Engagement activities by %{period_end_date} in order to keep your Medicaid coverage."
+        total_hours_label: "Total hours reported"
+        additional_hours_label: "Additional hours needed to meet the %{target_hours}-hour requirement"
+        hours_value: "%{hours} hours"
+        requirements_met: "None. You have met the requirement for %{period}."
+        report_activities_button: "Report activities for the current period"
+        request_exemption_button: "Request exemption"
+        view_activity_report_button: "View activity report"
+      previous_requirements:
+        header: "Previously completed requirements"
+        intro: "Review previously-completed certifications."
+        button: "Review previous certifications"
       activities:
         header: "Activities & Exemptions"
       activity_report:
