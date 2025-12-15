@@ -16,7 +16,8 @@ class ExParteActivity < ApplicationRecord
 
   SOURCE_TYPES = {
     api: "api",
-    batch: "batch_upload"
+    batch: "batch_upload",
+    manual: "manual"
   }.freeze
   ALLOWED_SOURCE_TYPES = SOURCE_TYPES.values.freeze
 

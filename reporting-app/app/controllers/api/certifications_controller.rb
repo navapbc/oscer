@@ -32,13 +32,16 @@ class Api::CertificationsController < ApiController
     @certification = create_request.to_certification
     authorize @certification
 
-    if @certification.save
+    begin
+      service = Certifications::CreationService.new(create_request)
+      @certification = service.call
+
       render_data(
         Api::Certifications::Response.from_certification(@certification),
         status: :created
       )
-    else
-      render_errors(@certification)
+    rescue ActiveRecord::RecordInvalid => e
+      render_errors(e.record)
     end
   end
 
