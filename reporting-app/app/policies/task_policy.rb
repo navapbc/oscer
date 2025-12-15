@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class TaskPolicy < ApplicationPolicy
+class TaskPolicy < Strata::TaskPolicy
   def index?
     staff?
   end
@@ -29,7 +29,7 @@ class TaskPolicy < ApplicationPolicy
     staff_in_region?
   end
 
-  class Scope < ApplicationPolicy::Scope
+  class Scope < Strata::TaskPolicy::Scope
     def resolve
       return scope.none unless user&.staff?
 
@@ -42,10 +42,6 @@ class TaskPolicy < ApplicationPolicy
   end
 
   private
-
-  def staff?
-    user.staff?
-  end
 
   def in_region?
     user.region == TaskService.get_region_for_task(record)
