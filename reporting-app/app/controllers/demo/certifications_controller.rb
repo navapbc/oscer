@@ -64,23 +64,23 @@ class Demo::CertificationsController < ApplicationController
     hourly_activities = @certification.member_data.activities.select { |a| a.type == "hourly" }
 
     hourly_activities.each do |activity_data|
-      ex_parte_activity = build_ex_parte_activity(activity_data)
+      result = ExParteActivityService.create_entry(
+        member_id: @certification.member_id,
+        category: activity_data.category,
+        hours: activity_data.hours,
+        period_start: activity_data.period_start,
+        period_end: activity_data.period_end,
+        source_type: ExParteActivity::SOURCE_TYPES[:manual],
+        source_id: nil
+      )
 
-      unless ex_parte_activity.save
-        raise ActiveRecord::RecordInvalid.new(ex_parte_activity)
+      # Handle service error response
+      if result.is_a?(Hash) && result[:error]
+        # Create a dummy record to use RecordInvalid pattern
+        activity = ExParteActivity.new
+        activity.errors.add(:base, result[:error])
+        raise ActiveRecord::RecordInvalid.new(activity)
       end
     end
-  end
-
-  def build_ex_parte_activity(activity_data)
-    ExParteActivity.new(
-      member_id: @certification.member_id,
-      category: activity_data.category,
-      hours: activity_data.hours,
-      period_start: activity_data.period_start,
-      period_end: activity_data.period_end,
-      source_type: ExParteActivity::SOURCE_TYPES[:manual],
-      source_id: nil
-    )
   end
 end
