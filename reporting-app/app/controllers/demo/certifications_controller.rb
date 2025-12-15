@@ -22,17 +22,21 @@ class Demo::CertificationsController < ApplicationController
       return render :new, status: :unprocessable_content
     end
 
-    @certification = @form.to_certification
+    # Build certification from form
+    certification = @form.to_certification
 
-    if !@certification
+    if !certification
       flash.now[:errors] = @form.errors.full_messages
-      render :new, status: :unprocessable_content
+      return render :new, status: :unprocessable_content
     end
 
-    if @certification.save
+    begin
+      service = Certifications::CreationService.new(certification)
+      @certification = service.call
+
       redirect_to certification_path(@certification)
-    else
-      flash.now[:errors] = @certification.errors.full_messages
+    rescue ActiveRecord::RecordInvalid => e
+      flash.now[:errors] = e.record.errors.full_messages
       render :new, status: :unprocessable_content
     end
   end

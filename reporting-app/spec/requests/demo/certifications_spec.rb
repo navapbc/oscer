@@ -106,6 +106,7 @@ RSpec.describe "/demo/certifications", type: :request do
           post demo_certifications_url,
               params: { demo_certifications_create_form: create_attrs }
         }.to change(Certification, :count).by(1)
+          .and change(ExParteActivity, :count).by(1)
 
         cert = Certification.order(created_at: :desc).last
         expect(cert.case_number).to eq(create_attrs[:case_number])
@@ -118,6 +119,15 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(cert.member_data.activities).not_to be_nil
         expect(cert.member_data.activities.length).to eq(1)
         expect(cert.member_data.activities.first.hours).to eq(10)
+
+        activity = ExParteActivity.last
+        expect(activity.member_id).to eq(cert.member_id)
+        expect(activity.category).to eq("employment")
+        expect(activity.hours).to eq(10)
+        expect(activity.period_start).to eq(cert.certification_requirements.certification_date.beginning_of_month)
+        expect(activity.period_end).to eq(cert.certification_requirements.certification_date.end_of_month)
+        expect(activity.source_type).to eq("api")
+        expect(activity.source_id).to be_nil
       end
 
       it "creates Certification with 'Fully met work hours requirement'" do
@@ -127,6 +137,7 @@ RSpec.describe "/demo/certifications", type: :request do
           post demo_certifications_url,
               params: { demo_certifications_create_form: create_attrs }
         }.to change(Certification, :count).by(1)
+          .and change(ExParteActivity, :count).by(1)
 
         cert = Certification.order(created_at: :desc).last
         expect(cert.case_number).to eq(create_attrs[:case_number])
@@ -138,6 +149,13 @@ RSpec.describe "/demo/certifications", type: :request do
         }))
         expect(cert.member_data.activities).not_to be_nil
         expect(cert.member_data.activities.sum(&:hours)).to eq(80)
+
+        activity = ExParteActivity.last
+        expect(activity.member_id).to eq(cert.member_id)
+        expect(activity.category).to eq("employment")
+        expect(activity.hours).to eq(80)
+        expect(activity.source_type).to eq("api")
+        expect(activity.source_id).to be_nil
       end
 
       it "creates a new Certification with 'Meets age-based exemption requirement' scenario and uses scenario DOB" do
