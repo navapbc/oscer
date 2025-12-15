@@ -20,7 +20,7 @@ RSpec.describe Certifications::CreationService, type: :service do
   end
 
   let(:create_request) { Api::Certifications::CreateRequest.new(**base_params) }
-  let(:service) { described_class.new(create_request) }
+  let(:service) { described_class.new(create_request.to_certification) }
 
   describe "#call" do
     context "with hourly activities" do

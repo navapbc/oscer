@@ -5,17 +5,14 @@
 class Certifications::CreationService
   attr_reader :create_request, :certification
 
-  def initialize(create_request)
-    @create_request = create_request
-    @certification = nil
+  def initialize(certification)
+    @certification = certification
   end
 
   # Creates certification with associated records in a transaction
   # @return [Certification] The created certification
   # @raise [ActiveRecord::RecordInvalid] If validation fails
   def call
-    @certification = create_request.to_certification
-
     ActiveRecord::Base.transaction do
       # Create ex parte activities FIRST (before certification)
       create_ex_parte_activities

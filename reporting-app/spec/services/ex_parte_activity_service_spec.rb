@@ -122,7 +122,7 @@ RSpec.describe ExParteActivityService do
   end
 
   describe ".duplicate_entry?" do
-    let(:existing_entry) { create(:ex_parte_activity) }
+    let(:existing_entry) { create(:ex_parte_activity, :employment) }
 
     context "with exact match" do
       it "returns true" do

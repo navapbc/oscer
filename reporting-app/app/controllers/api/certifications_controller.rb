@@ -29,11 +29,12 @@ class Api::CertificationsController < ApiController
       return render_errors(create_request)
     end
 
-    @certification = create_request.to_certification
-    authorize @certification
+    # Build certification from request
+    certification = create_request.to_certification
+    authorize certification
 
     begin
-      service = Certifications::CreationService.new(create_request)
+      service = Certifications::CreationService.new(certification)
       @certification = service.call
 
       render_data(
