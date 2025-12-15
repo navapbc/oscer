@@ -64,7 +64,11 @@ module TemplateApplicationRails
       g.factory_bot suffix: "factory"
     end
 
-    config.after_initialize do
+    # Use to_prepare instead of after_initialize so event listeners
+    # are re-registered after class reloading in development
+    config.to_prepare do
+      # Unsubscribe old listeners to avoid duplicates after reload
+      Strata::EventManager.unsubscribe_all
       CertificationBusinessProcess.start_listening_for_events
     end
 
