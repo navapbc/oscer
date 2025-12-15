@@ -3,6 +3,14 @@
 require 'rails_helper'
 
 RSpec.describe Determination, type: :model do
+  before do
+    # Prevent auto-triggering business process during test setup
+    allow(Strata::EventManager).to receive(:publish).and_call_original
+    allow(HoursComplianceDeterminationService).to receive(:determine)
+    allow(ExemptionDeterminationService).to receive(:determine)
+    allow(NotificationService).to receive(:send_email_notification)
+  end
+
   describe 'enums' do
     describe 'decision_method' do
       it 'defines the decision_method enum with correct values' do

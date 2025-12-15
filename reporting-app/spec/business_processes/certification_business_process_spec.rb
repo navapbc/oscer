@@ -10,6 +10,10 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
   before do
     allow(Strata::EventManager).to receive(:publish).and_call_original
     allow(NotificationService).to receive(:send_email_notification)
+    # Stub hours compliance service to simulate not_compliant (no hours) and trigger transition
+    allow(HoursComplianceDeterminationService).to receive(:determine) do |kase|
+      Strata::EventManager.publish("DeterminedRequirementsNotMet", { case_id: kase.id })
+    end
   end
 
   describe 'ex_parte_exemption_check' do
