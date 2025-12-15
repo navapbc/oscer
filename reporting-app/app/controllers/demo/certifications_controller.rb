@@ -70,8 +70,7 @@ class Demo::CertificationsController < ApplicationController
         hours: activity_data.hours,
         period_start: activity_data.period_start,
         period_end: activity_data.period_end,
-        source_type: ExParteActivity::SOURCE_TYPES[:manual],
-        source_id: nil
+        source_type: ExParteActivity::SOURCE_TYPES[:api]
       )
 
       # Handle service error response

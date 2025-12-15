@@ -126,7 +126,7 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(activity.hours).to eq(10)
         expect(activity.period_start).to eq(cert.certification_requirements.certification_date.beginning_of_month)
         expect(activity.period_end).to eq(cert.certification_requirements.certification_date.end_of_month)
-        expect(activity.source_type).to eq("manual")
+        expect(activity.source_type).to eq("api")
         expect(activity.source_id).to be_nil
       end
 
@@ -154,7 +154,7 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(activity.member_id).to eq(cert.member_id)
         expect(activity.category).to eq("employment")
         expect(activity.hours).to eq(80)
-        expect(activity.source_type).to eq("manual")
+        expect(activity.source_type).to eq("api")
         expect(activity.source_id).to be_nil
       end
 
