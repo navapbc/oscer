@@ -33,11 +33,7 @@ class TaskPolicy < Strata::TaskPolicy
     def resolve
       return scope.none unless user&.staff?
 
-      # TODO: Once authorization is moved to Strata, move these joins/where to Strata::Task which can't be done in OSCER
-      scope
-      .joins("INNER JOIN certification_cases ON certification_cases.id = strata_tasks.case_id")
-      .joins("INNER JOIN certifications ON certifications.id = certification_cases.certification_id")
-      .where("certifications.certification_requirements->>'region' = ?", user.region)
+      scope.by_region(user.region)
     end
   end
 
