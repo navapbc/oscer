@@ -70,6 +70,6 @@ class Certification < ApplicationRecord
   end
 
   def region
-    self&.certification_requirements&.region
+    certification_requirements&.region
   end
 end
