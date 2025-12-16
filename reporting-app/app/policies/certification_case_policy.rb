@@ -13,7 +13,7 @@ class CertificationCasePolicy < StaffPolicy
 
   class Scope < StaffPolicy::Scope
     def resolve
-      return scope.none unless user&.staff?
+      return scope.none unless user.staff?
 
       scope.by_region(user.region)
     end
