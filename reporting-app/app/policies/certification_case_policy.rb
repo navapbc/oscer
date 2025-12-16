@@ -5,9 +5,9 @@
 class CertificationCasePolicy < StaffPolicy
   class Scope < StaffPolicy::Scope
     def resolve
-      # TODO: Restrict scope based on caseworker's region
-      # https://github.com/navapbc/oscer/issues/61
-      user.staff? ? scope.all : scope.none
+      return scope.none unless user&.staff?
+
+      scope.by_region(user.region)
     end
   end
 end
