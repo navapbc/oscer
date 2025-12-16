@@ -1,0 +1,26 @@
+<%= render partial: 'member_mailer/greeting', locals: { first_name: @first_name } %>
+
+<%= t('.progress_message') %>
+
+<%= t('.your_status') %>
+- <%= t('.hours_still_needed', hours: @hours_needed) %>
+- <%= t('.hours_reported', hours: @hours_reported) %>
+- <%= t('.deadline', date: @deadline) %>
+
+<%= t('.login_instructions', login_url: @login_url) %>
+
+<%= t('.what_to_have_ready') %>
+- <%= t('.work_income') %>
+- <%= t('.job_search') %>
+- <%= t('.volunteering') %>
+
+<%= t('.exemption_notice') %>
+
+<%= t('.coverage_warning', deadline: @deadline) %>
+
+<%= t('.questions') %>
+
+<%= render 'member_mailer/signature' %>
+
+<%= render 'demo_notice' %>
+

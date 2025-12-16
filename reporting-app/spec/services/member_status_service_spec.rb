@@ -3,17 +3,17 @@
 require 'rails_helper'
 
 RSpec.describe MemberStatusService do
-  let(:service) { described_class }
-  let(:certification) { create(:certification) }
-  let(:certification_case) { create(:certification_case, certification_id: certification.id) }
-
+  # Stub business process to prevent auto-triggering determinations when creating certifications
   before do
-    # Prevent auto-triggering business process during test setup
     allow(Strata::EventManager).to receive(:publish).and_call_original
     allow(HoursComplianceDeterminationService).to receive(:determine)
     allow(ExemptionDeterminationService).to receive(:determine)
     allow(NotificationService).to receive(:send_email_notification)
   end
+
+  let(:service) { described_class }
+  let(:certification) { create(:certification) }
+  let(:certification_case) { create(:certification_case, certification_id: certification.id) }
 
   describe '#determine' do
     context 'with Certification input' do

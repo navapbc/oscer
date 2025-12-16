@@ -12,6 +12,7 @@ RSpec.describe "/review_exemption_claim_tasks", type: :request do
 
   before do
     login_as user
+    allow(NotificationService).to receive(:send_email_notification)
   end
 
   after do

@@ -4,15 +4,16 @@ class HoursComplianceDeterminationService
   TARGET_HOURS = ENV.fetch("CE_TARGET_MONTHLY_HOURS", 80).to_i
 
   class << self
-    # PRIMARY: Called by CertificationBusinessProcess at EX_PARTE_CE_CHECK step
-    # @param kase [CertificationCase] - the case from business process
-    # @return [void]
+    # Called by CertificationBusinessProcess at EX_PARTE_CE_CHECK step (initial check)
+    # @param kase [CertificationCase]
     def determine(kase)
-      certification = Certification.find(kase.certification_id)
-      hours_data = aggregate_hours_for_certification(certification)
-      outcome = determine_outcome(hours_data[:total_hours])
+      perform_determination(kase, not_compliant_event: "DeterminedActionRequired")
+    end
 
-      kase.determine_ce_hours_compliance(outcome, hours_data)
+    # Called by CertificationBusinessProcess after ActivityReportApproved event
+    # @param kase [CertificationCase]
+    def determine_after_activity_report(kase)
+      perform_determination(kase, not_compliant_event: "DeterminedHoursInsufficient")
     end
 
     # Called by CalculateComplianceJob for async recalculation of existing certifications
@@ -26,16 +27,11 @@ class HoursComplianceDeterminationService
       hours_data = aggregate_hours_for_certification(certification)
       outcome = determine_outcome(hours_data[:total_hours])
 
-      kase.determine_ce_hours_compliance(outcome, hours_data, trigger_workflow: false)
+      kase.record_hours_compliance(outcome, hours_data)
     end
 
-    private
-
-    def determine_outcome(total_hours)
-      total_hours >= TARGET_HOURS ? :compliant : :not_compliant
-    end
-
-    # Aggregate hours from both ExParteActivity and approved Activity records
+    # PUBLIC: Aggregate hours from both ExParteActivity and approved Activity records
+    # Called by business process notification steps to get hours data for emails
     # @param certification [Certification]
     # @return [Hash] with total_hours, hours_by_category, hours_by_source, etc.
     def aggregate_hours_for_certification(certification)
@@ -53,6 +49,36 @@ class HoursComplianceDeterminationService
         ex_parte_activity_ids: ex_parte_hours[:ids],
         activity_ids: member_hours[:ids]
       }
+    end
+
+    private
+
+    # Shared logic for both initial and post-activity-report determination
+    # @param kase [CertificationCase]
+    # @param not_compliant_event [String] event name to publish when not compliant
+    def perform_determination(kase, not_compliant_event:)
+      certification = Certification.find(kase.certification_id)
+      hours_data = aggregate_hours_for_certification(certification)
+      outcome = determine_outcome(hours_data[:total_hours])
+
+      kase.record_hours_compliance(outcome, hours_data)
+
+      if outcome == :compliant
+        Strata::EventManager.publish("DeterminedHoursMet", {
+          case_id: kase.id,
+          certification_id: certification.id
+        })
+      else
+        Strata::EventManager.publish(not_compliant_event, {
+          case_id: kase.id,
+          certification_id: certification.id,
+          hours_data: hours_data
+        })
+      end
+    end
+
+    def determine_outcome(total_hours)
+      total_hours >= TARGET_HOURS ? :compliant : :not_compliant
     end
 
     def aggregate_ex_parte_hours(member_id, lookback_period)

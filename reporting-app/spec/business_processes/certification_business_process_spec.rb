@@ -10,9 +10,30 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
   before do
     allow(Strata::EventManager).to receive(:publish).and_call_original
     allow(NotificationService).to receive(:send_email_notification)
-    # Stub hours compliance service to simulate not_compliant (no hours) and trigger transition
+
+    # Stub hours compliance service for initial check - not_compliant triggers notification step
     allow(HoursComplianceDeterminationService).to receive(:determine) do |kase|
-      Strata::EventManager.publish("DeterminedRequirementsNotMet", { case_id: kase.id })
+      Strata::EventManager.publish("DeterminedActionRequired", {
+        case_id: kase.id,
+        certification_id: kase.certification_id
+      })
+    end
+
+    # Stub for after activity report approval - default to compliant
+    allow(HoursComplianceDeterminationService).to receive(:determine_after_activity_report) do |kase|
+      certification = Certification.find(kase.certification_id)
+      kase.close!
+      certification.record_determination!(
+        decision_method: :automated,
+        reasons: [ "hours_reported_compliant" ],
+        outcome: :compliant,
+        determination_data: { total_hours: 85 },
+        determined_at: Time.current
+      )
+      Strata::EventManager.publish("DeterminedHoursMet", {
+        case_id: kase.id,
+        certification_id: kase.certification_id
+      })
     end
   end
 
@@ -49,7 +70,8 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         expect(certification_case).to be_open
 
         # Step 2: System process determines applicant is eligible for exemption
-        certification_case.determine_ex_parte_exemption(eligibility_fact)
+        certification_case.record_exemption_determination(eligibility_fact)
+        Strata::EventManager.publish("DeterminedExempt", { case_id: certification_case.id })
         certification_case.reload
 
         expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
@@ -73,7 +95,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         expect(certification_case).to be_open
 
         # Step 2: System process determines applicant is not eligible for exemption
-        certification_case.determine_ex_parte_exemption(eligibility_fact)
+        Strata::EventManager.publish("DeterminedNotExempt", { case_id: certification_case.id })
         certification_case.reload
 
         # Case transitions to report_activities step is hardcoded in the business process
@@ -102,7 +124,14 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       expect(certification_case.member_status).to eq(MemberStatus::PENDING_REVIEW)
       expect(certification_case).to be_open
 
-      # Step 3: Staff approves activity report
+      # Step 3: Create sufficient hours and approve activity report
+      lookback = certification.certification_requirements.continuous_lookback_period
+      create(:ex_parte_activity,
+             member_id: certification.member_id,
+             hours: 85,
+             period_start: lookback.start.to_date,
+             period_end: lookback.start.to_date.end_of_month)
+
       certification_case.accept_activity_report
       certification_case.reload
 
@@ -125,16 +154,16 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         certification_case.reload
       end
 
-      it 'transitions to end step' do
-        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
+      it 'transitions back to report_activities step (member can resubmit)' do
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::REPORT_ACTIVITIES_STEP)
       end
 
-      it 'updates member status to not_met_requirements' do
-        expect(certification_case.member_status).to eq(MemberStatus::NOT_COMPLIANT)
+      it 'keeps member status as awaiting_report' do
+        expect(certification_case.member_status).to eq(MemberStatus::AWAITING_REPORT)
       end
 
-      it 'closes the case' do
-        expect(certification_case).to be_closed
+      it 'keeps the case open' do
+        expect(certification_case).not_to be_closed
       end
     end
   end
@@ -206,10 +235,18 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         activity_report.submit_application
       }.to have_published_event("ActivityReportApplicationFormSubmitted")
 
-      # Approve activity report
+      # Create sufficient hours for approval
+      lookback = certification.certification_requirements.continuous_lookback_period
+      create(:ex_parte_activity,
+             member_id: certification.member_id,
+             hours: 85,
+             period_start: lookback.start.to_date,
+             period_end: lookback.start.to_date.end_of_month)
+
+      # Approve activity report - triggers recalculation which publishes DeterminedHoursMet
       expect {
         certification_case.accept_activity_report
-      }.to have_published_event("DeterminedRequirementsMet")
+      }.to have_published_event("DeterminedHoursMet")
     end
 
     it 'publishes exemption events' do

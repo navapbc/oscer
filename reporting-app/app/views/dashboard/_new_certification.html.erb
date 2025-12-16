@@ -11,7 +11,7 @@
         <p class="text-base-lightest">
          <%= t(".get_started.prompt") %>
         </p>
-        <%= link_to t(".get_started.button"), exemption_screener_path(certification_case_id: @certification_case.id), class: "usa-button" %>
+        <%= link_to t(".get_started.button"), exemption_screener_path(certification_case_id: certification_case.id), class: "usa-button" %>
       </div>
 
       <div class="grid-col display-flex flex-align-center">
@@ -47,7 +47,7 @@
               </p>
               <%= link_to t(".activity_report.continue_report_button"), activity_report_application_form_path(activity_report), class: "usa-button" %><br />
             <% else %>
-              <%= link_to t(".activity_report.report_activities_button"), new_activity_report_application_form_path(certification_case_id: @certification_case.id), class: "usa-button usa-button--outline" %><br />
+              <%= link_to t(".activity_report.report_activities_button"), new_activity_report_application_form_path(certification_case_id: certification_case&.id), class: "usa-button usa-button--outline" %><br />
             <% end %>
           </div>
         </div>
@@ -70,7 +70,7 @@
               </p>
               <%= link_to t(".exemption_request.continue_request_button"), exemption_application_form_path(exemption_application), class: "usa-button" %>
             <% else %>
-              <%= link_to t(".exemption_request.request_exemption_button"), new_exemption_application_form_path(certification_case_id: @certification_case.id), class: "usa-button usa-button--outline" %>
+              <%= link_to t(".exemption_request.request_exemption_button"), new_exemption_application_form_path(certification_case_id: certification_case&.id), class: "usa-button usa-button--outline" %>
             <% end %>
           </div>
         </div>
