@@ -11,7 +11,7 @@
         <p class="text-base-lightest">
          <%= t(".get_started.prompt") %>
         </p>
-        <%= link_to t(".get_started.button"), exemption_screener_path(certification_case_id: certification_case.id), class: "usa-button" %>
+        <%= link_to t(".get_started.button"), exemption_screener_path(certification_case_id: certification_case&.id), class: "usa-button" %>
       </div>
 
       <div class="grid-col display-flex flex-align-center">
@@ -25,56 +25,35 @@
 <% end %>
 
 <div class="grid-container">
-  <div class="grid-row grid-gap">
-    <h2 class="font-heading-xl margin-bottom-4"><%= t(".activities.header") %></h2>
+  <%= render "dashboard/compliance_status",
+             current_period: current_period,
+             target_hours: target_hours,
+             period_end_date: period_end_date,
+             total_hours_reported: total_hours_reported,
+             hours_needed: hours_needed %>
 
-    <ul class="usa-card-group">
-      <li class="usa-card tablet:grid-col-6">
-        <div class="usa-card__container">
-          <div class="usa-card__header">
-            <h2 class="usa-card__heading"><%= t(".activity_report.title") %></h2>
-          </div>
-          <div class="usa-card__body">
-            <p class="font-serif-md">
-              <%= t(".activity_report.intro") %>
-            </p>
-          </div>
-          <div class="usa-card__footer">
-            <% if activity_report&.in_progress? %>
-              <p class="font-serif-md">
-                <strong><%= t(".activity_report.in_progress_status") %></strong><br />
-                <%= t(".activity_report.in_progress_message") %>
-              </p>
-              <%= link_to t(".activity_report.continue_report_button"), activity_report_application_form_path(activity_report), class: "usa-button" %><br />
-            <% else %>
-              <%= link_to t(".activity_report.report_activities_button"), new_activity_report_application_form_path(certification_case_id: certification_case&.id), class: "usa-button usa-button--outline" %><br />
-            <% end %>
-          </div>
-        </div>
-      </li>
-      <li class="usa-card tablet:grid-col-6">
-        <div class="usa-card__container">
-          <div class="usa-card__header">
-            <h2 class="usa-card__heading"><%= t(".exemption_request.title") %></h2>
-          </div>
-          <div class="usa-card__body">
-            <p class="font-serif-md">
-              <%= t(".exemption_request.intro") %>
-            </p>
-          </div>
-          <div class="usa-card__footer">
-            <% if exemption_application&.in_progress? %>
-              <p class="font-serif-md">
-                <strong><%= t(".exemption_request.in_progress_status") %></strong><br />
-                <%= t(".exemption_request.in_progress_message") %>
-              </p>
-              <%= link_to t(".exemption_request.continue_request_button"), exemption_application_form_path(exemption_application), class: "usa-button" %>
-            <% else %>
-              <%= link_to t(".exemption_request.request_exemption_button"), new_exemption_application_form_path(certification_case_id: certification_case&.id), class: "usa-button usa-button--outline" %>
-            <% end %>
-          </div>
-        </div>
-      </li>
-    </ul>
+  <%# Action Buttons %>
+  <div class="margin-bottom-4">
+    <% if hours_needed == 0 %>
+      <%# Requirements met - show view activity report button %>
+      <%= link_to t(".current_period.view_activity_report_button"), activity_report_application_form_path(activity_report), class: "usa-button" if activity_report.present? %>
+    <% else %>
+      <%# Requirements not met - show report activities and request exemption buttons %>
+      <% if activity_report&.in_progress? %>
+        <%= link_to t(".activity_report.continue_report_button"), activity_report_application_form_path(activity_report), class: "usa-button margin-right-2 margin-bottom-1" %>
+      <% else %>
+        <%= link_to t(".current_period.report_activities_button"), new_activity_report_application_form_path(certification_case_id: certification_case&.id), class: "usa-button margin-right-2 margin-bottom-1" %>
+      <% end %>
+      <% if exemption_application&.in_progress? %>
+        <%= link_to t(".exemption_request.continue_request_button"), exemption_application_form_path(exemption_application), class: "usa-button usa-button--outline margin-bottom-1" %>
+      <% else %>
+        <%= link_to t(".current_period.request_exemption_button"), new_exemption_application_form_path(certification_case_id: certification_case&.id), class: "usa-button usa-button--outline margin-bottom-1" %>
+      <% end %>
+    <% end %>
   </div>
+
+  <%# Previously Completed Requirements Section %>
+  <h2 class="font-heading-lg margin-top-6 margin-bottom-2"><%= t(".previous_requirements.header") %></h2>
+  <p class="margin-bottom-2"><%= t(".previous_requirements.intro") %></p>
+  <%= link_to t(".previous_requirements.button"), certifications_path, class: "usa-button usa-button--outline" %>
 </div>

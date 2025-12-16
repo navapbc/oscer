@@ -8,7 +8,7 @@ class DashboardController < ApplicationController
   before_action :set_activity_report_application_form, if: -> { @certification_case.present? }
   before_action :set_information_requests, if: -> { @exemption_application_form.present? || @activity_report_application_form.present? }
   before_action :set_member_status, if: -> { @certification.present? }
-
+  before_action :set_hours_compliance_data, if: -> { @certification.present? }
 
   # TODO: figure out authz
   skip_after_action :verify_policy_scoped
@@ -44,5 +44,14 @@ class DashboardController < ApplicationController
 
   def set_member_status
     @member_status = MemberStatusService.determine(@certification)
+  end
+
+  def set_hours_compliance_data
+    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(@certification)
+    @total_hours_reported = hours_data[:total_hours].to_i
+    @target_hours = HoursComplianceDeterminationService::TARGET_HOURS
+    @hours_needed = [ @target_hours - @total_hours_reported, 0 ].max
+    @current_period = @certification.certification_requirements.certification_date
+    @period_end_date = @certification.certification_requirements.due_date
   end
 end

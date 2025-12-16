@@ -3,3 +3,4 @@ en:
     activity_report_approved:
       intro: "Your activity report meets the requirements. You have met your community engagement requirements."
       view_completed_certification_button: "View completed certification"
+      view_activity_report_button: "View activity report"
