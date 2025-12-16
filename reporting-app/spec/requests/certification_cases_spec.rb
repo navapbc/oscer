@@ -5,8 +5,9 @@ require 'rails_helper'
 RSpec.describe "/staff/certification_cases", type: :request do
   include Warden::Test::Helpers
 
-  let(:user) { create(:user, :as_caseworker) }
-  let(:certification_case) { create(:certification_case) }
+  let(:user) { create(:user, :as_caseworker, region: "north") }
+  let(:certification) { create(:certification, certification_requirements: build(:certification_certification_requirements, region: "north")) }
+  let(:certification_case) { create(:certification_case, certification_id: certification.id) }
 
   before do
     login_as user
@@ -22,8 +23,6 @@ RSpec.describe "/staff/certification_cases", type: :request do
   end
 
   describe "GET /show" do
-    let(:certification) { Certification.find(certification_case.certification_id) }
-
     it "returns http success" do
       get "/staff/certification_cases/#{certification_case.id}"
       expect(response).to have_http_status(:success)
@@ -101,16 +100,16 @@ RSpec.describe "/staff/certification_cases", type: :request do
       create(
         :certification_case,
         :actionable,
-        certification: create(:certification, case_number: "actionable_case")
+        certification: create(:certification, case_number: "actionable_case", certification_requirements: build(:certification_certification_requirements, region: "north"))
       )
       create(
         :certification_case,
         :with_closed_status,
-        certification: create(:certification, case_number: "closed_case")
+        certification: create(:certification, case_number: "closed_case", certification_requirements: build(:certification_certification_requirements, region: "north"))
       )
       create(
         :certification_case, :waiting_on_member,
-        certification: create(:certification, case_number: "waiting")
+        certification: create(:certification, case_number: "waiting", certification_requirements: build(:certification_certification_requirements, region: "north"))
       )
     end
 

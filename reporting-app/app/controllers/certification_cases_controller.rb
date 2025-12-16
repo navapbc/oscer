@@ -33,7 +33,7 @@ class CertificationCasesController < StaffController
   private
 
   def set_case
-    @case = CertificationCase.find(params[:id])
+    @case = authorize CertificationCase.find(params[:id])
   end
 
   def set_certification
