@@ -16,6 +16,17 @@ class CertificationCase < Strata::Case
   store_accessor :facts, :activity_report_approval_status, :activity_report_approval_status_updated_at,
     :exemption_request_approval_status, :exemption_request_approval_status_updated_at
 
+  scope :by_region, ->(region) {
+    cases = arel_table
+    certs = Certification.arel_table
+
+    joins(
+      cases.join(certs, Arel::Nodes::InnerJoin)
+        .on(cases[:certification_id].eq(certs[:id]))
+        .join_sources
+    ).merge(Certification.by_region(region))
+  }
+
   def accept_activity_report
     transaction do
       self.activity_report_approval_status = "approved"
