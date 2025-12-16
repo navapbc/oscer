@@ -1,20 +1,45 @@
 # frozen_string_literal: true
 
+# Disable email delivery during seeding to prevent letter_opener from opening browser tabs
+original_delivery_method = ActionMailer::Base.delivery_method
+ActionMailer::Base.delivery_method = :test
+
 # Create sample batch uploads for testing
-user = User.first || User.create!(email: "staff@example.com", uid: SecureRandom.uuid, provider: "login.gov")
+user = User.first || FactoryBot.create(:user, :as_admin, region: "Southeast", email: "staff@example.com")
 
 5.times do |index|
   certification = FactoryBot.create(
     :certification,
-    member_data: FactoryBot.build(:certification_member_data, :with_full_name, :with_account_email)
+    member_data: FactoryBot.build(:certification_member_data, :with_full_name, :with_account_email),
+    certification_requirements: FactoryBot.build(:certification_certification_requirements, region: "Southeast")
   )
   certification_case = CertificationCase.find_by!(certification_id: certification.id)
+
+  # Add ex parte activities (state-provided hours) for most cases
+  unless index == 0 # Skip first case to test empty state
+    lookback = certification.certification_requirements.continuous_lookback_period
+    period_start = lookback&.start ? Date.parse(lookback.start.to_s) : 2.months.ago.beginning_of_month.to_date
+    period_end = lookback&.end ? Date.parse(lookback.end.to_s).end_of_month : 1.month.ago.end_of_month.to_date
+
+    # Add 2-4 ex parte activities per case
+    rand(2..4).times do
+      ExParteActivity.create!(
+        member_id: certification.member_id,
+        category: ActivityCategories::ALL.sample,
+        hours: rand(5..25),
+        period_start: period_start,
+        period_end: period_end,
+        source_type: ExParteActivity::SOURCE_TYPES[:batch],
+        source_id: "seed-#{SecureRandom.hex(4)}"
+      )
+    end
+  end
+
   app_form = ActivityReportApplicationForm.create!(
     reporting_periods: [ { year: Date.today.prev_month.year, month: Date.today.prev_month.month } ],
     certification_case_id: certification_case.id,
     user_id: certification.member_id
   )
-  app_form.save!
 
   next if index == 0 # Skip adding activities for the first form to test empty state
 
@@ -71,7 +96,6 @@ user = User.first || User.create!(email: "staff@example.com", uid: SecureRandom.
       { io: File.open(Rails.root.join("db/seeds/files/fake_paystub.png")), filename: "Trash Pickup Paystub.png", content_type: "image/png" }
     ]
   )
-  app_form.save!
 
   app_form.submit_application
 end
@@ -141,8 +165,8 @@ completed_batch.file.attach(
   io: StringIO.new("member_id,case_number,member_email\nM003,C-003,test3@example.com"),
   filename: "completed_upload.csv",
   content_type: "text/csv"
-  )
-  completed_batch.save!
+)
+completed_batch.save!
 CertificationOrigin.create!(
   certification_id: certifications.third.id,
   source_type: CertificationOrigin::SOURCE_TYPE_BATCH_UPLOAD,
@@ -168,3 +192,6 @@ CertificationOrigin.create!(
   source_type: CertificationOrigin::SOURCE_TYPE_BATCH_UPLOAD,
   source_id: failed_batch.id
 )
+
+# Restore original delivery method
+ActionMailer::Base.delivery_method = original_delivery_method

@@ -52,7 +52,6 @@
     <p>
       <span class="text-bold"><%= t(".certification_date") %></span>
       <span><%= @certification.certification_requirements.certification_date&.strftime("%m/%d/%Y") %></span>
-      </span>
     </p>
     <div>
       <span class="text-bold"><%= t(".lookback_period") %></span>
@@ -63,7 +62,7 @@
           <% @certification.certification_requirements.months_that_can_be_certified.each do |month| %>
             <li><%= month %></li>
           <% end %>
-        <ul>
+        </ul>
       <% end %>
     </div>
     <p>
@@ -92,7 +91,13 @@
 
   <% component.with_heading { t(".ex_parte_data") } %>
   <% component.with_body do %>
-    <p><%= t(".none") %></p>
+    <%= render partial: 'hours_reported_table', 
+        locals: { 
+          ex_parte_activities: @ex_parte_activities,
+          member_activities: @member_activities,
+          hours_summary: @hours_summary,
+          target_hours: @target_hours 
+        } %>
   <% end %>
   
   <% component.with_heading { t(".activity_report") } %>
