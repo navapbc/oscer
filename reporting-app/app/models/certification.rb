@@ -17,6 +17,7 @@ class Certification < ApplicationRecord
   validates :certification_requirements, presence: true
 
   scope :by_member_id, ->(member_id) { where(member_id:) }
+  scope :by_region, ->(region) { where("certification_requirements->>'region' = ?", region) }
 
   after_create_commit do
     Strata::EventManager.publish("CertificationCreated", { certification_id: id })
@@ -67,5 +68,9 @@ class Certification < ApplicationRecord
 
   def member_name
     self&.member_data&.name
+  end
+
+  def region
+    certification_requirements&.region
   end
 end

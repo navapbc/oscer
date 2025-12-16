@@ -57,6 +57,17 @@
                   "last": "Doe",
                   "suffix": "Jr."
                 },
+                "activities": [
+                  {
+                    "type": "hourly",
+                    "category": "community_service",
+                    "hours": "20",
+                    "period_start": "2025-09-01",
+                    "period_end": "2025-09-30",
+                    "employer": "Community Center",
+                    "verification_status": "verified"
+                  }
+                ],
                 "date_of_birth": "1980-01-01",
                 "race_ethnicity": "Hispanic",
                 "pregnancy_status": false
@@ -249,6 +260,13 @@
               "$ref": "#/components/schemas/CertificationMemberDataPayrollAccount"
             }
           },
+          "activities": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/CertificationMemberDataActivity"
+            },
+            "description": "Community engagement activities performed by the member"
+          },
           "date_of_birth": {
             "type": ["string", "null"],
             "format": "date",
@@ -305,6 +323,53 @@
           }
         },
         "required": [
+          "period_start",
+          "period_end"
+        ]
+      },
+      "CertificationMemberDataActivity": {
+        "type": "object",
+        "description": "Description of an activity",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["hourly", "income"],
+            "description": "The type of activity (currently only 'hourly' is used)"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["employment", "community_service", "education"],
+            "description": "The category of activity"
+          },
+          "hours": {
+            "type": "string",
+            "format": "decimal",
+            "description": "Number of hours for the activity"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date",
+            "description": "Start date of the activity period"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date",
+            "description": "End date of the activity period"
+          },
+          "employer": {
+            "type": ["string", "null"],
+            "description": "Employer or organization associated with the activity"
+          },
+          "verification_status": {
+            "type": ["string", "null"],
+            "enum": ["verified", "self_attested", "pending", null],
+            "description": "Verification status of the activity"
+          }
+        },
+        "required": [
+          "type",
+          "category",
+          "hours",
           "period_start",
           "period_end"
         ]
@@ -396,6 +461,17 @@
               "last": "Doe",
               "suffix": "Jr."
             },
+            "activities": [
+              {
+                "type": "hourly",
+                "category": "community_service",
+                "hours": "20",
+                "period_start": "2025-09-01",
+                "period_end": "2025-09-30",
+                "employer": "Community Center",
+                "verification_status": "verified"
+              }
+            ],
             "date_of_birth": "1980-01-01",
             "race_ethnicity": "Hispanic",
             "pregnancy_status": false

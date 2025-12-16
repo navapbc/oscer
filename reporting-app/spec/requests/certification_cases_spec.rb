@@ -44,10 +44,25 @@ RSpec.describe "/staff/certification_cases", type: :request do
 
     context "with hours reported" do
       let(:member_id) { certification.member_id }
+      let(:lookback_period) { certification.certification_requirements.continuous_lookback_period }
 
       before do
-        create(:ex_parte_activity, member_id: member_id, category: "employment", hours: 20)
-        create(:ex_parte_activity, member_id: member_id, category: "community_service", hours: 15)
+        # Create activities within the certification's lookback period
+        period_start = lookback_period.start
+        period_end = lookback_period.start.end_of_month
+
+        create(:ex_parte_activity,
+               member_id: member_id,
+               category: "employment",
+               hours: 20,
+               period_start: period_start,
+               period_end: period_end)
+        create(:ex_parte_activity,
+               member_id: member_id,
+               category: "community_service",
+               hours: 15,
+               period_start: period_start,
+               period_end: period_end)
       end
 
       it "displays the hours reported table" do
