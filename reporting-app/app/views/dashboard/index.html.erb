@@ -6,7 +6,16 @@
     <%= render "dashboard/request_for_information", information_request: @information_request %>
   </div>
 <% end %>
-<%= render determine_dashboard_view, activity_report: @activity_report_application_form, exemption_application: @exemption_application_form, certification_case: @certification_case, certification: @certification %>
+<%= render determine_dashboard_view,
+           activity_report: @activity_report_application_form,
+           exemption_application: @exemption_application_form,
+           certification_case: @certification_case,
+           certification: @certification,
+           current_period: @current_period,
+           target_hours: @target_hours,
+           period_end_date: @period_end_date,
+           total_hours_reported: @total_hours_reported,
+           hours_needed: @hours_needed %>
 <!-- Previous Certifications -->
 <% if @all_certifications.length > 1 %>
   <section class="grid-container usa-section">

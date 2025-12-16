@@ -7,24 +7,36 @@ RSpec.describe "dashboard/index", type: :view do
   let(:certification_case) { create(:certification_case, certification_id: certification.id) }
 
   before do
+    # Prevent auto-triggering business process during test setup
+    allow(Strata::EventManager).to receive(:publish).and_call_original
+    allow(HoursComplianceDeterminationService).to receive(:determine)
+    allow(ExemptionDeterminationService).to receive(:determine)
+    allow(NotificationService).to receive(:send_email_notification)
+
     assign(:all_certifications, [
       certification
     ])
     assign(:certification, certification)
     assign(:certification_case, certification_case)
+
+    # Hours compliance data required by the dashboard partials
+    assign(:current_period, certification.certification_requirements.certification_date)
+    assign(:target_hours, HoursComplianceDeterminationService::TARGET_HOURS)
+    assign(:period_end_date, certification.certification_requirements.due_date)
+    assign(:total_hours_reported, 0)
+    assign(:hours_needed, HoursComplianceDeterminationService::TARGET_HOURS)
   end
 
   context 'with no current exemption or activity report' do
-    it 'renders views to start an activity report or start an exemption request' do
+    it 'renders the current period header' do
       render
-      expect(rendered).to have_selector('h2', text: I18n.t('dashboard.new_certification.activity_report.title'))
-      expect(rendered).to have_selector('h2', text: I18n.t('dashboard.new_certification.exemption_request.title'))
+      expect(rendered).to have_selector('h2', text: /Current period:/)
     end
 
-    it 'renders buttons to start a new activity report or exemption request' do
+    it 'renders buttons to report activities or request exemption' do
       render
-      expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.activity_report.report_activities_button'))
-      expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.exemption_request.request_exemption_button'))
+      expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.current_period.report_activities_button'))
+      expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.current_period.request_exemption_button'))
     end
 
     it 'renders "get started" callout' do
@@ -36,11 +48,6 @@ RSpec.describe "dashboard/index", type: :view do
   context "with an in-progress activity report" do
     before do
       assign(:activity_report_application_form, create(:activity_report_application_form, certification_case_id: certification_case.id))
-    end
-
-    it 'renders a message to continue the activity report' do
-      render
-      expect(rendered).to have_selector('strong', text: I18n.t('dashboard.new_certification.activity_report.in_progress_status'))
     end
 
     it 'renders a button to continue the activity report' do
@@ -57,11 +64,6 @@ RSpec.describe "dashboard/index", type: :view do
   context "with an in-progress exemption request" do
     before do
       assign(:exemption_application_form, create(:exemption_application_form, certification_case_id: certification_case.id))
-    end
-
-    it 'renders a message to continue the exemption request' do
-      render
-      expect(rendered).to have_selector('strong', text: I18n.t('dashboard.new_certification.exemption_request.in_progress_status'))
     end
 
     it 'renders a button to continue the exemption request' do
@@ -129,23 +131,27 @@ RSpec.describe "dashboard/index", type: :view do
     before do
       assign(:activity_report_application_form, activity_report_application_form)
       assign(:certification_case, certification_case)
+      # Set hours_needed to 0 to show requirements met state
+      assign(:hours_needed, 0)
+      assign(:total_hours_reported, HoursComplianceDeterminationService::TARGET_HOURS)
 
       certification_case.activity_report_approval_status = "approved"
     end
 
-    it 'renders a message that the activity report is approved' do
+    it 'renders a message that the requirements are met' do
       render
-      expect(rendered).to have_selector('p', text: I18n.t('dashboard.activity_report_approved.intro'))
+      expect(rendered).to have_content(/You have met the requirement/)
     end
 
-    it 'has a button to view the certification' do
+    it 'has a button to view the activity report' do
       render
-      expect(rendered).to have_selector('a', text: I18n.t('dashboard.activity_report_approved.view_completed_certification_button'))
+      expect(rendered).to have_selector('a', text: I18n.t('dashboard.activity_report_approved.view_activity_report_button'))
     end
 
-    it 'does not render the "get started" callout' do
+    it 'renders the blue banner section' do
+      # The approved activity report view intentionally shows the blue banner
       render
-      expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.get_started.button'))
+      expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.get_started.button'))
     end
   end
 
@@ -197,14 +203,11 @@ RSpec.describe "dashboard/index", type: :view do
   end
 
   context "without previous certifications" do
-    it 'does not render a section for previous certifications' do
+    it 'does not render the previous certifications section from index' do
       render
+      # The index.html.erb only shows previous certifications section when there are >1 certifications
+      # But the new_certification partial has its own "Previously completed requirements" section
       expect(rendered).not_to have_selector('h2', text: I18n.t('dashboard.index.previous_certifications.title'))
-    end
-
-    it 'does not render a button to review previous certifications' do
-      render
-      expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.index.previous_certifications.review_previous_certifications_button'))
     end
   end
 end

@@ -25,56 +25,16 @@
 <% end %>
 
 <div class="grid-container">
-  <%# Current Period Compliance Status Section %>
-  <h2 class="font-heading-xl margin-bottom-2">
-    <%= t(".current_period.header", period: @current_period&.strftime("%B %Y")) %>
-  </h2>
-  <p class="margin-bottom-4">
-    <%= t(".current_period.requirement_info", 
-          target_hours: @target_hours, 
-          period_end_date: @period_end_date&.strftime("%B %d, %Y")) %>
-  </p>
-
-  <%# Total Hours Reported %>
-  <div class="margin-bottom-3">
-    <p class="margin-bottom-05 text-base"><%= t(".current_period.total_hours_label") %></p>
-    <p class="display-flex flex-align-center margin-top-0">
-      <% if @hours_needed > 0 %>
-        <svg class="usa-icon usa-icon--size-4 text-gold margin-right-1" aria-hidden="true" focusable="false" role="img">
-          <use xlink:href="<%= asset_path('@uswds/uswds/dist/img/sprite.svg') %>#warning"></use>
-        </svg>
-      <% else %>
-        <svg class="usa-icon usa-icon--size-4 text-green margin-right-1" aria-hidden="true" focusable="false" role="img">
-          <use xlink:href="<%= asset_path('@uswds/uswds/dist/img/sprite.svg') %>#check_circle"></use>
-        </svg>
-      <% end %>
-      <span class="font-body-lg text-bold"><%= t(".current_period.hours_value", hours: @total_hours_reported) %></span>
-    </p>
-  </div>
-
-  <%# Additional Hours Needed %>
-  <div class="margin-bottom-4">
-    <p class="margin-bottom-05 text-base"><%= t(".current_period.additional_hours_label", target_hours: @target_hours) %></p>
-    <% if @hours_needed > 0 %>
-      <p class="display-flex flex-align-center margin-top-0">
-        <svg class="usa-icon usa-icon--size-4 text-gold margin-right-1" aria-hidden="true" focusable="false" role="img">
-          <use xlink:href="<%= asset_path('@uswds/uswds/dist/img/sprite.svg') %>#warning"></use>
-        </svg>
-        <span class="font-body-lg text-bold"><%= t(".current_period.hours_value", hours: @hours_needed) %></span>
-      </p>
-    <% else %>
-      <div class="margin-top-0">
-        <svg class="usa-icon usa-icon--size-4 text-green margin-right-05" aria-hidden="true" focusable="false" role="img" style="vertical-align: middle;">
-          <use xlink:href="<%= asset_path('@uswds/uswds/dist/img/sprite.svg') %>#check_circle"></use>
-        </svg>
-        <span class="font-body-lg text-bold" style="vertical-align: middle;"><%= t(".current_period.requirements_met", period: @current_period&.strftime("%B %Y")) %></span>
-      </div>
-    <% end %>
-  </div>
+  <%= render "dashboard/compliance_status",
+             current_period: current_period,
+             target_hours: target_hours,
+             period_end_date: period_end_date,
+             total_hours_reported: total_hours_reported,
+             hours_needed: hours_needed %>
 
   <%# Action Buttons %>
   <div class="margin-bottom-4">
-    <% if @hours_needed == 0 %>
+    <% if hours_needed == 0 %>
       <%# Requirements met - show view activity report button %>
       <%= link_to t(".current_period.view_activity_report_button"), activity_report_application_form_path(activity_report), class: "usa-button" if activity_report.present? %>
     <% else %>
