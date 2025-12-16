@@ -33,4 +33,9 @@ module TaskService
   rescue ActiveRecord::RecordNotFound
     { success: false, information_request: information_request }
   end
+
+  def self.get_region_for_task(task)
+    certification = Certification.find_by(id: task.case.certification_id)
+    certification&.region
+  end
 end

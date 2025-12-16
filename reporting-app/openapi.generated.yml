@@ -47,6 +47,14 @@ components:
                 middle: Alfred
                 last: Doe
                 suffix: Jr.
+              activities:
+              - type: hourly
+                category: community_service
+                hours: '20'
+                period_start: '2025-09-01'
+                period_end: '2025-09-30'
+                employer: Community Center
+                verification_status: verified
               date_of_birth: '1980-01-01'
               race_ethnicity: Hispanic
               pregnancy_status: false
@@ -211,6 +219,13 @@ components:
           - 'null'
           items:
             "$ref": "#/components/schemas/CertificationMemberDataPayrollAccount"
+        activities:
+          type:
+          - array
+          - 'null'
+          items:
+            "$ref": "#/components/schemas/CertificationMemberDataActivity"
+          description: Community engagement activities performed by the member
         date_of_birth:
           type:
           - string
@@ -265,6 +280,56 @@ components:
           - 'null'
           format: decimal
       required:
+      - period_start
+      - period_end
+    CertificationMemberDataActivity:
+      type: object
+      description: Description of an activity
+      properties:
+        type:
+          type: string
+          enum:
+          - hourly
+          - income
+          description: The type of activity (currently only 'hourly' is used)
+        category:
+          type: string
+          enum:
+          - employment
+          - community_service
+          - education
+          description: The category of activity
+        hours:
+          type: string
+          format: decimal
+          description: Number of hours for the activity
+        period_start:
+          type: string
+          format: date
+          description: Start date of the activity period
+        period_end:
+          type: string
+          format: date
+          description: End date of the activity period
+        employer:
+          type:
+          - string
+          - 'null'
+          description: Employer or organization associated with the activity
+        verification_status:
+          type:
+          - string
+          - 'null'
+          enum:
+          - verified
+          - self_attested
+          - pending
+          -
+          description: Verification status of the activity
+      required:
+      - type
+      - category
+      - hours
       - period_start
       - period_end
     CertificationResponseBody:
@@ -335,6 +400,14 @@ components:
             middle: Alfred
             last: Doe
             suffix: Jr.
+          activities:
+          - type: hourly
+            category: community_service
+            hours: '20'
+            period_start: '2025-09-01'
+            period_end: '2025-09-30'
+            employer: Community Center
+            verification_status: verified
           date_of_birth: '1980-01-01'
           race_ethnicity: Hispanic
           pregnancy_status: false
@@ -360,43 +433,43 @@ components:
       required:
       - status
   responses:
-    5649fe1af2ba1b2387d50bc57793d2c4:
+    e85a7efe856f3b4a33e16865be21f15d:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    7393ad9cb4433f13e8400556d66b8cc7:
+    6125a62221e212bb815526051661dbdc:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    9e226226d647cdd2b2f9de2f1e6820a0:
+    2e75eacc71eb2f0502fa228d762d5a55:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    63af00b74faf68e65aea0823fd314b1e:
+    90dc71790b26f81c5e56146f6d9f5018:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    312d6e66dd34f4cc44652c73271b12fd:
+    f03eaaaf493bc30b5c43df958dbb7e8e:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    481f92c30a59b9144510e9a4caaf9f07:
+    d490eeb4ff1770bf36c95bf8931bb69e:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    751fcb3d29beebba44f8d6b6a496945f:
+    4a0c71781938225c26730e68f030c36c:
       description: Response
       content:
         application/json:
@@ -412,7 +485,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    1c0c4e36f0e0064bc5da62d78a57a273:
+    3ac5de20e865f14a0346ef405d86aca7:
       description: The Certification data.
       content:
         application/json:
@@ -467,14 +540,14 @@ paths:
       description: "#"
       operationId: POST__api_certifications
       requestBody:
-        "$ref": "#/components/requestBodies/1c0c4e36f0e0064bc5da62d78a57a273"
+        "$ref": "#/components/requestBodies/3ac5de20e865f14a0346ef405d86aca7"
       responses:
         '201':
-          "$ref": "#/components/responses/5649fe1af2ba1b2387d50bc57793d2c4"
+          "$ref": "#/components/responses/e85a7efe856f3b4a33e16865be21f15d"
         '400':
-          "$ref": "#/components/responses/7393ad9cb4433f13e8400556d66b8cc7"
+          "$ref": "#/components/responses/6125a62221e212bb815526051661dbdc"
         '422':
-          "$ref": "#/components/responses/9e226226d647cdd2b2f9de2f1e6820a0"
+          "$ref": "#/components/responses/2e75eacc71eb2f0502fa228d762d5a55"
   "/api/certifications/{id}":
     get:
       tags:
@@ -486,9 +559,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/63af00b74faf68e65aea0823fd314b1e"
+          "$ref": "#/components/responses/90dc71790b26f81c5e56146f6d9f5018"
         '404':
-          "$ref": "#/components/responses/312d6e66dd34f4cc44652c73271b12fd"
+          "$ref": "#/components/responses/f03eaaaf493bc30b5c43df958dbb7e8e"
   "/api/health":
     get:
       tags:
@@ -498,6 +571,6 @@ paths:
       operationId: GET__api_health
       responses:
         '200':
-          "$ref": "#/components/responses/481f92c30a59b9144510e9a4caaf9f07"
+          "$ref": "#/components/responses/d490eeb4ff1770bf36c95bf8931bb69e"
         '503':
-          "$ref": "#/components/responses/751fcb3d29beebba44f8d6b6a496945f"
+          "$ref": "#/components/responses/4a0c71781938225c26730e68f030c36c"

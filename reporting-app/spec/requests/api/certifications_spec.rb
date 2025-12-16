@@ -189,6 +189,237 @@ RSpec.describe "/api/certifications", type: :request do
         cert = Certification.find(response.parsed_body[:id])
         expect(cert.member_data).to eq(member_data)
       end
+
+      it "accepts activities in member_data" do
+        member_data = build(:certification_member_data,
+                            :with_full_name,
+                            :with_account_email,
+                            :with_activities
+                           )
+        expect {
+          post api_certifications_url,
+              params: valid_json_request_attributes.merge({
+                member_data: member_data.as_json
+              }),
+              headers: valid_headers
+        }.to change(Certification, :count).from(0).to(1)
+
+        expect(response).to be_successful
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+
+        cert = Certification.find(response.parsed_body[:id])
+        expect(cert.member_data).to eq(member_data)
+        expect(cert.member_data.activities).not_to be_nil
+        expect(cert.member_data.activities.first.type).to eq("hourly")
+        expect(cert.member_data.activities.first.category).to eq("community_service")
+        expect(cert.member_data.activities.first.hours).to eq(20)
+      end
+    end
+
+    context "with activities that create ExParteActivity records" do
+      let(:member_id) { "member-789" }
+      let(:certification_date) { Date.new(2025, 12, 25) }
+
+      it "creates ExParteActivity records for hourly activities" do
+        member_data = build(:certification_member_data,
+          :with_full_name,
+          :with_account_email,
+          activities: [
+            {
+              "type" => "hourly",
+              "category" => "employment",
+              "hours" => 40,
+              "period_start" => certification_date.beginning_of_month,
+              "period_end" => certification_date.end_of_month,
+              "employer" => "Acme Corp",
+              "verification_status" => "verified"
+            }
+          ]
+        )
+
+        expect {
+          post api_certifications_url,
+            params: valid_json_request_attributes.merge({
+              member_id: member_id,
+              member_data: member_data.as_json
+            }),
+            headers: valid_headers
+        }.to change(ExParteActivity, :count).from(0).to(1)
+          .and change(Certification, :count).from(0).to(1)
+
+        expect(response).to have_http_status(:created)
+
+        activity = ExParteActivity.last
+        expect(activity.member_id).to eq(member_id)
+        expect(activity.category).to eq("employment")
+        expect(activity.hours).to eq(40)
+        expect(activity.source_type).to eq("api")
+        expect(activity.source_id).to be_nil
+      end
+
+      it "does not create ExParteActivity for income activities" do
+        member_data = build(:certification_member_data,
+          :with_full_name,
+          :with_account_email,
+          activities: [
+            {
+              "type" => "income",
+              "category" => "employment",
+              "hours" => 40,
+              "period_start" => certification_date.beginning_of_month,
+              "period_end" => certification_date.end_of_month
+            }
+          ]
+        )
+
+        expect {
+          post api_certifications_url,
+            params: valid_json_request_attributes.merge({
+              member_id: member_id,
+              member_data: member_data.as_json
+            }),
+            headers: valid_headers
+        }.not_to change(ExParteActivity, :count)
+
+        expect(response).to have_http_status(:created)
+        expect(Certification.count).to eq(1)
+      end
+
+      it "creates ExParteActivity only for hourly activities in mixed types" do
+        member_data = build(:certification_member_data,
+          :with_full_name,
+          :with_account_email,
+          activities: [
+            {
+              "type" => "hourly",
+              "category" => "employment",
+              "hours" => 40,
+              "period_start" => certification_date.beginning_of_month,
+              "period_end" => certification_date.end_of_month
+            },
+            {
+              "type" => "income",
+              "category" => "employment",
+              "hours" => 20,
+              "period_start" => certification_date.beginning_of_month,
+              "period_end" => certification_date.end_of_month
+            }
+          ]
+        )
+
+        expect {
+          post api_certifications_url,
+            params: valid_json_request_attributes.merge({
+              member_id: member_id,
+              member_data: member_data.as_json
+            }),
+            headers: valid_headers
+        }.to change(ExParteActivity, :count).from(0).to(1)
+
+        expect(response).to have_http_status(:created)
+
+        activity = ExParteActivity.last
+        expect(activity.hours).to eq(40)
+      end
+
+      it "creates CertificationOrigin record with api source_type" do
+        member_data = build(:certification_member_data,
+          :with_full_name,
+          :with_account_email,
+          activities: [
+            {
+              "type" => "hourly",
+              "category" => "employment",
+              "hours" => 40,
+              "period_start" => certification_date.beginning_of_month,
+              "period_end" => certification_date.end_of_month
+            }
+          ]
+        )
+
+        expect {
+          post api_certifications_url,
+            params: valid_json_request_attributes.merge({
+              member_id: member_id,
+              member_data: member_data.as_json
+            }),
+            headers: valid_headers
+        }.to change(CertificationOrigin, :count).from(0).to(1)
+
+        expect(response).to have_http_status(:created)
+
+        origin = CertificationOrigin.last
+        expect(origin.source_type).to eq(CertificationOrigin::SOURCE_TYPE_API)
+        expect(origin.source_id).to be_nil
+      end
+
+      it "rolls back certification when ExParteActivity validation fails" do
+        member_data = build(:certification_member_data,
+          :with_full_name,
+          :with_account_email,
+          activities: [
+            {
+              "type" => "hourly",
+              "category" => "employment",
+              "hours" => -10, # Invalid: negative hours
+              "period_start" => certification_date.beginning_of_month,
+              "period_end" => certification_date.end_of_month
+            }
+          ]
+        )
+
+        expect {
+          post api_certifications_url,
+            params: valid_json_request_attributes.merge({
+              member_id: member_id,
+              member_data: member_data.as_json
+            }),
+            headers: valid_headers
+        }.not_to change(Certification, :count)
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(ExParteActivity.count).to eq(0)
+        expect(CertificationOrigin.count).to eq(0)
+      end
+
+      it "creates multiple ExParteActivity records for multiple hourly activities" do
+        member_data = build(:certification_member_data,
+          :with_full_name,
+          :with_account_email,
+          activities: [
+            {
+              "type" => "hourly",
+              "category" => "employment",
+              "hours" => 40,
+              "period_start" => certification_date.beginning_of_month,
+              "period_end" => certification_date.end_of_month
+            },
+            {
+              "type" => "hourly",
+              "category" => "community_service",
+              "hours" => 10,
+              "period_start" => certification_date.beginning_of_month,
+              "period_end" => certification_date.end_of_month
+            }
+          ]
+        )
+
+        expect {
+          post api_certifications_url,
+            params: valid_json_request_attributes.merge({
+              member_id: member_id,
+              member_data: member_data.as_json
+            }),
+            headers: valid_headers
+        }.to change(ExParteActivity, :count).from(0).to(2)
+
+        expect(response).to have_http_status(:created)
+
+        activities = ExParteActivity.where(member_id: member_id).order(:category)
+        expect(activities.count).to eq(2)
+        expect(activities.first.category).to eq("community_service")
+        expect(activities.last.category).to eq("employment")
+      end
     end
 
     context "with invalid parameters" do
@@ -221,6 +452,97 @@ RSpec.describe "/api/certifications", type: :request do
         post api_certifications_url,
              params: valid_json_request_attributes.merge({
                certification_requirements: { "months_to_be_certified": [ "2025-10-16", "FOOBAR" ] }
+             }),
+             headers: valid_headers,
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.content_type).to match(a_string_including("application/json"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "invalid activities - missing required field" do
+        post api_certifications_url,
+             params: valid_json_request_attributes.merge({
+               member_data: {
+                 activities: [
+                   {
+                     "type": "hourly",
+                     "category": "community_service"
+                     # missing required fields: hours, period_start, period_end
+                   }
+                 ]
+               }
+             }),
+             headers: valid_headers,
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.content_type).to match(a_string_including("application/json"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "invalid activities - invalid verification_status" do
+        post api_certifications_url,
+             params: valid_json_request_attributes.merge({
+               member_data: {
+                 activities: [
+                   {
+                     "type": "hourly",
+                     "category": "community_service",
+                     "hours": 20,
+                     "period_start": Date.today.to_s,
+                     "period_end": Date.today.to_s,
+                     "verification_status": "invalid_status"
+                   }
+                 ]
+               }
+             }),
+             headers: valid_headers,
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.content_type).to match(a_string_including("application/json"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "invalid activities - invalid type" do
+        post api_certifications_url,
+             params: valid_json_request_attributes.merge({
+               member_data: {
+                 activities: [
+                   {
+                     "type": "invalid_type",
+                     "category": "community_service",
+                     "hours": 20,
+                     "period_start": Date.today.to_s,
+                     "period_end": Date.today.to_s
+                   }
+                 ]
+               }
+             }),
+             headers: valid_headers,
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.content_type).to match(a_string_including("application/json"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "invalid activities - invalid category" do
+        post api_certifications_url,
+             params: valid_json_request_attributes.merge({
+               member_data: {
+                 activities: [
+                   {
+                     "type": "hourly",
+                     "category": "invalid_category",
+                     "hours": 20,
+                     "period_start": Date.today.to_s,
+                     "period_end": Date.today.to_s
+                   }
+                 ]
+               }
              }),
              headers: valid_headers,
              as: :json
