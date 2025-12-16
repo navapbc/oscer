@@ -11,7 +11,8 @@ export class DashboardPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.reportActivitiesButton = page.getByRole('link', { name: /^report activities$/i });
+    // Match both old and new button text variants
+    this.reportActivitiesButton = page.getByRole('link', { name: /^report activities/i });
   }
 
   async clickReportActivities() {
