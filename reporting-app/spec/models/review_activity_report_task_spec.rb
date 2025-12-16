@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe ReviewActivityReportTask, type: :model do
   describe "inheritance" do
     it "inherits from Strata::Task" do
-      expect(described_class.superclass).to eq(Strata::Task)
+      expect(described_class < Strata::Task).to be true
     end
 
     it "has a case_type of CertificationCase" do
