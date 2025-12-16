@@ -1,0 +1,58 @@
+<% total_hours = hours_summary[:total_hours] %>
+<% hours_needed = [target_hours - total_hours, 0].max %>
+<% has_activities = ex_parte_activities.any? || member_activities.any? %>
+
+<% if has_activities %>
+  <h3><%= t(".title") %></h3>
+  <table class="usa-table usa-table--borderless width-full">
+    <thead>
+      <tr>
+        <th scope="col"><%= t(".organization_name") %></th>
+        <th scope="col"><%= t(".source") %></th>
+        <th scope="col"><%= t(".activity_type") %></th>
+        <th scope="col" class="text-right"><%= t(".hours_reported") %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <%# Ex parte activities (from state) %>
+      <% ex_parte_activities.each do |activity| %>
+        <% category_name = activity.category.titleize %>
+        <tr>
+          <td><%= category_name %> Activity</td>
+          <td><%= t(".source_ex_parte", state_name: ENV.fetch("STATE_NAME", "the State")) %></td>
+          <td><%= category_name %></td>
+          <td class="text-right"><%= number_with_precision(activity.hours, precision: 0) %></td>
+        </tr>
+      <% end %>
+
+      <%# Member-reported activities %>
+      <% member_activities.each do |activity| %>
+        <tr>
+          <td><%= activity.name %></td>
+          <td><%= t(".source_self_reported") %></td>
+          <td><%= activity.category.titleize %></td>
+          <td class="text-right"><%= number_with_precision(activity.hours, precision: 0) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3"><%= t(".total_reported") %></td>
+        <td class="text-right text-bold"><%= number_with_precision(total_hours, precision: 0) %></td>
+      </tr>
+      <tr>
+        <td colspan="3"><%= t(".required") %></td>
+        <td class="text-right"><%= target_hours %></td>
+      </tr>
+      <% if hours_needed > 0 %>
+        <tr class="bg-base-lightest">
+          <td colspan="3" class="text-bold"><%= t(".additional_hours_needed") %></td>
+          <td class="text-right text-bold"><%= number_with_precision(hours_needed, precision: 0) %></td>
+        </tr>
+      <% end %>
+    </tfoot>
+  </table>
+<% else %>
+  <p><%= t(".no_hours_reported") %></p>
+<% end %>
+

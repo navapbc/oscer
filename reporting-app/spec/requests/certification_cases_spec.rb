@@ -10,6 +10,11 @@ RSpec.describe "/staff/certification_cases", type: :request do
 
   before do
     login_as user
+    # Prevent auto-triggering business process during test setup
+    allow(Strata::EventManager).to receive(:publish).and_call_original
+    allow(HoursComplianceDeterminationService).to receive(:determine)
+    allow(ExemptionDeterminationService).to receive(:determine)
+    allow(NotificationService).to receive(:send_email_notification)
   end
 
   after do
@@ -34,6 +39,59 @@ RSpec.describe "/staff/certification_cases", type: :request do
       it "renders a 404 not found" do
         get "/staff/certification_cases/#{SecureRandom.uuid}"
         expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    context "with hours reported" do
+      let(:member_id) { certification.member_id }
+      let(:lookback_period) { certification.certification_requirements.continuous_lookback_period }
+
+      before do
+        # Create activities within the certification's lookback period
+        period_start = lookback_period.start
+        period_end = lookback_period.start.end_of_month
+
+        create(:ex_parte_activity,
+               member_id: member_id,
+               category: "employment",
+               hours: 20,
+               period_start: period_start,
+               period_end: period_end)
+        create(:ex_parte_activity,
+               member_id: member_id,
+               category: "community_service",
+               hours: 15,
+               period_start: period_start,
+               period_end: period_end)
+      end
+
+      it "displays the hours reported table" do
+        get "/staff/certification_cases/#{certification_case.id}"
+        expect(response.body).to include("Ex Parte Data")
+        expect(response.body).to include("Organization name")
+        expect(response.body).to include("Source")
+        expect(response.body).to include("Activity type")
+      end
+
+      it "displays ex parte activities" do
+        get "/staff/certification_cases/#{certification_case.id}"
+        expect(response.body).to include("From the State")
+        expect(response.body).to include("Employment")
+        expect(response.body).to include("Community Service")
+      end
+
+      it "displays total and required hours" do
+        get "/staff/certification_cases/#{certification_case.id}"
+        expect(response.body).to include("Total reported")
+        expect(response.body).to include("Required")
+        expect(response.body).to include("Additional hours needed")
+      end
+    end
+
+    context "without hours reported" do
+      it "displays no hours message" do
+        get "/staff/certification_cases/#{certification_case.id}"
+        expect(response.body).to include("No hours reported")
       end
     end
   end
