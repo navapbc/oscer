@@ -27,7 +27,7 @@ OSCER requires an authorization system to control staff access based on roles, p
 
 ## Decision Outcome
 
-**Chosen option 1: **"Attribute-Based Access Control (ABAC) using external SSO attributes", because it leverages the existing authoritative source of truth for user attributes, eliminates redundant role storage, requires no new database tables or admin UI, and provides a clean abstraction pattern for the Strata SDK.
+**Chosen option 1:** "Attribute-Based Access Control (ABAC) using external SSO attributes", because it leverages the existing authoritative source of truth for user attributes, eliminates redundant role storage, requires no new database tables or admin UI, and provides a clean abstraction pattern for the Strata SDK.
 Positive Consequences
 
 - No new database tables required for role management
