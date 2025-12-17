@@ -99,7 +99,7 @@ To test different exemption scenarios, use the following fields:
 3. Click the **"Process"** button next to your file  
 <img src="/docs/assets/Certification_Batch_Uploads_Process.png" width="100%" alt="Upload Certification Batch Uploads Process" />
 4. The status will change to "Processing" and then "View Results." Refresh the page if you don't see "View Results" after a few seconds. 
-<img src="docs/assets/Certification_Batch_Uploads_View_Results.png" width="100%" alt="View Results" />
+<img src="/docs/assets/Certification_Batch_Uploads_View_Results.png" width="100%" alt="View Results" />
 ---
 
 ## Step 4: View Batch Intake Member Results
