@@ -63,6 +63,7 @@ The platform consists of:
 
 If you are interested in:  
 - Getting OSCER set up locally, see instructions below or go to our [Getting Started guide](docs/how-to-guides/getting-started.md).
+- Setting Up OSCER with our AWS infra-template, [watch the video overview](docs/how-to-guides/oscer-install-with-aws-infra.md).
 
 ### Prerequisites
 
