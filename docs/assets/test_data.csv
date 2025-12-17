@@ -1,0 +1,11 @@
+member_id,case_number,member_email,certification_date,certification_type,first_name,middle_name,last_name,lookback_period,number_of_months_to_certify,due_period_days,address,county,zip_code,date_of_birth,pregnancy_status,race_ethnicity,work_hours,other_income_sources
+122,1231,test@test.com,2025-10-26,new_application,Test,Tester,Testee,2,2,30,123 Test Address,Oklahoma,73112,1970-10-17,FALSE,Caucasian,20,20
+222,4561,jane.doe@example.com,2025-11-01,recertification,Jane,Marie,Doe,1,6,60,456 Oak Avenue,Cleveland,44101,1985-05-22,FALSE,African American,35,150
+322,7891,john.smith@domain.com,2025-10-15,new_application,John,Allen,Smith,3,12,90,789 Pine Street,Los Angeles,90001,1992-03-10,FALSE,Hispanic,40,50
+422,1011,emily.wang@mail.net,2025-11-05,recertification,Emily,Grace,Wang,6,3,30,101 Elm Road,Harris,77001,1997-08-01,TRUE,Asian,25,0
+522,1121,mark.jones@info.org,2025-09-30,recertification,Mark,David,Jones,2,6,60,112 Birch Lane,Cook,60601,1980-12-25,FALSE,Caucasian,30,75
+622,1311,sarah.lee@web.com,2025-10-20,new_application,Sarah,Ann,Lee,1,12,90,131 Cedar Drive,Miami-Dade,33101,1995-07-04,FALSE,american_indian_or_alaska_native,28,30
+722,1421,michael.chen@edu.gov,2025-11-02,recertification,Michael,Robert,Chen,3,3,30,142 Willow Place,Maricopa,85001,1988-01-19,FALSE,Asian,40,100
+822,1531,olivia.kim@biz.co,2025-10-28,recertification,Olivia,Jean,Kim,6,6,60,153 Poplar Street,King,98101,1993-06-11,TRUE,Asian,32,0
+922,1641,william.brown@xyz.net,2025-11-03,new_application,William,Joseph,Brown,2,12,90,164 Maple Court,Philadelphia,19101,1975-09-09,FALSE,american_indian_or_alaska_native,38,200
+1022,1751,sophia.gonzalez@abc.com,2025-10-29,new_application,Sophia,Maria,Gonzalez,1,3,30,175 Spruce Avenue,Bexar,78201,2010-02-28,FALSE,Hispanic,22,10
