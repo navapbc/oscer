@@ -30,21 +30,61 @@ class ActivityReportApplicationForm < Strata::ApplicationForm
     @activities_by_month ||= activities.group_by(&:month)
   end
 
-  def monthly_statistics
-    @monthly_statistics ||= activities_by_month.transform_values do |activities|
-      hourly_activities = activities.select { |act| act.is_a?(WorkActivity) }
-      income_activities = activities.select { |act| act.is_a?(IncomeActivity) }
-      summed_hours = hourly_activities.sum { |act| act.hours || 0 }.round(1)
-      summed_income = income_activities.sum { |act| act.income.dollar_amount || 0 }.round(0)
+  def certification
+    @certification ||= CertificationService.new.find(certification_case_id, hydrate: true)&.certification
+  end
 
-      {
-        hourly_activities: hourly_activities,
-        income_activities: income_activities,
-        summed_hours: summed_hours,
-        summed_income: summed_income,
-        remaining_hours: [ MINIMUM_MONTHLY_HOURS - summed_hours, 0 ].max,
-        remaining_income: [ MINIMUM_MONTHLY_INCOME - summed_income, 0 ].max
-      }
+  def ex_parte_activities
+    @ex_parte_activities ||= if certification&.member_id
+      lookback_period = certification.certification_requirements.continuous_lookback_period
+      ExParteActivity.for_member(certification.member_id).within_period(lookback_period)
+    else
+      ExParteActivity.none
+    end
+  end
+
+  def ex_parte_activities_by_month
+    @ex_parte_activities_by_month ||= begin
+      result = Hash.new { |h, k| h[k] = [] }
+
+      ex_parte_activities.each do |activity|
+        allocate_activity_to_months(activity, result)
+      end
+
+      result
+    end
+  end
+
+  # TODO: Consolidate with similar logic in HoursComplianceDeterminationService
+  def monthly_statistics
+    @monthly_statistics ||= begin
+      # Get all months from both activities and ex_parte activities
+      all_months = (activities_by_month.keys + ex_parte_activities_by_month.keys).uniq
+
+      all_months.each_with_object({}) do |month, result|
+        activities = activities_by_month[month] || []
+        ex_parte_data = ex_parte_activities_by_month[month] || []
+
+        hourly_activities = activities.select { |act| act.is_a?(WorkActivity) }
+        income_activities = activities.select { |act| act.is_a?(IncomeActivity) }
+
+        # Calculate self-reported hours and ex_parte hours
+        member_hours = hourly_activities.sum { |act| act.hours || 0 }.round(1)
+        ex_parte_hours = ex_parte_data.sum { |data| data[:allocated_hours] }.round(1)
+        summed_hours = member_hours + ex_parte_hours
+
+        summed_income = income_activities.sum { |act| act.income.dollar_amount || 0 }.round(0)
+
+        result[month] = {
+          hourly_activities: hourly_activities,
+          income_activities: income_activities,
+          ex_parte_activities: ex_parte_data,
+          summed_hours: summed_hours,
+          summed_income: summed_income,
+          remaining_hours: [ MINIMUM_MONTHLY_HOURS - summed_hours, 0 ].max,
+          remaining_income: [ MINIMUM_MONTHLY_INCOME - summed_income, 0 ].max
+        }
+      end
     end
   end
 
@@ -76,6 +116,34 @@ class ActivityReportApplicationForm < Strata::ApplicationForm
   end
 
   private
+
+  def allocate_activity_to_months(activity, result)
+    start_date = activity.period_start
+    end_date = activity.period_end
+    total_days = (end_date - start_date).to_i + 1
+
+    current_date = start_date
+    while current_date <= end_date
+      month_start = [ current_date, current_date.beginning_of_month ].max
+      month_end = [ end_date, current_date.end_of_month ].min
+      days_in_month = (month_end - month_start).to_i + 1
+
+      # Calculate proportional hours for this month
+      hours_for_month = (activity.hours * days_in_month / total_days.to_f).round(2)
+
+      # Use Date (first day of month) as key to match activities_by_month
+      month_key = Date.new(current_date.year, current_date.month, 1)
+
+      result[month_key] << {
+        activity: activity,
+        allocated_hours: hours_for_month,
+        days_in_month: days_in_month
+      }
+
+      # Move to next month
+      current_date = current_date.next_month.beginning_of_month
+    end
+  end
 
   def validate_reporting_periods_in_range
     invalid = reporting_periods - months_that_can_be_certified

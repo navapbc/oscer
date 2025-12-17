@@ -69,6 +69,55 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
       get activity_report_application_form_url(activity_report_application_form)
       expect(response).to be_client_error
     end
+
+    context "with ex_parte activities" do
+      let(:member_id) { "MEMBER123" }
+      let(:certification_with_member) do
+        create(:certification,
+          certification_requirements: certification_requirements,
+          member_id: member_id
+        )
+      end
+      let(:certification_case_with_member) do
+        create(:certification_case, certification: certification_with_member)
+      end
+      let(:activity_report_with_member) do
+        ActivityReportApplicationForm.create!(
+          user_id: user.id,
+          certification_case_id: certification_case_with_member.id,
+          reporting_periods: [ { year: 2025, month: 10 } ]
+        )
+      end
+
+      before do
+        # Create ex_parte activities for the member
+        create(:ex_parte_activity,
+          member_id: member_id,
+          category: "employment",
+          hours: 40,
+          period_start: Date.new(2025, 10, 1),
+          period_end: Date.new(2025, 10, 15)
+        )
+
+        # Create a self-reported activity
+        create(:work_activity,
+          activity_report_application_form_id: activity_report_with_member.id,
+          month: Date.new(2025, 10, 1),
+          hours: 30,
+          name: "Test Organization"
+        )
+      end
+
+      it "displays both ex_parte and self-reported activities" do
+        get activity_report_application_form_url(activity_report_with_member)
+
+        expect(response).to be_successful
+        expect(response.body).to include("Employment Activity")
+        expect(response.body).to include("From the State")
+        expect(response.body).to include("Self Reported")
+        expect(response.body).to include("Test Organization")
+      end
+    end
   end
 
   describe "GET /new" do
