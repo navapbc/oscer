@@ -120,7 +120,7 @@ To test different exemption scenarios, use the following fields:
 3. Click on member name or case number on any row to view individual member or case details, respectively
 
 ## Step 5: View Batch File Status Results
- <img src="docs/assets/Batch_File_Upload_State_Page.png" width="100%" alt="Batch File Status Results" />
+ <img src="/docs/assets/Batch_File_Upload_State_Page.png" width="100%" alt="Batch File Status Results" />
 
 1. Go to the [Certification Batch Uploads](https://medicaid.navateam.com/staff/certification_batch_uploads) page
 2. Click on the filename under the **"Filename"** column
