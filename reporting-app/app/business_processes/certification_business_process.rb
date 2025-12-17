@@ -97,8 +97,12 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   transition(EX_PARTE_EXEMPTION_CHECK_STEP, "DeterminedExempt", SEND_EXEMPT_EMAIL_STEP)
 
   # --- Transitions: Ex parte hours check ---
+  # DeterminedHoursMet: Hours requirement satisfied
+  # DeterminedActionRequired: No ex parte hours found, member needs to report from scratch
+  # DeterminedHoursInsufficient: Has some ex parte hours but needs more
   transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedHoursMet", SEND_COMPLIANT_EMAIL_STEP)
   transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedActionRequired", SEND_ACTION_REQUIRED_EMAIL_STEP)
+  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedHoursInsufficient", SEND_INSUFFICIENT_HOURS_EMAIL_STEP)
 
   # --- Transitions: Notification steps → next workflow step ---
   transition(SEND_COMPLIANT_EMAIL_STEP, "NotificationSent", END_STEP)
