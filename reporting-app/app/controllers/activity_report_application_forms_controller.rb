@@ -14,6 +14,11 @@ class ActivityReportApplicationFormsController < ApplicationController
 
   # GET /activity_report_application_forms/1 or /activity_report_application_forms/1.json
   def show
+    @certification = fetch_certification
+    @monthly_statistics = ActivityReportStatisticsService.build_monthly_statistics(
+      @activity_report_application_form,
+      @certification
+    )
   end
 
   # GET /activity_report_application_forms/new
@@ -55,6 +60,11 @@ class ActivityReportApplicationFormsController < ApplicationController
 
   # GET /activity_report_application_forms/1/review
   def review
+    @certification = fetch_certification
+    @monthly_statistics = ActivityReportStatisticsService.build_monthly_statistics(
+      @activity_report_application_form,
+      @certification
+    )
   end
 
   # PATCH/PUT /activity_report_application_forms/1 or /activity_report_application_forms/1.json
@@ -118,6 +128,10 @@ class ActivityReportApplicationFormsController < ApplicationController
 
   def certification_service
     @certification_service ||= CertificationService.new
+  end
+
+  def fetch_certification
+    certification_service.find(@activity_report_application_form.certification_case_id, hydrate: true)&.certification
   end
 
   def activity_report_application_form_params

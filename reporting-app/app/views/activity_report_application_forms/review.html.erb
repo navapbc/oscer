@@ -9,7 +9,10 @@
 
 <div class="usa-section margin-top-4 padding-0">
   <%= render partial: 'activity_report_application_forms/activity_report_application_form',
-    locals: { activity_report_application_form: @activity_report_application_form } %>
+    locals: {
+      activity_report_application_form: @activity_report_application_form,
+      monthly_statistics: @monthly_statistics
+    } %>
 </div>
 
 <%= strata_form_with(

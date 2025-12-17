@@ -1,6 +1,5 @@
 <div id="<%= dom_id activity_report_application_form %>">
-  <% monthly_stats = activity_report_application_form.monthly_statistics %>
-  <% monthly_stats.each_with_index do |(month, stats), index| %>
+  <% monthly_statistics.each_with_index do |(month, stats), index| %>
     <% hourly_activities, income_activities, ex_parte_activities, summed_hours, summed_income, remaining_hours, remaining_income =
          stats.values_at(:hourly_activities, :income_activities, :ex_parte_activities, :summed_hours, :summed_income, :remaining_hours, :remaining_income) %>
     <h2 class="margin-bottom-2"><%= month.strftime("%B %Y") %></h2>
