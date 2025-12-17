@@ -35,10 +35,24 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   # --- System processes: Notifications (one email per step, then publish event to continue) ---
   system_process(SEND_ACTION_REQUIRED_EMAIL_STEP, ->(kase) {
     certification = Certification.find(kase.certification_id)
+    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
+
+    email_params = { certification: }
+
+    if hours_data[:total_hours] > 0
+      email_params.merge!({
+        hours_data: hours_data,
+        target_hours: HoursComplianceDeterminationService::TARGET_HOURS
+      })
+      email_type = :insufficient_hours_email
+    else
+      email_type = :action_required_email
+    end
+
     NotificationService.send_email_notification(
       MemberMailer,
-      { certification: certification },
-      :action_required_email,
+      email_params,
+      email_type,
       [ certification.member_email ]
     )
     Strata::EventManager.publish("NotificationSent", { case_id: kase.id })
