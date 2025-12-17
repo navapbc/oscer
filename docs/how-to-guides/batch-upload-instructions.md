@@ -84,7 +84,7 @@ To test different exemption scenarios, use the following fields:
 
 
 3. Select your CSV file
-<img src="docs/assets/Upload_Certification_Roster_Page_CSV_Format_Requirements.png" width="100%" alt="Upload Certification Roster Format Requirements" />
+<img src="/docs/assets/Upload_Certification_Roster_Page_CSV_Format_Requirements.png" width="100%" alt="Upload Certification Roster Format Requirements" />
 <img src="docs/assets/Upload_Certification_Roster_Upload_Process.png" width="100%" alt="Upload Certification Roster Upload" />
 
 5. Click **"Upload and Process"**
