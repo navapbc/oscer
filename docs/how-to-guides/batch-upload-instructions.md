@@ -89,7 +89,7 @@ To test different exemption scenarios, use the following fields:
 
 5. Click **"Upload and Process"**
 6. You'll be redirected back to the to the Batch Uploads page `/staff/certification_batch_uploads` with a success message
-<img src="docs/assets/Certification_Batch_Uploads_Process.png" width="100%" alt="Upload Certification Batch Uploads Process" />
+<img src="/docs/assets/Certification_Batch_Uploads_Process.png" width="100%" alt="Upload Certification Batch Uploads Process" />
 
 ---
 
