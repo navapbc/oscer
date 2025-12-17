@@ -44,7 +44,7 @@ The Batch Upload feature allows staff members to upload and process multiple cer
 
 ### Example CSV
 
-[Download sample CSV file](docs/assets/test_data.csv)  
+[Download sample CSV file](/docs/assets/test_data.csv)  
 Note: If you want to receive an email notification, change the emails in the test_data.csv to real emails. 
 
 ```csv
