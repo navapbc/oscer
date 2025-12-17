@@ -57,7 +57,7 @@ M12346,C-002,jane.smith@example.com,Jane,Smith,2025-01-15,recertification,1985-0
 
 ## Step 1: Prepare Your CSV File
 
-1. Create a CSV file with the required columns (see Data Schema above). You can also [download the sample CSV file](docs/assets/test_data.csv) 
+1. Create a CSV file with the required columns (see Data Schema above). You can also [download the sample CSV file](/docs/assets/test_data.csv) 
 2. Ensure **case numbers are unique** — duplicate case numbers will cause upload errors
 3. Save the file as `.csv` format
 
