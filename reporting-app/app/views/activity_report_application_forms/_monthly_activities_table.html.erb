@@ -3,28 +3,39 @@
   <thead>
     <tr>
       <th><%= t("activity_report_application_forms.shared.organization_name") %></th>
+      <th><%= t("activity_report_application_forms.shared.source") %></th>
       <th><%= t("activity_report_application_forms.shared.activity_type") %></th>
       <th class="text-right bg-base-lightest width-card"><%= column_header %></th>
     </tr>
   </thead>
   <tbody>
+    <% ex_parte_activities.each do |ex_parte_data| %>
+      <% activity = ex_parte_data[:activity] %>
+      <tr>
+        <td class="border-0"><%= t("activity_report_application_forms.shared.employment_activity") %></td>
+        <td class="border-0"><%= t("activity_report_application_forms.shared.from_the_state") %></td>
+        <td class="border-0"><%= activity.category.humanize %></td>
+        <td class="border-0 text-right bg-base-lightest"><%= ex_parte_value.call(ex_parte_data) %></td>
+      </tr>
+    <% end %>
     <% activities.each do |activity| %>
       <tr>
         <td class="border-0"><%= link_to activity.name, [activity_report_application_form, activity.becomes(Activity)] %></td>
+        <td class="border-0"><%= t("activity_report_application_forms.shared.self_reported") %></td>
         <td class="border-0"><%= activity.category.humanize %></td>
         <td class="border-0 text-right bg-base-lightest"><%= activity_value.call(activity) %></td>
       </tr>
     <% end %>
     <tr>
-      <td colspan="2" class="border-bottom-0"><%= t("activity_report_application_forms.monthly_activities_table.total_reported") %></td>
+      <td colspan="3" class="border-bottom-0"><%= t("activity_report_application_forms.monthly_activities_table.total_reported") %></td>
       <td class="border-bottom-0 text-right bg-base-lightest"><%= format_value.call(summed_value) %></td>
     </tr>
     <tr>
-      <td colspan="2" class="border-top-0"><%= t("activity_report_application_forms.monthly_activities_table.required") %></td>
+      <td colspan="3" class="border-top-0"><%= t("activity_report_application_forms.monthly_activities_table.required") %></td>
       <td class="border-top-0 text-right bg-base-lightest"><%= format_value.call(required_value) %></td>
     </tr>
     <tr>
-      <td colspan="2" class="bg-base-lightest"><strong><%= remaining_label %></strong></td>
+      <td colspan="3" class="bg-base-lightest"><strong><%= remaining_label %></strong></td>
       <td class="text-right bg-base-lighter"><%= format_value.call(remaining_value) %></td>
     </tr>
   </tbody>
