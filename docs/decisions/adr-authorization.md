@@ -21,9 +21,9 @@ OSCER requires an authorization system to control staff access based on roles, p
 
 ## Considered Options
 
--** Option 1: **Attribute-Based Access Control (ABAC) using external SSO attributes
--**Option 2: **Internal RBAC with dedicated roles and groups tables in OSCER database
-**Option 3: **Configuration-based permissioning with a permissions table (rather than code-based Pundit policies)
+- ** Option 1:** Attribute-Based Access Control (ABAC) using external SSO attributes
+- **Option 2:** Internal RBAC with dedicated roles and groups tables in OSCER database
+- **Option 3:** Configuration-based permissioning with a permissions table (rather than code-based Pundit policies)
 
 ## Decision Outcome
 
