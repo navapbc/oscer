@@ -63,16 +63,16 @@ RSpec.describe HoursComplianceDeterminationService do
       end
     end
 
-    context "when hours are below target" do
+    context "when hours are below target with ex parte hours" do
       before do
         create_ex_parte_activity_for(certification, hours: 50)
       end
 
-      it "publishes DeterminedActionRequired event" do
+      it "publishes DeterminedHoursInsufficient event (has some hours but needs more)" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedActionRequired",
+          "DeterminedHoursInsufficient",
           hash_including(case_id: certification_case.id)
         )
       end
@@ -89,6 +89,27 @@ RSpec.describe HoursComplianceDeterminationService do
         described_class.determine(certification_case)
 
         expect(certification_case.reload).not_to be_closed
+      end
+    end
+
+    context "when hours are below target with NO ex parte hours" do
+      # No ex parte activities created - member needs to report from scratch
+
+      it "publishes DeterminedActionRequired event (no hours found)" do
+        described_class.determine(certification_case)
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DeterminedActionRequired",
+          hash_including(case_id: certification_case.id)
+        )
+      end
+
+      it "creates a not_compliant determination" do
+        described_class.determine(certification_case)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.outcome).to eq("not_compliant")
+        expect(determination.reasons).to include("hours_reported_insufficient")
       end
     end
 
