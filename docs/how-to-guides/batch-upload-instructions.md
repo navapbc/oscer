@@ -103,7 +103,7 @@ To test different exemption scenarios, use the following fields:
 ---
 
 ## Step 4: View Batch Intake Member Results
- <img src="docs/assets/Bulk_Intake_Results_Page.png" width="100%" alt="Member Status Results" />
+ <img src="/docs/assets/Bulk_Intake_Results_Page.png" width="100%" alt="Member Status Results" />
 
 ### From the Certification Batch Uploads View
 
