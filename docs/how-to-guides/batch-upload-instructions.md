@@ -80,7 +80,7 @@ To test different exemption scenarios, use the following fields:
 1. Navigate to **Batch Uploads** in the header navigation (or go directly to `/staff/certification_batch_uploads`)
 2. Click **"Upload New File"**  
 
-<img src="docs/assets/Certification_Batch_Uploads_Main_Page.png" width="100%" alt="Batch Uploads" />
+<img src="/docs/assets/Certification_Batch_Uploads_Main_Page.png" width="100%" alt="Batch Uploads" />
 
 
 3. Select your CSV file
