@@ -95,7 +95,6 @@ class HoursComplianceDeterminationService
       # Only include hours from approved activity reports (member-reported hours)
       certification_case = CertificationCase.find_by(certification_id: certification.id)
       return empty_hours_result unless certification_case
-      return empty_hours_result unless certification_case.activity_report_approval_status == "approved"
 
       form = ActivityReportApplicationForm.find_by(certification_case_id: certification_case.id)
       return empty_hours_result unless form

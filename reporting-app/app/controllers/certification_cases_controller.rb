@@ -60,7 +60,6 @@ class CertificationCasesController < StaffController
   def fetch_member_activities
     # Only include activities from approved activity reports to match the totals calculation
     return [] unless @activity_report
-    return [] unless @case.activity_report_approval_status == "approved"
 
     @activity_report.activities.where.not(hours: nil)
   end
