@@ -30,6 +30,64 @@ class ActivityReportApplicationForm < Strata::ApplicationForm
     @activities_by_month ||= activities.group_by(&:month)
   end
 
+  def certification
+    @certification ||= CertificationService.new.find(certification_case_id, hydrate: true)&.certification
+  end
+
+  def ex_parte_activities
+    @ex_parte_activities ||= if certification&.member_id
+      lookback_period = certification.certification_requirements.continuous_lookback_period
+      ExParteActivity.for_member(certification.member_id).within_period(lookback_period)
+    else
+      ExParteActivity.none
+    end
+  end
+
+  def ex_parte_activities_by_month
+    @ex_parte_activities_by_month ||= begin
+      result = Hash.new { |h, k| h[k] = [] }
+
+      ex_parte_activities.each do |activity|
+        allocate_activity_to_months(activity, result)
+      end
+
+      result
+    end
+  end
+
+  # TODO: Consolidate with similar logic in HoursComplianceDeterminationService
+  def monthly_statistics
+    @monthly_statistics ||= begin
+      # Get all months from both activities and ex_parte activities
+      all_months = (activities_by_month.keys + ex_parte_activities_by_month.keys).uniq
+
+      all_months.each_with_object({}) do |month, result|
+        activities = activities_by_month[month] || []
+        ex_parte_data = ex_parte_activities_by_month[month] || []
+
+        hourly_activities = activities.select { |act| act.is_a?(WorkActivity) }
+        income_activities = activities.select { |act| act.is_a?(IncomeActivity) }
+
+        # Calculate self-reported hours and ex_parte hours
+        member_hours = hourly_activities.sum { |act| act.hours || 0 }.round(1)
+        ex_parte_hours = ex_parte_data.sum { |data| data[:allocated_hours] }.round(1)
+        summed_hours = member_hours + ex_parte_hours
+
+        summed_income = income_activities.sum { |act| act.income.dollar_amount || 0 }.round(0)
+
+        result[month] = {
+          hourly_activities: hourly_activities,
+          income_activities: income_activities,
+          ex_parte_activities: ex_parte_data,
+          summed_hours: summed_hours,
+          summed_income: summed_income,
+          remaining_hours: [ MINIMUM_MONTHLY_HOURS - summed_hours, 0 ].max,
+          remaining_income: [ MINIMUM_MONTHLY_INCOME - summed_income, 0 ].max
+        }
+      end
+    end
+  end
+
   accepts_nested_attributes_for :activities, allow_destroy: true
 
   def self.find_by_certification_case_id(certification_case_id)
