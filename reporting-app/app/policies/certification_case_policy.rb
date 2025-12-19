@@ -1,16 +1,22 @@
 # frozen_string_literal: true
 
 # Policy for CertificationCase access
-# Inherits from StaffPolicy to ensure staff-only access
+#
+# This policy is used for:
+# 1. Authorizing access to individual certification case records (show?, update?)
+# 2. Scoping queries to filter cases by region (Scope class)
+#
+# Note: Collection actions (index, closed) use StaffPolicy for page-level authorization
+# via the controller's `authorize :staff` before_action.
 class CertificationCasePolicy < StaffPolicy
-  def index?
-    staff_in_region?
-  end
-
+  # Authorizes access to view a specific certification case
+  # Called by: authorize @case
   def show?
     staff_in_region?
   end
 
+  # Scopes certification cases to only show records from the user's region
+  # Called by: policy_scope(CertificationCase)
   class Scope < StaffPolicy::Scope
     def resolve
       return scope.none unless user.staff?

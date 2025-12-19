@@ -29,7 +29,7 @@ RSpec.describe CertificationCasePolicy, type: :policy do
   describe "when user is staff in the case's region" do
     let(:user) { staff_user }
 
-    it { is_expected.to permit_actions(:index, :show) }
+    it { is_expected.to permit_actions(:show) }
     it { is_expected.to forbid_actions(:destroy) }
 
     it "includes cases from the user's region in the resolved scope" do
@@ -60,7 +60,7 @@ RSpec.describe CertificationCasePolicy, type: :policy do
   describe "when user is staff in a different region" do
     let(:user) { other_region_staff_user }
 
-    it { is_expected.to forbid_actions(:index, :show, :destroy) }
+    it { is_expected.to forbid_actions(:show, :destroy) }
 
     it "does not include cases from other regions in the resolved scope" do
       expect(resolved_scope).not_to include(record)
@@ -70,7 +70,7 @@ RSpec.describe CertificationCasePolicy, type: :policy do
   describe "when user is not staff" do
     let(:user) { non_staff_user }
 
-    it { is_expected.to forbid_actions(:index, :show, :destroy) }
+    it { is_expected.to forbid_actions(:show, :destroy) }
 
     it "includes no records in the resolved scope" do
       expect(resolved_scope).to be_empty
