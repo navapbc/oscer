@@ -185,7 +185,7 @@ RSpec.describe "/exemption_application_forms", type: :request do
     context "when the user is authorized" do
       it "uploads the document successfully" do
         post upload_documents_exemption_application_form_path(existing_exemption_application_form),
-          params: { exemption_application_form: { supporting_documents: [file] } }
+          params: { exemption_application_form: { supporting_documents: [ file ] } }
         expect(response).to redirect_to(documents_exemption_application_form_path(existing_exemption_application_form))
         follow_redirect!
         expect(response).to have_http_status(:ok)
