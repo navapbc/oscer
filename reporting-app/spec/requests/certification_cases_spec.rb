@@ -146,4 +146,48 @@ RSpec.describe "/staff/certification_cases", type: :request do
       expect(response.body).not_to include("closed_case")
     end
   end
+
+  describe "GET /closed" do
+    before do
+      create(
+        :certification_case,
+        :with_closed_status,
+        certification: create(
+          :certification,
+          case_number: "closed_case_1",
+          certification_requirements: build(:certification_certification_requirements, region: "north")
+        )
+      )
+      create(
+        :certification_case,
+        :with_closed_status,
+        certification: create(
+          :certification,
+          case_number: "closed_case_2",
+          certification_requirements: build(:certification_certification_requirements, region: "north")
+        )
+      )
+      create(
+        :certification_case,
+        :actionable,
+        certification: create(
+          :certification,
+          case_number: "open_case",
+          certification_requirements: build(:certification_certification_requirements, region: "north")
+        )
+      )
+    end
+
+    it "returns http success" do
+      get "/staff/certification_cases/closed"
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "lists only closed certification cases" do
+      get "/staff/certification_cases/closed"
+      expect(response.body).to include("closed_case_1")
+      expect(response.body).to include("closed_case_2")
+      expect(response.body).not_to include("open_case")
+    end
+  end
 end
