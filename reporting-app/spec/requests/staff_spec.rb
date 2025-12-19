@@ -5,9 +5,10 @@ require 'rails_helper'
 RSpec.describe "/staff", type: :request do
   include Warden::Test::Helpers
 
-  let(:user) { create(:user, :as_admin) }
-  let(:other_user) { create(:user, :as_caseworker) }
-  let(:certification_case) { create(:certification_case) }
+  let(:user) { create(:user, :as_admin, region: "region_1") }
+  let(:other_user) { create(:user, :as_caseworker, region: "region_1") }
+  let(:certification) { create(:certification, certification_requirements: build(:certification_certification_requirements, region: "region_1")) }
+  let(:certification_case) { create(:certification_case, certification: certification) }
 
   before do
     login_as user

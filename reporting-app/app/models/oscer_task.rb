@@ -5,6 +5,6 @@ class OscerTask < Strata::Task
   attribute :due_on, :date, default: -> { 7.days.from_now.to_date }
 
   def self.policy_class
-    TaskPolicy
+    Strata::TaskPolicy
   end
 end
