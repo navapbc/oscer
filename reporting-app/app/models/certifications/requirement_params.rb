@@ -19,36 +19,36 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
   before_validation :set_type_params
 
   def set_type_params
-    if self.certification_type.blank? || !Certifications::Requirements::CERTIFICATION_TYPE_OPTIONS.include?(self.certification_type)
+    if certification_type.blank? || !Certifications::Requirements::CERTIFICATION_TYPE_OPTIONS.include?(certification_type)
       return
     end
 
-    self.set_params_for_type(certification_type)
+    set_params_for_type(certification_type)
     # unset any existing explicit due_date
     self.due_date = nil
   end
 
   def to_requirements
     Certifications::Requirements.new({
-      "certification_date": self.certification_date,
-      "certification_type": self.certification_type,
-      "months_that_can_be_certified": self.months_that_can_be_certified,
-      "number_of_months_to_certify": self.number_of_months_to_certify,
-      "due_date": self.due_date,
-      "region": self.region,
-      "params": self.as_json
+      "certification_date": certification_date,
+      "certification_type": certification_type,
+      "months_that_can_be_certified": months_that_can_be_certified,
+      "number_of_months_to_certify": number_of_months_to_certify,
+      "due_date": due_date,
+      "region": region,
+      "params": as_json
     })
   end
 
   def months_that_can_be_certified
-    self.lookback_period.times.map { |i| self.certification_date.beginning_of_month << i }
+    lookback_period.times.map { |i| certification_date.beginning_of_month << i }
   end
 
   private
 
   def set_due_date_from_period
-    if self.due_period_days
-      self.due_date ||= self.certification_date + self.due_period_days.days
+    if due_period_days
+      self.due_date ||= certification_date + due_period_days.days
     end
   end
 end

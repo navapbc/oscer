@@ -24,13 +24,13 @@ class Certifications::RequirementTypeParams < ValueObject
     # TODO: can be updated to load from some config, the DB, etc.
     case certification_type
     when "new_application"
-      self.new({
+      new({
         lookback_period: 1,
         number_of_months_to_certify: 1,
         due_period_days: 30
       })
     when "recertification"
-      self.new({
+      new({
         lookback_period: 6,
         number_of_months_to_certify: 3,
         due_period_days: 30

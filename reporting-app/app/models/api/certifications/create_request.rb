@@ -10,11 +10,11 @@ class Api::Certifications::CreateRequest < ValueObject
   validates :certification_requirements, presence: true
 
   def self.from_request_params(params)
-    self.new_filtered(params)
+    new_filtered(params)
   end
 
   def to_certification
-    case self.certification_requirements
+    case certification_requirements
     when Certifications::Requirements
       # we are good to go
       certification_requirements = self.certification_requirements
@@ -25,7 +25,7 @@ class Api::Certifications::CreateRequest < ValueObject
       raise TypeError
     end
 
-    cert_attrs = self.attributes.merge({ certification_requirements: certification_requirements })
+    cert_attrs = attributes.merge({ certification_requirements: certification_requirements })
     Certification.new(cert_attrs)
   end
 end
