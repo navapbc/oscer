@@ -16,6 +16,7 @@
     <%# Breakdown of activities for month %>
     <div class="grid-container font-body-md">
       <% if hourly_activities.any? || ex_parte_activities.any? %>
+      <% if hourly_activities.any? || ex_parte_activities.any? %>
         <%# Hourly activities %>
         <%= render partial: "activity_report_application_forms/monthly_activities_table",
           locals: {
@@ -23,8 +24,10 @@
             column_header: t("activity_report_application_forms.shared.hours"),
             activities: hourly_activities,
             ex_parte_activities: ex_parte_activities,
+            ex_parte_activities: ex_parte_activities,
             activity_report_application_form:,
             activity_value: ->(activity) { activity.hours },
+            ex_parte_value: ->(ex_parte_data) { ex_parte_data[:allocated_hours] },
             ex_parte_value: ->(ex_parte_data) { ex_parte_data[:allocated_hours] },
             format_value: ->(value) { value },
             summed_value: summed_hours,
@@ -42,8 +45,10 @@
             column_header: t("activity_report_application_forms.shared.income"),
             activities: income_activities,
             ex_parte_activities: [],
+            ex_parte_activities: [],
             activity_report_application_form:,
             activity_value: ->(activity) { number_to_currency(activity.income&.dollar_amount, precision: 0) },
+            ex_parte_value: ->(ex_parte_data) { number_to_currency(ex_parte_data[:allocated_income], precision: 0) },
             ex_parte_value: ->(ex_parte_data) { number_to_currency(ex_parte_data[:allocated_income], precision: 0) },
             format_value: ->(value) { number_to_currency(value, precision: 0) },
             summed_value: summed_income,

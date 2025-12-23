@@ -62,6 +62,22 @@ RSpec.describe "/staff/certification_cases", type: :request do
                hours: 15,
                period_start: period_start,
                period_end: period_end)
+        create(:ex_parte_activity,
+               member_id: member_id,
+               category: "community_service",
+               hours: 15,
+               period_start: period_start,
+               period_end: period_end)
+        form = create(
+          :activity_report_application_form,
+          certification_case_id: certification_case.id,
+        )
+        form.activities.create(
+          hours: 10,
+          name: "Employer Inc",
+          type: "WorkActivity",
+          month: period_start
+        )
       end
 
       it "displays the hours reported table" do
@@ -77,13 +93,18 @@ RSpec.describe "/staff/certification_cases", type: :request do
         expect(response.body).to include("From the State")
         expect(response.body).to include("Employment")
         expect(response.body).to include("Community Service")
+        expect(response.body).to include("Self-reported")
+        expect(response.body).to include("Employer Inc")
       end
 
       it "displays total and required hours" do
         get "/staff/certification_cases/#{certification_case.id}"
         expect(response.body).to include("Total reported")
+        expect(response.body).to include("60")
         expect(response.body).to include("Required")
+        expect(response.body).to include("80")
         expect(response.body).to include("Additional hours needed")
+        expect(response.body).to include("20")
       end
     end
 

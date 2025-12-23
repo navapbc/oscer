@@ -6,7 +6,7 @@ class ActivityReportApplicationForm < Strata::ApplicationForm
 
   has_many :activities, strict_loading: true, autosave: true, dependent: :destroy
 
-  default_scope { includes(:determinations) }
+  default_scope { includes(:determinations, :activities) }
 
   strata_attribute :reporting_periods, :year_month, array: true
   strata_attribute :number_of_months_to_certify, :integer
@@ -29,8 +29,6 @@ class ActivityReportApplicationForm < Strata::ApplicationForm
   def activities_by_month
     @activities_by_month ||= activities.group_by(&:month)
   end
-
-  default_scope { includes(:activities) }
 
   accepts_nested_attributes_for :activities, allow_destroy: true
 
