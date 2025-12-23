@@ -14,7 +14,9 @@ class ActivityReportStatisticsService
     # @param certification [Certification]
     # @return [Hash] monthly statistics keyed by Date (first of month)
     def build_monthly_statistics(activity_report, certification)
-      activities_by_month = activity_report.activities.group_by(&:month)
+      # Eager load activities to avoid strict_loading violation
+      activities = Activity.where(activity_report_application_form_id: activity_report.id)
+      activities_by_month = activities.group_by(&:month)
       ex_parte_by_month = build_ex_parte_by_month(certification)
 
       # Get all months from both sources
