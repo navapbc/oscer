@@ -40,11 +40,11 @@ class Certification < ApplicationRecord
   end
 
   def member_email
-    self.member_account_email || self.member_contact_email
+    member_account_email || member_contact_email
   end
 
   def self.find_by_member_email(email)
-    self.find_by_member_account_email(email).or(self.find_by_member_contact_email(email))
+    find_by_member_account_email(email).or(find_by_member_contact_email(email))
   end
 
   # Check if certification exists with compound key (for duplicate prevention)

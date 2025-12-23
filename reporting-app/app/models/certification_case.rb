@@ -49,7 +49,7 @@ class CertificationCase < Strata::Case
       self.exemption_request_approval_status_updated_at = Time.current
       close!
 
-      certification = Certification.find(self.certification_id)
+      certification = Certification.find(certification_id)
       certification.record_determination!(
         decision_method: :manual,
         reasons: [ Determination::REASON_CODE_MAPPING[:exemption_request_compliant] ],
@@ -76,7 +76,7 @@ class CertificationCase < Strata::Case
   # Model only handles state changes - service handles events
   # @param eligibility_fact [Strata::RulesEngine::Fact] the evaluation result
   def record_exemption_determination(eligibility_fact)
-    certification = Certification.find(self.certification_id)
+    certification = Certification.find(certification_id)
 
     transaction do
       self.exemption_request_approval_status = "approved"
@@ -98,7 +98,7 @@ class CertificationCase < Strata::Case
   # @param outcome [Symbol] :compliant or :not_compliant
   # @param hours_data [Hash] aggregated hours data
   def record_hours_compliance(outcome, hours_data)
-    certification = Certification.find(self.certification_id)
+    certification = Certification.find(certification_id)
     reason_code = outcome == :compliant ? :hours_reported_compliant : :hours_reported_insufficient
 
     transaction do

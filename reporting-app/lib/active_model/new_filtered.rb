@@ -8,7 +8,7 @@ module ActiveModel
 
     module ClassMethods
       def attr_syms
-        self.attribute_names.map(&:to_sym)
+        attribute_names.map(&:to_sym)
       end
 
       def new_filtered(sliceable)
@@ -19,7 +19,7 @@ module ActiveModel
           obj = sliceable
         end
 
-        self.new(obj.slice(*self.attr_syms))
+        new(obj.slice(*attr_syms))
       end
     end
   end

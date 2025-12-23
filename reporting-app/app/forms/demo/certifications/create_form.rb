@@ -16,7 +16,7 @@ module Demo
       end
 
       def to_certification
-        certification_requirement_params = ::Certifications::RequirementParams.new_filtered(self.attributes.with_indifferent_access)
+        certification_requirement_params = ::Certifications::RequirementParams.new_filtered(attributes.with_indifferent_access)
         # shouldn't be possible, but we need to ensure the params are valid in
         # order to construct the requirements next
         if certification_requirement_params.invalid?
@@ -32,38 +32,38 @@ module Demo
 
         member_data = {}
 
-        case self.ex_parte_scenario
+        case ex_parte_scenario
         when "Partially met work hours requirement"
           member_data.merge!(
             FactoryBot.build(
-              :certification_member_data, :partially_met_work_hours_requirement, cert_date: self.certification_date
+              :certification_member_data, :partially_met_work_hours_requirement, cert_date: certification_date
             ).attributes.compact
           )
         when "Fully met work hours requirement"
           member_data.merge!(
             FactoryBot.build(
-              :certification_member_data, :fully_met_work_hours_requirement, cert_date: self.certification_date, num_months: self.number_of_months_to_certify
+              :certification_member_data, :fully_met_work_hours_requirement, cert_date: certification_date, num_months: number_of_months_to_certify
             ).attributes.compact)
         when "Meets age-based exemption requirement"
           member_data.merge!(
             FactoryBot.build(
-              :certification_member_data, :meets_age_based_exemption_requirement, cert_date: self.certification_date
+              :certification_member_data, :meets_age_based_exemption_requirement, cert_date: certification_date
             ).attributes.compact
           )
         end
 
         member_data = ::Certifications::MemberData.new(member_data).tap do |md|
-          md.name = self.member_name if self.member_name.present?
-          md.date_of_birth = self.date_of_birth if self.date_of_birth.present?
-          md.pregnancy_status = self.pregnancy_status if self.pregnancy_status.present?
-          md.race_ethnicity = self.race_ethnicity if self.race_ethnicity.present?
+          md.name = member_name if member_name.present?
+          md.date_of_birth = date_of_birth if date_of_birth.present?
+          md.pregnancy_status = pregnancy_status if pregnancy_status.present?
+          md.race_ethnicity = race_ethnicity if race_ethnicity.present?
         end
 
         @certification = FactoryBot.build(
           :certification,
           :connected_to_email,
-          email: self.member_email,
-          case_number: self.case_number,
+          email: member_email,
+          case_number: case_number,
           certification_requirements: certification_requirements,
           member_data: member_data,
         )

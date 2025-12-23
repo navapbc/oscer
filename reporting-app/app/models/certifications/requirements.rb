@@ -32,7 +32,7 @@ class Certifications::Requirements < ValueObject
 
   def continuous_lookback_period?
     months_that_can_be_certified = self.months_that_can_be_certified
-    range = self.certification_lookback_date_range
+    range = certification_lookback_date_range
 
     num_months_that_can_be_certified = months_that_can_be_certified.length
     # +1 to the difference since this list is inclusive
@@ -42,9 +42,9 @@ class Certifications::Requirements < ValueObject
   end
 
   def continuous_lookback_period
-    return nil unless self.continuous_lookback_period?
+    return nil unless continuous_lookback_period?
 
-    self.certification_lookback_date_range
+    certification_lookback_date_range
   end
 
   private

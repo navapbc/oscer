@@ -26,7 +26,7 @@ class ApiController < ActionController::Metal
     # then handle rendering the errors themselves
     case errors
     when ActiveModel::Errors
-      msgs = self.format_active_model_errors(errors)
+      msgs = format_active_model_errors(errors)
     when Array
       msgs = errors
     when String
