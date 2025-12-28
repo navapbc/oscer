@@ -10,8 +10,8 @@ class UswdsFormBuilder < ActionView::Helpers::FormBuilder
 
   def initialize(*args)
     super
-    self.options[:html] ||= {}
-    self.options[:html][:class] ||= "usa-form usa-form--large"
+    options[:html] ||= {}
+    options[:html][:class] ||= "usa-form usa-form--large"
   end
 
   ########################################

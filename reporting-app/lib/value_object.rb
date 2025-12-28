@@ -13,6 +13,6 @@ class ValueObject
 
   def ==(other)
     return false if self.class != other.class
-    self.as_json == other.as_json
+    as_json == other.as_json
   end
 end

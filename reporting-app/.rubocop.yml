@@ -34,3 +34,5 @@ RSpecRails/NegationBeValid:
 
 Style/FrozenStringLiteralComment:
   Enabled: true
+Style/RedundantSelf:
+  Enabled: true

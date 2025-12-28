@@ -33,7 +33,7 @@ module ActiveModel
       end
 
       def deserialize(value)
-        self.cast(super(value))
+        cast(super(value))
       end
 
       def ==(other)

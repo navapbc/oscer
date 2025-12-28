@@ -12,13 +12,13 @@ class UnionObject
   end
 
   def self.attribute_names
-    self.union_types.flat_map { |t| t.attribute_names }
+    union_types.flat_map { |t| t.attribute_names }
   end
 
   def self.new(attributes = {})
     objs = []
 
-    for t in self.union_types
+    for t in union_types
       obj = t.new_filtered(attributes)
       if obj.valid?
         return obj

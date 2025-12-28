@@ -12,6 +12,6 @@ class Api::Certifications::Response < ValueObject
   attribute :updated_at, :datetime
 
   def self.from_certification(certification)
-    self.new_filtered(certification)
+    new_filtered(certification)
   end
 end
