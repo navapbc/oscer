@@ -10,7 +10,9 @@ class ActivityReportApplicationFormsController < ApplicationController
     destroy
   ]
   before_action :authenticate_user!
-  before_action :set_certification_case, only: %i[ edit update ]
+  before_action :set_certification_case, only: %i[show edit review update]
+  before_action :set_certification, only: %i[show review]
+  before_action :set_monthly_statistics, only: %i[show review]
 
   # GET /activity_report_application_forms/1 or /activity_report_application_forms/1.json
   def show
@@ -118,6 +120,17 @@ class ActivityReportApplicationFormsController < ApplicationController
 
   def certification_service
     @certification_service ||= CertificationService.new
+  end
+
+  def set_certification
+    @certification = @certification_case.certification
+  end
+
+  def set_monthly_statistics
+    @monthly_statistics = ActivityReportStatisticsService.build_monthly_statistics(
+      @activity_report_application_form,
+      @certification
+    )
   end
 
   def activity_report_application_form_params

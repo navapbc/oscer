@@ -42,7 +42,9 @@
   <p class="usa-intro"><%= t("activity_report_application_forms.shared.status_messages.submitted") %></p>
 <% end %>
 <div class="margin-y-6">
-  <%= render @activity_report_application_form %>
+  <%= render "activity_report_application_forms/activity_report_application_form",
+             activity_report_application_form: @activity_report_application_form,
+             monthly_statistics: @monthly_statistics %>
 </div>
 <% if @activity_report_application_form.submitted? %>
   <%= link_to t("activity_report_application_forms.shared.back_to_dashboard"), dashboard_path, class: "usa-button usa-button--outline" %>

@@ -7,6 +7,7 @@ RSpec.describe "activity_report_application_forms/show", type: :view do
 
   before do
     assign(:activity_report_application_form, activity_report_application_form)
+    assign(:monthly_statistics, {})
 
     stub_pundit_for(activity_report_application_form, edit?: true)
   end
