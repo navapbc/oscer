@@ -29,6 +29,10 @@ class StaffPolicy < ApplicationPolicy
 
   private
 
+  def staff_in_region?
+    staff? && in_region?
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       # TODO: Restrict scope based on caseworker's region

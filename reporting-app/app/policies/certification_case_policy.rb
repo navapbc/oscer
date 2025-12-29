@@ -30,8 +30,4 @@ class CertificationCasePolicy < StaffPolicy
   def in_region?
     Certification.by_region(user.region).where(id: record.certification_id).exists?
   end
-
-  def staff_in_region?
-    staff? && in_region?
-  end
 end

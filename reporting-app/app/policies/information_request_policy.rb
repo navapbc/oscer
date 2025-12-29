@@ -21,8 +21,4 @@ class InformationRequestPolicy < StaffPolicy
     # Use CertificationCase.by_region scope to check if case is in user's region
     CertificationCase.by_region(user.region).where(id: certification_case_id).exists?
   end
-
-  def staff_in_region?
-    staff? && in_region?
-  end
 end
