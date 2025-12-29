@@ -4,7 +4,6 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   # Determination steps
   EX_PARTE_EXEMPTION_CHECK_STEP = "ex_parte_exemption_check"
   EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP = "ex_parte_community_engagement_check"
-  RECALCULATE_HOURS_STEP = "recalculate_hours"
 
   # User task steps
   REPORT_ACTIVITIES_STEP = "report_activities"
@@ -21,10 +20,6 @@ class CertificationBusinessProcess < Strata::BusinessProcess
 
   system_process(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, ->(kase) {
     HoursComplianceDeterminationService.determine(kase)
-  })
-
-  system_process(RECALCULATE_HOURS_STEP, ->(kase) {
-    HoursComplianceDeterminationService.determine_after_activity_report(kase)
   })
 
   # User tasks
@@ -50,13 +45,11 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedHoursInsufficient", REPORT_ACTIVITIES_STEP)
 
   # --- Transitions: Activity report workflow ---
+  # Reviewer determines compliance: approved = compliant, denied = not compliant
+  # Both outcomes close the case
   transition(REPORT_ACTIVITIES_STEP, "ActivityReportApplicationFormSubmitted", REVIEW_ACTIVITY_REPORT_STEP)
-  transition(REVIEW_ACTIVITY_REPORT_STEP, "ActivityReportApproved", RECALCULATE_HOURS_STEP)
-  transition(REVIEW_ACTIVITY_REPORT_STEP, "ActivityReportDenied", REPORT_ACTIVITIES_STEP)
-
-  # --- Transitions: Recalculate hours after activity report ---
-  transition(RECALCULATE_HOURS_STEP, "DeterminedHoursMet", END_STEP)
-  transition(RECALCULATE_HOURS_STEP, "DeterminedHoursInsufficient", REPORT_ACTIVITIES_STEP)
+  transition(REVIEW_ACTIVITY_REPORT_STEP, "ActivityReportApproved", END_STEP)
+  transition(REVIEW_ACTIVITY_REPORT_STEP, "ActivityReportDenied", END_STEP)
 
   # --- Transitions: Exemption claim workflow ---
   transition(REPORT_ACTIVITIES_STEP, "ExemptionApplicationFormSubmitted", REVIEW_EXEMPTION_CLAIM_STEP)

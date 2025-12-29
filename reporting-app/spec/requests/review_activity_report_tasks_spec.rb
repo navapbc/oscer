@@ -22,11 +22,14 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
   describe "PATCH /update" do
     context "with approve action" do
       before do
-        # Stub determination service to simulate compliant result (sufficient hours)
-        allow(HoursComplianceDeterminationService).to receive(:determine_after_activity_report) do |k|
-          k.close!
-          Strata::EventManager.publish("DeterminedHoursMet", { case_id: k.id, certification_id: k.certification_id })
-        end
+        # Stub aggregate_hours_for_certification for the model's accept method
+        allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
+          total_hours: 85,
+          hours_by_category: {},
+          hours_by_source: { ex_parte: 85, activity: 0 },
+          ex_parte_activity_ids: [],
+          activity_ids: []
+        })
         patch review_activity_report_task_url(task), params: { review_activity_report_task: { activity_report_decision: "yes" } }
       end
 
@@ -50,7 +53,17 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
     end
 
     context "with not acceptable action" do
-      before { patch review_activity_report_task_url(task), params: { review_activity_report_task: { activity_report_decision: "no-not-acceptable" } } }
+      before do
+        # Stub aggregate_hours_for_certification for the model's deny method
+        allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
+          total_hours: 40,
+          hours_by_category: {},
+          hours_by_source: { ex_parte: 40, activity: 0 },
+          ex_parte_activity_ids: [],
+          activity_ids: []
+        })
+        patch review_activity_report_task_url(task), params: { review_activity_report_task: { activity_report_decision: "no-not-acceptable" } }
+      end
 
       it "marks task as completed" do
         task.reload
@@ -58,12 +71,12 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
         expect(task).to be_completed
       end
 
-      it "marks case as denied and returns to report_activities (member can resubmit)" do
+      it "marks case as denied and transitions to end (not compliant)" do
         kase.reload
 
         expect(kase.activity_report_approval_status).to eq("denied")
-        expect(kase.business_process_instance.current_step).to eq("report_activities")
-        expect(kase).to be_open
+        expect(kase.business_process_instance.current_step).to eq("end")
+        expect(kase).to be_closed
       end
 
       it "redirects back to the task" do

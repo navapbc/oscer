@@ -8,7 +8,8 @@
 # - DeterminedHoursMet → compliant_email
 # - DeterminedActionRequired → action_required_email
 # - DeterminedHoursInsufficient → insufficient_hours_email
-# - ActivityReportDenied → insufficient_hours_email
+# - ActivityReportApproved → compliant_email (reviewer determined compliance)
+# - ActivityReportDenied → insufficient_hours_email (reviewer determined non-compliance)
 class NotificationsEventListener
   class << self
     def subscribe
@@ -16,6 +17,7 @@ class NotificationsEventListener
       Strata::EventManager.subscribe("DeterminedHoursMet", method(:handle_compliant))
       Strata::EventManager.subscribe("DeterminedActionRequired", method(:handle_action_required))
       Strata::EventManager.subscribe("DeterminedHoursInsufficient", method(:handle_insufficient_hours))
+      Strata::EventManager.subscribe("ActivityReportApproved", method(:handle_activity_report_approved))
       Strata::EventManager.subscribe("ActivityReportDenied", method(:handle_activity_report_denied))
     end
 
@@ -52,8 +54,14 @@ class NotificationsEventListener
       )
     end
 
+    def handle_activity_report_approved(event)
+      # Reviewer approved = member is compliant
+      certification = fetch_certification(event)
+      send_notification(certification, :compliant_email)
+    end
+
     def handle_activity_report_denied(event)
-      # Activity report denied triggers the same email as insufficient hours
+      # Reviewer denied = member is not compliant
       handle_insufficient_hours(event)
     end
 

@@ -29,6 +29,7 @@ RSpec.describe NotificationsEventListener, type: :service do
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedHoursMet", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedActionRequired", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedHoursInsufficient", anything)
+      expect(Strata::EventManager).to have_received(:subscribe).with("ActivityReportApproved", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("ActivityReportDenied", anything)
     end
   end
@@ -115,6 +116,21 @@ RSpec.describe NotificationsEventListener, type: :service do
             target_hours: HoursComplianceDeterminationService::TARGET_HOURS
           },
           :insufficient_hours_email,
+          [ certification.member_email ]
+        )
+      end
+    end
+
+    describe "#handle_activity_report_approved" do
+      it "sends compliant_email notification" do
+        event = { payload: { case_id: certification_case.id } }
+
+        described_class.send(:handle_activity_report_approved, event)
+
+        expect(NotificationService).to have_received(:send_email_notification).with(
+          MemberMailer,
+          { certification: certification },
+          :compliant_email,
           [ certification.member_email ]
         )
       end
