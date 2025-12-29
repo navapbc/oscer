@@ -10,7 +10,7 @@ class ExemptionApplicationForm < Strata::ApplicationForm
 
   has_many_attached :supporting_documents
 
-  default_scope { with_attached_supporting_documents; includes(:determinations) }
+  default_scope { with_attached_supporting_documents.includes(:determinations) }
 
   strata_attribute :exemption_type, :string
 

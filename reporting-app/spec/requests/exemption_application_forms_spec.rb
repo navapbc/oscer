@@ -167,4 +167,30 @@ RSpec.describe "/exemption_application_forms", type: :request do
       expect(response).to be_successful
     end
   end
+
+
+  describe "POST /upload_documents" do
+    let(:file) do
+      fixture_file_upload(
+        Rails.root.join(
+          'spec',
+          'fixtures',
+          'files',
+          'test_document_1.pdf'
+        ),
+        'application/pdf'
+      )
+    end
+
+    context "when the user is authorized" do
+      it "uploads the document successfully" do
+        post upload_documents_exemption_application_form_path(existing_exemption_application_form),
+          params: { exemption_application_form: { supporting_documents: [ file ] } }
+        expect(response).to redirect_to(documents_exemption_application_form_path(existing_exemption_application_form))
+        follow_redirect!
+        expect(response).to have_http_status(:ok)
+        expect(existing_exemption_application_form.reload.supporting_documents.attached?).to be true
+      end
+    end
+  end
 end
