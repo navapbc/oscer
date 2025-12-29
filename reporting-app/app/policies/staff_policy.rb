@@ -7,6 +7,10 @@ class StaffPolicy < ApplicationPolicy
     staff?
   end
 
+  def closed?
+    staff?
+  end
+
   def show?
     staff?
   end
