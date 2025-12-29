@@ -99,7 +99,7 @@ Rails.application.routes.draw do
     end
   end
 
-  get "/staff", to: "staff#index"
+  get "/staff", to: "staff/dashboard#index"
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
