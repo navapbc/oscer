@@ -2,6 +2,8 @@
 
 class InformationRequestsController < StaffController
   def show
-    @information_request = InformationRequest.find(params[:id])
+    # Explicitly use InformationRequestPolicy for staff access
+    # (The STI subclass policies are for member access only)
+    @information_request = authorize InformationRequest.find(params[:id]), policy_class: InformationRequestPolicy
   end
 end

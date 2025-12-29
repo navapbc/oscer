@@ -5,8 +5,15 @@ require 'rails_helper'
 RSpec.describe "/information_requests", type: :request do
   include Warden::Test::Helpers
 
-  let(:user) { create(:user, :as_admin) }
-  let(:certification_case) { create(:certification_case) }
+  let(:region) { "north" }
+  let(:user) { create(:user, :as_admin, region: region) }
+  let(:certification) do
+    create(
+      :certification,
+      certification_requirements: build(:certification_certification_requirements, region: region)
+    )
+  end
+  let(:certification_case) { create(:certification_case, certification_id: certification.id) }
   let(:application_form) do
     build(
       form_type,
