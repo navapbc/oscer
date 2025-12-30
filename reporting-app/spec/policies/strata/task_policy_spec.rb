@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe TaskPolicy, type: :policy do
+RSpec.describe Strata::TaskPolicy, type: :policy do
   subject { described_class.new(user, record) }
 
   let(:region) { "Southeast" }
