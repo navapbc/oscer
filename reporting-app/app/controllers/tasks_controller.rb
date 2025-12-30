@@ -29,6 +29,7 @@ class TasksController < Strata::TasksController
   # which doesn't filter by region, so we override to inject policy_scope.
   def pick_up_next_task
     # Scope tasks to user's region before finding next unassigned task
+    # Default scope on Strata::Task is ordered by :due_on
     task = policy_scope(Strata::Task).incomplete.unassigned.first
 
     if task && task.assign(current_user.id)

@@ -53,9 +53,5 @@ module Strata
     def in_region?
       user.region == ::TaskService.get_region_for_task(record)
     end
-
-    def staff_in_region?
-      staff? && in_region?
-    end
   end
 end
