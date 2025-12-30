@@ -8,14 +8,34 @@ RSpec.describe CertificationCase, type: :model do
   describe '#accept_activity_report' do
     before do
       allow(Strata::EventManager).to receive(:publish)
+      allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
+        total_hours: 85,
+        hours_by_category: { "education" => 50, "employment" => 35 },
+        hours_by_source: { ex_parte: 40, activity: 45 },
+        ex_parte_activity_ids: [ "ex-1" ],
+        activity_ids: [ "act-1" ]
+      })
     end
 
-    it 'sets approval status' do
+    it 'sets approval status and closes case' do
       certification_case.accept_activity_report
       certification_case.reload
 
       expect(certification_case.activity_report_approval_status).to eq("approved")
       expect(certification_case.activity_report_approval_status_updated_at).to be_present
+      expect(certification_case).to be_closed
+    end
+
+    it 'records compliant determination' do
+      certification_case.accept_activity_report
+
+      determination = Determination.first
+
+      expect(determination.decision_method).to eq("manual")
+      expect(determination.reasons).to include("hours_reported_compliant")
+      expect(determination.outcome).to eq("compliant")
+      expect(determination.determined_at).to be_present
+      expect(determination.determination_data["total_hours"]).to eq(85)
     end
 
     it 'publishes ActivityReportApproved event' do
@@ -26,24 +46,39 @@ RSpec.describe CertificationCase, type: :model do
         { case_id: certification_case.id }
       )
     end
-
-    it 'does not close the case (business process handles that)' do
-      certification_case.accept_activity_report
-      certification_case.reload
-
-      expect(certification_case).not_to be_closed
-    end
   end
 
   describe '#deny_activity_report' do
-    before { allow(Strata::EventManager).to receive(:publish) }
+    before do
+      allow(Strata::EventManager).to receive(:publish)
+      allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
+        total_hours: 40,
+        hours_by_category: { "education" => 40 },
+        hours_by_source: { ex_parte: 30, activity: 10 },
+        ex_parte_activity_ids: [ "ex-1" ],
+        activity_ids: [ "act-1" ]
+      })
+    end
 
-    it 'sets denial status' do
+    it 'sets denial status and closes case' do
       certification_case.deny_activity_report
       certification_case.reload
 
       expect(certification_case.activity_report_approval_status).to eq("denied")
       expect(certification_case.activity_report_approval_status_updated_at).to be_present
+      expect(certification_case).to be_closed
+    end
+
+    it 'records not_compliant determination' do
+      certification_case.deny_activity_report
+
+      determination = Determination.first
+
+      expect(determination.decision_method).to eq("manual")
+      expect(determination.reasons).to include("hours_reported_insufficient")
+      expect(determination.outcome).to eq("not_compliant")
+      expect(determination.determined_at).to be_present
+      expect(determination.determination_data["total_hours"]).to eq(40)
     end
 
     it 'publishes ActivityReportDenied event' do
@@ -53,13 +88,6 @@ RSpec.describe CertificationCase, type: :model do
         "ActivityReportDenied",
         { case_id: certification_case.id }
       )
-    end
-
-    it 'does not close the case (member can resubmit)' do
-      certification_case.deny_activity_report
-      certification_case.reload
-
-      expect(certification_case).not_to be_closed
     end
   end
 

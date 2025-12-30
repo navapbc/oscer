@@ -28,17 +28,43 @@ class CertificationCase < Strata::Case
   }
 
   def accept_activity_report
-    self.activity_report_approval_status = "approved"
-    self.activity_report_approval_status_updated_at = Time.current
-    save!
+    certification = Certification.find(certification_id)
+    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
+
+    transaction do
+      self.activity_report_approval_status = "approved"
+      self.activity_report_approval_status_updated_at = Time.current
+      close!
+
+      certification.record_determination!(
+        decision_method: :manual,
+        reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_compliant] ],
+        outcome: :compliant,
+        determination_data: build_hours_determination_data(hours_data),
+        determined_at: certification.certification_requirements.certification_date
+      )
+    end
 
     Strata::EventManager.publish("ActivityReportApproved", { case_id: id })
   end
 
   def deny_activity_report
-    self.activity_report_approval_status = "denied"
-    self.activity_report_approval_status_updated_at = Time.current
-    save!
+    certification = Certification.find(certification_id)
+    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
+
+    transaction do
+      self.activity_report_approval_status = "denied"
+      self.activity_report_approval_status_updated_at = Time.current
+      close!
+
+      certification.record_determination!(
+        decision_method: :manual,
+        reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_insufficient] ],
+        outcome: :not_compliant,
+        determination_data: build_hours_determination_data(hours_data),
+        determined_at: certification.certification_requirements.certification_date
+      )
+    end
 
     Strata::EventManager.publish("ActivityReportDenied", { case_id: id })
   end

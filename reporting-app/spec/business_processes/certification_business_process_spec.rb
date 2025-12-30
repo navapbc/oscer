@@ -11,7 +11,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     allow(Strata::EventManager).to receive(:publish).and_call_original
     allow(NotificationService).to receive(:send_email_notification)
 
-    # Stub hours compliance service for initial check - not_compliant triggers notification step
+    # Stub hours compliance service for initial check
     allow(HoursComplianceDeterminationService).to receive(:determine) do |kase|
       Strata::EventManager.publish("DeterminedActionRequired", {
         case_id: kase.id,
@@ -19,22 +19,14 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       })
     end
 
-    # Stub for after activity report approval - default to compliant
-    allow(HoursComplianceDeterminationService).to receive(:determine_after_activity_report) do |kase|
-      certification = Certification.find(kase.certification_id)
-      kase.close!
-      certification.record_determination!(
-        decision_method: :automated,
-        reasons: [ "hours_reported_compliant" ],
-        outcome: :compliant,
-        determination_data: { total_hours: 85 },
-        determined_at: Time.current
-      )
-      Strata::EventManager.publish("DeterminedHoursMet", {
-        case_id: kase.id,
-        certification_id: kase.certification_id
+    # Stub aggregate_hours_for_certification for the model's accept/deny methods
+    allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
+        total_hours: 85,
+        hours_by_category: {},
+        hours_by_source: { ex_parte: 85, activity: 0 },
+        ex_parte_activity_ids: [],
+        activity_ids: []
       })
-    end
   end
 
   describe 'ex_parte_exemption_check' do
@@ -154,16 +146,16 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         certification_case.reload
       end
 
-      it 'transitions back to report_activities step (member can resubmit)' do
-        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::REPORT_ACTIVITIES_STEP)
+      it 'transitions to end step' do
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
       end
 
-      it 'keeps member status as awaiting_report' do
-        expect(certification_case.member_status).to eq(MemberStatus::AWAITING_REPORT)
+      it 'sets member status to not_compliant' do
+        expect(certification_case.member_status).to eq(MemberStatus::NOT_COMPLIANT)
       end
 
-      it 'keeps the case open' do
-        expect(certification_case).not_to be_closed
+      it 'closes the case' do
+        expect(certification_case).to be_closed
       end
     end
   end
@@ -243,10 +235,10 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
              period_start: lookback.start.to_date,
              period_end: lookback.start.to_date.end_of_month)
 
-      # Approve activity report - triggers recalculation which publishes DeterminedHoursMet
+      # Approve activity report - reviewer determines compliance
       expect {
         certification_case.accept_activity_report
-      }.to have_published_event("DeterminedHoursMet")
+      }.to have_published_event("ActivityReportApproved")
     end
 
     it 'publishes exemption events' do
