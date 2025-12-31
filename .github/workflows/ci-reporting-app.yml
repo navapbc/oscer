@@ -44,7 +44,7 @@ jobs:
       - run: make precompile-assets
 
       - name: Start tests
-        run: make test-coverage
+        run: make test
 
       - name: Upload coverage report
         if: always()
