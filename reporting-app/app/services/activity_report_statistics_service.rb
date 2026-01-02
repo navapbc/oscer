@@ -9,6 +9,8 @@ class ActivityReportStatisticsService
   MINIMUM_MONTHLY_INCOME = ActivityReportApplicationForm::MINIMUM_MONTHLY_INCOME
 
   class << self
+  include ActivityAggregator
+
     # Build monthly statistics combining self-reported and ex parte activities
     # @param activity_report [ActivityReportApplicationForm]
     # @param certification [Certification]
@@ -17,7 +19,7 @@ class ActivityReportStatisticsService
       # Eager load activities to avoid strict_loading violation
       activities = Activity.where(activity_report_application_form_id: activity_report.id)
       activities_by_month = activities.group_by(&:month)
-      ex_parte_by_month = build_ex_parte_by_month(certification)
+      ex_parte_by_month = allocate_ex_parte_activities_by_month(fetch_ex_parte_activities(certification))
 
       # Get all months from both sources
       all_months = (activities_by_month.keys + ex_parte_by_month.keys).uniq
@@ -30,27 +32,7 @@ class ActivityReportStatisticsService
       end
     end
 
-    # Fetch ex parte activities for a certification
-    # @param certification [Certification]
-    # @return [ActiveRecord::Relation<ExParteActivity>]
-    def fetch_ex_parte_activities(certification)
-      return ExParteActivity.none unless certification&.member_id
-
-      lookback_period = certification.certification_requirements.continuous_lookback_period
-      ExParteActivity.for_member(certification.member_id).within_period(lookback_period)
-    end
-
     private
-
-    def build_ex_parte_by_month(certification)
-      result = Hash.new { |h, k| h[k] = [] }
-
-      fetch_ex_parte_activities(certification).each do |activity|
-        allocate_activity_to_months(activity, result)
-      end
-
-      result
-    end
 
     def build_month_stats(activities, ex_parte_data)
       hourly_activities = activities.select { |act| act.is_a?(WorkActivity) }
@@ -72,37 +54,6 @@ class ActivityReportStatisticsService
         remaining_hours: [ MINIMUM_MONTHLY_HOURS - summed_hours, 0 ].max,
         remaining_income: [ MINIMUM_MONTHLY_INCOME - summed_income, 0 ].max
       }
-    end
-
-    # Allocate an ex parte activity's hours across the months it spans
-    # @param activity [ExParteActivity]
-    # @param result [Hash] accumulator for monthly allocations
-    def allocate_activity_to_months(activity, result)
-      start_date = activity.period_start
-      end_date = activity.period_end
-      total_days = (end_date - start_date).to_i + 1
-
-      current_date = start_date
-      while current_date <= end_date
-        month_start = [ current_date, current_date.beginning_of_month ].max
-        month_end = [ end_date, current_date.end_of_month ].min
-        days_in_month = (month_end - month_start).to_i + 1
-
-        # Calculate proportional hours for this month
-        hours_for_month = (activity.hours * days_in_month / total_days.to_f).round(2)
-
-        # Use Date (first day of month) as key
-        month_key = Date.new(current_date.year, current_date.month, 1)
-
-        result[month_key] << {
-          activity: activity,
-          allocated_hours: hours_for_month,
-          days_in_month: days_in_month
-        }
-
-        # Move to next month
-        current_date = current_date.next_month.beginning_of_month
-      end
     end
   end
 end

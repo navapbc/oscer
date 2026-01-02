@@ -268,6 +268,20 @@ RSpec.describe HoursComplianceDeterminationService do
     end
   end
 
+  describe ".summarize_hours" do
+    context "when activities are blank" do
+      it "returns a summary with zeroed values" do
+        summary = described_class.summarize_hours(ExParteActivity.none)
+
+        expect(summary).to eq({
+          total: 0.0,
+          by_category: {},
+          ids: []
+        })
+      end
+    end
+  end
+
   describe "TARGET_HOURS" do
     it "defaults to 80" do
       expect(described_class::TARGET_HOURS).to eq(80)
