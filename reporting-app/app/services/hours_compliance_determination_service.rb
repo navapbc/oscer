@@ -4,6 +4,8 @@ class HoursComplianceDeterminationService
   TARGET_HOURS = ENV.fetch("CE_TARGET_MONTHLY_HOURS", 80).to_i
 
   class << self
+    include ActivityAggregator
+
     # Called by CertificationBusinessProcess at EX_PARTE_CE_CHECK step (initial check)
     # Publishes different events based on whether ex parte hours exist:
     # - DeterminedActionRequired: No ex parte hours found, member needs to report from scratch
@@ -63,9 +65,11 @@ class HoursComplianceDeterminationService
     # @param certification [Certification]
     # @return [Hash] with total_hours, hours_by_category, hours_by_source, etc.
     def aggregate_hours_for_certification(certification)
-      lookback_period = certification.certification_requirements.continuous_lookback_period
-      ex_parte_hours = aggregate_ex_parte_hours(certification.member_id, lookback_period)
-      member_hours = aggregate_member_hours(certification)
+      ex_parte_activities = fetch_ex_parte_activities(certification)
+      member_activities = fetch_member_activities(certification).where.not(hours: nil)
+
+      ex_parte_hours = summarize_hours(ex_parte_activities)
+      member_hours = summarize_hours(member_activities)
 
       {
         total_hours: ex_parte_hours[:total] + member_hours[:total],
@@ -107,36 +111,6 @@ class HoursComplianceDeterminationService
 
     def determine_outcome(total_hours)
       total_hours >= TARGET_HOURS ? :compliant : :not_compliant
-    end
-
-    def aggregate_ex_parte_hours(member_id, lookback_period)
-      entries = ExParteActivity.for_member(member_id).within_period(lookback_period)
-
-      {
-        total: entries.sum(:hours).to_f,
-        by_category: entries.group(:category).sum(:hours).transform_values(&:to_f),
-        ids: entries.pluck(:id)
-      }
-    end
-
-    def aggregate_member_hours(certification)
-      # Only include hours from approved activity reports (member-reported hours)
-      certification_case = CertificationCase.find_by(certification_id: certification.id)
-      return empty_hours_result unless certification_case
-
-      form = ActivityReportApplicationForm.find_by(certification_case_id: certification_case.id)
-      return empty_hours_result unless form
-
-      activities = form.activities.where.not(hours: nil)
-      {
-        total: activities.sum(:hours).to_f,
-        by_category: activities.group(:category).sum(:hours).transform_values(&:to_f),
-        ids: activities.pluck(:id)
-      }
-    end
-
-    def empty_hours_result
-      { total: 0.0, by_category: {}, ids: [] }
     end
 
     def merge_category_hours(ex_parte, member)
