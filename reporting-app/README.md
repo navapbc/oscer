@@ -13,6 +13,7 @@ This is a [Ruby on Rails](https://rubyonrails.org/) application. It includes:
 - Authorization using [pundit](https://github.com/varvet/pundit)
 - Linting and code formatting using [rubocop](https://rubocop.org/)
 - Testing using [rspec](https://rspec.info)
+- Code coverage analysis using [SimpleCov](https://github.com/simplecov-ruby/simplecov)
 
 ## 📂 Directory structure
 
@@ -97,6 +98,16 @@ To run natively:
 
 1. `make start-native`
 1. Then visit http://localhost:3000
+
+#### Testing & Coverage
+
+To run the test suite:
+
+1. `make test`
+
+The project uses [SimpleCov](https://github.com/simplecov-ruby/simplecov) with branch coverage enabled. CI will fail if coverage drops below the following thresholds:
+- Line Coverage: 92%
+- Branch Coverage: 70%
 
 #### Local Authentication
 
