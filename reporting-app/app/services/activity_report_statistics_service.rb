@@ -9,7 +9,7 @@ class ActivityReportStatisticsService
   MINIMUM_MONTHLY_INCOME = ActivityReportApplicationForm::MINIMUM_MONTHLY_INCOME
 
   class << self
-  include ActivityAggregator
+    include ActivityAggregator
 
     # Build monthly statistics combining self-reported and ex parte activities
     # @param activity_report [ActivityReportApplicationForm]
