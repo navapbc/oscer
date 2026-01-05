@@ -43,7 +43,7 @@ RSpec.describe CertificationCase, type: :model do
 
       expect(Strata::EventManager).to have_received(:publish).with(
         "ActivityReportApproved",
-        { case_id: certification_case.id }
+        { case_id: certification_case.id, certification_id: certification_case.certification_id }
       )
     end
   end
@@ -86,7 +86,7 @@ RSpec.describe CertificationCase, type: :model do
 
       expect(Strata::EventManager).to have_received(:publish).with(
         "ActivityReportDenied",
-        { case_id: certification_case.id }
+        { case_id: certification_case.id, certification_id: certification_case.certification_id }
       )
     end
   end
@@ -116,7 +116,7 @@ RSpec.describe CertificationCase, type: :model do
 
       expect(Strata::EventManager).to have_received(:publish).with(
         "DeterminedExempt",
-        { case_id: certification_case.id }
+        { case_id: certification_case.id, certification_id: certification_case.certification_id }
       )
     end
   end
@@ -137,7 +137,7 @@ RSpec.describe CertificationCase, type: :model do
 
       expect(Strata::EventManager).to have_received(:publish).with(
         "DeterminedNotExempt",
-        { case_id: certification_case.id }
+        { case_id: certification_case.id, certification_id: certification_case.certification_id }
       )
     end
   end

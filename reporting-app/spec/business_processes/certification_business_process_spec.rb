@@ -63,7 +63,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
 
         # Step 2: System process determines applicant is eligible for exemption
         certification_case.record_exemption_determination(eligibility_fact)
-        Strata::EventManager.publish("DeterminedExempt", { case_id: certification_case.id })
+        Strata::EventManager.publish("DeterminedExempt", { case_id: certification_case.id, certification_id: certification_case.certification_id })
         certification_case.reload
 
         expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
@@ -87,7 +87,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         expect(certification_case).to be_open
 
         # Step 2: System process determines applicant is not eligible for exemption
-        Strata::EventManager.publish("DeterminedNotExempt", { case_id: certification_case.id })
+        Strata::EventManager.publish("DeterminedNotExempt", { case_id: certification_case.id, certification_id: certification_case.certification_id })
         certification_case.reload
 
         # Case transitions to report_activities step is hardcoded in the business process

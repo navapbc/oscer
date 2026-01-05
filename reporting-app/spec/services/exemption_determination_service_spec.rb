@@ -21,7 +21,7 @@ RSpec.describe ExemptionDeterminationService do
 
       it 'publishes DeterminedExempt event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'closes the case' do
@@ -48,7 +48,7 @@ RSpec.describe ExemptionDeterminationService do
 
       it 'publishes DeterminedExempt event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'closes the case' do
@@ -75,7 +75,7 @@ RSpec.describe ExemptionDeterminationService do
 
       it 'publishes DeterminedNotExempt event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'does not close the case' do
@@ -96,7 +96,7 @@ RSpec.describe ExemptionDeterminationService do
 
       it 'publishes DeterminedNotExempt event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'does not close the case' do
@@ -117,7 +117,7 @@ RSpec.describe ExemptionDeterminationService do
 
       it 'publishes DeterminedNotExempt event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'does not close the case' do
@@ -139,7 +139,7 @@ RSpec.describe ExemptionDeterminationService do
       it 'publishes DeterminedNotExempt event' do
         allow(Rails.logger).to receive(:warn)
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'does not close the case' do
@@ -157,7 +157,7 @@ RSpec.describe ExemptionDeterminationService do
 
       it 'publishes DeterminedExempt event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'closes the case' do
@@ -186,7 +186,7 @@ RSpec.describe ExemptionDeterminationService do
 
       it 'publishes DeterminedNotExempt event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'does not close the case' do
@@ -209,7 +209,7 @@ RSpec.describe ExemptionDeterminationService do
 
       it 'publishes DeterminedExempt event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'closes the case' do
@@ -238,7 +238,7 @@ RSpec.describe ExemptionDeterminationService do
 
       it 'publishes DeterminedNotExempt event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'does not close the case' do

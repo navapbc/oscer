@@ -12,9 +12,9 @@ class ExemptionDeterminationService
 
       if eligibility_fact.value
         kase.record_exemption_determination(eligibility_fact)
-        Strata::EventManager.publish("DeterminedExempt", { case_id: kase.id })
+        Strata::EventManager.publish("DeterminedExempt", { case_id: kase.id, certification_id: kase.certification_id })
       else
-        Strata::EventManager.publish("DeterminedNotExempt", { case_id: kase.id })
+        Strata::EventManager.publish("DeterminedNotExempt", { case_id: kase.id, certification_id: kase.certification_id })
       end
     end
 
