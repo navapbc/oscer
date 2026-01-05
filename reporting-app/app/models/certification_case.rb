@@ -45,7 +45,7 @@ class CertificationCase < Strata::Case
       )
     end
 
-    Strata::EventManager.publish("ActivityReportApproved", { case_id: id })
+    Strata::EventManager.publish("ActivityReportApproved", { case_id: id, certification_id: certification_id })
   end
 
   def deny_activity_report
@@ -66,7 +66,7 @@ class CertificationCase < Strata::Case
       )
     end
 
-    Strata::EventManager.publish("ActivityReportDenied", { case_id: id })
+    Strata::EventManager.publish("ActivityReportDenied", { case_id: id, certification_id: certification_id })
   end
 
   def accept_exemption_request
@@ -87,7 +87,7 @@ class CertificationCase < Strata::Case
       )
     end
 
-    Strata::EventManager.publish("DeterminedExempt", { case_id: id })
+    Strata::EventManager.publish("DeterminedExempt", { case_id: id, certification_id: certification_id })
   end
 
   def deny_exemption_request
@@ -95,7 +95,7 @@ class CertificationCase < Strata::Case
     self.exemption_request_approval_status_updated_at = Time.current
     save!
 
-    Strata::EventManager.publish("DeterminedNotExempt", { case_id: id })
+    Strata::EventManager.publish("DeterminedNotExempt", { case_id: id, certification_id: certification_id })
   end
 
   # Called by ExemptionDeterminationService to record exemption determination
