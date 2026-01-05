@@ -40,7 +40,7 @@ RSpec.describe NotificationsEventListener, type: :service do
 
     describe "#handle_exempt" do
       it "sends exempt_email notification" do
-        event = { payload: { case_id: certification_case.id } }
+        event = { payload: { case_id: certification_case.id, certification_id: certification.id } }
 
         described_class.send(:handle_exempt, event)
 
@@ -123,7 +123,7 @@ RSpec.describe NotificationsEventListener, type: :service do
 
     describe "#handle_activity_report_approved" do
       it "sends compliant_email notification" do
-        event = { payload: { case_id: certification_case.id } }
+        event = { payload: { case_id: certification_case.id, certification_id: certification.id } }
 
         described_class.send(:handle_activity_report_approved, event)
 
@@ -142,7 +142,7 @@ RSpec.describe NotificationsEventListener, type: :service do
           .with(certification)
           .and_return({ total_hours: 30, hours_by_source: { ex_parte: 30, activity: 0 } })
 
-        event = { payload: { case_id: certification_case.id } }
+        event = { payload: { case_id: certification_case.id, certification_id: certification.id } }
 
         described_class.send(:handle_activity_report_denied, event)
 
