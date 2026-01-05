@@ -34,8 +34,7 @@ class HoursComplianceDeterminationService
         # No ex parte hours found - send action required email
         Strata::EventManager.publish("DeterminedActionRequired", {
           case_id: kase.id,
-          certification_id: certification.id,
-          hours_data: hours_data
+          certification_id: certification.id
         })
       end
     end
