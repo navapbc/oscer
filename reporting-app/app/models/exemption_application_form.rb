@@ -1,11 +1,8 @@
 # frozen_string_literal: true
 
 class ExemptionApplicationForm < Strata::ApplicationForm
-  enum :exemption_type, {
-    short_term_hardship: "short_term_hardship",
-    incarceration: "incarceration"
-  }
-  validates :exemption_type, inclusion: { in: exemption_types.values }, allow_nil: true
+  enum :exemption_type, ExemptionTypeConfig.enum_hash
+  validates :exemption_type, inclusion: { in: ExemptionTypeConfig.valid_values }, allow_nil: true
   validates :certification_case_id, uniqueness: true
 
   has_many_attached :supporting_documents
