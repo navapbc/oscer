@@ -1,22 +1,45 @@
 en:
   exemption_screener:
     index:
-      back: "Back to Home"
-      title: "Self-assessment"
-      header: "Tell us about your situation"
-      intro: "You may be exempt from activity reporting if you meet certain criteria. Depending on the exemption, you’ll need to upload documents that prove your exempt status. This information is only used to help determine which exemptions you may be eligible for."
-      request_exemption_button: "Apply for an exemption"
-      report_activities_button: "Report activities"
-      prompt:
-        start: "Since %{reporting_period_start_date}, have you..."
-        item_1:
-          title: "Had a serious medical condition"
-          subtitle: "You have a health issue that limits your ability to work."
-        item_2:
-          title: "Been treated for a substance-use disorder"
-          subtitle: "You’re in treatment or recovery that limits your ability to work or do activities."
-        item_3:
-          title: "Been released from jail or prison"
-          # TODO: is it always "last 30 days"? Or at any point during the reporting period?
-          subtitle: "You have been incarcerated within the last 30 days."
-        conclusion: "If so, you may be eligible for an exemption to Community Engagement activity reporting requirements. If not, you will need to report your Community Engagement activities."
+      title: "Tell us about your situation"
+      back_to_dashboard: "Back to Dashboard"
+      heading: "Tell us about your situation"
+      description: "Answer a few questions to see if you may qualify for an exemption from reporting community engagement activities."
+      buttons:
+        start: "Start"
+
+    show:
+      title: "Exemption Screener"
+      back_to_dashboard: "Back to Dashboard"
+      buttons:
+        no_answer: "No"
+        submit: "Continue"
+        back_to_previous: "Previous Question"
+        back: "Back"
+
+    may_qualify:
+      title: "You May Qualify for an Exemption"
+      back_to_dashboard: "Back to Dashboard"
+      heading: "You may qualify for an exemption"
+      documentation_heading: "Required documentation"
+      buttons:
+        request_exemption: "Request an exemption"
+        start_over: "Start over"
+
+    complete:
+      title: "Exemption Screening Complete"
+      back_to_dashboard: "Back to Dashboard"
+      heading: "Based on your answers, you likely need to report activities"
+      description: "You indicated that none of the exemption categories apply to your current situation. To meet your certification requirements, you'll need to report your community engagement activities."
+      buttons:
+        start_over: "Start over"
+        report_activities: "Report activities"
+
+    errors:
+      no_certification_case: "Unable to access exemption screener. Please return to your dashboard."
+      application_exists: "You already have an exemption application for this certification period."
+      invalid_question: "Invalid question. Please start the screener again."
+      creation_failed: "Unable to create your exemption application. Please try again."
+
+    success:
+      application_created: "Your exemption application has been started."

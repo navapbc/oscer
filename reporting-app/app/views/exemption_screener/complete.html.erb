@@ -19,12 +19,14 @@
       <%= t(".description") %>
     </p>
 
-    <%= link_to t(".buttons.start"),
-      exemption_screener_question_path(
-        exemption_type: @first_exemption_type,
-        question_index: 0,
-        certification_case_id: @certification_case.id
-      ),
-      class: "usa-button usa-button--big" %>
+    <div class="usa-button-group">
+      <%= link_to t(".buttons.start_over"),
+        exemption_screener_path(certification_case_id: @certification_case.id),
+        class: "usa-button usa-button--big usa-button--outline" %>
+
+      <%= link_to t(".buttons.report_activities"),
+        new_activity_report_application_form_path(certification_case_id: @certification_case.id),
+        class: "usa-button usa-button--big" %>
+    </div>
   </main>
 </div>
