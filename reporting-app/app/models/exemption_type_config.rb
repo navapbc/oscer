@@ -7,40 +7,40 @@ class ExemptionTypeConfig
     end
 
     def enabled
-      all.select { |_, v| v[:enabled] }
+      all.select { |t| t[:enabled] }
     end
 
     def enum_hash
-      all.keys.index_with(&:to_s)
+      all.map { |t| t[:id] }.index_with(&:to_s)
     end
 
     def valid_values
-      all.keys.map(&:to_s)
+      all.map { |t| t[:id] }.map(&:to_s)
     end
 
     def find(type)
-      all[type.to_sym]
+      all.find { |t| t[:id] == type.to_sym }
     end
 
     def question_for(type)
-      config = find(type)
-      return nil unless config
+      exemption_type = find(type)
+      return nil unless exemption_type
 
-      I18n.t("exemption_types.#{type}.question", default: config[:question])
+      I18n.t("exemption_types.#{exemption_type[:id]}.question", default: exemption_type[:question])
     end
 
     def explanation_for(type)
-      config = find(type)
-      return nil unless config
+      exemption_type = find(type)
+      return nil unless exemption_type
 
-      I18n.t("exemption_types.#{type}.explanation", default: config[:explanation])
+      I18n.t("exemption_types.#{exemption_type[:id]}.explanation", default: exemption_type[:explanation])
     end
 
     def yes_answer_for(type)
-      config = find(type)
-      return nil unless config
+      exemption_type = find(type)
+      return nil unless exemption_type
 
-      I18n.t("exemption_types.#{type}.yes_answer", default: config[:yes_answer])
+      I18n.t("exemption_types.#{exemption_type[:id]}.yes_answer", default: exemption_type[:yes_answer])
     end
   end
 end
