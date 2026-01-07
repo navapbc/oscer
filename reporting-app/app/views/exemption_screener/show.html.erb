@@ -1,0 +1,77 @@
+<% content_for :title, t(".title") %>
+
+<div class="grid-container">
+  <div class="border-bottom padding-bottom-1 margin-bottom-4">
+    <%= link_to(dashboard_path, class: "usa-link") do %>
+      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+        <use xlink:href="<%= asset_path '@uswds/uswds/dist/img/sprite.svg' %>#navigate_before"></use>
+      </svg>
+      <%= t(".back_to_dashboard") %>
+    <% end %>
+  </div>
+
+  <main id="main-content">
+    <h1 class="margin-bottom-2">
+      <%= @current_question["question"] %>
+    </h1>
+
+    <p class="margin-bottom-4">
+      <%= @current_question["explanation"] %>
+    </p>
+
+    <%= form_with(
+      url: exemption_screener_answer_question_path(
+        exemption_type: @current_exemption_type,
+        certification_case_id: @certification_case.id
+      ),
+      method: :post,
+      data: { turbo: false, controller: "exemption-screener" },
+      local: true
+    ) do |f| %>
+
+      <fieldset class="usa-fieldset">
+        <legend class="usa-sr-only">
+          <%= @current_question["question"] %>
+        </legend>
+
+        <div style="max-width: 30rem;">
+          <div class="usa-radio">
+            <%= f.radio_button :answer, "yes", id: "answer-yes", class: "usa-radio__input usa-radio__input--tile", data: { action: "change->exemption-screener#enableSubmit" } %>
+            <%= f.label :answer, value: "yes", for: "answer-yes", class: "usa-radio__label" do %>
+              <%= t(".buttons.yes_answer") %>
+              <span class="usa-radio__label-description"><%= @current_question["yes_answer"] %></span>
+            <% end %>
+          </div>
+
+          <div class="usa-radio">
+            <%= f.radio_button :answer, "no", id: "answer-no", class: "usa-radio__input usa-radio__input--tile", data: { action: "change->exemption-screener#enableSubmit" } %>
+            <%= f.label :answer, t(".buttons.no_answer"), value: "no", for: "answer-no", class: "usa-radio__label" %>
+          </div>
+        </div>
+
+        <div class="usa-button-group margin-top-4">
+          <% if @previous_exemption_type.present? %>
+            <%= link_to exemption_screener_question_path(
+              exemption_type: @previous_exemption_type,
+              certification_case_id: @certification_case.id
+            ), class: "usa-button usa-button--outline" do %>
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                <use xlink:href="<%= asset_path '@uswds/uswds/dist/img/sprite.svg' %>#navigate_before"></use>
+              </svg>
+              <%= t(".buttons.back_to_previous") %>
+            <% end %>
+          <% else %>
+            <%= link_to exemption_screener_path(certification_case_id: @certification_case.id),
+              class: "usa-button usa-button--outline" do %>
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                <use xlink:href="<%= asset_path '@uswds/uswds/dist/img/sprite.svg' %>#navigate_before"></use>
+              </svg>
+              <%= t(".buttons.back") %>
+            <% end %>
+          <% end %>
+          <%= f.submit t(".buttons.submit"), class: "usa-button", data: { exemption_screener_target: "submit" } %>
+        </div>
+      </fieldset>
+    <% end %>
+  </main>
+</div>

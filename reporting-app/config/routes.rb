@@ -29,7 +29,14 @@ Rails.application.routes.draw do
 
   get "/dashboard", to: "dashboard#index"
 
-  get "/exemption-screener", to: "exemption_screener#index"
+  scope path: "/exemption-screener", as: :exemption_screener do
+    get "/", to: "exemption_screener#index"
+    get "/question/:exemption_type", to: "exemption_screener#show", as: :question
+    post "/question/:exemption_type", to: "exemption_screener#answer", as: :answer_question
+    get "/may-qualify/:exemption_type", to: "exemption_screener#may_qualify", as: :may_qualify
+    post "/may-qualify/:exemption_type", to: "exemption_screener#create_application", as: :create_application
+    get "/complete", to: "exemption_screener#complete", as: :complete
+  end
 
   scope path: "/api", as: :api, defaults: { format: :json } do
     mount OasRails::Engine, at: "/docs", defaults: { format: :html }
