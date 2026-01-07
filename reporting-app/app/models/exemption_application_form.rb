@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
 class ExemptionApplicationForm < Strata::ApplicationForm
+  # TODO: Remove when revising the old exemption screener flow
+  LEGACY_EXEMPTION_TYPES = %w[short_term_hardship incarceration].freeze
+
   enum :exemption_type, ExemptionTypeConfig.enum_hash
-  validates :exemption_type, inclusion: { in: ExemptionTypeConfig.valid_values }, allow_nil: true
+  validates :exemption_type, inclusion: { in: ExemptionTypeConfig.valid_values + LEGACY_EXEMPTION_TYPES }, allow_nil: true
   validates :certification_case_id, uniqueness: true
 
   has_many_attached :supporting_documents
