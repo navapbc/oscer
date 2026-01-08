@@ -44,9 +44,14 @@ class Exemption
       exemption_type = find(type)
       return nil unless exemption_type
 
-      # If default is an array, I18n will try each element as a key.
-      # To return the whole array as a default, we wrap it.
-      I18n.t("exemption_types.#{exemption_type[:id]}.supporting_documents", default: [ exemption_type[:supporting_documents] ])
+      key = "exemption_types.#{exemption_type[:id]}.supporting_documents"
+      # Check if translation exists; if not, return the array directly
+      # This avoids I18n's inconsistent handling of array defaults
+      if I18n.exists?(key)
+        I18n.t(key)
+      else
+        exemption_type[:supporting_documents]
+      end
     end
 
     def question_for(type)
