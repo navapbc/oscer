@@ -16,6 +16,7 @@ class ExemptionScreenerController < ApplicationController
   # Entry point - displays introductory landing page
   def index
     @first_exemption_type = Exemption.first_type
+    @current_step = :start
   end
 
   # GET /exemption-screener/question/:exemption_type
@@ -23,6 +24,7 @@ class ExemptionScreenerController < ApplicationController
   def show
     @current_question = @navigator.current_question
     @previous_exemption_type = @navigator.previous_location
+    @current_step = @current_exemption_type.to_sym
   end
 
   # POST /exemption-screener/question/:exemption_type
@@ -54,6 +56,7 @@ class ExemptionScreenerController < ApplicationController
     @exemption_name = Exemption.title_for(@current_exemption_type)
     @exemption_description = Exemption.description_for(@current_exemption_type)
     @required_documents = Exemption.supporting_documents_for(@current_exemption_type)
+    @current_step = :result
   end
 
   # POST /exemption-screener/may-qualify/:exemption_type
@@ -66,6 +69,7 @@ class ExemptionScreenerController < ApplicationController
   # Shown when user answers "No" to all questions
   def complete
     # Renders the "you likely need to report activities" page
+    @current_step = :result
   end
 
   private

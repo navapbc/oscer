@@ -26,6 +26,13 @@ RSpec.describe "ExemptionScreeners", type: :request do
         expect(response.body).to include("Tell us about your situation")
         expect(response.body).to include("Start")
       end
+
+      it "displays step indicator with Start as current step" do
+        get exemption_screener_path(certification_case_id: certification_case.id)
+
+        expect(response.body).to include("usa-step-indicator")
+        expect(response.body).to include("usa-step-indicator__segment--current")
+      end
     end
 
     context "without certification_case_id" do
@@ -64,6 +71,18 @@ RSpec.describe "ExemptionScreeners", type: :request do
       expect(response).to have_http_status(:success)
       # Should include question text from config
       expect(response.body).to include(Exemption.question_for(first_exemption_type))
+    end
+
+    it "displays step indicator with current exemption type highlighted" do
+      get exemption_screener_question_path(
+        exemption_type: first_exemption_type,
+        certification_case_id: certification_case.id
+      )
+
+      expect(response.body).to include("usa-step-indicator")
+      expect(response.body).to include("usa-step-indicator__segment--current")
+      # Should include the exemption type title in the step indicator
+      expect(response.body).to include(Exemption.title_for(first_exemption_type))
     end
 
     context "with invalid exemption_type" do
@@ -176,6 +195,16 @@ RSpec.describe "ExemptionScreeners", type: :request do
 
       expect(response.body).to include(Exemption.title_for(first_exemption_type))
     end
+
+    it "displays step indicator with Result as current step" do
+      get exemption_screener_may_qualify_path(
+        exemption_type: first_exemption_type,
+        certification_case_id: certification_case.id
+      )
+
+      expect(response.body).to include("usa-step-indicator")
+      expect(response.body).to include("usa-step-indicator__segment--current")
+    end
   end
 
   describe "POST /exemption-screener/may-qualify/:exemption_type" do
@@ -237,6 +266,13 @@ RSpec.describe "ExemptionScreeners", type: :request do
       expect(response.body).to include(
         new_activity_report_application_form_path(certification_case_id: certification_case.id)
       )
+    end
+
+    it "displays step indicator with Result as current step" do
+      get exemption_screener_complete_path(certification_case_id: certification_case.id)
+
+      expect(response.body).to include("usa-step-indicator")
+      expect(response.body).to include("usa-step-indicator__segment--current")
     end
   end
 end
