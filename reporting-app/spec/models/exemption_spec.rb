@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-describe ExemptionTypeConfig, type: :model do
+RSpec.describe Exemption, type: :model do
   describe ".all" do
     it "returns all 6 exemption types" do
       expect(described_class.all.size).to eq(6)
@@ -18,6 +18,20 @@ describe ExemptionTypeConfig, type: :model do
         received_medical_care
       ]
       expect(described_class.all.map { |t| t[:id] }).to match_array(expected_ids)
+    end
+  end
+
+  describe ".types" do
+    it "returns the list of valid exemption type strings" do
+      expected_types = [
+        "care_giver_child",
+        "medical_condition",
+        "substance_treatment",
+        "incarceration",
+        "education_and_training",
+        "received_medical_care"
+      ]
+      expect(described_class.types).to match_array(expected_types)
     end
   end
 

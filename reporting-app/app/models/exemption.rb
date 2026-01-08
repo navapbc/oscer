@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class ExemptionTypeConfig
+class Exemption
   class << self
     def all
       Rails.application.config.exemption_types
@@ -8,6 +8,10 @@ class ExemptionTypeConfig
 
     def enabled
       all.select { |t| t[:enabled] }
+    end
+
+    def types
+      valid_values
     end
 
     def enum_hash
