@@ -21,14 +21,14 @@ class ExemptionScreenerController < ApplicationController
   # GET /exemption-screener/question/:exemption_type
   # Displays a single yes/no question for the given exemption type
   def show
-    @current_question = navigator.current_question
-    @previous_exemption_type = navigator.previous_location
+    @current_question = @navigator.current_question
+    @previous_exemption_type = @navigator.previous_location
   end
 
   # POST /exemption-screener/question/:exemption_type
   # Handles yes/no answer submission
   def answer
-    action, *location_params = navigator.next_location(answer: params[:answer])
+    action, *location_params = @navigator.next_location(answer: params[:answer])
 
     case action
     when :may_qualify
@@ -107,12 +107,8 @@ class ExemptionScreenerController < ApplicationController
     @navigator = ExemptionScreenerNavigator.new(@current_exemption_type)
   end
 
-  def navigator
-    @navigator
-  end
-
   def validate_exemption_type
-    unless navigator.valid?
+    unless @navigator.valid?
       redirect_to exemption_screener_path(certification_case_id: @certification_case.id),
         alert: t("exemption_screener.errors.invalid_question")
     end
