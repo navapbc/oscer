@@ -1,10 +1,16 @@
 # frozen_string_literal: true
 
 Rails.application.config.exemption_types = [
+  *Rails.application.config.display_in_screener_exemption_types.deep_dup,
+  *Rails.application.config.short_term_hardship_exemption_types.deep_dup,
+  *Rails.application.config.other_exemption_types.deep_dup
+]
+
+Rails.application.config.display_in_screener_exemption_types = [
   {
-    id: :care_giver,
+    id: :care_giver_child,
     title: "Parent or Caregiver of Dependent Age 13 or Younger",
-    description: "Parent or legal guardian of a young child (< 14), living in the same household.",
+    description: "Parent or legal guardian of a young child (≤13), living in the same household.",
     supporting_documents: [
       "Relationship and co-residence verified via Medicaid/SNAP case",
       "Child's birth certificate or custody paperwork",
@@ -20,10 +26,13 @@ Rails.application.config.exemption_types = [
   },
   {
     id: :medical_condition,
-    title: "Placeholder",
-    description: "Placeholder",
+    title: "Medically Frail or Special Medical Needs",
+    description: "Individual with serious, chronic, or disabling physical/mental health conditions.",
     supporting_documents: [
-      "Placeholder"
+      "Disability determination (SSA or Medicaid)",
+      "Physician attestation or diagnostic report",
+      "Enrollment in long-term services and supports (LTSS), SUD treatment, or home- and community-based services",
+      "MMIS data showing chronic or complex conditions"
     ],
     question: "Do you have a current medical condition that makes it hard for you to work or do daily activities?",
     explanation: "You may be eligible if you have a physical, intellectual, or developmental disability, a disabling" \
@@ -47,10 +56,12 @@ Rails.application.config.exemption_types = [
   },
   {
     id: :incarceration,
-    title: "Placeholder",
-    description: "Placeholder",
+    title: "Recently Released from Incarceration (within 90 days)",
+    description: "Released from jail or prison within the past three months.",
     supporting_documents: [
-      "Placeholder"
+      "Release documentation from correctional facility",
+      "Probation or parole status record",
+      "Reentry program enrollment documents"
     ],
     question: "Have you been released from jail or prison in the last 90 days?",
     explanation: "You may be eligible if you have been released from incarceration in the last 90 days.",
@@ -59,36 +70,30 @@ Rails.application.config.exemption_types = [
   },
   {
     id: :education_and_training,
-    title: "Placeholder",
-    description: "Placeholder",
+    title: "Student Enrolled at Least Half-Time",
+    description: "Actively enrolled in education or job training for at least half of a full-time course load.",
     supporting_documents: [
-      "Placeholder"
+      "Transcript or course schedule showing at least half-time enrollment (typically 6+ credit hours)",
+      "Enrollment verification letter from institution",
+      "FAFSA or Pell Grant records"
     ],
     question: "Are you a student in college or vocational training and currently enrolled at least half-time?",
     explanation: "You may be eligible if you are currently enrolled in a school at least half-time " \
       "(typicall 6 credits for undergraduate students, but may vary by institution).",
     yes_answer: "I am a student currently enrolled at least half-time.",
     enabled: true
-  },
+  }
+]
+
+Rails.application.config.short_term_hardship_exemption_types = [
   {
-    id: :domestic_violence,
-    title: "Placeholder",
-    description: "Placeholder",
+    id: :received_medical_care,
+    title: "Received High-Acuity Medical Care",
+    description: "Hospitalization or intensive treatment that made work impossible during the month.",
     supporting_documents: [
-      "Placeholder"
-    ],
-    question: "Are you currently experiencing or recovering from a situation where your personal safety was threatened" \
-    " at home or by someone you know?",
-    explanation: "You may be eligible if you are currently experiencing or recovering from a threat to your safety.",
-    yes_answer: "I am currently experiencing a threat to my safety at home or by someone I know.",
-    enabled: true
-  },
-  {
-    id: :hospitalization,
-    title: "Placeholder",
-    description: "Placeholder",
-    supporting_documents: [
-      "Placeholder"
+      "Hospital discharge summary",
+      "Inpatient admission records",
+      "Provider statement confirming high-acuity care"
     ],
     question: "Have you recently stayed overnight at a medical facility or received intensive medical care?",
     explanation: "You may be eligible if you recently received intensive medical care such as: staying in a hospital overnight" \
@@ -96,18 +101,14 @@ Rails.application.config.exemption_types = [
       " to one of these stays.",
     yes_answer: "I have recently received overnight or intensive medical care.",
     enabled: true
-  },
-  {
-    id: :natural_disaster,
-    title: "Placeholder",
-    description: "Placeholder",
-    supporting_documents: [
-      "Placeholder"
-    ],
-    question: "Do you live in a county that has a current federal disaster or emergency declaration?",
-    explanation: "You may be eligible if your county has experienced a natural disaster like hurricanes, wildfires," \
-      " flooding, and tornadoes or other emergencies declared by the federal government.",
-    yes_answer: "My county has recently experienced a natural disaster or other federally declared emergency.",
-    enabled: true
   }
+]
+
+Rails.application.config.other_exemption_types = [
+  # TODO
+  # Age-based
+  # Former Foster Youth
+  # Tribal Member
+  # Veteran with a disability
+  # Met TANF or SNAP work requirements
 ]
