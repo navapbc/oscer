@@ -6,20 +6,18 @@
 # Determines current question, next/previous locations, and validates navigation state.
 #
 # Usage:
-#   navigator = ExemptionScreenerNavigator.new(config, "medical_condition", 0)
+#   navigator = ExemptionScreenerNavigator.new("medical_condition")
 #   navigator.valid? # => true
-#   navigator.current_question # => {question: "...", description: "...", yes_answer: "..."}
+#   navigator.current_question # => {"question" => "...", "explanation" => "...", "yes_answer" => "..."}
 #   navigator.next_location(answer: "yes") # => [:may_qualify, "medical_condition"]
-#   navigator.next_location(answer: "no") # => [:question, "medical_condition", 1]
-#   navigator.previous_location # => nil (first question)
+#   navigator.next_location(answer: "no") # => [:question, "incarceration"]
+#   navigator.previous_location # => "care_giver_child" (or nil if first)
 #
 class ExemptionScreenerNavigator
-  attr_reader :config, :exemption_type, :question_index
+  attr_reader :exemption_type
 
-  def initialize(config, exemption_type, question_index)
-    @config = config
+  def initialize(exemption_type)
     @exemption_type = exemption_type
-    @question_index = question_index
   end
 
   # Returns the current question hash from config
@@ -27,50 +25,36 @@ class ExemptionScreenerNavigator
   def current_question
     return nil unless valid?
 
-    questions = config.questions_for(exemption_type)
-    questions[question_index]
+    Exemption.question_data_for(exemption_type)
   end
 
   # Returns the next location based on the user's answer
   # Returns [:may_qualify, exemption_type] if answer is "yes"
-  # Returns [:question, next_exemption_type, next_question_index] if answer is "no" and more questions
-  # Returns [:complete] if answer is "no" and no more questions
+  # Returns [:question, next_exemption_type] if answer is "no" and more types exist
+  # Returns [:complete] if answer is "no" and no more types
   def next_location(answer:)
     if answer == "yes"
       [ :may_qualify, exemption_type ]
     else
-      next_exemption_type, next_question_index = next_question_params
+      next_type = Exemption.next_type(exemption_type)
 
-      if next_exemption_type.present?
-        [ :question, next_exemption_type, next_question_index ]
+      if next_type.present?
+        [ :question, next_type ]
       else
         [ :complete ]
       end
     end
   end
 
-  # Returns the previous location
-  # Returns [exemption_type, question_index] if there's a previous question
-  # Returns nil if this is the first question
+  # Returns the previous exemption type
+  # Returns the previous exemption type symbol if there is one
+  # Returns nil if this is the first type
   def previous_location
-    previous_exemption_type, previous_question_index = previous_question_params
-    return nil unless previous_exemption_type.present?
-
-    [ previous_exemption_type, previous_question_index ]
+    Exemption.previous_type(exemption_type)
   end
 
-  # Returns true if the current exemption_type and question_index are valid
+  # Returns true if the current exemption_type is valid
   def valid?
-    config.valid_question?(exemption_type, question_index)
-  end
-
-  private
-
-  def next_question_params
-    config.next_question(exemption_type, question_index)
-  end
-
-  def previous_question_params
-    config.previous_question(exemption_type, question_index)
+    Exemption.valid_type?(exemption_type)
   end
 end

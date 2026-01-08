@@ -6,34 +6,29 @@ class ExemptionScreenerController < ApplicationController
   before_action :ensure_certification_case
   before_action :authorize_access
   before_action :check_existing_application
-  before_action :load_config
   before_action :set_current_exemption_type, only: %i[show answer may_qualify create_application]
-  before_action :set_current_question_index, only: %i[show answer]
   before_action :setup_navigator, only: %i[show answer]
-  before_action :validate_question, only: %i[show answer]
+  before_action :validate_exemption_type, only: %i[show answer]
 
   skip_after_action :verify_policy_scoped
 
   # GET /exemption-screener
   # Entry point - displays introductory landing page
   def index
-    @first_exemption_type = exemption_screener_config.exemption_types.first
+    @first_exemption_type = Exemption.first_type
   end
 
-  # GET /exemption-screener/question/:exemption_type/:question_index
-  # Displays a single yes/no question for the given exemption type and question index
+  # GET /exemption-screener/question/:exemption_type
+  # Displays a single yes/no question for the given exemption type
   def show
     @current_question = navigator.current_question
-    previous_location = navigator.previous_location
-    @previous_exemption_type, @previous_question_index = previous_location if previous_location
+    @previous_exemption_type = navigator.previous_location
   end
 
-  # POST /exemption-screener/question/:exemption_type/:question_index
+  # POST /exemption-screener/question/:exemption_type
   # Handles yes/no answer submission
-  # Treats no selection as "no"
   def answer
-    user_answer = params[:answer] || "no"
-    action, *location_params = navigator.next_location(answer: user_answer)
+    action, *location_params = navigator.next_location(answer: params[:answer])
 
     case action
     when :may_qualify
@@ -44,7 +39,6 @@ class ExemptionScreenerController < ApplicationController
     when :question
       redirect_to exemption_screener_question_path(
         exemption_type: location_params[0],
-        question_index: location_params[1],
         certification_case_id: @certification_case.id
       )
     when :complete
@@ -57,10 +51,9 @@ class ExemptionScreenerController < ApplicationController
   # GET /exemption-screener/may-qualify/:exemption_type
   # Shows user they may qualify with exemption details and documentation requirements
   def may_qualify
-    @exemption_name = exemption_screener_config.name_for(@current_exemption_type)
-    @exemption_description = exemption_screener_config.description_for(@current_exemption_type)
-    @documentation_intro = exemption_screener_config.documentation_intro_for(@current_exemption_type)
-    @required_documents = exemption_screener_config.required_documents_for(@current_exemption_type)
+    @exemption_name = Exemption.title_for(@current_exemption_type)
+    @exemption_description = Exemption.description_for(@current_exemption_type)
+    @required_documents = Exemption.supporting_documents_for(@current_exemption_type)
   end
 
   # POST /exemption-screener/may-qualify/:exemption_type
@@ -106,35 +99,19 @@ class ExemptionScreenerController < ApplicationController
       notice: t("exemption_screener.errors.application_exists")
   end
 
-  def load_config
-    @exemption_screener_config = ExemptionScreenerConfig.new
-  end
-
-  def exemption_screener_config
-    @exemption_screener_config
-  end
-
   def set_current_exemption_type
     @current_exemption_type = params[:exemption_type]
   end
 
-  def set_current_question_index
-    @current_question_index = params[:question_index].to_i
-  end
-
   def setup_navigator
-    @navigator = ExemptionScreenerNavigator.new(
-      exemption_screener_config,
-      @current_exemption_type,
-      @current_question_index
-    )
+    @navigator = ExemptionScreenerNavigator.new(@current_exemption_type)
   end
 
   def navigator
     @navigator
   end
 
-  def validate_question
+  def validate_exemption_type
     unless navigator.valid?
       redirect_to exemption_screener_path(certification_case_id: @certification_case.id),
         alert: t("exemption_screener.errors.invalid_question")

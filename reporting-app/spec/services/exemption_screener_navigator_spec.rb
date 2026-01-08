@@ -3,36 +3,28 @@
 require 'rails_helper'
 
 RSpec.describe ExemptionScreenerNavigator do
-  let(:config) { ExemptionScreenerConfig.new }
-  let(:first_exemption_type) { config.exemption_types.first }
-  let(:second_exemption_type) { config.exemption_types.second }
-  let(:last_exemption_type) { config.exemption_types.last }
+  let(:enabled_types) { Exemption.enabled.map { |t| t[:id] } }
+  let(:first_exemption_type) { enabled_types.first }
+  let(:second_exemption_type) { enabled_types.second }
+  let(:last_exemption_type) { enabled_types.last }
 
   describe "#current_question" do
-    context "with valid exemption type and question index" do
+    context "with valid exemption type" do
       it "returns the question hash" do
-        navigator = described_class.new(config, first_exemption_type, 0)
+        navigator = described_class.new(first_exemption_type)
 
         question = navigator.current_question
 
         expect(question).to be_a(Hash)
         expect(question).to have_key("question")
-        expect(question).to have_key("description")
+        expect(question).to have_key("explanation")
         expect(question).to have_key("yes_answer")
       end
     end
 
     context "with invalid exemption type" do
       it "returns nil" do
-        navigator = described_class.new(config, "invalid_type", 0)
-
-        expect(navigator.current_question).to be_nil
-      end
-    end
-
-    context "with invalid question index" do
-      it "returns nil" do
-        navigator = described_class.new(config, first_exemption_type, 999)
+        navigator = described_class.new("invalid_type")
 
         expect(navigator.current_question).to be_nil
       end
@@ -42,7 +34,7 @@ RSpec.describe ExemptionScreenerNavigator do
   describe "#next_location" do
     context "when answer is yes" do
       it "returns may_qualify action with exemption type" do
-        navigator = described_class.new(config, first_exemption_type, 0)
+        navigator = described_class.new(first_exemption_type)
 
         action, exemption_type = navigator.next_location(answer: "yes")
 
@@ -51,38 +43,20 @@ RSpec.describe ExemptionScreenerNavigator do
       end
     end
 
-    context "when answer is no and there are more questions in current exemption type" do
-      it "returns question action with next question index" do
-        # Assuming first_exemption_type has at least 2 questions
-        navigator = described_class.new(config, first_exemption_type, 0)
+    context "when answer is no and there are more exemption types" do
+      it "returns question action with next exemption type" do
+        navigator = described_class.new(first_exemption_type)
 
-        action, exemption_type, question_index = navigator.next_location(answer: "no")
-
-        expect(action).to eq(:question)
-        expect(exemption_type).to eq(first_exemption_type)
-        expect(question_index).to eq(1)
-      end
-    end
-
-    context "when answer is no and at end of current exemption type" do
-      it "returns question action with first question of next exemption type" do
-        # Get last question index of first exemption type
-        last_question_index = config.questions_for(first_exemption_type).count - 1
-        navigator = described_class.new(config, first_exemption_type, last_question_index)
-
-        action, exemption_type, question_index = navigator.next_location(answer: "no")
+        action, exemption_type = navigator.next_location(answer: "no")
 
         expect(action).to eq(:question)
         expect(exemption_type).to eq(second_exemption_type)
-        expect(question_index).to eq(0)
       end
     end
 
-    context "when answer is no and at end of all questions" do
+    context "when answer is no and at last exemption type" do
       it "returns complete action" do
-        # Get last question index of last exemption type
-        last_question_index = config.questions_for(last_exemption_type).count - 1
-        navigator = described_class.new(config, last_exemption_type, last_question_index)
+        navigator = described_class.new(last_exemption_type)
 
         action = navigator.next_location(answer: "no")
 
@@ -92,41 +66,29 @@ RSpec.describe ExemptionScreenerNavigator do
   end
 
   describe "#previous_location" do
-    context "when at first question of first exemption type" do
+    context "when at first exemption type" do
       it "returns nil" do
-        navigator = described_class.new(config, first_exemption_type, 0)
+        navigator = described_class.new(first_exemption_type)
 
         expect(navigator.previous_location).to be_nil
       end
     end
 
-    context "when at second question of first exemption type" do
-      it "returns first question of same exemption type" do
-        navigator = described_class.new(config, first_exemption_type, 1)
+    context "when at second exemption type" do
+      it "returns first exemption type" do
+        navigator = described_class.new(second_exemption_type)
 
-        exemption_type, question_index = navigator.previous_location
+        previous_type = navigator.previous_location
 
-        expect(exemption_type).to eq(first_exemption_type)
-        expect(question_index).to eq(0)
-      end
-    end
-
-    context "when at first question of second exemption type" do
-      it "returns last question of first exemption type" do
-        navigator = described_class.new(config, second_exemption_type, 0)
-
-        exemption_type, question_index = navigator.previous_location
-
-        expect(exemption_type).to eq(first_exemption_type)
-        expect(question_index).to eq(config.questions_for(first_exemption_type).count - 1)
+        expect(previous_type).to eq(first_exemption_type)
       end
     end
   end
 
   describe "#valid?" do
-    context "with valid exemption type and question index" do
+    context "with valid exemption type" do
       it "returns true" do
-        navigator = described_class.new(config, first_exemption_type, 0)
+        navigator = described_class.new(first_exemption_type)
 
         expect(navigator).to be_valid
       end
@@ -134,23 +96,7 @@ RSpec.describe ExemptionScreenerNavigator do
 
     context "with invalid exemption type" do
       it "returns false" do
-        navigator = described_class.new(config, "invalid_type", 0)
-
-        expect(navigator).not_to be_valid
-      end
-    end
-
-    context "with out of range question index" do
-      it "returns false" do
-        navigator = described_class.new(config, first_exemption_type, 999)
-
-        expect(navigator).not_to be_valid
-      end
-    end
-
-    context "with negative question index" do
-      it "returns false" do
-        navigator = described_class.new(config, first_exemption_type, -1)
+        navigator = described_class.new("invalid_type")
 
         expect(navigator).not_to be_valid
       end

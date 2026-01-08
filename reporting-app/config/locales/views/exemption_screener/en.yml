@@ -12,6 +12,7 @@ en:
       title: "Exemption Screener"
       back_to_dashboard: "Back to Dashboard"
       buttons:
+        yes_answer: "Yes"
         no_answer: "No"
         submit: "Continue"
         back_to_previous: "Previous Question"
@@ -21,16 +22,18 @@ en:
       title: "You May Qualify for an Exemption"
       back_to_dashboard: "Back to Dashboard"
       heading: "You may qualify for an exemption"
-      documentation_heading: "Required documentation"
+      description: "Based on your situation, you may qualify for the following exemption. Continue to request the exemption."
+      exemption_type: "Exemption type: %{exemption_name}"
+      documentation_heading: "Supporting documents"
       buttons:
         request_exemption: "Request an exemption"
         start_over: "Start over"
 
     complete:
-      title: "Exemption Screening Complete"
+      title: "No exemptions apply"
       back_to_dashboard: "Back to Dashboard"
-      heading: "Based on your answers, you likely need to report activities"
-      description: "You indicated that none of the exemption categories apply to your current situation. To meet your certification requirements, you'll need to report your community engagement activities."
+      heading: "No exemptions apply"
+      description: "No exemptions apply to your situation. Please continue to report your activities. Still think you may qualify for an exemption? Start over to take the screener again."
       buttons:
         start_over: "Start over"
         report_activities: "Report activities"

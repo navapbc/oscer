@@ -11,26 +11,22 @@
   </div>
 
   <main id="main-content">
-    <h1 class="font-heading-2xl margin-bottom-2">
+    <h1 class="margin-bottom-2">
       <%= t(".heading") %>
     </h1>
 
-    <div class="usa-alert usa-alert--info margin-bottom-4">
-      <div class="usa-alert__body">
-        <h2 class="usa-alert__heading"><%= @exemption_name %></h2>
-        <p class="usa-alert__text">
-          <%= @exemption_description %>
-        </p>
-      </div>
-    </div>
+    <p class="margin-bottom-4">
+      <%= t(".description") %>
+    </p>
 
-    <h2 class="font-heading-lg margin-bottom-2">
+    <h2><%= t(".exemption_type", exemption_name: @exemption_name) %></h2>
+    <p class="margin-bottom-4">
+      <%= @exemption_description %>
+    </p>
+
+    <h2 class="margin-bottom-2">
       <%= t(".documentation_heading") %>
     </h2>
-
-    <p class="font-serif-md margin-bottom-2">
-      <%= @documentation_intro %>
-    </p>
 
     <ul class="usa-list margin-bottom-4">
       <% @required_documents.each do |document| %>
@@ -50,10 +46,10 @@
       <div class="usa-button-group">
         <%= link_to t(".buttons.start_over"),
           exemption_screener_path(certification_case_id: @certification_case.id),
-          class: "usa-button usa-button--big usa-button--outline" %>
+          class: "usa-button usa-button--outline" %>
 
         <%= f.submit t(".buttons.request_exemption"),
-          class: "usa-button usa-button--big" %>
+          class: "usa-button" %>
       </div>
     <% end %>
   </main>

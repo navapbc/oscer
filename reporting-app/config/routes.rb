@@ -31,8 +31,8 @@ Rails.application.routes.draw do
 
   scope path: "/exemption-screener", as: :exemption_screener do
     get "/", to: "exemption_screener#index"
-    get "/question/:exemption_type/:question_index", to: "exemption_screener#show", as: :question
-    post "/question/:exemption_type/:question_index", to: "exemption_screener#answer", as: :answer_question
+    get "/question/:exemption_type", to: "exemption_screener#show", as: :question
+    post "/question/:exemption_type", to: "exemption_screener#answer", as: :answer_question
     get "/may-qualify/:exemption_type", to: "exemption_screener#may_qualify", as: :may_qualify
     post "/may-qualify/:exemption_type", to: "exemption_screener#create_application", as: :create_application
     get "/complete", to: "exemption_screener#complete", as: :complete
