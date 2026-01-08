@@ -4,27 +4,25 @@ require "rails_helper"
 
 describe ExemptionTypeConfig, type: :model do
   describe ".all" do
-    it "returns all 8 exemption types" do
-      expect(described_class.all.size).to eq(8)
+    it "returns all 6 exemption types" do
+      expect(described_class.all.size).to eq(6)
     end
 
     it "contains specific exemption type IDs" do
       expected_ids = %i[
-        care_giver
+        care_giver_child
         medical_condition
         substance_treatment
         incarceration
         education_and_training
-        domestic_violence
-        hospitalization
-        natural_disaster
+        received_medical_care
       ]
       expect(described_class.all.map { |t| t[:id] }).to match_array(expected_ids)
     end
   end
 
   describe "accessors" do
-    let(:type) { :care_giver }
+    let(:type) { :care_giver_child }
     let(:config) { described_class.find(type) }
 
     describe ".title_for" do
@@ -66,7 +64,7 @@ describe ExemptionTypeConfig, type: :model do
 
   describe ".find" do
     it "returns the correct config for a given type" do
-      expect(described_class.find(:care_giver)[:title]).to eq("Parent or Caregiver of Dependent Age 13 or Younger")
+      expect(described_class.find(:care_giver_child)[:title]).to eq("Parent or Caregiver of Dependent Age 13 or Younger")
     end
 
     it "returns nil for an invalid type" do

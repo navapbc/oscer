@@ -1,12 +1,6 @@
 # frozen_string_literal: true
 
 Rails.application.config.exemption_types = [
-  *Rails.application.config.display_in_screener_exemption_types.deep_dup,
-  *Rails.application.config.short_term_hardship_exemption_types.deep_dup,
-  *Rails.application.config.other_exemption_types.deep_dup
-]
-
-Rails.application.config.display_in_screener_exemption_types = [
   {
     id: :care_giver_child,
     title: "Parent or Caregiver of Dependent Age 13 or Younger",
@@ -82,10 +76,7 @@ Rails.application.config.display_in_screener_exemption_types = [
       "(typicall 6 credits for undergraduate students, but may vary by institution).",
     yes_answer: "I am a student currently enrolled at least half-time.",
     enabled: true
-  }
-]
-
-Rails.application.config.short_term_hardship_exemption_types = [
+  },
   {
     id: :received_medical_care,
     title: "Received High-Acuity Medical Care",
@@ -102,13 +93,5 @@ Rails.application.config.short_term_hardship_exemption_types = [
     yes_answer: "I have recently received overnight or intensive medical care.",
     enabled: true
   }
-]
-
-Rails.application.config.other_exemption_types = [
-  # TODO
-  # Age-based
-  # Former Foster Youth
-  # Tribal Member
-  # Veteran with a disability
-  # Met TANF or SNAP work requirements
+  # TODO: Add federal disaster declaration and medical care travel
 ]
