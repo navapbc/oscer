@@ -1,6 +1,6 @@
 <div id="<%= dom_id exemption_application_form %>">
   <h2>Exemption Type</h2>
-  <p><%= exemption_application_form.exemption_type&.humanize %></p>
+  <p><%= exemption_type_title(exemption_application_form) %></p>
 
   <%= render "application/supporting_documents", 
     model: exemption_application_form %>
