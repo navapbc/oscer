@@ -33,16 +33,13 @@ class ExemptionScreenerNavigator
   # Returns [:question, next_exemption_type] if answer is "no" and more types exist
   # Returns [:complete] if answer is "no" and no more types
   def next_location(answer:)
-    if answer == "yes"
-      [ :may_qualify, exemption_type ]
-    else
-      next_type = Exemption.next_type(exemption_type)
+    return [ :may_qualify, exemption_type ] if answer == "yes"
 
-      if next_type.present?
-        [ :question, next_type ]
-      else
-        [ :complete ]
-      end
+    next_type = Exemption.next_type(exemption_type)
+    if next_type.present?
+      [ :question, next_type ]
+    else
+      [ :complete ]
     end
   end
 
