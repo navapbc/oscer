@@ -2,7 +2,7 @@
 
 Rails.application.config.exemption_types = [
   {
-    id: :care_giver_child,
+    id: :caregiver_child,
     title: "Parent or Caregiver of Dependent Age 13 or Younger",
     description: "Parent or legal guardian of a young child (≤13), living in the same household.",
     supporting_documents: [

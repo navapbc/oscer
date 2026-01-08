@@ -10,7 +10,7 @@ RSpec.describe Exemption, type: :model do
 
     it "contains specific exemption type IDs" do
       expected_ids = %i[
-        care_giver_child
+        caregiver_child
         medical_condition
         substance_treatment
         incarceration
@@ -24,7 +24,7 @@ RSpec.describe Exemption, type: :model do
   describe ".types" do
     it "returns the list of valid exemption type strings" do
       expected_types = [
-        "care_giver_child",
+        "caregiver_child",
         "medical_condition",
         "substance_treatment",
         "incarceration",
@@ -36,7 +36,7 @@ RSpec.describe Exemption, type: :model do
   end
 
   describe "accessors" do
-    let(:type) { :care_giver_child }
+    let(:type) { :caregiver_child }
     let(:config) { described_class.find(type) }
 
     describe ".title_for" do
@@ -78,7 +78,7 @@ RSpec.describe Exemption, type: :model do
 
   describe ".find" do
     it "returns the correct config for a given type" do
-      expect(described_class.find(:care_giver_child)[:title]).to eq("Parent or Caregiver of Dependent Age 13 or Younger")
+      expect(described_class.find(:caregiver_child)[:title]).to eq("Parent or Caregiver of Dependent Age 13 or Younger")
     end
 
     it "returns nil for an invalid type" do
