@@ -21,7 +21,7 @@ module "dev_config" {
   # Enables ECS Exec access for debugging or jump access.
   # See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html
   # Defaults to `false`. Uncomment the next line to enable.
-  enable_command_execution = true
+  # enable_command_execution = true
 
   # Uncomment to override default feature flag values
   # feature_flag_overrides = {
