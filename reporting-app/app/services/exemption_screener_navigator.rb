@@ -9,11 +9,27 @@
 #   navigator = ExemptionScreenerNavigator.new("medical_condition")
 #   navigator.valid? # => true
 #   navigator.current_question # => {"question" => "...", "explanation" => "...", "yes_answer" => "..."}
-#   navigator.next_location(answer: "yes") # => [:may_qualify, "medical_condition"]
-#   navigator.next_location(answer: "no") # => [:question, "incarceration"]
+#   result = navigator.next_location(answer: "yes")
+#   result.action # => :may_qualify
+#   result.location # => "medical_condition"
 #   navigator.previous_location # => "care_giver_child" (or nil if first)
 #
 class ExemptionScreenerNavigator
+  # ExemptionNavigation
+  #
+  # Value object representing the result of navigation.
+  # Contains the action to perform and optional location parameter.
+  #
+  # Attributes:
+  #   action: Symbol - The navigation action (:may_qualify, :question, or :complete)
+  #   location: String/Symbol/nil - The location parameter (exemption type or nil)
+  class ExemptionNavigation
+    include ActiveModel::Model
+    include ActiveModel::Attributes
+
+    attribute :action
+    attribute :location
+  end
   attr_reader :exemption_type
 
   def initialize(exemption_type)
@@ -29,17 +45,17 @@ class ExemptionScreenerNavigator
   end
 
   # Returns the next location based on the user's answer
-  # Returns [:may_qualify, exemption_type] if answer is "yes"
-  # Returns [:question, next_exemption_type] if answer is "no" and more types exist
-  # Returns [:complete] if answer is "no" and no more types
+  # Returns ExemptionNavigation with action :may_qualify and location exemption_type if answer is "yes"
+  # Returns ExemptionNavigation with action :question and location next_exemption_type if answer is "no" and more types exist
+  # Returns ExemptionNavigation with action :complete and no location if answer is "no" and no more types
   def next_location(answer:)
-    return [ :may_qualify, exemption_type ] if answer == "yes"
+    return ExemptionNavigation.new(action: :may_qualify, location: exemption_type) if answer == "yes"
 
     next_type = Exemption.next_type(exemption_type)
     if next_type.present?
-      [ :question, next_type ]
+      ExemptionNavigation.new(action: :question, location: next_type)
     else
-      [ :complete ]
+      ExemptionNavigation.new(action: :complete)
     end
   end
 
