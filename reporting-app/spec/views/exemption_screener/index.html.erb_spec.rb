@@ -12,12 +12,12 @@ RSpec.describe "exemption_screener/index", type: :view do
     assign(:certification_case, certification_case)
     assign(:certification, certification)
     assign(:first_exemption_type, first_exemption_type)
+    assign(:current_step, :start)
   end
 
-  it "renders links to dashboard and first exemption question" do
+  it "renders link to first exemption question" do
     render
 
-    expect(rendered).to have_link(href: dashboard_path)
     expect(rendered).to have_link(
       href: exemption_screener_question_path(
         exemption_type: first_exemption_type,

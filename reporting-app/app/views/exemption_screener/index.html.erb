@@ -1,14 +1,7 @@
 <% content_for :title, t(".title") %>
 
 <div class="grid-container">
-  <div class="border-bottom padding-bottom-1 margin-bottom-4">
-    <%= link_to(dashboard_path, class: "usa-link") do %>
-      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-        <use xlink:href="<%= asset_path '@uswds/uswds/dist/img/sprite.svg' %>#navigate_before"></use>
-      </svg>
-      <%= t(".back_to_dashboard") %>
-    <% end %>
-  </div>
+  <%= render "step_indicator", current_step: @current_step %>
 
   <main id="main-content">
     <h1 class="font-heading-2xl margin-bottom-2">

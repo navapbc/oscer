@@ -1,5 +1,9 @@
 en:
   exemption_screener:
+    steps:
+      start: "Start"
+      result: "Result"
+
     index:
       title: "Tell us about your situation"
       back_to_dashboard: "Back to Dashboard"

@@ -1,0 +1,43 @@
+<%
+# Exemption Screener step indicator with counter
+# @param current_step [Symbol] The current step
+%>
+<%
+  current_index = exemption_screener_steps.index(current_step)
+  total_steps = exemption_screener_steps.length
+  current_step_number = current_index + 1
+  current_step_label = exemption_screener_step_label(current_step)
+%>
+
+<div class="usa-step-indicator" aria-label="progress">
+  <ol class="usa-step-indicator__segments">
+    <% exemption_screener_steps.each_with_index do |step, index| %>
+      <%
+        status = if index < current_index
+          "complete"
+        elsif index == current_index
+          "current"
+        else
+          "incomplete"
+        end
+      %>
+
+      <li class="usa-step-indicator__segment usa-step-indicator__segment--<%= status %>"
+          aria-current="<%= status == 'current' ? 'true' : 'false' %>">
+        <span class="usa-step-indicator__segment-label">
+          <span class="usa-sr-only"><%= exemption_screener_step_label(step) %></span>
+        </span>
+      </li>
+    <% end %>
+  </ol>
+  <div class="usa-step-indicator__header">
+    <h2 class="usa-step-indicator__heading">
+      <span class="usa-step-indicator__heading-counter">
+        <span class="usa-sr-only">Step</span>
+        <span class="usa-step-indicator__current-step"><%= current_step_number %></span>
+        <span class="usa-step-indicator__total-steps">of <%= total_steps %></span>
+      </span>
+      <span class="usa-step-indicator__heading-text"><%= current_step_label %></span>
+    </h2>
+  </div>
+</div>
