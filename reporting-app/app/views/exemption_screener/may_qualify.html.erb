@@ -1,0 +1,56 @@
+<% content_for :title, t(".title") %>
+
+<div class="grid-container">
+  <div class="border-bottom padding-bottom-1 margin-bottom-4">
+    <%= link_to(dashboard_path, class: "usa-link") do %>
+      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+        <use xlink:href="<%= asset_path '@uswds/uswds/dist/img/sprite.svg' %>#navigate_before"></use>
+      </svg>
+      <%= t(".back_to_dashboard") %>
+    <% end %>
+  </div>
+
+  <main id="main-content">
+    <h1 class="margin-bottom-2">
+      <%= t(".heading") %>
+    </h1>
+
+    <p class="margin-bottom-4">
+      <%= t(".description") %>
+    </p>
+
+    <h2><%= t(".exemption_type", exemption_name: @exemption_name) %></h2>
+    <p class="margin-bottom-4">
+      <%= @exemption_description %>
+    </p>
+
+    <h2 class="margin-bottom-2">
+      <%= t(".documentation_heading") %>
+    </h2>
+
+    <ul class="usa-list margin-bottom-4">
+      <% @required_documents.each do |document| %>
+        <li><%= document %></li>
+      <% end %>
+    </ul>
+
+    <%= form_with(
+      url: exemption_screener_create_application_path(
+        exemption_type: @current_exemption_type,
+        certification_case_id: @certification_case.id
+      ),
+      method: :post,
+      data: { turbo: false },
+      local: true
+    ) do |f| %>
+      <div class="usa-button-group">
+        <%= link_to t(".buttons.start_over"),
+          exemption_screener_path(certification_case_id: @certification_case.id),
+          class: "usa-button usa-button--outline" %>
+
+        <%= f.submit t(".buttons.request_exemption"),
+          class: "usa-button" %>
+      </div>
+    <% end %>
+  </main>
+</div>

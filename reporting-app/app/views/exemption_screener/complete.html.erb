@@ -11,19 +11,22 @@
   </div>
 
   <main id="main-content">
-    <h1 class="font-heading-2xl margin-bottom-2">
+    <h1 class="margin-bottom-2">
       <%= t(".heading") %>
     </h1>
 
-    <p class="font-serif-md margin-bottom-4">
+    <p class="margin-bottom-4">
       <%= t(".description") %>
     </p>
 
-    <%= link_to t(".buttons.start"),
-      exemption_screener_question_path(
-        exemption_type: @first_exemption_type,
-        certification_case_id: @certification_case.id
-      ),
-      class: "usa-button" %>
+    <div class="usa-button-group">
+      <%= link_to t(".buttons.start_over"),
+        exemption_screener_path(certification_case_id: @certification_case.id),
+        class: "usa-button usa-button--outline" %>
+
+      <%= link_to t(".buttons.report_activities"),
+        new_activity_report_application_form_path(certification_case_id: @certification_case.id),
+        class: "usa-button" %>
+    </div>
   </main>
 </div>

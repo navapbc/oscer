@@ -9,4 +9,12 @@ module ApplicationHelper
   def local_time(time, format: nil, timezone: "America/Chicago")
     I18n.l(time.in_time_zone(timezone), format: format)
   end
+
+  def exemption_type_title(exemption_application_form)
+    exemption_type = exemption_application_form.exemption_type
+    return nil unless exemption_type
+
+    # Try to get title from Exemption config, fallback to humanize
+    Exemption.title_for(exemption_type) || exemption_type.humanize
+  end
 end
