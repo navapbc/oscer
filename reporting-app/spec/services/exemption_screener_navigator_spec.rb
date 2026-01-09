@@ -33,34 +33,38 @@ RSpec.describe ExemptionScreenerNavigator do
 
   describe "#next_location" do
     context "when answer is yes" do
-      it "returns may_qualify action with exemption type" do
+      it "returns ExemptionNavigation with may_qualify action and exemption type location" do
         navigator = described_class.new(first_exemption_type)
 
-        action, exemption_type = navigator.next_location(answer: "yes")
+        navigation = navigator.next_location(answer: "yes")
 
-        expect(action).to eq(:may_qualify)
-        expect(exemption_type).to eq(first_exemption_type)
+        expect(navigation).to be_a(ExemptionScreenerNavigator::ExemptionNavigation)
+        expect(navigation.action).to eq(:may_qualify)
+        expect(navigation.location).to eq(first_exemption_type)
       end
     end
 
     context "when answer is no and there are more exemption types" do
-      it "returns question action with next exemption type" do
+      it "returns ExemptionNavigation with question action and next exemption type location" do
         navigator = described_class.new(first_exemption_type)
 
-        action, exemption_type = navigator.next_location(answer: "no")
+        navigation = navigator.next_location(answer: "no")
 
-        expect(action).to eq(:question)
-        expect(exemption_type).to eq(second_exemption_type)
+        expect(navigation).to be_a(ExemptionScreenerNavigator::ExemptionNavigation)
+        expect(navigation.action).to eq(:question)
+        expect(navigation.location).to eq(second_exemption_type)
       end
     end
 
     context "when answer is no and at last exemption type" do
-      it "returns complete action" do
+      it "returns ExemptionNavigation with complete action and no location" do
         navigator = described_class.new(last_exemption_type)
 
-        action = navigator.next_location(answer: "no")
+        navigation = navigator.next_location(answer: "no")
 
-        expect(action).to eq([ :complete ])
+        expect(navigation).to be_a(ExemptionScreenerNavigator::ExemptionNavigation)
+        expect(navigation.action).to eq(:complete)
+        expect(navigation.location).to be_nil
       end
     end
   end

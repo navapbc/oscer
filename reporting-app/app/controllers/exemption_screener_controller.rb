@@ -30,17 +30,17 @@ class ExemptionScreenerController < ApplicationController
   # POST /exemption-screener/question/:exemption_type
   # Handles yes/no answer submission
   def answer
-    action, *location_params = @navigator.next_location(answer: params[:answer])
+    navigation = @navigator.next_location(answer: params[:answer])
 
-    case action
+    case navigation.action
     when :may_qualify
       redirect_to exemption_screener_may_qualify_path(
-        exemption_type: location_params[0],
+        exemption_type: navigation.location,
         certification_case_id: @certification_case.id
       )
     when :question
       redirect_to exemption_screener_question_path(
-        exemption_type: location_params[0],
+        exemption_type: navigation.location,
         certification_case_id: @certification_case.id
       )
     when :complete
