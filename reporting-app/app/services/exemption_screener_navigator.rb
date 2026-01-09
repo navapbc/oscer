@@ -24,12 +24,11 @@ class ExemptionScreenerNavigator
   #   action: Symbol - The navigation action (:may_qualify, :question, or :complete)
   #   location: String/Symbol/nil - The location parameter (exemption type or nil)
   class ExemptionNavigation
-    attr_reader :action, :location
+    include ActiveModel::Model
+    include ActiveModel::Attributes
 
-    def initialize(action:, location: nil)
-      @action = action
-      @location = location
-    end
+    attribute :action
+    attribute :location
   end
   attr_reader :exemption_type
 
