@@ -49,10 +49,13 @@ Rails.application.config.exemption_types = [
   },
   {
     id: :substance_treatment,
-    title: "Placeholder",
-    description: "Placeholder",
+    title: "Medically Frail or Special Medical Needs",
+    description: "Individual with serious, chronic, or disabling physical/mental health conditions.",
     supporting_documents: [
-      "Placeholder"
+      "Disability determination (SSA or Medicaid)",
+      "Physician attestation or diagnostic report",
+      "Enrollment in long-term services and supports (LTSS), SUD treatment, or home- and community-based services",
+      "MMIS data showing chronic or complex conditions"
     ],
     question: "Are you currently in treatment for substance abuse?",
     explanation: "You may be eligible if you are currently in treatment for substance abuse, like drugs or alcohol. " \
