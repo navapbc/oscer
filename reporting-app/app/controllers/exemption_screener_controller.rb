@@ -36,17 +36,15 @@ class ExemptionScreenerController < ApplicationController
     when :may_qualify
       redirect_to exemption_screener_may_qualify_path(
         exemption_type: navigation.location,
-        certification_case_id: @certification_case.id
+        **screener_path_params
       )
     when :question
       redirect_to exemption_screener_question_path(
         exemption_type: navigation.location,
-        certification_case_id: @certification_case.id
+        **screener_path_params
       )
     when :complete
-      redirect_to exemption_screener_complete_path(
-        certification_case_id: @certification_case.id
-      )
+      redirect_to exemption_screener_complete_path(**screener_path_params)
     end
   end
 
@@ -91,11 +89,11 @@ class ExemptionScreenerController < ApplicationController
   def authorize_access
     # Authorize access to the certification case by checking if user can create an exemption form
     # This uses the ExemptionApplicationFormPolicy which checks user ownership
-    authorize ExemptionApplicationForm.new(certification_case_id: @certification_case&.id), :new?
+    authorize ExemptionApplicationForm.new(certification_case_id: @certification_case.id), :new?
   end
 
   def check_existing_application
-    existing_application = ExemptionApplicationForm.find_by(certification_case_id: @certification_case&.id)
+    existing_application = ExemptionApplicationForm.find_by(certification_case_id: @certification_case.id)
 
     return unless existing_application.present?
 
@@ -113,7 +111,7 @@ class ExemptionScreenerController < ApplicationController
 
   def validate_exemption_type
     unless @navigator.valid?
-      redirect_to exemption_screener_path(certification_case_id: @certification_case.id),
+      redirect_to exemption_screener_path(**screener_path_params),
         alert: t("exemption_screener.errors.invalid_question")
     end
   end
@@ -140,8 +138,12 @@ class ExemptionScreenerController < ApplicationController
     else
       redirect_to exemption_screener_may_qualify_path(
         exemption_type: @current_exemption_type,
-        certification_case_id: @certification_case.id
+        **screener_path_params
       ), alert: t("exemption_screener.errors.creation_failed")
     end
+  end
+
+  def screener_path_params
+    { certification_case_id: @certification_case.id }
   end
 end

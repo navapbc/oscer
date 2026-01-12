@@ -1,34 +1,27 @@
 <% content_for :title, t(".title") %>
 
-<div class="grid-container">
-  <div class="padding-bottom-1 margin-bottom-4">
-    <%= link_to(dashboard_path, class: "usa-link") do %>
-      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-        <use xlink:href="<%= asset_path '@uswds/uswds/dist/img/sprite.svg' %>#navigate_before"></use>
-      </svg>
-      <%= t(".back_to_dashboard") %>
-    <% end %>
+<div class="padding-bottom-1 margin-bottom-4">
+  <%= back_button_with_icon(t(".back_to_dashboard"), dashboard_path, class: "usa-link") %>
+</div>
+
+<%= render "step_indicator", current_step: @current_step %>
+
+<div class="exemption-screener">
+  <h1 class="margin-bottom-2">
+    <%= t(".heading") %>
+  </h1>
+
+  <p class="margin-bottom-4">
+    <%= t(".description") %>
+  </p>
+
+  <div class="usa-button-group" role="group" aria-label="<%= t('.buttons.actions', default: 'Actions') %>">
+    <%= link_to t(".buttons.start_over"),
+      exemption_screener_path(certification_case_id: @certification_case.id),
+      class: "usa-button usa-button--outline" %>
+
+    <%= link_to t(".buttons.report_activities"),
+      new_activity_report_application_form_path(certification_case_id: @certification_case.id),
+      class: "usa-button" %>
   </div>
-
-  <%= render "step_indicator", current_step: @current_step %>
-
-  <main id="main-content">
-    <h1 class="margin-bottom-2">
-      <%= t(".heading") %>
-    </h1>
-
-    <p class="margin-bottom-4">
-      <%= t(".description") %>
-    </p>
-
-    <div class="usa-button-group">
-      <%= link_to t(".buttons.start_over"),
-        exemption_screener_path(certification_case_id: @certification_case.id),
-        class: "usa-button usa-button--outline" %>
-
-      <%= link_to t(".buttons.report_activities"),
-        new_activity_report_application_form_path(certification_case_id: @certification_case.id),
-        class: "usa-button" %>
-    </div>
-  </main>
 </div>

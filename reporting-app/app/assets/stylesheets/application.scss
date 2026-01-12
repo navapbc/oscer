@@ -45,3 +45,13 @@ li,
   font-weight: bold;
   border: 3px dashed red;
 }
+
+// =========================================================
+// Exemption screener overrides
+// =========================================================
+
+div.exemption-screener {
+  h1, h2,p {
+    text-wrap: auto;
+  }
+}

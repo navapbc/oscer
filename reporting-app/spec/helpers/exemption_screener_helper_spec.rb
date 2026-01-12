@@ -47,17 +47,66 @@ RSpec.describe ExemptionScreenerHelper, type: :helper do
       expect(helper.exemption_screener_step_label(:result)).to eq(I18n.t("exemption_screener.steps.result"))
     end
 
-    it "returns exemption title for exemption type steps" do
+    it "returns 'Exemption Questions' label for exemption type steps" do
       exemption_type = Exemption.enabled.first[:id]
-      expected = Exemption.title_for(exemption_type)
+      expected = I18n.t("exemption_screener.steps.questions")
       expect(helper.exemption_screener_step_label(exemption_type)).to eq(expected)
     end
 
-    it "returns correct labels for all enabled exemption types" do
+    it "returns 'Exemption Questions' for all enabled exemption types" do
       Exemption.enabled.each do |exemption|
         id = exemption[:id]
-        expected_title = Exemption.title_for(id)
-        expect(helper.exemption_screener_step_label(id)).to eq(expected_title)
+        expected = I18n.t("exemption_screener.steps.questions")
+        expect(helper.exemption_screener_step_label(id)).to eq(expected)
+      end
+    end
+  end
+
+  describe "#exemption_screener_step_status" do
+    it "returns 'complete' when step_index is less than current_index" do
+      expect(helper.exemption_screener_step_status(0, 2)).to eq("complete")
+      expect(helper.exemption_screener_step_status(1, 3)).to eq("complete")
+    end
+
+    it "returns 'current' when step_index equals current_index" do
+      expect(helper.exemption_screener_step_status(2, 2)).to eq("current")
+      expect(helper.exemption_screener_step_status(0, 0)).to eq("current")
+    end
+
+    it "returns 'incomplete' when step_index is greater than current_index" do
+      expect(helper.exemption_screener_step_status(3, 1)).to eq("incomplete")
+      expect(helper.exemption_screener_step_status(5, 2)).to eq("incomplete")
+    end
+  end
+
+  describe "#back_button_with_icon" do
+    it "renders a link with icon and text" do
+      result = helper.back_button_with_icon("Back", "/path", class: "usa-button")
+      expect(result).to include('href="/path"')
+      expect(result).to include('class="usa-button"')
+      expect(result).to include('usa-icon')
+      expect(result).to include('Back')
+    end
+  end
+
+  describe "#exemption_screener_back_button" do
+    let(:certification_case) { double(id: 123) }
+
+    context "when previous_exemption_type is present" do
+      it "returns link to previous question" do
+        result = helper.exemption_screener_back_button("caregiver_child", certification_case)
+        expect(result).to include('/exemption-screener/question/caregiver_child')
+        expect(result).to include('certification_case_id')
+        expect(result).to include(I18n.t("exemption_screener.show.buttons.back_to_previous"))
+      end
+    end
+
+    context "when previous_exemption_type is nil" do
+      it "returns link to screener index" do
+        result = helper.exemption_screener_back_button(nil, certification_case)
+        expect(result).to include('/exemption-screener')
+        expect(result).to include('certification_case_id')
+        expect(result).to include(I18n.t("exemption_screener.show.buttons.back"))
       end
     end
   end

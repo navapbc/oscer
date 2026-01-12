@@ -12,15 +12,7 @@
 <div class="usa-step-indicator" aria-label="progress">
   <ol class="usa-step-indicator__segments">
     <% exemption_screener_steps.each_with_index do |step, index| %>
-      <%
-        status = if index < current_index
-          "complete"
-        elsif index == current_index
-          "current"
-        else
-          "incomplete"
-        end
-      %>
+      <% status = exemption_screener_step_status(index, current_index) %>
 
       <li class="usa-step-indicator__segment usa-step-indicator__segment--<%= status %>"
           aria-current="<%= status == 'current' ? 'true' : 'false' %>">
