@@ -4,7 +4,7 @@ module ExemptionScreenerHelper
   # Generates array of step symbols dynamically based on enabled exemptions
   # Returns: [:start, :caregiver_child, :medical_condition, ..., :result]
   def exemption_screener_steps
-    @exemption_screener_steps ||= [:start] + Exemption.enabled.map { |t| t[:id] } + [:result]
+    @exemption_screener_steps ||= [ :start ] + Exemption.enabled.map { |t| t[:id] } + [ :result ]
   end
 
   # Returns the display label for a given step symbol
