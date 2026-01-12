@@ -30,14 +30,14 @@ class Exemption
       exemption_type = find(type)
       return nil unless exemption_type
 
-      I18n.t("exemption_types.#{exemption_type[:id]}.title", default: exemption_type[:title])
+      I18n.t("exemption_types.#{exemption_type[:id]}.title")
     end
 
     def description_for(type)
       exemption_type = find(type)
       return nil unless exemption_type
 
-      I18n.t("exemption_types.#{exemption_type[:id]}.description", default: exemption_type[:description])
+      I18n.t("exemption_types.#{exemption_type[:id]}.description")
     end
 
     def supporting_documents_for(type)
@@ -45,34 +45,28 @@ class Exemption
       return nil unless exemption_type
 
       key = "exemption_types.#{exemption_type[:id]}.supporting_documents"
-      # Check if translation exists; if not, return the array directly
-      # This avoids I18n's inconsistent handling of array defaults
-      if I18n.exists?(key)
-        I18n.t(key)
-      else
-        exemption_type[:supporting_documents]
-      end
+      I18n.t(key)
     end
 
     def question_for(type)
       exemption_type = find(type)
       return nil unless exemption_type
 
-      I18n.t("exemption_types.#{exemption_type[:id]}.question", default: exemption_type[:question])
+      I18n.t("exemption_types.#{exemption_type[:id]}.question")
     end
 
     def explanation_for(type)
       exemption_type = find(type)
       return nil unless exemption_type
 
-      I18n.t("exemption_types.#{exemption_type[:id]}.explanation", default: exemption_type[:explanation])
+      I18n.t("exemption_types.#{exemption_type[:id]}.explanation")
     end
 
     def yes_answer_for(type)
       exemption_type = find(type)
       return nil unless exemption_type
 
-      I18n.t("exemption_types.#{exemption_type[:id]}.yes_answer", default: exemption_type[:yes_answer])
+      I18n.t("exemption_types.#{exemption_type[:id]}.yes_answer")
     end
 
     # Returns a hash with the question data for the given type
