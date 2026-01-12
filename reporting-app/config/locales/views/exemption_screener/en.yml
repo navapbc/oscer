@@ -2,13 +2,15 @@ en:
   exemption_screener:
     steps:
       start: "Start"
+      questions: "Exemption Questions"
       result: "Result"
 
     index:
       title: "Tell us about your situation"
       back_to_dashboard: "Back to Dashboard"
       heading: "Tell us about your situation"
-      description: "Answer a few questions to see if you may qualify for an exemption from reporting community engagement activities."
+      description: "Depending on your situation, you may be excused and not need to report your work hours/income. If you are eligible, you will need to upload documents as proof of hours worked/income earned."
+      time_to_complete: "It will take most people about 15 minutes to complete this form."
       buttons:
         start: "Start"
 
@@ -25,7 +27,7 @@ en:
     may_qualify:
       title: "You May Qualify for an Exemption"
       back_to_dashboard: "Back to Dashboard"
-      heading: "You may qualify for an exemption"
+      heading: "You may not need to report your work hours/income."
       description: "Based on your situation, you may qualify for the following exemption. Continue to request the exemption."
       exemption_type: "Exemption type: %{exemption_name}"
       documentation_heading: "Supporting documents"

@@ -69,7 +69,6 @@ RSpec.describe "ExemptionScreeners", type: :request do
       )
 
       expect(response).to have_http_status(:success)
-      # Should include question text from config
       expect(response.body).to include(Exemption.question_for(first_exemption_type))
     end
 
@@ -81,8 +80,7 @@ RSpec.describe "ExemptionScreeners", type: :request do
 
       expect(response.body).to include("usa-step-indicator")
       expect(response.body).to include("usa-step-indicator__segment--current")
-      # Should include the exemption type title in the step indicator
-      expect(response.body).to include(Exemption.title_for(first_exemption_type))
+      expect(response.body).to include("Exemption Questions")
     end
 
     context "with invalid exemption_type" do
@@ -182,7 +180,7 @@ RSpec.describe "ExemptionScreeners", type: :request do
       )
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("You may qualify")
+      expect(response.body).to include("You may not need to report your work hours")
       expect(response.body).to include("Supporting documents")
       expect(response.body).to include("Request an exemption")
     end

@@ -1,22 +1,23 @@
 <% content_for :title, t(".title") %>
 
-<div class="grid-container">
-  <%= render "step_indicator", current_step: @current_step %>
+<%= render "step_indicator", current_step: @current_step %>
 
-  <main id="main-content">
-    <h1 class="font-heading-2xl margin-bottom-2">
-      <%= t(".heading") %>
-    </h1>
+<div class="exemption-screener">
+  <h1 class="margin-bottom-4">
+    <%= t(".heading") %>
+  </h1>
 
-    <p class="font-serif-md margin-bottom-4">
-      <%= t(".description") %>
-    </p>
-
-    <%= link_to t(".buttons.start"),
-      exemption_screener_question_path(
-        exemption_type: @first_exemption_type,
-        certification_case_id: @certification_case.id
-      ),
-      class: "usa-button" %>
-  </main>
+  <p class="margin-bottom-4">
+    <strong><%= t(".description") %></strong>
+  </p>
+  <p class="margin-bottom-4">
+    <strong><%= t(".time_to_complete") %></strong>
+  </p>
 </div>
+
+<%= link_to t(".buttons.start"),
+  exemption_screener_question_path(
+    exemption_type: @first_exemption_type,
+    certification_case_id: @certification_case.id
+  ),
+  class: "usa-button" %>
