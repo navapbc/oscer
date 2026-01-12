@@ -2,6 +2,21 @@
 
 Rails.application.config.exemption_types = [
   {
+    id: :caregiver_disability,
+    title: "Caregiver of Person with Disability or Incapable of Self-Care",
+    description: "Individual who provides daily care to someone with a disability or who cannot care for themselves (child or adult).",
+    supporting_documents: [
+      "Provider attestation or care plan indicating caregiver role",
+      "Documentation of dependent’s disability (e.g., SSA award, IEP, long-term care status)",
+      "Power of attorney, guardianship, or service authorization forms"
+    ],
+    question: "Are you currently a caregiver for someone with a disability or someone who cannot care for themselves without help?",
+    explanation: "You may be eligible for an exemption if you care for an individual of any age who has a disability or who cannot" \
+      " care for themselves without help.",
+    yes_answer: "I am a caregiver for someone who has a disability or who is unable to care for themselves without help.",
+    enabled: true
+  },
+  {
     id: :caregiver_child,
     title: "Parent or Caregiver of Dependent Age 13 or Younger",
     description: "Parent or legal guardian of a young child (≤13), living in the same household.",
@@ -10,12 +25,10 @@ Rails.application.config.exemption_types = [
       "Child's birth certificate or custody paperwork",
       "TANF or SNAP eligibility file indicating dependent child"
     ],
-    question: "Are you currently a caregiver for someone with a disability or a child 13 years of age or younger?",
-    explanation: "You may be eligible if you are a parent, guardian, caretaker relative, or family caregiver of a" \
-      " dependent child 13 years of age or under. You may also be eligible if you care for an individual of" \
-      " any age who has a disablility or who cannot care for themselves without help.",
-    yes_answer: "I am a caregiver for someone who has a disability (or who is unable to care for themselves without help)" \
-      " or a child under 13.",
+    question: "Are you currently a caregiver for a child 13 years of age or under?",
+    explanation: "You may be eligible for an exemption if you are a parent, guardian, caretaker relative, " \
+      "or family caregiver of a dependent child 13 years of age and under. ",
+    yes_answer: "I am a caregiver for a child under 13.",
     enabled: true
   },
   {
