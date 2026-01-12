@@ -5,12 +5,13 @@ require "rails_helper"
 RSpec.describe Exemption, type: :model do
   describe ".all" do
     it "returns all 6 exemption types" do
-      expect(described_class.all.size).to eq(6)
+      expect(described_class.all.size).to eq(7)
     end
 
     it "contains specific exemption type IDs" do
       expected_ids = %i[
         caregiver_child
+        caregiver_disability
         medical_condition
         substance_treatment
         incarceration
@@ -25,6 +26,7 @@ RSpec.describe Exemption, type: :model do
     it "returns the list of valid exemption type strings" do
       expected_types = [
         "caregiver_child",
+        "caregiver_disability",
         "medical_condition",
         "substance_treatment",
         "incarceration",
