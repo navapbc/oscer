@@ -9,7 +9,7 @@ en:
       title: "Tell us about your situation"
       back_to_dashboard: "Back to Dashboard"
       heading: "Tell us about your situation"
-      description: "Depending on your situation, you may be excused and not need to report your work hours/income. If you are eligible, you will need to upload documents as proof of hours worked/income earned."
+      description: "Some people don’t need to report their work hours. Answer a few questions to see if you are eligible for an exemption. If you are, you may need to upload documents as proof depending on your situation."
       time_to_complete: "It will take most people about 15 minutes to complete this form."
       buttons:
         start: "Start"
@@ -27,7 +27,7 @@ en:
     may_qualify:
       title: "You May Qualify for an Exemption"
       back_to_dashboard: "Back to Dashboard"
-      heading: "You may not need to report your work hours/income."
+      heading: "You may not need to report your work hours or income."
       description: "Based on your situation, you may qualify for the following exemption. Continue to request the exemption."
       exemption_type: "Exemption type: %{exemption_name}"
       documentation_heading: "Supporting documents"
