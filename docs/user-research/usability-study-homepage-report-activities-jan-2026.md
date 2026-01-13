@@ -1,7 +1,5 @@
 # Usability Study: OSCER Homepage and Reporting Activities
 
----
-
 ## Background
 
 Work requirements create a real risk of coverage loss, not because people are ineligible, but because the reporting process itself becomes a barrier. Research consistently shows that administrative burden and confusing workflows drive coverage losses even among people who qualify for exemptions or meet requirements.
@@ -20,13 +18,10 @@ This usability testing helps us understand whether OSCER makes it genuinely easy
 - Successfully report activities if needed
 - Complete the process without losing coverage they're entitled to keep
 
----
-
 ## Goal
 
 Validate that members can successfully navigate OSCER's homepage and reporting flow before states implement the system, ensuring the experience prevents coverage loss rather than causing it.
 
----
 
 ## Research Focus
 
@@ -37,7 +32,6 @@ Validate that members can successfully navigate OSCER's homepage and reporting f
 - Is the exemption language clear enough for members to know if they might qualify?
 - Where do members get confused or stuck in the flow?
 
----
 
 ## Overview
 
@@ -50,8 +44,6 @@ Validate that members can successfully navigate OSCER's homepage and reporting f
 | **Participants** | 5-8 Medicaid beneficiaries |
 | **Device** | Desktop (primary) |
 | **Asset** | Current homepage and reporting activities flow |
-
----
 
 ## Participant Screener
 
@@ -68,7 +60,6 @@ Validate that members can successfully navigate OSCER's homepage and reporting f
 - What is your employment status? (Employed full-time / Part-time / Unemployed / Student / Caregiver / Other)
 - Have you ever had to submit proof of hours or other documentation to keep your health insurance or government benefits?
 
----
 
 ## Testing Protocol
 
