@@ -1,4 +1,4 @@
-# Usability Study: OSCER Homepage and Reporting Activities
+# Usability Study Plan: OSCER Homepage and Reporting Activities
 
 ## Background
 
