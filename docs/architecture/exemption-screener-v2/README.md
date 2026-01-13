@@ -209,13 +209,9 @@ en:
 ## Constraints
 
 - Only one exemption application per certification case
+- Only one exemption type per application
 - Requires authenticated member with active certification case
 - Must use USWDS components
 - WCAG 2.1 AA compliance
 
 ## Future Considerations
-
-- **Hotwire**: If UX feedback indicates page transitions are problematic
-- **Session persistence**: If users request answer memory
-- **Database config**: If non-developers need to edit types
-- **Analytics**: Track completion rates, drop-off points
