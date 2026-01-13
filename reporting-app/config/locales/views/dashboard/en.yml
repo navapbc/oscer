@@ -1,7 +1,6 @@
 en:
   dashboard:
     index:
-      title: "Home"
       greeting: "Hi %{first_name}"
       activity_report:
         title: "Report your community engagement (OSCER)"
