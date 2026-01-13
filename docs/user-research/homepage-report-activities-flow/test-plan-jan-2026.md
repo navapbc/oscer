@@ -6,7 +6,7 @@ Work requirements create a real risk of coverage loss, not because people are in
 
 **Why this matters:** 
 - In states that have implemented work requirements, [thousands of people lost coverage in less than a year](https://www.kff.org/event/how-will-states-implement-medicaid-work-requirements/-), largely due to reporting barriers and not because of eligibility issues
-- State's that have implemented work requirements have seen [more on administration than on healthcare delivery](https://www.kff.org/event/how-will-states-implement-medicaid-work-requirements/-)
+- States that have implemented work requirements have seen [more on administration than on healthcare delivery](https://www.kff.org/event/how-will-states-implement-medicaid-work-requirements/-)
 - CBO analysis estimates 18.5 million people could be subject to work requirements annually, with potential coverage reductions in the millions over time ([KFF summary](https://www.kff.org/medicaid/a-closer-look-at-the-work-requirement-provisions-in-the-2025-federal-budget-reconciliation-law/))
 - [CBPP's implementation guidance](https://www.cbpp.org/research/health/a-guide-to-reducing-coverage-losses-through-effective-implementation-of-medicaids) emphasizes that red tape and unclear processes are primary drivers of inappropriate coverage loss (CBPP
 
