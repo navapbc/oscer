@@ -13,6 +13,9 @@ RSpec.describe "dashboard/index", type: :view do
     allow(ExemptionDeterminationService).to receive(:determine)
     allow(NotificationService).to receive(:send_email_notification)
 
+    # Stub current_user for greeting display
+    allow(view).to receive(:current_user).and_return(build(:user, full_name: "Test User"))
+
     assign(:all_certifications, [
       certification
     ])
