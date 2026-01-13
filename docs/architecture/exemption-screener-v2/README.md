@@ -2,19 +2,22 @@
 
 ## Problem
 
-Members need to determine if they qualify for an exemption from activity reporting. The current single-page screener with 2 exemption types is insufficient for the expanded 6 types and doesn't guide users on documentation requirements before starting an application.
+Members need to determine if they qualify for an exemption from activity reporting. The current single-page screener with 2 exemption types is insufficient and doesn't guide users on documentation requirements before starting an application.
 
 ## Approach
 
-1. Multi-step questionnaire: One yes/no question per exemption type (6 total), standard Rails pages
+1. Multi-step questionnaire: One yes/no question per exemption type, standard Rails pages
 2. Stateless flow: No session/database persistence—back navigation via browser history
-3. Configuration-driven: Exemption types in initializer with I18n fallback
-4. Duplicate prevention: Model validation + controller guard + database constraint
+3. Navigation Logic: Encapsulated in `ExemptionScreenerNavigator` service
+4. Configuration-driven: Exemption types in initializer with dynamic `Exemption` model lookups
+5. I18n Integration: All content (questions, titles, descriptions) stored in `config/locales/exemption_types.en.yml`
+6. Duplicate prevention: Model validation + controller guard + database constraint
 
 ```mermaid
 flowchart LR
-    Q1[Question 1] -->|No| Q2[Question 2] -->|No| Q3[...] -->|No| Q6[Question 6] -->|No| Complete[No Exemptions]
-    Q1 & Q2 & Q3 & Q6 -->|Yes| MQ[May Qualify Screen]
+    Start[Landing Page] --> Q1[Question 1]
+    Q1[Question 1] -->|No| Q2[Question 2] -->|No| Q3[...] -->|No| Q7[Question 7] -->|No| Complete[No Exemptions]
+    Q1 & Q2 & Q3 & Q7 -->|Yes| MQ[May Qualify Screen]
     MQ -->|Start Application| App[Document Upload]
     Complete -->|Report Activities| AR[Activity Report]
 ```
@@ -31,58 +34,100 @@ flowchart TB
         ESC[ExemptionScreenerController]
     end
 
+    subgraph service [Service]
+        ESN[ExemptionScreenerNavigator]
+    end
+
     subgraph config [Configuration]
-        ETC[ExemptionTypeConfig]
+        EM[Exemption Model]
         Init[exemption_types.rb]
+        I18n[exemption_types.en.yml]
     end
 
     subgraph model [Model]
         EAF[ExemptionApplicationForm]
     end
 
-    ESC --> ETC
+    ESC --> ESN
+    ESN --> EM
     ESC --> EAF
-    ETC --> Init
+    EM --> Init
+    EM --> I18n
 ```
 
 ### ExemptionScreenerController
 
 | Action               | Purpose                                                  |
 | -------------------- | -------------------------------------------------------- |
-| `show`               | Display yes/no question                                  |
+| `index`              | Displays introductory landing page                       |
+| `show`               | Display yes/no question for a specific type              |
 | `answer`             | Redirect to `may_qualify` (Yes) or next question (No)    |
 | `may_qualify`        | Show exemption details + documentation requirements      |
 | `create_application` | Create `ExemptionApplicationForm`, redirect to documents |
 | `complete`           | "No exemptions" screen with links to activity report     |
 
-### ExemptionTypeConfig
+### Exemption Model
+
+The `Exemption` model (`app/models/exemption.rb`) provides a PORO interface to the configuration and translations.
 
 ```ruby
-class ExemptionTypeConfig
+class Exemption
   class << self
     def all = Rails.application.config.exemption_types
-    def ordered = all.select { |_, v| v[:enabled] }.sort_by { |_, v| v[:order] }
-    def find(type) = all[type.to_sym]
-    def enum_hash = all.keys.index_with(&:to_s)
-    def question_for(type) = I18n.t("exemption_types.#{type}.question", default: all[type.to_sym][:question])
+    def enabled = all.select { |t| t[:enabled] }
+    def find(type) = all.find { |t| t[:id] == type.to_sym }
+
+    # Dynamically defined methods for I18n lookups:
+    # title_for(type), description_for(type), question_for(type), etc.
+    def question_data_for(type)
+      {
+        "question" => question_for(type),
+        "explanation" => explanation_for(type),
+        "yes_answer" => yes_answer_for(type)
+      }
+    end
+  end
+end
+```
+
+### ExemptionScreenerNavigator
+
+Handles the state machine logic for moving between questions.
+
+```ruby
+class ExemptionScreenerNavigator
+  def next_location(answer:)
+    return ExemptionNavigation.new(action: :may_qualify, location: exemption_type) if answer == "yes"
+
+    next_type = Exemption.next_type(exemption_type)
+    if next_type.present?
+      ExemptionNavigation.new(action: :question, location: next_type)
+    else
+      ExemptionNavigation.new(action: :complete)
+    end
   end
 end
 ```
 
 ### Configuration Structure
 
+Types are defined in an initializer, while content is kept in I18n files for better maintainability and localization support.
+
 ```ruby
 # config/initializers/exemption_types.rb
-Rails.application.config.exemption_types = {
-  medical_condition: {
-    question: "Do you have a serious medical condition?",
-    explanation: "You may qualify if...",
-    documentation: ["Doctor's letter", "Statement of impact"],
-    order: 1,
-    enabled: true
-  },
-  # ... 5 more: substance_use_treatment, incarceration, domestic_violence, caregiver, student
-}
+Rails.application.config.exemption_types = [
+  { id: :medical_condition, enabled: true },
+  { id: :substance_treatment, enabled: true },
+  # ... 5 more
+]
+
+# config/locales/exemption_types.en.yml
+en:
+  exemption_types:
+    medical_condition:
+      title: "Medically Frail or Special Medical Needs"
+      question: "Do you have a current medical condition...?"
+      # ...
 ```
 
 ---
@@ -91,7 +136,7 @@ Rails.application.config.exemption_types = {
 
 ### ADR-001: Standard Rails Pages Over Hotwire
 
-**Context**: Need to present 6 sequential questions with navigation.
+**Context**: Need to present 7 sequential questions with navigation.
 
 **Decision**: Use standard Rails pages with full page loads.
 
@@ -107,25 +152,37 @@ Rails.application.config.exemption_types = {
 
 **Decision**: No persistence of answers (stateless).
 
-**Rationale**: 6 questions is short; "Yes" exits immediately; no session/database complexity.
+**Rationale**: 7 questions is short; "Yes" exits immediately; no session/database complexity.
 
 **Consequences**: Users re-answer on back; can add session persistence later.
 
 ---
 
-### ADR-003: Initializer-Based Configuration
+### ADR-003: PORO Model for Configuration
 
-**Context**: Need to configure 6 exemption types with questions, explanations, documentation requirements.
+**Context**: Need to access 7 exemption types with questions, explanations, documentation requirements.
 
-**Decision**: Define types in `config/initializers/exemption_types.rb` with a PORO accessor class.
+**Decision**: Use an `Exemption` PORO that reads from an initializer and provides dynamic I18n lookups.
 
-**Rationale**: Single source of truth; I18n-ready; version controlled; testable.
+**Rationale**: Clean separation of concerns; easy to test; avoids bloating models with static config.
 
-**Consequences**: Requires deploy to change; can migrate to database if runtime editing needed.
+**Consequences**: Requires deploy to change types; can migrate to database if runtime editing needed.
 
 ---
 
-### ADR-004: URL-Based Navigation State
+### ADR-004: Navigator Service for Flow Logic
+
+**Context**: The controller was becoming complex with navigation logic.
+
+**Decision**: Extract navigation logic into `ExemptionScreenerNavigator`.
+
+**Rationale**: Keeps controller thin; logic is easily unit-testable; follows DDD principles.
+
+**Consequences**: Clear separation between "what to show" and "where to go".
+
+---
+
+### ADR-005: URL-Based Navigation State
 
 **Context**: Need forward/back navigation through questions.
 
@@ -137,7 +194,7 @@ Rails.application.config.exemption_types = {
 
 ---
 
-### ADR-005: Layered Duplicate Prevention
+### ADR-006: Layered Duplicate Prevention
 
 **Context**: Only one exemption application per certification case.
 
