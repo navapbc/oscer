@@ -26,47 +26,17 @@ class Exemption
       all.find { |t| t[:id] == type.to_sym }
     end
 
-    def title_for(type)
-      exemption_type = find(type)
-      return nil unless exemption_type
+    ATTRIBUTES = %i[title description supporting_documents question explanation yes_answer].freeze
 
-      I18n.t("exemption_types.#{exemption_type[:id]}.title")
-    end
+    # Dynamically define methods that fetch I18n translations for exemption types
+    # Each method follows the pattern: attribute_for(type)
+    ATTRIBUTES.each do |attribute|
+      define_method("#{attribute}_for") do |type|
+        exemption_type = find(type)
+        return nil unless exemption_type
 
-    def description_for(type)
-      exemption_type = find(type)
-      return nil unless exemption_type
-
-      I18n.t("exemption_types.#{exemption_type[:id]}.description")
-    end
-
-    def supporting_documents_for(type)
-      exemption_type = find(type)
-      return nil unless exemption_type
-
-      key = "exemption_types.#{exemption_type[:id]}.supporting_documents"
-      I18n.t(key)
-    end
-
-    def question_for(type)
-      exemption_type = find(type)
-      return nil unless exemption_type
-
-      I18n.t("exemption_types.#{exemption_type[:id]}.question")
-    end
-
-    def explanation_for(type)
-      exemption_type = find(type)
-      return nil unless exemption_type
-
-      I18n.t("exemption_types.#{exemption_type[:id]}.explanation")
-    end
-
-    def yes_answer_for(type)
-      exemption_type = find(type)
-      return nil unless exemption_type
-
-      I18n.t("exemption_types.#{exemption_type[:id]}.yes_answer")
+        I18n.t("exemption_types.#{exemption_type[:id]}.#{attribute}")
+      end
     end
 
     # Returns a hash with the question data for the given type
