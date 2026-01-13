@@ -215,3 +215,5 @@ en:
 - WCAG 2.1 AA compliance
 
 ## Future Considerations
+
+- [**Proposed: Additonal Exemptions Architecture**](./additional-exemptions-proposal.md) - Adding automatic exemptions that bypass the screener flow and replace hardcoded reason codes in the Determination model
