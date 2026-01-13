@@ -2,6 +2,7 @@ en:
   dashboard:
     index:
       title: "Home"
+      greeting: "Hi %{first_name}"
       activity_report:
         title: "Report your community engagement (OSCER)"
         intro: "Certify your community engagement requirements through OSCER."
