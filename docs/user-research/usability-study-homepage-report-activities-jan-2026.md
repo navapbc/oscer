@@ -164,6 +164,3 @@ On a scale of 1-5, how confident are you that you could successfully complete th
 Any other thoughts or feedback you'd like to share?
 
 ---
-
-
-**Next Steps:** Continuing iterative testing as we refine terminology, information architecture, and post-submission experience.
