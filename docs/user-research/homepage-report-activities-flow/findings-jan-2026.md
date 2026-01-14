@@ -14,7 +14,7 @@ This document outlines the findings and recommendations derived from the moderat
 Initial testing showed the homepage did not quite meet user expectations, however the purpose of the page was eventually understood. 
 * Multiple users mentioned wanting a more personalized experience (e.g., being welcomed by name).
 * Expectations around the “Get started” button to enter the Exemption Screener had mixed answers.
-* Most users expected more out of the information on the homepage. Topics that were brought up were: more information on what the site/program is about before asking them to take action, exemption types.
+* Most users expected more context before taking action. They expected the homepage to explain what the site/program is and provide information about exemption types before they took any action.
 
 ### Terminology: “Community engagement”
 The term "Community Engagement" was a significant barrier. Users did not understand what this meant initially. 
