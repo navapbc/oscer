@@ -202,85 +202,35 @@ sequenceDiagram
 
 ---
 
-## Architecture Decision Records
+## Decisions
 
-### ADR-001: S3 Presigned URLs for Direct Upload
+### S3 presigned URLs for direct upload
 
-**Context**: Large CSV files (100s of MB) cause memory pressure and timeouts when uploaded through Rails.
+Use presigned URLs for browsers to upload directly to S3, bypassing Rails entirely. Large CSV files (100s of MB) cause memory pressure and timeouts when streamed through Rails. This frees Rails resources, avoids timeout issues, and supports up to 5GB files. Tradeoff: requires CORS config on S3 and additional client-side complexity.
 
-**Decision**: Use S3 presigned URLs for browsers to upload directly to S3.
+### Streaming file processing
 
-**Rationale**: Rails resources freed; no timeout issues; supports up to 5GB files.
+Stream S3 objects line-by-line without loading entire file into memory. Files may contain millions of records; loading entire files is not feasible. This uses constant ~50MB memory vs ~2GB for 1M rows, with faster time to first record. Tradeoff: cannot "look ahead" in file; more complex error recovery.
 
-**Consequences**: Requires CORS config on S3; additional client-side complexity.
+### Chunk-based parallel processing
 
----
+Split stream into 1,000-record chunks processed in parallel via separate jobs. Sequential processing of millions of records takes too long. This provides near-linear scaling with worker count; individual chunk failures don't block others. Tradeoff: chunk completion order not guaranteed; requires aggregation logic.
 
-### ADR-002: Streaming File Processing
+### Aggregated audit logging
 
-**Context**: Files may contain millions of records; loading entire files into memory is not feasible.
+Store audit logs at chunk level; only store individual records that fail. Per-record audit logging would create 1M+ rows per upload, causing database bloat. This results in 1,000 audit rows vs 1,000,000 for 1M records; dashboard queries remain fast. Tradeoff: cannot audit individual successful records; compliance logging goes to APM.
 
-**Decision**: Stream S3 objects line-by-line without loading entire file.
+### Unified business logic across sources
 
-**Rationale**: Constant ~50MB memory vs ~2GB for 1M rows; faster time to first record; graceful failure.
+Single `UnifiedRecordProcessor` service used by all sources (UI, API, FTP, S3 events). Data arrives via multiple paths but must apply identical business rules. Bug fixes apply everywhere; consistent validation; one code path to test. Tradeoff: must design for lowest common denominator across sources.
 
-**Consequences**: Cannot "look ahead" in file; more complex error recovery.
+### Dashboard metrics aggregation
 
----
+Dashboard shows aggregated metrics only; no record-level browsing. Dashboard must remain responsive with uploads containing millions of records. Queries remain fast at any scale with simpler UI. Tradeoff: users must export errors for detailed review.
 
-### ADR-003: Chunk-Based Parallel Processing
+### Categorized error retry strategy
 
-**Context**: Sequential processing of millions of records takes too long.
-
-**Decision**: Split stream into 1,000-record chunks processed in parallel via separate jobs.
-
-**Rationale**: Near-linear scaling with worker count; individual chunk failures don't block others.
-
-**Consequences**: Chunk completion order not guaranteed; requires aggregation logic.
-
----
-
-### ADR-004: Aggregated Audit Logging
-
-**Context**: Per-record audit logging would create 1M+ rows per upload, causing database bloat.
-
-**Decision**: Store audit logs at chunk level; only store individual records that fail.
-
-**Rationale**: 1,000 audit rows vs 1,000,000 for 1M records; dashboard queries remain fast.
-
-**Consequences**: Cannot audit individual successful records; compliance logging goes to APM.
-
----
-
-### ADR-005: Unified Business Logic Across Sources
-
-**Context**: Data arrives via UI, API, FTP, or S3 events; each must apply identical business rules.
-
-**Decision**: Single `UnifiedRecordProcessor` service used by all sources.
-
-**Rationale**: Bug fixes apply everywhere; consistent validation; one code path to test.
-
-**Consequences**: Must design for lowest common denominator across sources.
-
----
-
-### ADR-006: Dashboard Metrics Aggregation
-
-**Context**: Dashboard must remain responsive with uploads containing millions of records.
-
-**Decision**: Dashboard shows aggregated metrics only; no record-level browsing.
-
-**Rationale**: Queries remain fast at any scale; simpler UI.
-
-**Consequences**: Users must export errors for detailed review.
-
----
-
-### ADR-007: Categorized Error Retry Strategy
-
-**Context**: Different error types require different handling.
-
-**Decision**: Categorize errors and apply appropriate retry/skip behavior.
+Categorize errors and apply appropriate retry/skip behavior. Different error types require different handling:
 
 | Category             | Action       | Retry  |
 | -------------------- | ------------ | ------ |
@@ -290,19 +240,11 @@ sequenceDiagram
 | S3 (`S3_*`)          | Retry job    | 5x     |
 | Unknown (`UNK_*`)    | Fail batch   | Manual |
 
-**Consequences**: Transient errors self-heal; permanent errors don't block processing.
+Tradeoff: transient errors self-heal; permanent errors don't block processing.
 
----
+### APM integration for observability
 
-### ADR-008: APM Integration
-
-**Context**: Need visibility into processing performance and errors.
-
-**Decision**: Send custom metrics to Datadog; also store in internal tables for compliance.
-
-**Rationale**: Real-time visibility; historical trending; automated alerting.
-
-**Consequences**: Additional infrastructure cost; must maintain Datadog dashboards.
+Send custom metrics to Datadog; also store in internal tables for compliance. This provides real-time visibility, historical trending, and automated alerting. Tradeoff: additional infrastructure cost; must maintain Datadog dashboards.
 
 ---
 
