@@ -12,7 +12,7 @@ en:
       income: "Income"
       back_to_dashboard: "Back to dashboard"
       status_messages:
-        in_progress: "Complete and submit your activity report"
+        in_progress: "Complete and submit your activity report."
         in_progress_detail: "Add activities for each month that you are reporting."
         submitted: "Your activity report is being reviewed"
         approved: "Your activity report has been approved"

@@ -26,53 +26,17 @@ class Exemption
       all.find { |t| t[:id] == type.to_sym }
     end
 
-    def title_for(type)
-      exemption_type = find(type)
-      return nil unless exemption_type
+    ATTRIBUTES = %i[title description supporting_documents question explanation yes_answer].freeze
 
-      I18n.t("exemption_types.#{exemption_type[:id]}.title", default: exemption_type[:title])
-    end
+    # Dynamically define methods that fetch I18n translations for exemption types
+    # Each method follows the pattern: attribute_for(type)
+    ATTRIBUTES.each do |attribute|
+      define_method("#{attribute}_for") do |type|
+        exemption_type = find(type)
+        return nil unless exemption_type
 
-    def description_for(type)
-      exemption_type = find(type)
-      return nil unless exemption_type
-
-      I18n.t("exemption_types.#{exemption_type[:id]}.description", default: exemption_type[:description])
-    end
-
-    def supporting_documents_for(type)
-      exemption_type = find(type)
-      return nil unless exemption_type
-
-      key = "exemption_types.#{exemption_type[:id]}.supporting_documents"
-      # Check if translation exists; if not, return the array directly
-      # This avoids I18n's inconsistent handling of array defaults
-      if I18n.exists?(key)
-        I18n.t(key)
-      else
-        exemption_type[:supporting_documents]
+        I18n.t("exemption_types.#{exemption_type[:id]}.#{attribute}")
       end
-    end
-
-    def question_for(type)
-      exemption_type = find(type)
-      return nil unless exemption_type
-
-      I18n.t("exemption_types.#{exemption_type[:id]}.question", default: exemption_type[:question])
-    end
-
-    def explanation_for(type)
-      exemption_type = find(type)
-      return nil unless exemption_type
-
-      I18n.t("exemption_types.#{exemption_type[:id]}.explanation", default: exemption_type[:explanation])
-    end
-
-    def yes_answer_for(type)
-      exemption_type = find(type)
-      return nil unless exemption_type
-
-      I18n.t("exemption_types.#{exemption_type[:id]}.yes_answer", default: exemption_type[:yes_answer])
     end
 
     # Returns a hash with the question data for the given type

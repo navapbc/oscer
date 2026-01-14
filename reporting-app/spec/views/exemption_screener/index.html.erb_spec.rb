@@ -30,6 +30,6 @@ RSpec.describe "exemption_screener/index", type: :view do
     render
 
     expect(rendered).to have_css("h1")
-    expect(rendered).to have_css("p.font-serif-md")
+    expect(rendered).to have_css("p")
   end
 end

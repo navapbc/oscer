@@ -3,14 +3,14 @@
 <%= link_to t(".back"), activity_report_application_form_path(@activity_report_application_form) %>
 <h1><%= t(".title") %></h1>
 <%= strata_form_with(url: new_activity_new_activity_report_application_form_activity_path(@activity_report_application_form), method: :get) do |f| %>
-  <p><%= t(".category_help_text") %></p>
+  <p><strong><%= t(".category_help_text") %></strong></p>
   <% Activity::ALLOWED_CATEGORIES.each do |category| %>
     <div class="usa-form__item">
       <%= f.radio_button :category, category, { label: t(".#{category}_label"), hint: t(".#{category}_help_text"), tile: true } %>
     </div>
   <% end %>
 
-  <p><%= t(".reporting_method_help_text") %></p>
+  <p><strong><%= t(".reporting_method_help_text") %></strong></p>
   <div class="usa-form__item">
     <%= f.radio_button :activity_type, "work_activity", { label: t(".hours_label"), tile: true } %>
   </div>
