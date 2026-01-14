@@ -18,7 +18,7 @@ Initial testing showed the homepage did not quite meet user expectations, howeve
 
 ### Terminology: “Community engagement”
 The term "Community Engagement" was a significant barrier. Users did not understand what this meant initially. 
-* Although initially the term “community engagement” was not understood, about half of users did find that “community engagement activities” meant reporting hours and/or income.
+* Although the term 'community engagement' was initially unclear to users,  about half were able to understand that 'community engagement activities' meant reporting hours and/or income after reading additional context on the page.
 
 ### Document uploader is not intuitive.
 When reporting activities, the document uploader CTA buttons and process confused users.
