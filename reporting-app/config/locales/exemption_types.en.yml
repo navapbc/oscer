@@ -63,7 +63,7 @@ en:
       explanation: "You may be eligible if you are currently enrolled in a school at least half-time (typically 6 credits for undergraduate students, but may vary by institution)."
       yes_answer: "I am a student currently enrolled at least half-time."
     received_medical_care:
-      title: "Received High-Acuity Medical Care"
+      title: "Received care for a serious medical event"
       description: "Hospitalization or intensive treatment that made work impossible during the month."
       supporting_documents:
         - "Hospital discharge summary"

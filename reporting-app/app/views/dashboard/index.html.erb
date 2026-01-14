@@ -1,5 +1,5 @@
 <div class="grid-container">
-  <h1 class="margin-bottom-2"><%= t(".title") %></h1>
+  <h1 class="margin-bottom-2"><%= t(".greeting", first_name: (@certification&.member_name&.first || current_user.full_name&.split&.first)&.capitalize) %></h1>
 </div>
 <% if @information_request %>
   <div class="grid-container">
