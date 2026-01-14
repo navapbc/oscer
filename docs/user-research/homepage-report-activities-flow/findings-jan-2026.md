@@ -13,7 +13,7 @@ This document outlines the findings and recommendations derived from the moderat
 ### Homepage information architecture & comprehension
 Initial testing showed the homepage did not quite meet user expectations, however the purpose of the page was eventually understood. 
 * Multiple users mentioned wanting a more personalized experience (e.g., being welcomed by name).
-* Expectations around the “Get started” button had mixed answers.
+* Expectations around the “Get started” button to enter the Exemption Screener had mixed answers.
 * Most users expected more out of the information on the homepage. Topics that were brought up were: more information on what the site/program is about before asking them to take action, exemption types.
 
 ### Terminology: “Community engagement”
