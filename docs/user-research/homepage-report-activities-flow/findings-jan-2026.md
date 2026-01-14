@@ -40,7 +40,7 @@ The requirement was clear in number but vague in frequency.
 **Save and Return:** The ability to save progress was consistently praised, allowing users to find documents without losing their work.
 
 ### Visual Design
-* The overall visual design was deemed clean, uncluttered, and easy to scan.
+The overall visual design was deemed clean, uncluttered, and easy to scan.
 
 ## Opportunities
 Coming soon…
