@@ -3,7 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe "dashboard/index", type: :view do
-  let(:certification) { create(:certification) }
+  let(:member_data) { build(:certification_member_data, :with_full_name) }
+  let(:certification) { create(:certification, member_data: member_data) }
   let(:certification_case) { create(:certification_case, certification_id: certification.id) }
 
   before do
@@ -12,9 +13,6 @@ RSpec.describe "dashboard/index", type: :view do
     allow(HoursComplianceDeterminationService).to receive(:determine)
     allow(ExemptionDeterminationService).to receive(:determine)
     allow(NotificationService).to receive(:send_email_notification)
-
-    # Stub current_user for greeting display
-    allow(view).to receive(:current_user).and_return(build(:user, full_name: "Test User"))
 
     assign(:all_certifications, [
       certification
