@@ -5,7 +5,7 @@ This document outlines the findings and recommendations derived from the moderat
 
 ## Methodology
 **Format:** Moderated usability testing with 5 participants.  
-**Scenarios:** Users were asked to evaluate the homepage, review exemption criteria, and submit work hours or income.
+**Scenarios:** Users were asked to evaluate the homepage, review exemption criteria, and submit work hours or income.  
 **Key Tasks:** Identify site purpose, define "Community Engagement”, enter the exemption screener, and report activities.
 
 ## Key Insights
