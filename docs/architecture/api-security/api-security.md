@@ -63,7 +63,7 @@ Content-Type: application/json
 
 | Component     | Value                   |
 | ------------- | ----------------------- |
-| Algorithm     | HMAC-SHA256             |
+| Algorithm     | HMAC-SHA256 (`sha256`)  |
 | Message       | Request body (raw JSON) |
 | Encoding      | Base64 (strict)         |
 | Secret Source | `ENV["API_SECRET_KEY"]` |
@@ -109,7 +109,7 @@ Lightweight object representing an authenticated API caller for Pundit:
 
 ### HMAC-SHA256 over JWT/OAuth
 
-Use symmetric key signatures instead of OAuth or JWT. Simpler than OAuth (no token management), no external dependencies. JWT adds unnecessary complexity for a single trusted client. The SDK's `CognitoAdapter` already demonstrates this pattern. Tradeoff: must securely share and rotate the secret key out-of-band.
+Use symmetric key signatures instead of OAuth or JWT. Simpler than OAuth (no token management), no external dependencies. JWT adds unnecessary complexity for a single trusted client. The app's `CognitoAdapter` already demonstrates this pattern (`app/adapters/auth/cognito_adapter.rb`). Tradeoff: must securely share and rotate the secret key out-of-band.
 
 ### No replay prevention for idempotent sync
 
@@ -163,7 +163,7 @@ State systems must:
 body = { member_id: "123", hours: 80 }.to_json
 
 signature = Base64.strict_encode64(
-  OpenSSL::HMAC.digest("SHA256", ENV["API_SECRET_KEY"], body)
+  OpenSSL::HMAC.digest("sha256", ENV["API_SECRET_KEY"], body)
 )
 
 # Request
