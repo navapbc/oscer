@@ -19,6 +19,15 @@ RSpec.describe ApiAuthenticator do
 
         expect(service.authenticate!(request)).to be true
       end
+
+      it "returns the body of the request" do
+        headers = api_auth_headers(body: body, secret: secret)
+        request = mock_api_request(body: body, headers: headers)
+
+        service.authenticate!(request)
+
+        expect(request.body.read).to eq(body)
+      end
     end
 
     context "with missing Authorization header" do
