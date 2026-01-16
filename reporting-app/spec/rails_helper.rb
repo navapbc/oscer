@@ -39,6 +39,7 @@ require 'rspec/rails'
 require_relative 'support/factory_bot'
 require_relative 'support/pundit_spec_view_helper'
 require_relative 'support/policy_shared_examples'
+require_relative 'support/api_auth_helpers'
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
 # spec/support/ and its subdirectories. Files matching `spec/**/*_spec.rb` are
@@ -66,6 +67,7 @@ end
 RSpec.configure do |config|
   config.include Devise::Test::ControllerHelpers, type: :controller
   config.include PunditSpecViewHelper, type: :view
+  config.include ApiAuthHelpers
 
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_paths = [
