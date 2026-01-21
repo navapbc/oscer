@@ -10,6 +10,8 @@ require "active_support/core_ext/integer/time"
 # Custom setting: set the default url.
 Rails.application.default_url_options[:host] = "localhost"
 
+Rails.application.config.api_secret_key = "test-key"
+
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
