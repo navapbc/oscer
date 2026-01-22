@@ -50,7 +50,7 @@ RSpec.describe "/api/certifications", type: :request do
   }
 
   def auth_headers(params = nil)
-    body = params ? params.to_json : "Hello World"
+    body = params ? params.to_json : ""
     hmac_auth_headers(body: body, secret: Rails.configuration.api_secret_key)
   end
 

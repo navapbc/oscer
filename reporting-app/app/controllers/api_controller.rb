@@ -54,11 +54,11 @@ class ApiController < ActionController::Metal
   def authenticate_api_request!
     strategy = Strata::Auth::Strategies::Hmac.new(secret_key: Rails.configuration.api_secret_key)
     authenticator = Strata::ApiAuthenticator.new(strategy: strategy)
-
+    
     begin
       authenticator.authenticate!(request)
       @current_api_client = Api::Client.new
-    rescue Strata::Auth::AuthenticationError => e
+    rescue Strata::Auth::AuthenticationError, Strata::Auth::InvalidSignature, Strata::Auth::MissingCredentials => e
       render_errors([ e.message ], :unauthorized) && return
     end
   end
