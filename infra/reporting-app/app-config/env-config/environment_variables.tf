@@ -20,5 +20,9 @@ locals {
       manage_method     = "generated"
       secret_store_name = "/${var.app_name}-${var.environment}/service/rails-secret-key-base"
     }
+    API_SECRET_KEY = {
+      manage_method     = "generated"
+      secret_store_name = "/${var.app_name}-${var.environment}/service/api-secret-key"
+    }
   }
 }
