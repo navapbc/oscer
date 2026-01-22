@@ -247,10 +247,10 @@ Returns compliance status and redirect URL if action needed.
 - **Stateless when compliant/exempt** - No database writes, pure calculation
 - **Creates records when action required** - When `action_required: true`, creates:
   1. **Certification** - Contains member demographic data (first_name, last_name, date_of_birth, state_member_id, email, phone) and certification requirements
-  2. **ExParteActivity** records - One record per activity in the `activities` array, linked to Certification via `certification_id`
-  3. **CertificationCase** - Workflow tracker for the business process
+  2. **ExParteActivity** records - One record per activity in the `activities` array, linked via `member_id` (consistent with existing batch flow)
+  3. **CertificationOrigin** - Marks source as API with `in_app_flow: true` to suppress notifications
   4. **InAppSession** - Links to Certification for redirect flow and status tracking
-  5. **CertificationOrigin** - Marks source as API with `in_app_flow: true` to suppress notifications
+  5. **CertificationCase** - Created automatically when `CertificationCreated` event triggers the business process
 
 **Request:**
 ```json
@@ -323,6 +323,19 @@ Returns compliance status and redirect URL if action needed.
 }
 ```
 
+**Idempotency:**
+
+If a compliance check is called for a member who already has an active in-app
+session (not yet completed), the API returns the existing session rather than
+creating a new Certification:
+
+- Existing `InAppSession` found by `state_identifier` + `state_session_id` (not expired, not completed)
+- Returns same `redirect_url` and `oscer_session_id`
+- No duplicate records created
+
+If the previous session has expired or completed, a new Certification and
+session are created.
+
 ---
 
 ### In-App Session Flow
@@ -330,10 +343,11 @@ Returns compliance status and redirect URL if action needed.
 **Token URL Format:** `https://oscer.example.com/in-app/{token}`
 
 **Token Properties:**
-- Cryptographically secure random string (32 bytes, base64url encoded)
-- Signed with per-state HMAC secret
-- One-time use (invalidated after start)
+- Generated using Rails `has_secure_token` (cryptographically secure random string)
+- Stored in `InAppSession.token` column
+- One-time use (invalidated after redemption via `token_consumed_at`)
 - 30-minute expiration window
+- Validated via database lookup (not stateless verification)
 
 **Flow Steps:**
 1. Member clicks redirect link from state application
@@ -363,6 +377,26 @@ https://state.gov/medicaid/continue?
 | oscer_session_id | OSCER session ID for status polling and audit tracking |
 | signature | HMAC signature for verification |
 
+**Signature Verification:**
+
+Return URL signatures use HMAC-SHA256. States receive their signing secret
+during API onboarding (same secret used for API authentication).
+
+Signature generation (OSCER):
+```ruby
+message = "#{oscer_session_id}:#{oscer_status}"
+signature = OpenSSL::HMAC.hexdigest('SHA256', state_secret, message)
+```
+
+State verification (pseudocode):
+```python
+expected = hmac_sha256(secret, f"{oscer_session_id}:{oscer_status}")
+if not constant_time_compare(expected, signature):
+    reject_request()
+```
+
+States MUST use constant-time comparison to prevent timing attacks.
+
 **Status Values:**
 - `activities_submitted` - Member reported CE activities, pending caseworker review
 - `exemption_requested` - Member submitted exemption request, pending caseworker review
@@ -377,6 +411,44 @@ The `oscer_session_id` returned in both the compliance-check response and the re
 
 Members only reach this flow when action is required. Automatic exemptions and
 compliance are determined during the API check phase before redirection.
+
+**Member Authentication (Session-Based, No User Record):**
+
+In-app flow members are authenticated via session context rather than User records:
+
+1. `InAppFlowController` validates the one-time token
+2. Stores `certification_id` and `in_app_session_id` in the Rails session
+3. Clears any existing Devise session to prevent conflicts
+4. Redirects to the member dashboard
+
+Member controllers include the `InAppAuthentication` concern which:
+- Checks for `session[:in_app_certification_id]`
+- If present, loads the Certification directly as the authentication context
+- If absent, falls back to standard Devise `authenticate_user!`
+- Overrides `pundit_user` to return the Certification for Pundit authorization
+
+**Key Integration Points:**
+
+| Concern | Solution |
+|---------|----------|
+| Pundit authorization | `pundit_user` returns Certification for in-app sessions |
+| Form `user_id` fields | Set to `nil` for in-app submissions (nullable in schema) |
+| View `current_user` references | Use safe navigation or `member_first_name` helper |
+| Return flow | `redirect_to_state_app(status:)` builds signed return URL |
+
+**Controllers Requiring Modification:**
+- `DashboardController`
+- `ActivityReportApplicationFormsController`
+- `ExemptionApplicationFormsController`
+
+**Benefits:**
+- No User records created for transient in-app members
+- Members scoped to their specific Certification
+- No Cognito integration required for in-app flow
+- Clear separation from normal user authentication flows
+
+**Trade-off:** Members cannot return to OSCER later without a new token from
+the state application.
 
 ---
 
@@ -751,7 +823,9 @@ flow. Must implement token security carefully.
 5. Response headers indicate fallback eligibility
 
 **Consequences:** States must implement timeout handling and fallback logic.
-Documentation must be clear on expected behavior.
+States should configure reasonable timeouts based on their UX requirements and
+fall back to batch flow if the API is unavailable or slow. Documentation should
+include general timeout guidance once performance baselines are established.
 
 ---
 
