@@ -22,7 +22,7 @@ RSpec.describe CertificationPolicy, type: :policy do
   end
 
   context "when Staff" do
-    let(:current_user) { :staff_user }
+    let(:current_user) { create(:user, :as_caseworker) }
 
     it "forbids the destroy action" do
       expect(described_class.new(current_user, record)).to forbid_action(:destroy)
@@ -34,7 +34,7 @@ RSpec.describe CertificationPolicy, type: :policy do
   end
 
   context "when State System" do
-    let(:current_user) { :state_system_user }
+    let(:current_user) { Api::Client.new }
 
     it "forbids the destroy action" do
       expect(described_class.new(current_user, record)).to forbid_action(:destroy)
