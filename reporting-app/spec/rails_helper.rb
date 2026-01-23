@@ -39,6 +39,7 @@ require 'rspec/rails'
 require_relative 'support/factory_bot'
 require_relative 'support/pundit_spec_view_helper'
 require_relative 'support/policy_shared_examples'
+require "strata/testing/api_auth_helpers"
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
 # spec/support/ and its subdirectories. Files matching `spec/**/*_spec.rb` are
@@ -64,6 +65,7 @@ rescue ActiveRecord::PendingMigrationError => e
 end
 
 RSpec.configure do |config|
+  config.include Strata::Testing::ApiAuthHelpers
   config.include Devise::Test::ControllerHelpers, type: :controller
   config.include PunditSpecViewHelper, type: :view
 
