@@ -67,6 +67,7 @@ notifications suppressed for in-app flow - state handles all member communicatio
 This approach:
 - **Truly stateless** - Zero database writes for compliant/exempt members
 - **On-demand record creation** - Certification/Case created only when member needs to take action
+- **Certification-based sessions** - In-app members are authenticated via their Certification, not User records. No OSCER accounts are created for transient in-app members. (See [ADR-007](#adr-007-certification-based-session-authentication))
 - **Reuses existing business logic** from exemption rules and activity aggregation
 - **Maintains state ownership** of the member experience and all communication
 - **Does not replace batch flow** - states can continue using batch processing alongside real-time APIs
@@ -914,6 +915,39 @@ end
   - Future enhancement: Webhook callbacks (see Future Considerations)
   - Or: Polling API to check certification status
   - Or: Manual caseworker communication with state system
+
+---
+
+### ADR-007: Certification-Based Session Authentication
+
+**Context:** Members redirected from state applications to OSCER need to be authenticated to access the member dashboard and submit activities or exemption requests. The standard OSCER authentication flow uses Devise with Cognito, which creates User records and requires email/password or identity provider login.
+
+**Decision:** Use the **Certification** object as the authentication context for in-app flow sessions instead of creating User records.
+
+**How it works:**
+1. When a member is redirected via the one-time token, `InAppFlowController` validates the token and stores `certification_id` and `in_app_session_id` in the Rails session
+2. Member controllers include an `InAppAuthentication` concern that checks for `session[:in_app_certification_id]`
+3. If present, the Certification is loaded directly as the authentication context
+4. `pundit_user` returns the Certification for Pundit authorization, scoping member access to their specific certification data
+5. Form submissions set `user_id` to `nil` (nullable in schema) for in-app submissions
+
+**Rationale:**
+1. **No transient accounts** - Members completing one-time in-app flows don't need permanent OSCER accounts. Creating User records would leave orphaned accounts that are never used again.
+2. **Simplified integration** - No Cognito/identity provider integration required for in-app flow. Token validation is sufficient.
+3. **Precise scoping** - Members are naturally scoped to their specific Certification. They can only view and modify data related to their certification.
+4. **Clear separation** - In-app flow authentication is completely separate from standard user authentication, avoiding conflicts and complexity.
+5. **Privacy** - No additional PII (email/password) collected beyond what's needed for the certification.
+
+**Trade-offs:**
+- Members cannot return to OSCER later without obtaining a new token from the state application
+- If a member needs to resume an incomplete submission, the state must re-initiate the flow (see "Save and resume progress" in Future Considerations)
+- Controllers and views need to handle both authentication contexts (User vs Certification)
+
+**Consequences:**
+- `InAppAuthentication` concern must be included in member-facing controllers
+- Views using `current_user` must use safe navigation or helper methods
+- Pundit policies must accept Certification as the user context
+- Form models with `user_id` fields must allow nil values for in-app submissions
 
 ---
 
