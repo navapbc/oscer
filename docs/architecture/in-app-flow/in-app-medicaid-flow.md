@@ -1,5 +1,19 @@
 # In-App Medicaid OSCER Flow
-
+> **[ON HOLD]** - Awaiting state validation
+>
+> This in-app Medicaid flow feature is currently **not being built** until we receive concrete use case validation from state partners. 
+>
+> **Why we're pausing:**
+> - Policy research indicates most state applications are not dynamic enough to support real-time API integrations during application submission
+> - States have expressed interest in modular components (rules engine, data connections)
+> - The core value proposition may be better served through a headless rules engine approach that integrates with existing state workflows
+>
+> **What we're doing instead:**
+> - Continuing conversations with state partners to understand their application processes and integration capabilities
+> - Exploring headless/API-only rules engine options that don't require routing applicants to OSCER's UI
+> - Focusing on higher value epics and the renewal process, where states have expressed more immediate need for support
+>
+> This brief is preserved as documentation of the research and design thinking, and may be revisited if state partners express explicit demand for this workflow.
 ## Table of Contents
 1. [Problem](#problem)
 2. [Approach](#approach)
