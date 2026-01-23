@@ -1,5 +1,7 @@
 # Understanding what open source means
 
+You can download a PDF of this file here: [Understanding What Open Source Means (PDF)](../../assets/Understanding%20what%20open%20source%20means.pdf)
+
 ## Frequently Asked Questions
 
 > Tip: This section is placed at the top for quick scanning. Each answer links to the detailed section below.
