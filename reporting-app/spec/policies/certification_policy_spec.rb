@@ -4,9 +4,7 @@ require 'rails_helper'
 
 RSpec.describe CertificationPolicy, type: :policy do
   let(:current_user) { create(:user) }
-  let(:staff_user) { create(:user) }
   let(:state_system_user) { Api::Client.new }
-
   let(:record) { create(:certification) }
 
   let(:resolved_scope) do
