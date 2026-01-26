@@ -5,6 +5,9 @@ class CertificationBatchUpload < ApplicationRecord
   attribute :status, :string, default: :pending
   enum :status, { pending: "pending", processing: "processing", completed: "completed", failed: "failed" }
 
+  # Source type indicates how the file was uploaded
+  enum :source_type, { ui: "ui", api: "api", ftp: "ftp", storage_event: "storage_event" }
+
   attribute :num_rows, :integer, default: 0
   attribute :num_rows_processed, :integer, default: 0
   attribute :num_rows_succeeded, :integer, default: 0
@@ -66,5 +69,17 @@ class CertificationBatchUpload < ApplicationRecord
   # @return [Integer] Number of certifications
   def certifications_count
     CertificationOrigin.from_batch_upload(id).count
+  end
+
+  # Check if this upload uses cloud storage directly (batch upload v2)
+  # @return [Boolean] true if storage_key is present
+  def uses_cloud_storage?
+    storage_key.present?
+  end
+
+  # Check if this upload uses Active Storage (legacy v1 uploads)
+  # @return [Boolean] true if file is attached and storage_key is blank
+  def uses_active_storage?
+    file.attached? && storage_key.blank?
   end
 end

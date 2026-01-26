@@ -150,4 +150,63 @@ RSpec.describe CertificationBatchUpload, type: :model do
       expect(batch_upload.certifications_count).to eq(2)
     end
   end
+
+  describe 'source_type enum' do
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
+
+    it 'defaults to ui' do
+      expect(batch_upload.source_type).to eq("ui")
+      expect(batch_upload).to be_ui
+    end
+
+    it 'can be set to api' do
+      batch_upload.api!
+      expect(batch_upload).to be_api
+    end
+
+    it 'can be set to ftp' do
+      batch_upload.ftp!
+      expect(batch_upload).to be_ftp
+    end
+
+    it 'can be set to storage_event' do
+      batch_upload.storage_event!
+      expect(batch_upload).to be_storage_event
+    end
+  end
+
+  describe '#uses_cloud_storage?' do
+    it 'returns false for legacy uploads without storage_key' do
+      batch_upload = create(:certification_batch_upload, uploader: user, storage_key: nil)
+      expect(batch_upload.uses_cloud_storage?).to be false
+    end
+
+    it 'returns true when storage_key is present' do
+      batch_upload = create(:certification_batch_upload, uploader: user, storage_key: "batch-uploads/uuid/test.csv")
+      expect(batch_upload.uses_cloud_storage?).to be true
+    end
+  end
+
+  describe '#uses_active_storage?' do
+    it 'returns true for legacy uploads with attached file and no storage_key' do
+      batch_upload = create(:certification_batch_upload, uploader: user, storage_key: nil)
+      expect(batch_upload.uses_active_storage?).to be true
+    end
+
+    it 'returns false when storage_key is present even if file is attached' do
+      batch_upload = create(:certification_batch_upload, uploader: user, storage_key: "batch-uploads/uuid/test.csv")
+      expect(batch_upload.uses_active_storage?).to be false
+    end
+
+    it 'returns false when no file is attached' do
+      batch_upload = described_class.new(
+        filename: "test.csv",
+        uploader: user,
+        storage_key: nil
+      )
+      batch_upload.save(validate: false) # Skip validation to create record without file
+      expect(batch_upload.file.attached?).to be false
+      expect(batch_upload.uses_active_storage?).to be false
+    end
+  end
 end
