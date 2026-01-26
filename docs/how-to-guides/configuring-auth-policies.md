@@ -108,6 +108,71 @@ end
 
 By using `policy_scope(Model)` in your controller, you ensure that users only see data they are authorized to access based on their attributes.
 
+## Adding New Attributes for ABAC
+
+As the application grows, you may need to add new attributes to the `User` model to support more granular authorization rules.
+
+### 1. Database Migration
+
+If the attribute should be persisted in the database, create a migration:
+
+```bash
+make rails-generate GENERATE_COMMAND="migration AddDepartmentToUsers department:string"
+make db-migrate
+```
+
+### 2. Update the User Model
+
+Add the attribute to `app/models/user.rb` and define any necessary helper methods.
+
+```ruby
+class User < ApplicationRecord
+  # ...
+  attribute :department, :string
+
+  def in_department?(dept_name)
+    department == dept_name
+  end
+end
+```
+
+### 3. Use the New Attribute in a Policy
+
+Now you can use this attribute in your policies to enforce specific rules. For example, you might want to allow only users from the "Finance" department to see certain reports.
+
+```ruby
+class FinancialReportPolicy < ApplicationPolicy
+  def show?
+    user.admin? || (user.staff? && user.in_department?("Finance"))
+  end
+end
+```
+
+### Virtual Attributes
+
+If an attribute is not stored in the database but is derived from other data (e.g., from a JWT token or an external service), you can define it as a virtual attribute in the `User` model.
+
+```ruby
+class User < ApplicationRecord
+  # ...
+  attr_accessor :temporary_clearance_level
+
+  def high_clearance?
+    temporary_clearance_level == "high"
+  end
+end
+```
+
+This can then be used in policies just like a persisted attribute:
+
+```ruby
+class SensitiveDataPolicy < ApplicationPolicy
+  def view_details?
+    user.admin? || user.high_clearance?
+  end
+end
+```
+
 ## Best Practices
 
 1.  **Keep Policies Simple**: Policies should only contain authorization logic. Complex business logic belongs in models or services.
