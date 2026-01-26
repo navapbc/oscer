@@ -164,11 +164,6 @@ RSpec.describe CertificationBatchUpload, type: :model do
       expect(batch_upload).to be_api
     end
 
-    it 'can be set to ftp' do
-      batch_upload.ftp!
-      expect(batch_upload).to be_ftp
-    end
-
     it 'can be set to storage_event' do
       batch_upload.storage_event!
       expect(batch_upload).to be_storage_event

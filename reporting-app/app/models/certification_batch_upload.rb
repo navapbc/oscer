@@ -6,7 +6,7 @@ class CertificationBatchUpload < ApplicationRecord
   enum :status, { pending: "pending", processing: "processing", completed: "completed", failed: "failed" }
 
   # Source type indicates how the file was uploaded
-  enum :source_type, { ui: "ui", api: "api", ftp: "ftp", storage_event: "storage_event" }
+  enum :source_type, { ui: "ui", api: "api", storage_event: "storage_event" }
 
   attribute :num_rows, :integer, default: 0
   attribute :num_rows_processed, :integer, default: 0
