@@ -6,6 +6,9 @@ This guide explains how to configure authorization policies in the application u
 
 ABAC is an authorization model that provides access rights to users based on attributes (characteristics) of the user, the resource, and the environment. In this application, we primarily use user attributes like `role` and `region` to determine access.
 
+> [!IMPORTANT]
+> **Implementation Note**: The user attributes currently defined in the OSCER project (like `role` and `region`) are **representations** intended to demonstrate how ABAC can be structured. In a production environment, these attributes will likely be provided by an organization's Single Sign-On (SSO) integration (e.g., via OIDC claims or SAML assertions) and mapped to the `User` model during authentication.
+
 ### User Attributes
 
 The `User` model (`app/models/user.rb`) defines several attributes and helper methods used for authorization:
