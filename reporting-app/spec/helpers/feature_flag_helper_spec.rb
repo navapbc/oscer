@@ -28,8 +28,10 @@ RSpec.describe FeatureFlagHelper do
     end
 
     context 'when checking unknown feature' do
-      it 'returns false' do
+      it 'returns false and logs warning' do
+        allow(Rails.logger).to receive(:warn)
         expect(helper.feature_enabled?(:unknown_feature)).to be false
+        expect(Rails.logger).to have_received(:warn).with(/Unknown feature flag/)
       end
     end
   end
