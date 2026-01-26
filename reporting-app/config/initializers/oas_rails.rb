@@ -6,13 +6,49 @@ OasRails.configure do |config|
   config.info.version = "1.0.0"
   config.info.summary = "System for tracking and certifying community engagement requirements for Medicaid"
   config.info.description = <<~HEREDOC
-    # Welcome to the Community Engagement Medicaid API
+    # Community Engagement Medicaid API
 
-    This is the OpenAPI spec for interacting with the Community Engagement Medicaid API.
+    ## Authentication
 
-    ## Getting Started
+    All API endpoints (except `/api/healthcheck`) require HMAC-SHA256 authentication.
 
-    This demo API has no required authentication at the moment.
+    ### Request Format
+    ```
+    Authorization: HMAC sig={base64_signature}
+    ```
+
+    ### Generating the Signature
+
+    1. Take the raw JSON request body
+    2. Compute HMAC-SHA256 using the shared secret key
+    3. Base64-encode (strict) the result
+
+    **Ruby Example:**
+    ```ruby
+    body = { member_id: "123" }.to_json
+    signature = Base64.strict_encode64(
+      OpenSSL::HMAC.digest("sha256", secret_key, body)
+    )
+    # Header: Authorization: HMAC sig=\#{signature}
+    ```
+
+    **curl Example (POST):**
+    ```bash
+    BODY='{"member_id":"123"}'
+    SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$API_SECRET_KEY" -binary | base64)
+    curl -X POST https://api.example.com/api/certifications \\
+      -H "Content-Type: application/json" \\
+      -H "Authorization: HMAC sig=$SIG" \\
+      -d "$BODY"
+    ```
+
+    **curl Example (GET):**
+    ```bash
+    # For GET requests (no body), the signature is computed from an empty string
+    SIG=$(echo -n "" | openssl dgst -sha256 -hmac "$API_SECRET_KEY" -binary | base64)
+    curl -X GET https://api.example.com/api/certifications/{id} \\
+      -H "Authorization: HMAC sig=$SIG"
+    ```
   HEREDOC
   config.info.contact.name = "Nava PBC"
   config.info.contact.email = "medicaid@navapbc.com"
@@ -78,7 +114,7 @@ OasRails.configure do |config|
 
   # Whether to authenticate all routes by default
   # Default is true; set to false if you don't want all routes to include security schemas by default
-  # config.authenticate_all_routes_by_default = true
+  config.authenticate_all_routes_by_default = true
 
   # Default security schema used for authentication
   # Choose a predefined security schema
@@ -89,13 +125,14 @@ OasRails.configure do |config|
   # You can uncomment and modify to use custom security schemas
   # Please follow the documentation: https://spec.openapis.org/oas/latest.html#security-scheme-object
   #
-  # config.security_schemas = {
-  #  bearer:{
-  #   "type": "apiKey",
-  #   "name": "api_key",
-  #   "in": "header"
-  #  }
-  # }
+  config.security_schemas = {
+    hmac: {
+      type: "apiKey",
+      name: "Authorization",
+      in: "header",
+      description: "HMAC signature in format: HMAC sig={base64_signature}"
+    }
+  }
 
   # ###########################
   # Default Responses (Errors)

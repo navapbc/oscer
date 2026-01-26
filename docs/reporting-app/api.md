@@ -25,7 +25,7 @@ signature = Base64.strict_encode64(
 )
 ```
 
-**Bash (curl):**
+**Bash (curl POST):**
 ```bash
 BODY='{"member_id":"123"}'
 SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$API_SECRET_KEY" -binary | base64)
@@ -33,6 +33,14 @@ curl -X POST http://localhost:3000/api/certifications \
   -H "Content-Type: application/json" \
   -H "Authorization: HMAC sig=$SIG" \
   -d "$BODY"
+```
+
+**Bash (curl GET):**
+```bash
+# For GET requests (no body), the signature is computed from an empty string
+SIG=$(echo -n "" | openssl dgst -sha256 -hmac "$API_SECRET_KEY" -binary | base64)
+curl -X GET http://localhost:3000/api/certifications/{id} \
+  -H "Authorization: HMAC sig=$SIG"
 ```
 
 ### Testing with RSpec

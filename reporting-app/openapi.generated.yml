@@ -1,5 +1,12 @@
 ---
 components:
+  securitySchemes:
+    hmac:
+      type: apiKey
+      name: Authorization
+      in: header
+      description: 'HMAC-SHA256 signature. Format: HMAC sig={base64_encoded_signature}.
+        The signature is computed from the request body using the shared secret key.'
   schemas:
     CertificationCreateRequestBody:
       type: object
@@ -433,43 +440,43 @@ components:
       required:
       - status
   responses:
-    e85a7efe856f3b4a33e16865be21f15d:
+    fce2c5f59cd97181b0cb69aafab2022a:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    6125a62221e212bb815526051661dbdc:
+    0ea4ab356e2a8b5ccab72cf7a3ce02e1:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    2e75eacc71eb2f0502fa228d762d5a55:
+    f1ce98ed91709726d022bca82c6ade1a:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    90dc71790b26f81c5e56146f6d9f5018:
+    3b0ea479d309b77a0516d51bce083571:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    f03eaaaf493bc30b5c43df958dbb7e8e:
+    dfa2e176967676c731ccb4a96d74f8f6:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    d490eeb4ff1770bf36c95bf8931bb69e:
+    d5f88820bbb77585eef9547c048da107:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    4a0c71781938225c26730e68f030c36c:
+    8d921f7b0646bf9b04d277eae3a87fe1:
       description: Response
       content:
         application/json:
@@ -485,7 +492,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    3ac5de20e865f14a0346ef405d86aca7:
+    6937948de9fee00ae4778aea1159f62d:
       description: The Certification data.
       content:
         application/json:
@@ -499,7 +506,6 @@ components:
             certification_type:
               "$ref": "#/components/schemas/CertificationCreateRequestBody/examples/certification_type"
       required: false
-  securitySchemes: {}
   headers: {}
   examples: {}
   links: {}
@@ -510,13 +516,49 @@ info:
   summary: System for tracking and certifying community engagement requirements for
     Medicaid
   description: |
-    # Welcome to the Community Engagement Medicaid API
+    # Community Engagement Medicaid API
 
-    This is the OpenAPI spec for interacting with the Community Engagement Medicaid API.
+    ## Authentication
 
-    ## Getting Started
+    All API endpoints (except `/api/healthcheck`) require HMAC-SHA256 authentication.
 
-    This demo API has no required authentication at the moment.
+    ### Request Format
+    ```
+    Authorization: HMAC sig={base64_signature}
+    ```
+
+    ### Generating the Signature
+
+    1. Take the raw JSON request body
+    2. Compute HMAC-SHA256 using the shared secret key
+    3. Base64-encode (strict) the result
+
+    **Ruby Example:**
+    ```ruby
+    body = { member_id: "123" }.to_json
+    signature = Base64.strict_encode64(
+      OpenSSL::HMAC.digest("sha256", secret_key, body)
+    )
+    # Header: Authorization: HMAC sig=#{signature}
+    ```
+
+    **curl Example (POST):**
+    ```bash
+    BODY='{"member_id":"123"}'
+    SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$API_SECRET_KEY" -binary | base64)
+    curl -X POST https://api.example.com/api/certifications \
+      -H "Content-Type: application/json" \
+      -H "Authorization: HMAC sig=$SIG" \
+      -d "$BODY"
+    ```
+
+    **curl Example (GET):**
+    ```bash
+    # For GET requests (no body), the signature is computed from an empty string
+    SIG=$(echo -n "" | openssl dgst -sha256 -hmac "$API_SECRET_KEY" -binary | base64)
+    curl -X GET https://api.example.com/api/certifications/{id} \
+      -H "Authorization: HMAC sig=$SIG"
+    ```
   termsOfService: ''
   contact:
     name: Nava PBC
@@ -540,14 +582,16 @@ paths:
       description: "#"
       operationId: POST__api_certifications
       requestBody:
-        "$ref": "#/components/requestBodies/3ac5de20e865f14a0346ef405d86aca7"
+        "$ref": "#/components/requestBodies/6937948de9fee00ae4778aea1159f62d"
       responses:
         '201':
-          "$ref": "#/components/responses/e85a7efe856f3b4a33e16865be21f15d"
+          "$ref": "#/components/responses/fce2c5f59cd97181b0cb69aafab2022a"
         '400':
-          "$ref": "#/components/responses/6125a62221e212bb815526051661dbdc"
+          "$ref": "#/components/responses/0ea4ab356e2a8b5ccab72cf7a3ce02e1"
         '422':
-          "$ref": "#/components/responses/2e75eacc71eb2f0502fa228d762d5a55"
+          "$ref": "#/components/responses/f1ce98ed91709726d022bca82c6ade1a"
+      security:
+      - hmac: []
   "/api/certifications/{id}":
     get:
       tags:
@@ -559,9 +603,11 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/90dc71790b26f81c5e56146f6d9f5018"
+          "$ref": "#/components/responses/3b0ea479d309b77a0516d51bce083571"
         '404':
-          "$ref": "#/components/responses/f03eaaaf493bc30b5c43df958dbb7e8e"
+          "$ref": "#/components/responses/dfa2e176967676c731ccb4a96d74f8f6"
+      security:
+      - hmac: []
   "/api/health":
     get:
       tags:
@@ -571,6 +617,10 @@ paths:
       operationId: GET__api_health
       responses:
         '200':
-          "$ref": "#/components/responses/d490eeb4ff1770bf36c95bf8931bb69e"
+          "$ref": "#/components/responses/d5f88820bbb77585eef9547c048da107"
         '503':
-          "$ref": "#/components/responses/4a0c71781938225c26730e68f030c36c"
+          "$ref": "#/components/responses/8d921f7b0646bf9b04d277eae3a87fe1"
+      security:
+      - hmac: []
+security:
+- hmac: []
