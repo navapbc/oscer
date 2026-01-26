@@ -3,6 +3,58 @@
 A number of API endpoints are available under the `/api` route, with interactive
 documentation at `/api/docs`.
 
+## Authentication
+
+All API endpoints under `/api` (except `/api/healthcheck`) require HMAC-SHA256 authentication.
+
+### Header Format
+
+```
+Authorization: HMAC sig={base64_signature}
+```
+
+### Generating HMAC Signatures
+
+The signature is computed from the raw request body:
+
+**Ruby:**
+```ruby
+body = { member_id: "123" }.to_json
+signature = Base64.strict_encode64(
+  OpenSSL::HMAC.digest("sha256", ENV["API_SECRET_KEY"], body)
+)
+```
+
+**Bash (curl POST):**
+```bash
+BODY='{"member_id":"123"}'
+SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$API_SECRET_KEY" -binary | base64)
+curl -X POST http://localhost:3000/api/certifications \
+  -H "Content-Type: application/json" \
+  -H "Authorization: HMAC sig=$SIG" \
+  -d "$BODY"
+```
+
+**Bash (curl GET):**
+```bash
+# For GET requests (no body), the signature is computed from an empty string
+SIG=$(echo -n "" | openssl dgst -sha256 -hmac "$API_SECRET_KEY" -binary | base64)
+curl -X GET http://localhost:3000/api/certifications/{id} \
+  -H "Authorization: HMAC sig=$SIG"
+```
+
+### Testing with RSpec
+
+Use the `hmac_auth_headers` helper provided by `Strata::Testing::ApiAuthHelpers`:
+
+```ruby
+post api_certifications_url,
+     params: body,
+     headers: hmac_auth_headers(body: body, secret: Rails.configuration.api_secret_key)
+```
+
+For detailed security architecture, see [API Security Documentation](/docs/architecture/api-security/api-security.md).
+
 ## Stability
 
 During the current period of initial active development, there are no stability
