@@ -6,8 +6,8 @@ module Storage
   # AWS S3 implementation of the storage adapter interface
   class S3Adapter < BaseAdapter
     def initialize(client: nil, bucket: nil, region: nil)
-      @bucket = bucket || ENV.fetch("STORAGE_BUCKET", ENV["BUCKET_NAME"])
-      @region = region || ENV.fetch("STORAGE_REGION", "us-east-1")
+      @bucket = bucket || ENV.fetch("BUCKET_NAME")
+      @region = region || ENV.fetch("AWS_REGION", "us-east-1")
       @client = client || Aws::S3::Client.new(region: @region)
     end
 
