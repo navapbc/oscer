@@ -344,6 +344,23 @@ en:
 
 **Tradeoff**: If a Veteran's status changes, there may be up to 24-hour delay in reflecting new status.
 
+### Restricted SSN-Based Search
+
+**Decision**: Use non-SSN identification methods (such as ICN or member demographic data) for initial implementation.
+
+**Rationale**:
+- **Compliance**: The `disability_rating` API provides a restricted endpoint for SSN search, but it is only approved for organizations explicitly authorized by the VA.
+- **Data Minimization**: Maintaining compliance and minimizing PII requirements by avoiding SSN usage where possible.
+
+### Use of Summary Endpoint
+
+**Decision**: Use the `/summary/disability_rating` endpoint rather than the regular `/disability_rating` endpoint. 
+
+**Rationale**:
+- **Data Minimization**: The summary endpoint returns the specific disability rating information required for eligibility determination while exposing less personal information than the full endpoint.
+- **Purpose-Driven**: It provides exactly the data needed to confirm if a Veteran has a service-connected disability without retrieving extraneous health or service history details.
+- **Privacy**: Aligns with best practices for handling Veteran data by only requesting the minimum necessary information.
+
 ## Authentication Flows
 
 ### Client Credentials Grant Flow (Option 1)
