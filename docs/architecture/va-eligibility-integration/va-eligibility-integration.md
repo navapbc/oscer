@@ -20,11 +20,7 @@ Two integration patterns are required based on access level and use case:
 
 The [Veteran Service History and Eligibility API](https://developer.va.gov/explore/api/veteran-service-history-and-eligibility/docs?version=current) provides:
 
-- Service history records (active duty periods, branch, discharge status)
 - Disability rating information (percentage, service-connected status)
-- Eligibility determinations for VA benefits
-
-**Important**: The API confirms whether a person qualifies as a [Title 38 Veteran](https://www.ecfr.gov/current/title-38) — someone who served in active military service and was discharged under conditions other than dishonorable.
 
 ### Authentication Methods
 
@@ -140,30 +136,30 @@ flowchart TB
 
 | Endpoint | Method | Purpose | Auth Required |
 |----------|--------|---------|---------------|
-| `/services/veteran_verification/v1/status` | POST | Confirm Veteran status | API Key or OAuth |
-| `/services/veteran_verification/v1/service_history` | GET | Get service history | OAuth (user-scoped) |
-| `/services/veteran_verification/v1/disability_rating` | GET | Get disability rating | OAuth (user-scoped) |
+| `services/veteran_verification/v2/summary/disability_rating` | GET | Confirm disability rating | OAuth or with ICN |
+| `services/veteran_verification/v2/summary/disability_rating` | POST | Confirm disability rating | Member Data Lookup |
 
 ### Request/Response Examples
 
-**Disability Rating (OAuth)**
+**Disability Rating**
 ```json
-// GET /services/veteran_verification/v1/disability_rating
-// Headers: Authorization: Bearer {access_token}
-
 // Response
 {
   "data": {
-    "id": "...",
-    "type": "disability_ratings",
+    "id": "12303",
+    "type": "disability-rating",
     "attributes": {
-      "combined_disability_rating": 70,
-      "combined_effective_date": "2015-06-01",
+      "combined_disability_rating": 100,
+      "combined_effective_date": "2018-03-27",
+      "legal_effective_date": "2018-03-27",
       "individual_ratings": [
         {
           "decision": "Service Connected",
-          "effective_date": "2015-06-01",
-          "rating_percentage": 50
+          "disability_rating_id": "1070379",
+          "effective_date": "2018-03-27",
+          "rating_end_date": "2022-08-27",
+          "rating_percentage": 50,
+          "static_ind": true
         }
       ]
     }
