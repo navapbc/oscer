@@ -490,9 +490,13 @@ end
 
 Rails.application.config.veteran_affairs = {
   api_host: ENV.fetch('VA_API_HOST', 'https://sandbox-api.va.gov'),
-  client_id: ENV.fetch('VA_CLIENT_ID'),
-  client_secret: ENV['VA_CLIENT_SECRET'],  # Optional for Option 2
-  oauth_redirect_uri: ENV['VA_OAUTH_REDIRECT_URI'],
+  client_id_ccg: ENV.fetch('VA_CLIENT_ID_CCG'), # Client Credentials (Server-to-Server)
+  private_key: ENV.fetch('VA_PRIVATE_KEY'), # Client Credentials (Server-to-Server)
+  api_token_host: ENV.fetch('VA_TOKEN_HOST', 'https://deptva-eval.okta.com/oauth2/ausi3u00gw66b9Ojk2p7/v1/token'), # Client Credentials (Server-to-Server)
+  auth_flow_auth_host: ENV.fetch('VA_AUTH_HOST', 'https://sandbox-api.va.gov/oauth2/veteran-verification/v1/authorization'), # Oauth Flow
+  client_id_auth_flow: ENV.fetch('VA_CLIENT_ID_AUTH_FLOW'), # Oauth Flow
+  client_secret: ENV['VA_CLIENT_SECRET'],  # Oauth Flow
+  oauth_redirect_uri: ENV['VA_OAUTH_REDIRECT_URI'], # Oauth Flow
   enabled: ENV.fetch('VA_INTEGRATION_ENABLED', 'false') == 'true'
 }
 ```
