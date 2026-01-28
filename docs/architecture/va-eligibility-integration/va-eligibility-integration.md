@@ -185,9 +185,45 @@ flowchart TB
 
 ### VATokenManager Service (Client Credentials)
 
+The `VATokenManager` service is responsible for obtaining and caching the OAuth 2.0 access token using the Client Credentials grant with `private_key_jwt` authentication.
+
+#### Token Request Process
+
+1. **Generate Client Assertion (JWT)**: Create a signed JWT to authenticate the application.
+2. **Request Access Token**: POST the client assertion to the VA token endpoint.
+3. **Cache Token**: Store the token until it expires to minimize redundant requests.
+
+#### 1. JWT Generation (Client Assertion)
+
+The JWT must be signed using the application's private key (RS256) and include the following claims:
+
+| Claim | Value | Description |
+|-------|-------|-------------|
+| `iss` | `VA_CLIENT_ID_CCG` | The Client ID assigned by VA |
+| `sub` | `VA_CLIENT_ID_CCG` | Same as `iss` for Client Credentials |
+| `aud` | `VA_TOKEN_HOST` | The VA token endpoint URL |
+| `jti` | Unique String | A unique identifier for this JWT (e.g., SecureRandom.uuid) |
+| `exp` | Timestamp | Expiration time (typically 5 minutes from now) |
+| `iat` | Timestamp | Issued at time |
+
+#### 2. Token Request (POST)
+
+The access token is retrieved by making a `POST` request to `VA_TOKEN_HOST` with `application/x-www-form-urlencoded` content:
+
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| `grant_type` | `client_credentials` | Required OAuth grant type |
+| `client_assertion_type` | `urn:ietf:params:oauth:client-assertion-type:jwt-bearer` | Indicates JWT authentication |
+| `client_assertion` | `[SIGNED_JWT]` | The generated and signed JWT |
+| `scope` | `veteran_verification.read` | The requested API scope |
+
+#### Key Methods
+
 | Method | Purpose |
 |--------|---------|
 | `get_access_token` | Returns valid token, refreshing if needed |
+| `generate_client_assertion` | Internal: Creates and signs the JWT |
+| `fetch_new_token` | Internal: Makes the POST request to VA |
 
 ### Integration with ExemptionDeterminationService
 
