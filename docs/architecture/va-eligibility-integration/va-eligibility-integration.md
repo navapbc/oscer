@@ -31,6 +31,14 @@ The [Veteran Service History and Eligibility API](https://developer.va.gov/explo
 
 > **Note**: Client Credentials Grant access requires either VA employment or a specific VA agreement ([source](https://developer.va.gov/explore/api/community-care-eligibility/docs)). This is the primary blocker for implementing Option 1 (automated ex-parte checks).
 
+## Unknowns
+
+### Client Credentials Token Requirement for ICN
+
+According to the [VA API documentation](https://developer.va.gov/explore/api/veteran-service-history-and-eligibility/client-credentials), the Client Credentials token endpoint for the Veteran Service History and Eligibility API requires a `launch` parameter containing a Base64 encoded Integrated Control Number (ICN).
+
+It is currently unclear if we can successfully obtain an access token without an ICN (e.g., when we only have member demographic data). This poses a potential challenge for the automated ex-parte check flow, as we may need to retrieve the ICN using another method or endpoint before we can authenticate with the disability rating API.
+
 ## C4 Component Diagram
 
 ### Option 1: Client Credentials Grant (Automated Ex-Parte Checks)
