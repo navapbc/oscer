@@ -296,7 +296,7 @@ Returns compliance status and redirect URL if action needed.
     "number_of_months_to_certify": 1,
     "target_hours": 80
   },
-  "return_url": "https://state.gov/medicaid/continue?session=abc123"
+  "state_session_id": "abc123"
 }
 ```
 
@@ -374,9 +374,18 @@ session are created.
 5. Member completes chosen path
 6. OSCER redirects back to state with signed status parameters
 
+**Return URL Configuration:**
+
+During API onboarding, states configure a **return URL pattern** (e.g., `https://state.gov/medicaid/continue`) in their OSCER state configuration. This base URL is stored in OSCER's state configuration, not in individual session records.
+
 **Return URL Parameters:**
 
-When member completes their submission, OSCER redirects back with:
+When member completes their submission, OSCER dynamically builds the return URL by:
+1. Looking up the state's configured return URL pattern via `state_identifier`
+2. Appending signed query parameters
+3. Generating a fresh HMAC signature using the current state secret
+
+Example return URL:
 ```
 https://state.gov/medicaid/continue?
   session=abc123&
@@ -387,20 +396,21 @@ https://state.gov/medicaid/continue?
 
 | Parameter | Description |
 |-----------|-------------|
-| session | Original state session ID (preserved) |
+| session | Original state session ID (from `InAppSession.state_session_id`) |
 | oscer_status | Submission status: `activities_submitted`, `exemption_requested` |
 | oscer_session_id | OSCER session ID for status polling and audit tracking |
-| signature | HMAC signature for verification |
+| signature | HMAC signature for verification (generated fresh) |
 
-**Signature Verification:**
+**Signature Generation and Verification:**
 
-Return URL signatures use HMAC-SHA256. States receive their signing secret
-during API onboarding (same secret used for API authentication).
+Return URL signatures use HMAC-SHA256. States provide their signing secret during API onboarding (same secret used for API authentication).
 
 Signature generation (OSCER):
 ```ruby
+# Look up state configuration and get current secret
+state_config = StateConfiguration.find_by!(identifier: session.state_identifier)
 message = "#{oscer_session_id}:#{oscer_status}"
-signature = OpenSSL::HMAC.hexdigest('SHA256', state_secret, message)
+signature = OpenSSL::HMAC.hexdigest('SHA256', state_config.current_secret, message)
 ```
 
 State verification (pseudocode):
@@ -411,6 +421,8 @@ if not constant_time_compare(expected, signature):
 ```
 
 States MUST use constant-time comparison to prevent timing attacks.
+
+**Secret Rotation:** Because signatures are generated fresh on-demand (not stored), states can rotate their secrets without invalidating existing in-progress sessions. The next redirect will automatically use the new secret.
 
 **Status Values:**
 - `activities_submitted` - Member reported CE activities, pending caseworker review
@@ -496,10 +508,9 @@ end
 class InAppSessionService
   # @param state_identifier [String] State system identifier
   # @param state_session_id [String] State's session ID for tracking
-  # @param return_url [String] URL to return member to
   # @param certification [Certification] The certification created for this session
   # @return [InAppSession] Session with token and oscer_session_id
-  def self.create_session(state_identifier:, state_session_id:, return_url:, certification:)
+  def self.create_session(state_identifier:, state_session_id:, certification:)
 
   # @param token [String] Session token
   # @return [InAppSession, nil] Valid session or nil
@@ -508,6 +519,8 @@ class InAppSessionService
   # @param session [InAppSession] Completed session
   # @param status [String] Final status (activities_submitted, exemption_requested)
   # @return [String] Signed return URL with status and oscer_session_id
+  # Looks up state configuration via session.state_identifier to get return URL pattern
+  # Generates fresh HMAC signature using current state secret
   def self.build_return_url(session, status:)
 end
 ```
@@ -551,7 +564,6 @@ create_table :in_app_sessions, id: :uuid do |t|
   t.string :state_identifier, null: false
   t.string :state_session_id, null: false
   t.string :token, null: false
-  t.string :return_url, null: false
   t.references :certification, type: :uuid, foreign_key: true, null: true
   t.datetime :token_consumed_at
   t.datetime :expires_at, null: false
@@ -566,11 +578,41 @@ create_table :in_app_sessions, id: :uuid do |t|
 end
 ```
 
+**Note:** Return URLs are not stored in the session. Instead, they are dynamically generated when needed by looking up the state's configured return URL pattern (set during API onboarding) and appending fresh HMAC-signed parameters. This ensures:
+1. **No redundancy** - Return URL can be reconstructed from `state_identifier` + state configuration
+2. **Secret rotation resilience** - Signatures are always generated using the current state secret, never stale stored signatures
+3. **Security best practice** - HMAC signatures are generated fresh on-demand
+
 **Session State (derived from timestamps):**
 - **Pending**: `token_consumed_at` is null and not expired
 - **Active**: `token_consumed_at` present, `completed_at` null, and not expired
 - **Completed**: `completed_at` present
 - **Expired**: `expires_at` < current time
+
+---
+
+### StateConfiguration
+
+Stores per-state configuration for API integration, including return URL patterns and authentication secrets. This is configured once during state API onboarding.
+
+```ruby
+# Existing table (conceptual - actual schema may vary)
+# Key fields for in-app flow:
+class StateConfiguration
+  # Attributes:
+  # - identifier: string (e.g., "STATE_MEDICAID_AGENCY")
+  # - return_url_pattern: string (e.g., "https://state.gov/medicaid/continue")
+  # - current_secret: encrypted string (for HMAC signing and API authentication)
+end
+```
+
+**Usage:**
+```ruby
+# During return URL generation
+state_config = StateConfiguration.find_by!(identifier: session.state_identifier)
+base_url = state_config.return_url_pattern
+# Append query parameters and generate fresh HMAC signature
+```
 
 ---
 
@@ -956,7 +998,8 @@ end
 - **API authentication:** Handled per API Security ADR
 - **Token expiration:** In-app session tokens expire after 30 minutes
 - **One-time tokens:** Tokens are invalidated after first use
-- **Return URL whitelist:** Only pre-configured state domains accepted for return URLs
+- **Return URL configuration:** Return URL patterns configured per-state during API onboarding, stored in state configuration (not in session records)
+- **Dynamic URL generation:** Return URLs built on-demand with fresh HMAC signatures using current state secret
 - **HTTPS required:** All endpoints require TLS
 - **No PII in tokens:** Tokens contain only opaque identifiers, not member data
 - **Stateless checks:** Exemption and compliance check APIs do not persist data when member is compliant/exempt
@@ -1286,7 +1329,7 @@ components:
 
     ComplianceCheckRequest:
       type: object
-      required: [member_data, certification_requirements, return_url]
+      required: [member_data, certification_requirements, state_session_id]
       properties:
         member_data:
           $ref: '#/components/schemas/CertificationMemberData'
@@ -1305,9 +1348,9 @@ components:
               type: integer
             target_hours:
               type: integer
-        return_url:
+        state_session_id:
           type: string
-          format: uri
+          description: State's session identifier used to track this application session. Will be included in return URL parameters.
 
     ComplianceCheckResponse:
       type: object
