@@ -18,7 +18,7 @@ class CertificationBatchUpload < ApplicationRecord
   has_one_attached :file
 
   validates :filename, presence: true
-  validates :file, presence: true, on: :create
+  validate :file_or_storage_key_present, on: :create
 
   default_scope { with_attached_file }
   scope :recent, -> { order(created_at: :desc) }
@@ -81,5 +81,15 @@ class CertificationBatchUpload < ApplicationRecord
   # @return [Boolean] true if file is attached and storage_key is blank
   def uses_active_storage?
     file.attached? && storage_key.blank?
+  end
+
+  private
+
+  # Validation: ensure either file or storage_key is present on create
+  # V1 uploads use file (ActiveStorage), V2 uploads use storage_key (cloud storage)
+  def file_or_storage_key_present
+    return if file.attached? || storage_key.present?
+
+    errors.add(:base, "Must provide either a file upload or storage key")
   end
 end

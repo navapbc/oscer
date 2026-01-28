@@ -13,10 +13,10 @@ RSpec.describe CertificationBatchUpload, type: :model do
       expect(batch_upload.errors[:filename]).to be_present
     end
 
-    it 'requires file on create' do
+    it 'requires file or storage_key on create' do
       batch_upload = described_class.new(filename: "test.csv", uploader: user)
       expect(batch_upload).not_to be_valid
-      expect(batch_upload.errors[:file]).to be_present
+      expect(batch_upload.errors[:base]).to include("Must provide either a file upload or storage key")
     end
   end
 
@@ -193,13 +193,11 @@ RSpec.describe CertificationBatchUpload, type: :model do
       expect(batch_upload.uses_active_storage?).to be false
     end
 
-    it 'returns false when no file is attached' do
-      batch_upload = described_class.new(
-        filename: "test.csv",
+    it 'returns false for v2 uploads with storage_key but no file' do
+      batch_upload = create(:certification_batch_upload,
         uploader: user,
-        storage_key: nil
+        storage_key: "batch-uploads/uuid/test.csv"
       )
-      batch_upload.save(validate: false) # Skip validation to create record without file
       expect(batch_upload.file.attached?).to be false
       expect(batch_upload.uses_active_storage?).to be false
     end

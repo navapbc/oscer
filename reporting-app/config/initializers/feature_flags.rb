@@ -28,11 +28,14 @@ module Features
     # },
   }.freeze
 
+  # Cached Boolean type instance for efficient casting
+  BOOLEAN_TYPE = ActiveModel::Type::Boolean.new.freeze
+
   class << self
     # Dynamically define <feature>_enabled? methods for each flag
     FEATURE_FLAGS.each do |flag_name, config|
       define_method("#{flag_name}_enabled?") do
-        ENV.fetch(config[:env_var], config[:default].to_s) == "true"
+        cast_to_boolean(config)
       end
     end
 
@@ -47,7 +50,7 @@ module Features
       end
 
       config = FEATURE_FLAGS[flag_name]
-      ENV.fetch(config[:env_var], config[:default].to_s) == "true"
+      cast_to_boolean(config)
     end
 
     # List all registered feature flags
@@ -61,6 +64,17 @@ module Features
     # @return [Hash] configuration for the flag
     def flag_config(flag_name)
       FEATURE_FLAGS[flag_name]
+    end
+
+    private
+
+    # Cast an environment variable value to boolean using Rails type coercion
+    # Handles many truthy formats: "true", "1", "t", "yes", "y", "on" (case-insensitive)
+    # @param config [Hash] feature flag configuration with :env_var and :default keys
+    # @return [Boolean] true if the value is truthy, false otherwise
+    def cast_to_boolean(config)
+      val = ENV.fetch(config[:env_var], config[:default])
+      BOOLEAN_TYPE.cast(val) == true
     end
   end
 end
