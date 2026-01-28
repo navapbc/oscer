@@ -4,6 +4,9 @@
 # This is the parent class for all other controllers in the application.
 class ApplicationController < ActionController::Base
   include Pundit::Authorization
+  include FeatureFlagHelper
+
+  helper_method :feature_enabled?
 
   around_action :switch_locale
   after_action :verify_authorized, except: :index

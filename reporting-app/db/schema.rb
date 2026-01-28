@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_26_200619) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -79,7 +79,10 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_10_000001) do
     t.datetime "processed_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "storage_key"
+    t.string "source_type", default: "ui"
     t.index ["created_at"], name: "index_certification_batch_uploads_on_created_at"
+    t.index ["source_type"], name: "index_certification_batch_uploads_on_source_type"
     t.index ["uploader_id"], name: "index_certification_batch_uploads_on_uploader_id"
   end
 

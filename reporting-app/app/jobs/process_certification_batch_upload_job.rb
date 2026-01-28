@@ -9,6 +9,24 @@ class ProcessCertificationBatchUploadJob < ApplicationJob
   def perform(batch_upload_id)
     batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_upload_id)
 
+    # Guard: V2 uploads not yet supported
+    # TODO: Remove this guard when v2 processing is implemented (Stories 1-3)
+    if batch_upload.uses_cloud_storage?
+      batch_upload.fail_processing!(
+        error_message: "Batch upload v2 is not yet implemented"
+      )
+      return
+    end
+
+    # Guard: Ensure valid v1 upload
+    unless batch_upload.uses_active_storage?
+      batch_upload.fail_processing!(
+        error_message: "Invalid upload state: missing file attachment"
+      )
+      return
+    end
+
+    # V1 upload processing (ActiveStorage)
     # Mark as processing
     batch_upload.start_processing!
 
