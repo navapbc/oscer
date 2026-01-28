@@ -180,8 +180,6 @@ flowchart TB
 | Method | Purpose |
 |--------|---------|
 | `get_access_token` | Returns valid token, refreshing if needed |
-| `refresh_token` | Forces token refresh |
-| `token_valid?` | Checks if current token is still valid |
 
 ### Integration with ExemptionDeterminationService
 
@@ -282,6 +280,7 @@ Add new exemption type for Veteran disability:
 
 ```yaml
 # config/locales/exemption_types.en.yml
+# The following is an example, not pulled from any source of truth.
 en:
   exemption_types:
     veteran_disability:
@@ -309,40 +308,6 @@ en:
 - Manual verification path remains available via exemption application form
 
 **Tradeoff**: May result in some Veterans not receiving automatic exemption, requiring them to use the exemption screener or submit documentation.
-
-### Client Credentials vs Authorization Code Priority
-
-**Decision**: Implement Authorization Code Grant flow first, pursue Client Credentials Grant as enhancement
-
-**Rationale**:
-- Authorization Code Grant requires standard production access (achievable via demo)
-- Client Credentials Grant requires VA agreement (longer procurement process)
-- Authorization Code provides immediate value for member self-service
-- Client Credentials can be added later for automated ex-parte checks
-
-**Tradeoff**: Initial implementation requires member interaction; fully automated checks depend on VA agreement timeline.
-
-### Token Caching Strategy
-
-**Decision**: Cache OAuth tokens in Redis with TTL slightly less than token expiration
-
-| Grant Type | Token TTL | Refresh Strategy |
-|------------|-----------|------------------|
-| Client Credentials | ~60 minutes | Refresh 5 minutes before expiry |
-| Authorization Code | Session-scoped | Refresh on each request if needed |
-
-**Rationale**: Minimizes API calls to VA OAuth provider; avoids expired token errors.
-
-### VA API Response Caching
-
-**Decision**: Cache Veteran eligibility results for 24 hours per member
-
-**Rationale**:
-- Disability ratings change infrequently
-- Reduces load on VA API
-- Certification periods are monthly; stale data risk is low
-
-**Tradeoff**: If a Veteran's status changes, there may be up to 24-hour delay in reflecting new status.
 
 ### Restricted SSN-Based Search
 
@@ -477,11 +442,15 @@ end
 
 | Variable | Purpose | Required For |
 |----------|---------|--------------|
-| `VA_API_HOST` | API endpoint (sandbox/production) | Both options |
-| `VA_CLIENT_ID` | OAuth client ID | Both options |
-| `VA_CLIENT_SECRET` | OAuth client secret | Option 1 only |
-| `VA_OAUTH_REDIRECT_URI` | Callback URL for auth code flow | Option 2 only |
-| `VA_API_KEY` | API key for non-OAuth endpoints | Sandbox testing |
+| `VA_API_HOST` | VA API base endpoint (sandbox/production) | Both options |
+| `VA_CLIENT_ID_CCG` | OAuth client ID for Client Credentials | Option 1 only |
+| `VA_PRIVATE_KEY` | Private key for JWT signing | Option 1 only |
+| `VA_TOKEN_HOST` | OAuth token endpoint for Client Credentials | Option 1 only |
+| `VA_AUTH_HOST` | OAuth authorization endpoint for Auth Code flow | Option 2 only |
+| `VA_CLIENT_ID_AUTH_FLOW` | OAuth client ID for Auth Code flow | Option 2 only |
+| `VA_CLIENT_SECRET` | OAuth client secret for Auth Code flow | Option 2 only |
+| `VA_OAUTH_REDIRECT_URI` | Callback URL for Auth Code flow | Option 2 only |
+| `VA_INTEGRATION_ENABLED` | Flag to enable/disable VA integration | Both options |
 
 ### Configuration Example
 
