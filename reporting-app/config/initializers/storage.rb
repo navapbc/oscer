@@ -41,6 +41,9 @@ Rails.application.config.to_prepare do
   # Skip initialization in test environment (tests use mocks/stubs)
   next if Rails.env.test?
 
+  # Skip if required environment variables aren't present (e.g., during asset precompilation)
+  next unless ENV["BUCKET_NAME"].present?
+
   adapter_type = ENV.fetch("STORAGE_ADAPTER", StorageConfig::DEFAULT_ADAPTER).downcase
 
   Rails.application.config.storage_adapter = case adapter_type
