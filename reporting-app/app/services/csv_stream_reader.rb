@@ -3,18 +3,18 @@
 require "csv"
 
 class CsvStreamReader
-  DEFAULT_CHUNK_SIZE = 1_000
+  DEFAULT_BATCH_SIZE = 1_000
 
   def initialize(storage_adapter: nil)
     @storage = storage_adapter || Rails.application.config.storage_adapter
   end
 
-  # Stream a CSV file from storage and yield chunks of parsed records
+  # Stream a CSV file from storage and yield batches of parsed records
   # @param storage_key [String] The object key in storage
-  # @param chunk_size [Integer] Number of records per chunk
+  # @param batch_size [Integer] Number of records per batch
   # @yield [Array<Hash>] Array of parsed CSV records as hashes
   # @return [void]
-  def each_chunk(storage_key, chunk_size: DEFAULT_CHUNK_SIZE)
+  def each_batch(storage_key, batch_size: DEFAULT_BATCH_SIZE)
     headers = nil
     buffer = []
 
@@ -36,8 +36,8 @@ class CsvStreamReader
       record = headers.zip(values).to_h
       buffer << record
 
-      # Yield chunk when buffer is full
-      if buffer.size >= chunk_size
+      # Yield batch when buffer is full
+      if buffer.size >= batch_size
         yield buffer
         buffer = []
       end
