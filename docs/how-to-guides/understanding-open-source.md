@@ -119,13 +119,13 @@ While OSCER accelerates initial development, states maintain operational respons
 - Documentation available to support audits
 - Nava can provide direct audit support as needed
 
-### How do states adopt updates from the community?
+### How do states adopt updates from the community? (more details coming soon)
 
 States maintain full control over which updates to adopt:
-- Review tagged releases and decide what to pull into the state’s own instance
-- Tooling available to help manage version control
-- Security review updates before adoption into the state’s environment
-- The state determines the timeline for implementing changes
+- Work with Nava's implementation team to understand available updates and improvements
+- Determine the timeline and approach for implementing changes
+- Review changes before adoption into the state's environment
+- Nava can provide support throughout the update process
 
 ---
 
