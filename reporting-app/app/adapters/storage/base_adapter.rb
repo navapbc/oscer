@@ -8,22 +8,6 @@ module Storage
       # Subclasses define their own initialization parameters
     end
 
-    # Upload an object to storage
-    # @param key [String] The object key (path) in the bucket
-    # @param body [String, IO] The object content
-    # @param options [Hash] Additional options (content_type, metadata, etc.)
-    # @return [Hash] Response containing etag, version_id, etc.
-    def put_object(key:, body:, **options)
-      raise NotImplementedError
-    end
-
-    # Download an object from storage
-    # @param key [String] The object key (path) in the bucket
-    # @return [String] The object content
-    def get_object(key:)
-      raise NotImplementedError
-    end
-
     # Delete an object from storage
     # @param key [String] The object key (path) in the bucket
     # @return [Hash] Response from storage provider
@@ -35,13 +19,6 @@ module Storage
     # @param key [String] The object key (path) in the bucket
     # @return [Boolean] true if object exists, false otherwise
     def object_exists?(key:)
-      raise NotImplementedError
-    end
-
-    # Get object metadata without downloading the full object
-    # @param key [String] The object key (path) in the bucket
-    # @return [Hash] Metadata including size, content_type, last_modified, etag
-    def get_object_metadata(key:)
       raise NotImplementedError
     end
 

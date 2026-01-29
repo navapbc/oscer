@@ -11,31 +11,6 @@ module Storage
       @client = client || Aws::S3::Client.new(region: @region)
     end
 
-    # Upload an object to S3
-    # @param key [String] The object key (path) in the bucket
-    # @param body [String, IO] The object content
-    # @param options [Hash] Additional options (content_type, metadata, etc.)
-    # @return [Hash] Response from S3 containing etag, version_id, etc.
-    def put_object(key:, body:, **options)
-      @client.put_object(
-        bucket: @bucket,
-        key: key,
-        body: body,
-        **options
-      )
-    end
-
-    # Download an object from S3
-    # @param key [String] The object key (path) in the bucket
-    # @return [String] The object content
-    def get_object(key:)
-      response = @client.get_object(
-        bucket: @bucket,
-        key: key
-      )
-      response.body.read
-    end
-
     # Delete an object from S3
     # @param key [String] The object key (path) in the bucket
     # @return [Hash] Response from S3
@@ -60,23 +35,6 @@ module Storage
       # responses have no body. AWS SDK creates the error class dynamically from
       # the HTTP 404 status code without a specific error code from the response body.
       false
-    end
-
-    # Get object metadata without downloading the full object
-    # @param key [String] The object key (path) in the bucket
-    # @return [Hash] Metadata including size, content_type, last_modified, etag
-    def get_object_metadata(key:)
-      response = @client.head_object(
-        bucket: @bucket,
-        key: key
-      )
-      {
-        size: response.content_length,
-        content_type: response.content_type,
-        last_modified: response.last_modified,
-        etag: response.etag,
-        metadata: response.metadata
-      }
     end
 
     # Generate a presigned URL for uploading an object to S3

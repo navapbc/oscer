@@ -7,39 +7,6 @@ RSpec.describe Storage::S3Adapter do
   let(:adapter) { described_class.new(client: s3_client, bucket: "test-bucket", region: "us-east-1") }
   let(:test_key) { "uploads/test-file.csv" }
 
-  describe "#put_object" do
-    it "uploads an object to S3" do
-      s3_client.stub_responses(:put_object, { etag: "abc123", version_id: "v1" })
-
-      result = adapter.put_object(key: test_key, body: "test content")
-
-      expect(result.etag).to eq("abc123")
-      expect(result.version_id).to eq("v1")
-    end
-
-    it "passes additional options to S3" do
-      # Just verify the call succeeds with additional options
-      expect do
-        adapter.put_object(
-          key: test_key,
-          body: "test content",
-          content_type: "text/csv",
-          metadata: { "source" => "batch_upload" }
-        )
-      end.not_to raise_error
-    end
-  end
-
-  describe "#get_object" do
-    it "downloads an object from S3" do
-      s3_client.stub_responses(:get_object, { body: "file content" })
-
-      result = adapter.get_object(key: test_key)
-
-      expect(result).to eq("file content")
-    end
-  end
-
   describe "#delete_object" do
     it "deletes an object from S3" do
       expect do
@@ -62,26 +29,6 @@ RSpec.describe Storage::S3Adapter do
       s3_client.stub_responses(:head_object, "NotFound")
 
       expect(adapter.object_exists?(key: test_key)).to be false
-    end
-  end
-
-  describe "#get_object_metadata" do
-    it "returns metadata about the object" do
-      s3_client.stub_responses(:head_object, {
-        content_length: 1024,
-        content_type: "text/csv",
-        last_modified: Time.parse("2026-01-27T10:00:00Z"),
-        etag: "abc123",
-        metadata: { "source" => "batch_upload" }
-      })
-
-      result = adapter.get_object_metadata(key: test_key)
-
-      expect(result[:size]).to eq(1024)
-      expect(result[:content_type]).to eq("text/csv")
-      expect(result[:last_modified]).to eq(Time.parse("2026-01-27T10:00:00Z"))
-      expect(result[:etag]).to eq("abc123")
-      expect(result[:metadata]).to eq({ "source" => "batch_upload" })
     end
   end
 
