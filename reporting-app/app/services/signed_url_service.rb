@@ -5,7 +5,7 @@ class SignedUrlService
   DEFAULT_EXPIRY = 1.hour.to_i
 
   def initialize(storage_adapter: nil)
-    @storage = storage_adapter || default_storage_adapter
+    @storage = storage_adapter || Rails.application.config.storage_adapter
   end
 
   # Generate a presigned URL for uploading a file directly to storage
@@ -24,10 +24,6 @@ class SignedUrlService
   end
 
   private
-
-  def default_storage_adapter
-    Rails.application.config.storage_adapter ||= Storage::S3Adapter.new
-  end
 
   def generate_storage_key(filename)
     uuid = SecureRandom.uuid

@@ -56,6 +56,9 @@ module Storage
       )
       true
     rescue Aws::S3::Errors::NotFound
+      # Note: head_object returns NotFound (not NoSuchKey) because HTTP HEAD
+      # responses have no body. AWS SDK creates the error class dynamically from
+      # the HTTP 404 status code without a specific error code from the response body.
       false
     end
 
@@ -94,12 +97,25 @@ module Storage
     end
 
     # Stream an object from S3 line by line
+    # Uses AWS SDK's block-based streaming to read chunks from the socket,
+    # buffering until complete lines are found. Constant memory usage.
     # @param key [String] The object key (path) in the bucket
     # @yield [line] Yields each line from the file
     # @return [void]
     def stream_object(key:, &block)
-      response = @client.get_object(bucket: @bucket, key: key)
-      response.body.each_line(&block)
+      line_buffer = +""
+
+      @client.get_object(bucket: @bucket, key: key) do |chunk|
+        line_buffer << chunk
+
+        while (newline_idx = line_buffer.index("\n"))
+          line = line_buffer.slice!(0..newline_idx)
+          yield line
+        end
+      end
+
+      # Yield remaining content (file without trailing newline)
+      yield line_buffer unless line_buffer.empty?
     end
   end
 end

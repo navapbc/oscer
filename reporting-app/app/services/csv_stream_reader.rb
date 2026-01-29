@@ -2,11 +2,11 @@
 
 require "csv"
 
-class StorageStreamReader
+class CsvStreamReader
   DEFAULT_CHUNK_SIZE = 1_000
 
   def initialize(storage_adapter: nil)
-    @storage = storage_adapter || default_storage_adapter
+    @storage = storage_adapter || Rails.application.config.storage_adapter
   end
 
   # Stream a CSV file from storage and yield chunks of parsed records
@@ -45,11 +45,5 @@ class StorageStreamReader
 
     # Yield remaining records
     yield buffer unless buffer.empty?
-  end
-
-  private
-
-  def default_storage_adapter
-    Rails.application.config.storage_adapter ||= Storage::S3Adapter.new
   end
 end

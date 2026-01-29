@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe StorageStreamReader do
+RSpec.describe CsvStreamReader do
   let(:adapter) { instance_double(Storage::S3Adapter) }
   let(:reader) { described_class.new(storage_adapter: adapter) }
 

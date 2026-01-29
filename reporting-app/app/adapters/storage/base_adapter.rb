@@ -4,10 +4,8 @@ module Storage
   # Base adapter defining the interface for cloud storage implementations.
   # All storage adapters must implement these methods.
   class BaseAdapter
-    def initialize(client: nil, bucket: nil, region: nil)
-      @client = client
-      @bucket = bucket
-      @region = region
+    def initialize(**options)
+      # Subclasses define their own initialization parameters
     end
 
     # Upload an object to storage
@@ -56,9 +54,11 @@ module Storage
       raise NotImplementedError
     end
 
-    # Stream an object from storage in chunks
+    # Stream an object from storage line by line with constant memory usage
+    # Suitable for text files (CSV, logs, etc.). Streams data without loading
+    # the entire file into memory, making it suitable for large files.
     # @param key [String] The object key (path) in the bucket
-    # @yield [chunk] Yields each chunk of data as it's read
+    # @yield [line] Yields each line from the file
     # @return [void]
     def stream_object(key:, &block)
       raise NotImplementedError
