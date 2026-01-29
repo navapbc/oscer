@@ -13,7 +13,6 @@ module Storage
 
     # Delete an object from S3
     # @param key [String] The object key (path) in the bucket
-    # @return [Hash] Response from S3
     def delete_object(key:)
       @client.delete_object(
         bucket: @bucket,
@@ -23,7 +22,6 @@ module Storage
 
     # Check if an object exists in S3
     # @param key [String] The object key (path) in the bucket
-    # @return [Boolean] true if object exists, false otherwise
     def object_exists?(key:)
       @client.head_object(
         bucket: @bucket,
@@ -41,7 +39,6 @@ module Storage
     # @param key [String] The object key (path) in the bucket
     # @param content_type [String] MIME type of the object
     # @param expires_in [Integer] URL expiration time in seconds
-    # @return [Hash] { url: String, key: String }
     def generate_signed_upload_url(key:, content_type:, expires_in:)
       presigner = Aws::S3::Presigner.new(client: @client)
       url = presigner.presigned_url(
@@ -58,8 +55,6 @@ module Storage
     # Uses AWS SDK's block-based streaming to read chunks from the socket,
     # buffering until complete lines are found. Constant memory usage.
     # @param key [String] The object key (path) in the bucket
-    # @yield [line] Yields each line from the file
-    # @return [void]
     def stream_object(key:, &block)
       line_buffer = +""
 
