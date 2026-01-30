@@ -52,14 +52,14 @@ module Storage
     end
 
     # Stream an object from S3 line by line
-    # Uses AWS SDK's block-based streaming to read chunks from the socket,
+    # Uses AWS SDK's block-based streaming to read data from the socket,
     # buffering until complete lines are found. Constant memory usage.
     # @param key [String] The object key (path) in the bucket
     def stream_object(key:, &block)
       line_buffer = +""
 
-      @client.get_object(bucket: @bucket, key: key) do |chunk|
-        line_buffer << chunk
+      @client.get_object(bucket: @bucket, key: key) do |data|
+        line_buffer << data
 
         while (newline_idx = line_buffer.index("\n"))
           line = line_buffer.slice!(0..newline_idx)
