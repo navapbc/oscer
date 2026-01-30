@@ -85,9 +85,9 @@ RSpec.describe Storage::S3Adapter do
     it "handles lines split across chunks" do
       # Simulate AWS SDK streaming chunks that split lines mid-content
       allow(s3_client).to receive(:get_object).with(bucket: "test-bucket", key: test_key)
-        .and_yield("header1,he")
-        .and_yield("ader2\nval")
-        .and_yield("ue1,value2\n")
+        .and_yield("header1,he", nil)
+        .and_yield("ader2\nval", nil)
+        .and_yield("ue1,value2\n", nil)
 
       lines = []
       adapter.stream_object(key: test_key) { |line| lines << line }
@@ -98,8 +98,8 @@ RSpec.describe Storage::S3Adapter do
     it "handles file without trailing newline" do
       # Last line doesn't end with newline - should still yield it
       allow(s3_client).to receive(:get_object).with(bucket: "test-bucket", key: test_key)
-        .and_yield("header\n")
-        .and_yield("last_line_no_newline")
+        .and_yield("header\n", nil)
+        .and_yield("last_line_no_newline", nil)
 
       lines = []
       adapter.stream_object(key: test_key) { |line| lines << line }
@@ -110,7 +110,7 @@ RSpec.describe Storage::S3Adapter do
     it "handles multiple newlines in a single chunk" do
       # Single chunk contains multiple complete lines
       allow(s3_client).to receive(:get_object).with(bucket: "test-bucket", key: test_key)
-        .and_yield("line1\nline2\nline3\n")
+        .and_yield("line1\nline2\nline3\n", nil)
 
       lines = []
       adapter.stream_object(key: test_key) { |line| lines << line }
@@ -121,9 +121,9 @@ RSpec.describe Storage::S3Adapter do
     it "handles empty chunks mixed with content" do
       # Edge case: empty chunks shouldn't affect line buffering
       allow(s3_client).to receive(:get_object).with(bucket: "test-bucket", key: test_key)
-        .and_yield("start")
-        .and_yield("")
-        .and_yield("\nend\n")
+        .and_yield("start", nil)
+        .and_yield("", nil)
+        .and_yield("\nend\n", nil)
 
       lines = []
       adapter.stream_object(key: test_key) { |line| lines << line }
