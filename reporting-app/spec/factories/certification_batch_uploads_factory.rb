@@ -7,12 +7,14 @@ FactoryBot.define do
     association :uploader, factory: :user
 
     after(:build) do |batch_upload|
-      # Attach a dummy CSV file
-      batch_upload.file.attach(
-        io: StringIO.new("member_id,case_number\nM001,C-001"),
-        filename: batch_upload.filename,
-        content_type: 'text/csv'
-      )
+      # Attach a dummy CSV file for v1 uploads (unless storage_key is set for v2)
+      if batch_upload.storage_key.blank?
+        batch_upload.file.attach(
+          io: StringIO.new("member_id,case_number\nM001,C-001"),
+          filename: batch_upload.filename,
+          content_type: 'text/csv'
+        )
+      end
     end
 
     trait :processing do
