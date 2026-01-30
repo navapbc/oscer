@@ -202,4 +202,46 @@ RSpec.describe CertificationBatchUpload, type: :model do
       expect(batch_upload.uses_active_storage?).to be false
     end
   end
+
+  describe 'audit_logs association' do
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user, storage_key: "test-key") }
+
+    it 'has many audit_logs' do
+      log1 = create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 1)
+      log2 = create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 2)
+
+      expect(batch_upload.audit_logs).to include(log1, log2)
+      expect(batch_upload.audit_logs.count).to eq(2)
+    end
+
+    it 'destroys audit_logs when batch_upload is destroyed' do
+      create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 1)
+      create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 2)
+
+      # Eager load associations to avoid strict_loading violations
+      batch_upload_with_associations = described_class.includes(:audit_logs, :upload_errors).find(batch_upload.id)
+      expect { batch_upload_with_associations.destroy }.to change(CertificationBatchUploadAuditLog, :count).by(-2)
+    end
+  end
+
+  describe 'upload_errors association' do
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user, storage_key: "test-key") }
+
+    it 'has many upload_errors' do
+      error1 = create(:upload_error, certification_batch_upload: batch_upload, row_number: 1)
+      error2 = create(:upload_error, certification_batch_upload: batch_upload, row_number: 2)
+
+      expect(batch_upload.upload_errors).to include(error1, error2)
+      expect(batch_upload.upload_errors.count).to eq(2)
+    end
+
+    it 'destroys upload_errors when batch_upload is destroyed' do
+      create(:upload_error, certification_batch_upload: batch_upload, row_number: 1)
+      create(:upload_error, certification_batch_upload: batch_upload, row_number: 2)
+
+      # Eager load associations to avoid strict_loading violations
+      batch_upload_with_associations = described_class.includes(:audit_logs, :upload_errors).find(batch_upload.id)
+      expect { batch_upload_with_associations.destroy }.to change(CertificationBatchUploadError, :count).by(-2)
+    end
+  end
 end

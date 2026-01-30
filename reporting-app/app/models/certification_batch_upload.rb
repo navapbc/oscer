@@ -16,6 +16,12 @@ class CertificationBatchUpload < ApplicationRecord
 
   belongs_to :uploader, class_name: "User"
   has_one_attached :file
+  has_many :audit_logs,
+           class_name: "CertificationBatchUploadAuditLog",
+           dependent: :destroy
+  has_many :upload_errors,
+           class_name: "CertificationBatchUploadError",
+           dependent: :destroy
 
   validates :filename, presence: true
   validate :file_or_storage_key_present, on: :create

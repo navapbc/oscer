@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_26_200619) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_30_180441) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -65,6 +65,31 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_26_200619) do
     t.uuid "certification_case_id"
     t.jsonb "reporting_periods"
     t.index ["certification_case_id"], name: "idx_on_certification_case_id_df9964575c", unique: true
+  end
+
+  create_table "certification_batch_upload_audit_logs", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "certification_batch_upload_id", null: false
+    t.integer "chunk_number", null: false
+    t.string "status", default: "started", null: false
+    t.integer "succeeded_count", default: 0
+    t.integer "failed_count", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["certification_batch_upload_id", "chunk_number"], name: "idx_audit_logs_on_upload_chunk"
+    t.index ["certification_batch_upload_id"], name: "idx_on_certification_batch_upload_id_eb583b913c"
+    t.index ["status"], name: "idx_audit_logs_on_status"
+  end
+
+  create_table "certification_batch_upload_errors", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "certification_batch_upload_id", null: false
+    t.integer "row_number", null: false
+    t.string "error_code", null: false
+    t.string "error_message", null: false
+    t.jsonb "row_data"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["certification_batch_upload_id", "error_code"], name: "idx_upload_errors_on_upload_code"
+    t.index ["certification_batch_upload_id"], name: "idx_on_certification_batch_upload_id_d6e2f52eea"
   end
 
   create_table "certification_batch_uploads", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -203,6 +228,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_26_200619) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "activities", "activity_report_application_forms"
   add_foreign_key "activity_report_application_forms", "certification_cases"
+  add_foreign_key "certification_batch_upload_audit_logs", "certification_batch_uploads"
+  add_foreign_key "certification_batch_upload_errors", "certification_batch_uploads"
   add_foreign_key "certification_cases", "certifications"
   add_foreign_key "exemption_application_forms", "certification_cases"
 end
