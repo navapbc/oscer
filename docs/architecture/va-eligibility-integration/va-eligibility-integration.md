@@ -35,9 +35,9 @@ The [Veteran Service History and Eligibility API](https://developer.va.gov/explo
 
 ### Client Credentials Token Requirement for ICN
 
-According to the [VA API documentation](https://developer.va.gov/explore/api/veteran-service-history-and-eligibility/client-credentials), the Client Credentials token endpoint for the Veteran Service History and Eligibility API requires a `launch` parameter containing a Base64 encoded Integrated Control Number (ICN).
+Testing with the sample token generation code confirmed that we must request a token with a patient ICN. It was not possible to successfully query the sandbox POST endpoint without knowing the ICN beforehand. Consequently, there is no viable use case for using the POST endpoint to search for a Veteran; instead, we should use the `GET /v2/disability_rating` endpoint with the correct user ICN only.
 
-It is currently unclear if we can successfully obtain an access token without an ICN (e.g., when we only have member demographic data). This poses a potential challenge for the automated ex-parte check flow, as we may need to retrieve the ICN using another method or endpoint before we can authenticate with the disability rating API.
+Additionally, testing of the summary `disability_rating` endpoints revealed that they were unusable due to persistent server errors that could not be debugged.
 
 ## C4 Component Diagram
 
@@ -80,7 +80,7 @@ flowchart TB
     TokenManager -->|"client_credentials grant"| TokenApi
     TokenApi -->|"access_token"| TokenManager
     VAService -->|"query disability"| VAAdapter
-    VAAdapter -->|"GET /summary/disability_rating OR POST /summary/disability_rating"| VAAPI
+    VAAdapter -->|"GET /disability_rating"| VAAPI
     VAAPI -->|"disability_rating"| VAAdapter
     VAAdapter -->|"VeteranDisabilityResult"| VAService
     VAService -->|"is_exempt_veteran?"| ExemptionService
@@ -144,8 +144,7 @@ flowchart TB
 
 | Endpoint | Method | Purpose | Auth Required |
 |----------|--------|---------|---------------|
-| `services/veteran_verification/v2/summary/disability_rating` | GET | Confirm disability rating | OAuth or with ICN |
-| `services/veteran_verification/v2/summary/disability_rating` | POST | Confirm disability rating | Member Data Lookup |
+| `services/veteran_verification/v2/disability_rating` | GET | Confirm disability rating | OAuth or with ICN |
 
 ### Request/Response Examples
 
@@ -361,14 +360,10 @@ en:
 - **Compliance**: The `disability_rating` API provides a restricted endpoint for SSN search, but it is only approved for organizations explicitly authorized by the VA.
 - **Data Minimization**: Maintaining compliance and minimizing PII requirements by avoiding SSN usage where possible.
 
-### Use of Summary Endpoint
+### Use of Non-Summary Endpoint
 
-**Decision**: Use the `/summary/disability_rating` endpoint rather than the regular `/disability_rating` endpoint. 
-
-**Rationale**:
-- **Data Minimization**: The summary endpoint returns the specific disability rating information required for eligibility determination while exposing less personal information than the full endpoint.
-- **Purpose-Driven**: It provides exactly the data needed to confirm if a Veteran has a service-connected disability without retrieving extraneous health or service history details.
-- **Privacy**: Aligns with best practices for handling Veteran data by only requesting the minimum necessary information.
+**Decision**: Use the regular `/disability_rating` endpoint. Testing of
+the `/summary/disability_rating` endpoint yielded errors.
 
 ## Production Access Requirements
 
