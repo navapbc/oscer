@@ -474,3 +474,99 @@ Rails.application.config.veteran_affairs = {
 - [VA Production Access - Demo Requirements](https://developer.va.gov/production-access/prepare-for-and-complete-a-demo)
 - [VA API Terms of Service](https://developer.va.gov/terms-of-service)
 - [VA API Test Accounts (GitHub)](https://github.com/department-of-veterans-affairs/vets-api-clients)
+
+
+## Sample Token Generation Code
+[Client Credentials Grant Doc](https://developer.va.gov/explore/api/veteran-service-history-and-eligibility/client-credentials)
+
+```ruby
+#!/usr/bin/env ruby
+
+require 'jwt'
+require 'openssl'
+require 'net/http'
+require 'uri'
+require 'json'
+require 'securerandom'
+
+# Configuration
+PRIVATE_KEY_PATH = File.expand_path('private.pem', Dir.pwd)
+# These would normally be in ENV, but for this test script we'll use placeholders or ask the user
+# Based on docs/architecture/va-eligibility-integration/va-eligibility-integration.md
+# ClIENT_ID - Receive when requesting sandbox access. Must generate private and public RSA keys locally
+# Get sandbox access here https://developer.va.gov/explore/api/veteran-service-history-and-eligibility/sandbox-access
+CLIENT_ID = 'YOUR CLIENT ID HERE'
+AUDIENCE = 'https://deptva-eval.okta.com/oauth2/ausi3u00gw66b9Ojk2p7/v1/token'
+SCOPE = 'disability_rating.read launch' # NOTE: launch scope is required for all endpoints that require an ICN
+PATIENT_ICN = '1012861229V078999' # Retrive from test data https://developer.va.gov/explore/api/veteran-service-history-and-eligibility/test-users
+
+TOKEN_ENDPOINT = 'https://sandbox-api.va.gov/oauth2/veteran-verification/system/v1/token'
+
+def generate_jwt(private_key_path, client_id, audience)
+  private_key_text = File.read(private_key_path)
+  private_key = OpenSSL::PKey::RSA.new(private_key_text)
+
+  now = Time.now.to_i
+  payload = {
+    aud: audience,
+    iss: client_id,
+    sub: client_id,
+    exp: now + 300 # 5 minutes
+  }
+
+  JWT.encode(payload, private_key, 'RS256')
+end
+
+def fetch_access_token(token_endpoint, jwt, scope, launch)
+  uri = URI.parse(token_endpoint)
+  request = Net::HTTP::Post.new(uri)
+  request['Content-Type'] = 'application/x-www-form-urlencoded'
+  
+  params = {
+    grant_type: 'client_credentials',
+    client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+    client_assertion: jwt,
+    scope: scope,
+    launch: launch
+  }
+  
+  request.set_form_data(params)
+
+  puts "Requesting token from: #{token_endpoint}"
+  
+  response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == 'https') do |http|
+    http.request(request)
+  end
+
+  if response.is_a?(Net::HTTPSuccess)
+    JSON.parse(response.body)
+  else
+    puts "Error: #{response.code} #{response.message}"
+    puts response.body
+    nil
+  end
+end
+
+# Main execution
+if !File.exist?(PRIVATE_KEY_PATH)
+  puts "Error: private.pem not found at #{PRIVATE_KEY_PATH}"
+  exit 1
+end
+
+puts "Generating JWT..."
+jwt = generate_jwt(PRIVATE_KEY_PATH, CLIENT_ID, AUDIENCE)
+puts "JWT generated successfully."
+
+LAUNCH = Base64.strict_encode64("{\"patient\":\"#{PATIENT_ICN}\"}")
+puts "LAUNCH: #{LAUNCH}"
+
+puts "\nRequesting Access Token..."
+token_response = fetch_access_token(TOKEN_ENDPOINT, jwt, SCOPE, LAUNCH)
+
+if token_response
+  puts "\nSuccess! Access Token received:"
+  puts JSON.pretty_generate(token_response)
+else
+  puts "\nFailed to retrieve access token."
+end
+```
