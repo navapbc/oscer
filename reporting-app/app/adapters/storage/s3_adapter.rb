@@ -58,8 +58,8 @@ module Storage
     def stream_object(key:, &block)
       line_buffer = +""
 
-      @client.get_object(bucket: @bucket, key: key) do |data|
-        line_buffer << data
+      @client.get_object(bucket: @bucket, key: key) do |chunk, _headers|
+        line_buffer << chunk
 
         while (newline_idx = line_buffer.index("\n"))
           line = line_buffer.slice!(0..newline_idx)
