@@ -34,7 +34,6 @@ RSpec.describe OidcClient, type: :service do
     let(:state) { "test-state-token" }
     let(:nonce) { "test-nonce-token" }
 
-
     it "returns a URL to the IdP authorization endpoint" do
       expect(url).to start_with("https://test-idp.example.com/authorize?")
     end
