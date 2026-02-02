@@ -9,12 +9,9 @@ You can download a PDF of this file here: [Understanding What Open Source Means 
 **No.** Open source refers to the code being public. Your deployment, configuration, and data remain in your environment and under your access controls.  
 **Related details:** [How does OSCER protect data?](#how-does-oscer-protect-data)
 
-### Do we have to accept changes from the open-source community?
-**No.** You choose what to adopt. Many organizations use release-based upgrades and pull in upstream changes only after review.  
-**Related details:** [How do states adopt updates from the community?](#how-do-states-adopt-updates-from-the-community)
 
 ### How do we know community contributions are safe?
-OSCER uses automated checks plus human review, and changes are only merged when approved by trusted maintainers. You can also apply your internal review processes before adopting any upstream release.  
+OSCER uses automated checks plus human review, and changes are only merged when approved by trusted maintainers on the Nava team.  
 **Related details:** [How are community contributions vetted for security?](#how-are-community-contributions-vetted-for-security)
 
 ### Can we run our own security tools and scans?
@@ -61,9 +58,9 @@ Every contribution to OSCER goes through rigorous automated and manual review:
 Contributions by the community follow the same standards of review that our Nava team uses internally, ensuring consistent security practices across all implementations.
 
 See our detailed processes:
-- Contributing guidelines and code review process
-- Code review standard operating procedures
-- Vulnerability management
+- [Contributing guidelines and code review process](https://github.com/navapbc/oscer/blob/main/CONTRIBUTING.md#code-review-process)
+- [Code review standard operating procedures](https://github.com/navapbc/oscer/blob/main/docs/code-reviews.md)
+- [Vulnerability management](https://github.com/navapbc/oscer/blob/main/docs/infra/vulnerability-management.md)
 
 ### How does OSCER protect data?
 
@@ -118,14 +115,6 @@ While OSCER accelerates initial development, states maintain operational respons
 **Audits:**
 - Documentation available to support audits
 - Nava can provide direct audit support as needed
-
-### How do states adopt updates from the community? (more details coming soon)
-
-States maintain full control over which updates to adopt:
-- Work with Nava's implementation team to understand available updates and improvements
-- Determine the timeline and approach for implementing changes
-- Review changes before adoption into the state's environment
-- Nava can provide support throughout the update process
 
 ---
 
