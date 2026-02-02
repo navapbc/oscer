@@ -103,8 +103,7 @@ While OSCER accelerates initial development, states maintain operational respons
 
 **Vulnerability scanning:**
 - Nava has a lot of automation around scanning for the core OSCER instance. See more on [vulnerability management](https://github.com/navapbc/oscer/blob/main/docs/infra/vulnerability-management.md). 
-- Most package updates are highly automatable (using tools like Dependabot or Renovate)
-- Vulnerabilities in application code are fixed and rolled out before public announcement
+- States should scan their own deployment of OSCER within their infrastructure using their own security tools and processes
 - We support configuring the state's own vulnerability scanners to work with the state’s OSCER deployment
 
 **Patching:**
