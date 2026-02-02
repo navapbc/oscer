@@ -210,8 +210,10 @@ RSpec.describe CertificationBatchUpload, type: :model do
       log1 = create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 1)
       log2 = create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 2)
 
-      expect(batch_upload.audit_logs).to include(log1, log2)
-      expect(batch_upload.audit_logs.count).to eq(2)
+      # Eager load to satisfy strict_loading requirement
+      batch_upload_with_logs = described_class.includes(:audit_logs).find(batch_upload.id)
+      expect(batch_upload_with_logs.audit_logs).to include(log1, log2)
+      expect(batch_upload_with_logs.audit_logs.count).to eq(2)
     end
 
     it 'destroys audit_logs when batch_upload is destroyed' do
@@ -231,8 +233,10 @@ RSpec.describe CertificationBatchUpload, type: :model do
       error1 = create(:upload_error, certification_batch_upload: batch_upload, row_number: 1)
       error2 = create(:upload_error, certification_batch_upload: batch_upload, row_number: 2)
 
-      expect(batch_upload.upload_errors).to include(error1, error2)
-      expect(batch_upload.upload_errors.count).to eq(2)
+      # Eager load to satisfy strict_loading requirement
+      batch_upload_with_errors = described_class.includes(:upload_errors).find(batch_upload.id)
+      expect(batch_upload_with_errors.upload_errors).to include(error1, error2)
+      expect(batch_upload_with_errors.upload_errors.count).to eq(2)
     end
 
     it 'destroys upload_errors when batch_upload is destroyed' do

@@ -18,9 +18,11 @@ class CertificationBatchUpload < ApplicationRecord
   has_one_attached :file
   has_many :audit_logs,
            class_name: "CertificationBatchUploadAuditLog",
+           strict_loading: true,
            dependent: :destroy
   has_many :upload_errors,
            class_name: "CertificationBatchUploadError",
+           strict_loading: true,
            dependent: :destroy
 
   validates :filename, presence: true
