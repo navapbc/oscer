@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: bae042e0f84e39f90895e07182e05669541f2a93
+  revision: 7ca78f2c0243d735e9bff76db601225270916217
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -361,7 +361,7 @@ GEM
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
-    prism (1.8.0)
+    prism (1.9.0)
     pry (0.15.2)
       coderay (~> 1.1)
       method_source (~> 1.0)
