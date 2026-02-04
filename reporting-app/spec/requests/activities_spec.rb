@@ -39,6 +39,45 @@ RSpec.describe "/activities", type: :request do
     end
   end
 
+  describe "GET /new_activity" do
+    context "when activity_type param is missing" do
+      it "does not crash with ParameterMissing error" do
+        get new_activity_new_activity_report_application_form_activity_url(
+          activity_report_application_form,
+          category: "employment"
+        )
+
+        # Should not raise ActionController::ParameterMissing
+        # Acceptable responses: 200 (renders form) or redirect
+        expect(response).to have_http_status(:success).or have_http_status(:redirect)
+      end
+    end
+
+    context "when activity_type param is provided directly" do
+      it "renders the new activity form" do
+        get new_activity_new_activity_report_application_form_activity_url(
+          activity_report_application_form,
+          category: "employment",
+          activity_type: "work_activity"
+        )
+
+        expect(response).to have_http_status(:success)
+      end
+    end
+
+    context "when activity_type is nested in activity param" do
+      it "renders the new activity form" do
+        get new_activity_new_activity_report_application_form_activity_url(
+          activity_report_application_form,
+          category: "employment",
+          activity: { activity_type: "work_activity" }
+        )
+
+        expect(response).to have_http_status(:success)
+      end
+    end
+  end
+
   describe "GET /edit" do
     it "renders a successful response" do
       get edit_activity_report_application_form_activity_url(activity_report_application_form, existing_activity)
