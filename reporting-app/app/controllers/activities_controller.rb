@@ -19,7 +19,13 @@ class ActivitiesController < ApplicationController
   def new_activity
     activity_type = params[:activity_type] || params.dig(:activity, :activity_type)
     @activity = activity_type_map(activity_type)
-    @activity.category = params[:category] if params[:category].present? && @activity.present?
+
+    if @activity.nil?
+      redirect_to new_activity_report_application_form_activity_path(@activity_report_application_form)
+      return
+    end
+
+    @activity.category = params[:category] if params[:category].present?
     authorize @activity_report_application_form, :edit?
   end
 

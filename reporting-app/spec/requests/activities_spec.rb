@@ -41,15 +41,14 @@ RSpec.describe "/activities", type: :request do
 
   describe "GET /new_activity" do
     context "when activity_type param is missing" do
-      it "does not crash with ParameterMissing error" do
+      it "redirects to category selection instead of crashing" do
         get new_activity_new_activity_report_application_form_activity_url(
           activity_report_application_form,
           category: "employment"
         )
 
-        # Should not raise ActionController::ParameterMissing
-        # Acceptable responses: 200 (renders form) or redirect
-        expect(response).to have_http_status(:success).or have_http_status(:redirect)
+        # Should redirect back to category selection, not crash with ParameterMissing
+        expect(response).to redirect_to(new_activity_report_application_form_activity_path(activity_report_application_form))
       end
     end
 
