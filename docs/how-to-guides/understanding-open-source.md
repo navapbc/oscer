@@ -1,6 +1,6 @@
 # Understanding what open source means
 
-You can download a PDF of this file here: [Understanding What Open Source Means (PDF)](../../assets/Understanding%20what%20open%20source%20means.pdf)
+You can download a PDF of this file here: [Understanding What Open Source Means (PDF)](https://github.com/navapbc/oscer/blob/main/docs/assets/Understanding%20what%20open%20source%20means.pdf)
 
 ## Frequently Asked Questions
 
