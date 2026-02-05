@@ -35,5 +35,15 @@ module Storage
     def stream_object(key:, &block)
       raise NotImplementedError
     end
+
+    # Download an object from storage to a file
+    # Note: Prefer stream_object for large files when possible.
+    # This method is provided for scenarios where you need the complete
+    # file available (e.g., passing to libraries that expect file paths).
+    # @param key [String] The object key (path) in the bucket
+    # @param file [File, Tempfile] The file object to write to
+    def download_to_file(key:, file:)
+      stream_object(key: key) { |line| file.write(line) }
+    end
   end
 end
