@@ -16,32 +16,42 @@ module Staff
       @batch_upload = CertificationBatchUpload.new
     end
 
-    # POST /staff/certification_batch_uploads
-    def create
-      uploaded_file = params[:csv_file]
-
-      if uploaded_file.blank?
-        flash.now[:alert] = "Please select a CSV file to upload"
-        @batch_upload = CertificationBatchUpload.new
-        render :new, status: :unprocessable_content
+    # POST /staff/certification_batch_uploads/presigned_url
+    def presigned_url
+      unless feature_enabled?(:batch_upload_v2)
+        head :not_found
         return
       end
 
-      @batch_upload = CertificationBatchUpload.new(
-        filename: uploaded_file.original_filename,
-        uploader: current_user
-      )
-      @batch_upload.file.attach(uploaded_file)
+      authorize CertificationBatchUpload, :create?
 
-      respond_to do |format|
-        if @batch_upload.save
-          format.html { redirect_to certification_batch_uploads_path, notice: "File uploaded successfully. You can now process it from the queue." }
-          format.json { render :show, status: :created, location: @batch_upload }
-        else
-          message = "Failed to upload file: #{@batch_upload.errors.full_messages.join(', ')}"
-          format.html { redirect_to new_certification_batch_upload_path, alert: message }
-          format.json { render json: { error: message }, status: :unprocessable_content }
-        end
+      filename = params[:filename]
+
+      if filename.blank?
+        render json: { error: t("staff.certification_batch_uploads.presigned_url.filename_required") }, status: :unprocessable_content
+        return
+      end
+
+      unless filename.end_with?(".csv")
+        render json: { error: t("staff.certification_batch_uploads.presigned_url.csv_only") }, status: :unprocessable_content
+        return
+      end
+
+      sanitized_filename = sanitize_filename(filename)
+      result = SignedUrlService.new.generate_upload_url(filename: sanitized_filename, content_type: "text/csv")
+
+      render json: { url: result[:url], key: result[:key] }
+    end
+
+    # POST /staff/certification_batch_uploads
+    def create
+      # Determine if we're using v2 flow (flag enabled + storage_key present)
+      use_v2_flow = feature_enabled?(:batch_upload_v2) && params[:storage_key].present?
+
+      if use_v2_flow
+        create_with_v2_flow
+      else
+        create_with_v1_flow
       end
     end
 
@@ -89,6 +99,69 @@ module Staff
 
     private
 
+    def create_with_v2_flow
+      storage_key = params[:storage_key]
+      filename = params[:filename]
+
+      # Validate storage key format to prevent path traversal
+      unless storage_key&.match?(%r{\Abatch-uploads/[0-9a-f-]{36}/[^/]+\z})
+        respond_to do |format|
+          format.html { redirect_to new_certification_batch_upload_path, alert: t("staff.certification_batch_uploads.create_with_v2_flow.invalid_storage_key") }
+          format.json { render json: { error: "Invalid storage key format" }, status: :unprocessable_content }
+        end
+        return
+      end
+
+      sanitized_filename = sanitize_filename(filename)
+
+      begin
+        @batch_upload = CertificationBatchUploadOrchestrator.new.initiate(
+          source_type: :ui,
+          filename: sanitized_filename,
+          storage_key: storage_key,
+          uploader: current_user
+        )
+
+        respond_to do |format|
+          format.html { redirect_to certification_batch_upload_path(@batch_upload), notice: "File uploaded successfully and processing has started." }
+          format.json { render :show, status: :created, location: @batch_upload }
+        end
+      rescue CertificationBatchUploadOrchestrator::FileNotFoundError => e
+        respond_to do |format|
+          format.html { redirect_to new_certification_batch_upload_path, alert: t("staff.certification_batch_uploads.create_with_v2_flow.file_not_found") }
+          format.json { render json: { error: e.message }, status: :unprocessable_content }
+        end
+      end
+    end
+
+    def create_with_v1_flow
+      uploaded_file = params[:csv_file]
+
+      if uploaded_file.blank?
+        flash.now[:alert] = "Please select a CSV file to upload"
+        @batch_upload = CertificationBatchUpload.new
+        render :new, status: :unprocessable_content
+        return
+      end
+
+      @batch_upload = CertificationBatchUpload.new(
+        filename: uploaded_file.original_filename,
+        uploader: current_user
+      )
+      @batch_upload.file.attach(uploaded_file)
+
+      respond_to do |format|
+        if @batch_upload.save
+          format.html { redirect_to certification_batch_uploads_path, notice: "File uploaded successfully. You can now process it from the queue." }
+          format.json { render :show, status: :created, location: @batch_upload }
+        else
+          message = "Failed to upload file: #{@batch_upload.errors.full_messages.join(', ')}"
+          format.html { redirect_to new_certification_batch_upload_path, alert: message }
+          format.json { render json: { error: message }, status: :unprocessable_content }
+        end
+      end
+    end
+
     def set_batch_upload
       @batch_upload = policy_scope(CertificationBatchUpload).includes(:uploader).find(params[:id])
     end
@@ -106,6 +179,17 @@ module Staff
       else
         @cases_to_show = @certification_cases
       end
+    end
+
+    def sanitize_filename(filename)
+      return nil if filename.blank?
+      # Remove null bytes first (File.basename raises on null bytes)
+      clean_filename = filename.tr("\x00", "")
+      # Remove path components, replace spaces with underscores, limit length
+      File.basename(clean_filename)
+        .gsub(/\s+/, "_")           # Replace spaces with underscores
+        .gsub(/[^\w.-]/, "_")       # Replace other unsafe chars
+        .truncate(255, omission: "")
     end
   end
 end

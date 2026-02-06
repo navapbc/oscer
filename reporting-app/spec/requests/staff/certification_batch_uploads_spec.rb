@@ -26,8 +26,246 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
     end
   end
 
+  describe "POST /staff/staff/certification_batch_uploads/presigned_url" do
+    let(:adapter) { instance_double(Storage::S3Adapter) }
+
+    before do
+      Rails.application.config.storage_adapter = adapter
+      allow(adapter).to receive(:generate_signed_upload_url) do |args|
+        { url: "https://s3.example.com/presigned", key: args[:key] }
+      end
+    end
+
+    after do
+      Rails.application.config.storage_adapter = nil
+    end
+
+    context "when batch_upload_v2 feature flag is enabled" do
+      it "returns presigned URL and key" do
+        with_batch_upload_v2_enabled do
+          post presigned_url_certification_batch_uploads_path, params: { filename: "test.csv" }, as: :json
+
+          expect(response).to have_http_status(:ok)
+          json = JSON.parse(response.body)
+          expect(json["url"]).to eq("https://s3.example.com/presigned")
+          expect(json["key"]).to match(%r{\Abatch-uploads/[0-9a-f-]{36}/test\.csv\z})
+        end
+      end
+
+      it "requires authentication" do
+        with_batch_upload_v2_enabled do
+          logout
+          post presigned_url_certification_batch_uploads_path, params: { filename: "test.csv" }, as: :json
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+
+      it "requires admin authorization" do
+        with_batch_upload_v2_enabled do
+          login_as create(:user, :as_caseworker)
+          post presigned_url_certification_batch_uploads_path, params: { filename: "test.csv" }, as: :json
+          expect(response).to redirect_to("/staff")
+        end
+      end
+
+      it "rejects blank filename" do
+        with_batch_upload_v2_enabled do
+          post presigned_url_certification_batch_uploads_path, params: { filename: "" }, as: :json
+
+          expect(response).to have_http_status(:unprocessable_content)
+          json = JSON.parse(response.body)
+          expect(json["error"]).to include("required")
+        end
+      end
+
+      it "rejects non-CSV filename" do
+        with_batch_upload_v2_enabled do
+          post presigned_url_certification_batch_uploads_path, params: { filename: "test.exe" }, as: :json
+
+          expect(response).to have_http_status(:unprocessable_content)
+          json = JSON.parse(response.body)
+          expect(json["error"]).to include("CSV")
+        end
+      end
+
+      context "with malicious filenames" do
+        it "sanitizes path traversal in filename" do
+          with_batch_upload_v2_enabled do
+            post presigned_url_certification_batch_uploads_path,
+                 params: { filename: "../../etc/passwd.csv" },
+                 as: :json
+
+            expect(response).to have_http_status(:ok)
+            # Should return sanitized filename without path components
+            storage_key = JSON.parse(response.body)["key"]
+            expect(storage_key).to match(%r{\Abatch-uploads/[0-9a-f-]{36}/passwd\.csv\z})
+            expect(storage_key).not_to include("../")
+          end
+        end
+
+        it "sanitizes filenames with null bytes" do
+          with_batch_upload_v2_enabled do
+            post presigned_url_certification_batch_uploads_path,
+                 params: { filename: "test\x00.csv" },
+                 as: :json
+
+            expect(response).to have_http_status(:ok)
+            storage_key = JSON.parse(response.body)["key"]
+            expect(storage_key).not_to include("\x00")
+          end
+        end
+
+        it "sanitizes filenames with spaces" do
+          with_batch_upload_v2_enabled do
+            post presigned_url_certification_batch_uploads_path,
+                 params: { filename: "test file name.csv" },
+                 as: :json
+
+            expect(response).to have_http_status(:ok)
+            storage_key = JSON.parse(response.body)["key"]
+            expect(storage_key).to include("test_file_name.csv")
+            expect(storage_key).not_to include(" ")
+          end
+        end
+
+        it "handles excessively long filenames" do
+          with_batch_upload_v2_enabled do
+            long_filename = "a" * 300 + ".csv"
+            post presigned_url_certification_batch_uploads_path,
+                 params: { filename: long_filename },
+                 as: :json
+
+            expect(response).to have_http_status(:ok)
+            storage_key = JSON.parse(response.body)["key"]
+            filename_part = storage_key.split("/").last
+            expect(filename_part.length).to be <= 255
+          end
+        end
+      end
+    end
+
+    context "when batch_upload_v2 feature flag is disabled" do
+      it "returns 404" do
+        with_batch_upload_v2_disabled do
+          post presigned_url_certification_batch_uploads_path, params: { filename: "test.csv" }, as: :json
+          expect(response).to have_http_status(:not_found)
+        end
+      end
+    end
+  end
+
   describe "POST /staff/staff/certification_batch_uploads" do
-    context "with valid CSV file" do
+    context "with v2 flow (feature flag enabled and storage_key present)" do
+      let(:storage_key) { "batch-uploads/550e8400-e29b-41d4-a716-446655440000/test.csv" }
+      let(:filename) { "test.csv" }
+      let(:adapter) { instance_double(Storage::S3Adapter, object_exists?: true) }
+
+      before do
+        Rails.application.config.storage_adapter = adapter
+      end
+
+      after do
+        Rails.application.config.storage_adapter = nil
+      end
+
+      it "creates batch upload using orchestrator" do
+        with_batch_upload_v2_enabled do
+          expect {
+            post certification_batch_uploads_path, params: { storage_key: storage_key, filename: filename }
+          }.to change(CertificationBatchUpload, :count).by(1)
+
+          batch_upload = CertificationBatchUpload.last
+          expect(batch_upload.storage_key).to eq(storage_key)
+          expect(batch_upload.filename).to eq(filename)
+          expect(batch_upload.source_type).to eq("ui")
+        end
+      end
+
+      it "enqueues processing job" do
+        with_batch_upload_v2_enabled do
+          expect {
+            post certification_batch_uploads_path, params: { storage_key: storage_key, filename: filename }
+          }.to have_enqueued_job(ProcessCertificationBatchUploadJob)
+        end
+      end
+
+      it "redirects to show page with success notice" do
+        with_batch_upload_v2_enabled do
+          post certification_batch_uploads_path, params: { storage_key: storage_key, filename: filename }
+
+          batch_upload = CertificationBatchUpload.last
+          expect(response).to redirect_to(certification_batch_upload_path(batch_upload))
+          expect(flash[:notice]).to include("uploaded successfully")
+        end
+      end
+
+      it "handles FileNotFoundError" do
+        with_batch_upload_v2_enabled do
+          allow(adapter).to receive(:object_exists?).and_return(false)
+
+          post certification_batch_uploads_path, params: { storage_key: storage_key, filename: filename }
+
+          expect(response).to redirect_to(new_certification_batch_upload_path)
+          expect(flash[:alert]).to include("File not found")
+        end
+      end
+
+      it "requires authentication" do
+        with_batch_upload_v2_enabled do
+          logout
+          post certification_batch_uploads_path, params: { storage_key: storage_key, filename: filename }
+          expect(response).to redirect_to(new_user_session_path)
+        end
+      end
+
+      it "requires admin authorization" do
+        with_batch_upload_v2_enabled do
+          login_as create(:user, :as_caseworker)
+          post certification_batch_uploads_path, params: { storage_key: storage_key, filename: filename }
+          expect(response).to redirect_to("/staff")
+        end
+      end
+
+      context "with malicious storage_key" do
+        it "rejects path traversal in storage_key" do
+          with_batch_upload_v2_enabled do
+            post certification_batch_uploads_path, params: {
+              storage_key: "../../../etc/passwd",
+              filename: "test.csv"
+            }
+
+            expect(response).to redirect_to(new_certification_batch_upload_path)
+            expect(flash[:alert]).to include("Invalid")
+          end
+        end
+
+        it "rejects storage_key with wrong prefix" do
+          with_batch_upload_v2_enabled do
+            post certification_batch_uploads_path, params: {
+              storage_key: "wrong-prefix/test.csv",
+              filename: "test.csv"
+            }
+
+            expect(response).to redirect_to(new_certification_batch_upload_path)
+            expect(flash[:alert]).to include("Invalid")
+          end
+        end
+
+        it "rejects storage_key with multiple path components" do
+          with_batch_upload_v2_enabled do
+            post certification_batch_uploads_path, params: {
+              storage_key: "batch-uploads/uuid/subdir/test.csv",
+              filename: "test.csv"
+            }
+
+            expect(response).to redirect_to(new_certification_batch_upload_path)
+            expect(flash[:alert]).to include("Invalid")
+          end
+        end
+      end
+    end
+
+    context "with v1 flow (feature flag disabled or file attachment)" do
       let(:csv_content) do
         <<~CSV
           member_id,case_number,member_email,first_name,last_name,certification_date,certification_type
@@ -47,40 +285,64 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
         csv_file.unlink
       end
 
-      it "creates batch upload record and redirects to queue" do
-        expect {
-          post certification_batch_uploads_path, params: { csv_file: uploaded_file }
-        }.to change(CertificationBatchUpload, :count).by(1)
+      context "when feature flag is disabled" do
+        it "creates batch upload record using ActiveStorage" do
+          with_batch_upload_v2_disabled do
+            expect {
+              post certification_batch_uploads_path, params: { csv_file: uploaded_file }
+            }.to change(CertificationBatchUpload, :count).by(1)
 
-        expect(response).to redirect_to(certification_batch_uploads_path)
-        expect(flash[:notice]).to include("uploaded successfully")
+            expect(response).to redirect_to(certification_batch_uploads_path)
+            expect(flash[:notice]).to include("uploaded successfully")
+          end
+        end
+
+        it "attaches the file" do
+          with_batch_upload_v2_disabled do
+            post certification_batch_uploads_path, params: { csv_file: uploaded_file }
+
+            batch_upload = CertificationBatchUpload.last
+            expect(batch_upload.file).to be_attached
+            expect(batch_upload.filename).to include("test")
+            expect(batch_upload.filename).to end_with(".csv")
+          end
+        end
+
+        it "does not process immediately" do
+          with_batch_upload_v2_disabled do
+            allow(Strata::EventManager).to receive(:publish)
+
+            expect {
+              post certification_batch_uploads_path, params: { csv_file: uploaded_file }
+            }.not_to change(Certification, :count)
+          end
+        end
       end
 
-      it "attaches the file" do
-        post certification_batch_uploads_path, params: { csv_file: uploaded_file }
+      context "when feature flag is enabled but file attachment is provided" do
+        it "uses v1 flow for backward compatibility" do
+          with_batch_upload_v2_enabled do
+            expect {
+              post certification_batch_uploads_path, params: { csv_file: uploaded_file }
+            }.to change(CertificationBatchUpload, :count).by(1)
 
-        batch_upload = CertificationBatchUpload.last
-        expect(batch_upload.file).to be_attached
-        expect(batch_upload.filename).to include("test")
-        expect(batch_upload.filename).to end_with(".csv")
+            batch_upload = CertificationBatchUpload.last
+            expect(batch_upload.file).to be_attached
+            expect(batch_upload.storage_key).to be_nil
+          end
+        end
       end
 
-      it "does not process immediately" do
-        allow(Strata::EventManager).to receive(:publish)
+      context "without CSV file" do
+        it "shows error and re-renders form" do
+          with_batch_upload_v2_disabled do
+            post certification_batch_uploads_path, params: { csv_file: nil }
 
-        expect {
-          post certification_batch_uploads_path, params: { csv_file: uploaded_file }
-        }.not_to change(Certification, :count)
-      end
-    end
-
-    context "without CSV file" do
-      it "shows error and re-renders form" do
-        post certification_batch_uploads_path, params: { csv_file: nil }
-
-        expect(response).to have_http_status(:unprocessable_content)
-        expect(response.body).to include("Upload Certification Roster")
-        expect(flash[:alert]).to eq("Please select a CSV file to upload")
+            expect(response).to have_http_status(:unprocessable_content)
+            expect(response.body).to include("Upload Certification Roster")
+            expect(flash[:alert]).to eq("Please select a CSV file to upload")
+          end
+        end
       end
     end
   end
@@ -130,6 +392,18 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
 
   describe "GET /staff/staff/certification_batch_uploads/:id/results" do
     let(:batch_upload) { create(:certification_batch_upload, :completed, uploader: user) }
+
+    it "requires authentication" do
+      logout
+      get results_certification_batch_upload_path(batch_upload)
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
+    it "requires admin authorization" do
+      login_as create(:user, :as_caseworker)
+      get results_certification_batch_upload_path(batch_upload)
+      expect(response).to redirect_to("/staff")
+    end
 
     context "with multiple certifications of different statuses" do
       let(:compliant_cert) { create(:certification) }

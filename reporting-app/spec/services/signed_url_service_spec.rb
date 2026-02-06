@@ -68,5 +68,19 @@ RSpec.describe SignedUrlService do
 
       expect(result[:key]).to end_with("/my-members-2026.csv")
     end
+
+    context "with malicious filenames" do
+      it "rejects filenames with forward slashes" do
+        expect {
+          service.generate_upload_url(filename: "../../etc/passwd")
+        }.to raise_error(ArgumentError, "Filename must not contain path separators")
+      end
+
+      it "rejects filenames with backslashes" do
+        expect {
+          service.generate_upload_url(filename: "..\\..\\windows\\system32")
+        }.to raise_error(ArgumentError, "Filename must not contain path separators")
+      end
+    end
   end
 end

@@ -7,6 +7,12 @@ en:
       failed: "Failed"
   staff:
     certification_batch_uploads:
+      presigned_url:
+        filename_required: "Filename is required"
+        csv_only: "Only CSV files are allowed"
+      create_with_v2_flow:
+        invalid_storage_key: "Invalid storage key format. Please try uploading again."
+        file_not_found: "File not found in storage. Please try uploading again."
       index:
         title: "Batch Upload Queue"
         heading: "Certification Batch Uploads"
@@ -27,6 +33,7 @@ en:
       new:
         title: "Batch Upload Certifications"
         heading: "Upload Certification Roster"
+        uploading: "Uploading file..."
         instructions: "Upload a CSV file containing certification information for multiple members. The system will process each row and create certifications automatically."
         download_template: "Download CSV template"
         csv_format:

@@ -1,0 +1,37 @@
+<%= form_with(url: certification_batch_uploads_path, data: { controller: "batch-upload" }, class: "margin-top-4") do |f| %>
+  <div data-batch-upload-target="errorMessage" class="usa-alert usa-alert--error display-none" role="alert">
+    <div class="usa-alert__body">
+      <p class="usa-alert__text"></p>
+    </div>
+  </div>
+
+  <%= f.hidden_field :storage_key, data: { batch_upload_target: "storageKey" } %>
+  <%= f.hidden_field :filename, data: { batch_upload_target: "filename" } %>
+
+  <div class="usa-form-group">
+    <%= f.label :csv_file, t(".csv_file_label"), class: "usa-label" %>
+    <input
+      type="file"
+      accept=".csv"
+      required
+      class="usa-file-input"
+      data-batch-upload-target="fileInput"
+      data-action="change->batch-upload#selectFile"
+    />
+  </div>
+
+  <div data-batch-upload-target="progress" class="usa-alert usa-alert--info display-none" role="alert">
+    <div class="usa-alert__body">
+      <p class="usa-alert__text"><%= t(".uploading") %></p>
+    </div>
+  </div>
+
+  <%= f.button t(".upload_button"),
+               type: "button",
+               class: "usa-button",
+               data: {
+                 batch_upload_target: "submitButton",
+                 action: "click->batch-upload#uploadFile"
+               } %>
+  <%= link_to t(".cancel"), staff_path, class: "usa-button usa-button--unstyled" %>
+<% end %>

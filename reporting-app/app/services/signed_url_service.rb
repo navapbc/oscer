@@ -14,6 +14,11 @@ class SignedUrlService
   # @param expires_in [Integer] URL expiration time in seconds (default: 1 hour)
   # @return [Hash] { url: String, key: String }
   def generate_upload_url(filename:, content_type: DEFAULT_CONTENT_TYPE, expires_in: DEFAULT_EXPIRY)
+    # Defensive validation - filename should not contain path separators
+    if filename.include?("/") || filename.include?("\\")
+      raise ArgumentError, "Filename must not contain path separators"
+    end
+
     key = generate_storage_key(filename)
 
     @storage.generate_signed_upload_url(

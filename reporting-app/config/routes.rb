@@ -59,6 +59,10 @@ Rails.application.routes.draw do
     resources :users, controller: "staff/users", only: [ :index ]
 
     resources :certification_batch_uploads, only: [ :index, :new, :create, :show ], controller: "staff/certification_batch_uploads" do
+      collection do
+        post :presigned_url
+      end
+
       member do
         post :process_batch
         get :results
