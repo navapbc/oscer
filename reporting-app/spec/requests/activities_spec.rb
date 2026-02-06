@@ -41,14 +41,14 @@ RSpec.describe "/activities", type: :request do
 
   describe "GET /new_activity" do
     context "when activity_type param is missing" do
-      it "redirects to category selection instead of crashing" do
+      it "redirects to category selection with an alert message" do
         get new_activity_new_activity_report_application_form_activity_url(
           activity_report_application_form,
           category: "employment"
         )
 
-        # Should redirect back to category selection, not crash with ParameterMissing
         expect(response).to redirect_to(new_activity_report_application_form_activity_path(activity_report_application_form))
+        expect(flash[:alert]).to eq("You must select a reporting method (hours or income) before continuing.")
       end
     end
 
@@ -58,18 +58,6 @@ RSpec.describe "/activities", type: :request do
           activity_report_application_form,
           category: "employment",
           activity_type: "work_activity"
-        )
-
-        expect(response).to have_http_status(:success)
-      end
-    end
-
-    context "when activity_type is nested in activity param" do
-      it "renders the new activity form" do
-        get new_activity_new_activity_report_application_form_activity_url(
-          activity_report_application_form,
-          category: "employment",
-          activity: { activity_type: "work_activity" }
         )
 
         expect(response).to have_http_status(:success)
