@@ -39,6 +39,32 @@ RSpec.describe "/activities", type: :request do
     end
   end
 
+  describe "GET /new_activity" do
+    context "when activity_type param is missing" do
+      it "redirects to category selection with an alert message" do
+        get new_activity_new_activity_report_application_form_activity_url(
+          activity_report_application_form,
+          category: "employment"
+        )
+
+        expect(response).to redirect_to(new_activity_report_application_form_activity_path(activity_report_application_form))
+        expect(flash[:alert]).to eq("You must select a reporting method (hours or income) before continuing.")
+      end
+    end
+
+    context "when activity_type param is provided directly" do
+      it "renders the new activity form" do
+        get new_activity_new_activity_report_application_form_activity_url(
+          activity_report_application_form,
+          category: "employment",
+          activity_type: "work_activity"
+        )
+
+        expect(response).to have_http_status(:success)
+      end
+    end
+  end
+
   describe "GET /edit" do
     it "renders a successful response" do
       get edit_activity_report_application_form_activity_url(activity_report_application_form, existing_activity)
