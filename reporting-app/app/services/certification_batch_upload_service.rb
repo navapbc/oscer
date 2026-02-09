@@ -20,13 +20,14 @@ class CertificationBatchUploadService
   def process_csv(file)
     return false unless file.present?
 
-    csv_data = CSV.read(file.path, headers: true, header_converters: :symbol, encoding: "UTF-8")
+    csv_data = CSV.read(file.path, headers: true, encoding: "UTF-8")
 
     # Update total rows if batch_upload provided
     @batch_upload&.update!(num_rows: csv_data.size)
 
-    # Validate required headers
-    required_headers = [ :member_id, :case_number, :member_email, :certification_date, :certification_type ]
+    # Validate required headers (CSV structure check - fails fast before chunk processing)
+    # Shares field list with UnifiedRecordProcessor for consistency
+    required_headers = UnifiedRecordProcessor::REQUIRED_FIELDS
     missing_headers = required_headers - csv_data.headers
 
     if missing_headers.any?
@@ -70,7 +71,7 @@ class CertificationBatchUploadService
   def process_row(row, row_number)
     # Delegate to UnifiedRecordProcessor for consistent business logic
     context = @batch_upload ? { batch_upload_id: @batch_upload.id } : {}
-    certification = @processor.process(row.to_h.stringify_keys, context: context)
+    certification = @processor.process(row.to_h, context: context)
 
     @successes << {
       row: row_number,

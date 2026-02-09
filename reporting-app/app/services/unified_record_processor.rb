@@ -20,9 +20,6 @@ class UnifiedRecordProcessor
   # Raised when record is a duplicate
   class DuplicateError < ProcessingError; end
 
-  # Raised for business rule violations
-  class BusinessRuleError < ProcessingError; end
-
   # Raised when database operation fails
   class DatabaseError < ProcessingError; end
 
