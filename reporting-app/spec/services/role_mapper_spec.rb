@@ -43,6 +43,32 @@ RSpec.describe RoleMapper, type: :service do
       end
     end
 
+    context "with missing environment section" do
+      let(:config_path) { Rails.root.join("tmp/missing_env_role_mapping.yml") }
+
+      before do
+        FileUtils.mkdir_p(Rails.root.join("tmp"))
+        File.write(config_path, <<~YAML)
+          production:
+            role_mappings:
+              admin:
+                - "OSCER-Admin"
+            no_match_behavior: deny
+            default_role: null
+        YAML
+      end
+
+      after do
+        File.delete(config_path) if File.exist?(config_path)
+      end
+
+      it "raises ConfigurationError for unknown environment" do
+        expect {
+          described_class.new(config_path: config_path, environment: "staging")
+        }.to raise_error(RoleMapper::ConfigurationError, /No configuration found for environment: staging/)
+      end
+    end
+
     context "with missing role_mappings" do
       it "raises ConfigurationError" do
         config = mock_role_mapping_config.except(:role_mappings)
@@ -159,10 +185,11 @@ RSpec.describe RoleMapper, type: :service do
     context "with role priority" do
       subject(:mapper) do
         # Can't use deep_merge - need exact ordering control
+        # Admin listed first = higher priority (matches business expectation)
         config = {
           role_mappings: {
-            caseworker: [ "Shared-Group" ],
-            admin: [ "Shared-Group", "Admin-Only" ]
+            admin: [ "Shared-Group", "Admin-Only" ],
+            caseworker: [ "Shared-Group" ]
           },
           no_match_behavior: "deny",
           default_role: nil
@@ -171,7 +198,9 @@ RSpec.describe RoleMapper, type: :service do
       end
 
       it "respects configuration order when multiple roles match" do
-        expect(mapper.map_groups_to_role([ "Shared-Group" ])).to eq("caseworker")
+        # User belongs to Shared-Group which maps to both admin and caseworker
+        # Admin wins because it's listed first in config
+        expect(mapper.map_groups_to_role([ "Shared-Group" ])).to eq("admin")
       end
     end
   end
@@ -218,19 +247,32 @@ RSpec.describe RoleMapper, type: :service do
     end
   end
 
-  describe "integration with production config" do
-    subject(:mapper) { described_class.new }
+  describe "integration with config file" do
+    context "with default (test) environment" do
+      subject(:mapper) { described_class.new }
 
-    it "maps admin groups correctly" do
-      expect(mapper.map_groups_to_role([ "OSCER-Admin" ])).to eq("admin")
+      it "loads configuration for current Rails environment" do
+        expect { mapper }.not_to raise_error
+      end
+
+      it "maps admin groups correctly" do
+        expect(mapper.map_groups_to_role([ "OSCER-Admin" ])).to eq("admin")
+      end
+
+      it "maps caseworker groups correctly" do
+        expect(mapper.map_groups_to_role([ "OSCER-Caseworker" ])).to eq("caseworker")
+      end
+
+      it "denies access when no groups match" do
+        expect(mapper.deny_if_no_match?).to be true
+      end
     end
 
-    it "maps caseworker groups correctly" do
-      expect(mapper.map_groups_to_role([ "OSCER-Caseworker" ])).to eq("caseworker")
-    end
-
-    it "denies access when no groups match" do
-      expect(mapper.deny_if_no_match?).to be true
+    context "with explicit environment parameter" do
+      it "loads configuration for specified environment" do
+        mapper = described_class.new(environment: "production")
+        expect(mapper.map_groups_to_role([ "OSCER-Admin" ])).to eq("admin")
+      end
     end
   end
 end
