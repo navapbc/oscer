@@ -236,6 +236,47 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
         expect(retry_callbacks).not_to be_empty
       end
     end
+
+    context 'when delegating to processor' do
+      let(:processor) { instance_double(UnifiedRecordProcessor) }
+      let(:records) { [ valid_record ] }
+      let(:mock_certification) { instance_double(Certification, id: 1) }
+
+      it 'calls processor with record and context' do
+        allow(processor).to receive(:process).and_return(mock_certification)
+
+        described_class.perform_now(batch_upload.id, 1, records, processor: processor)
+
+        expect(processor).to have_received(:process)
+          .with(valid_record, context: { batch_upload_id: batch_upload.id })
+      end
+
+      it 'uses injected processor instead of creating new one' do
+        allow(processor).to receive(:process).and_return(mock_certification)
+        allow(UnifiedRecordProcessor).to receive(:new).and_call_original
+
+        described_class.perform_now(batch_upload.id, 1, records, processor: processor)
+
+        # Should use injected processor, not create a new one
+        expect(UnifiedRecordProcessor).not_to have_received(:new)
+        expect(processor).to have_received(:process)
+      end
+    end
+
+    context 'when batch upload is deleted' do
+      it 'returns early without processing when batch not found' do
+        non_existent_id = "00000000-0000-0000-0000-000000000000"
+        records = [ valid_record ]
+
+        expect {
+          described_class.perform_now(non_existent_id, 1, records)
+        }.not_to change(Certification, :count)
+
+        # Should not create audit logs or errors
+        expect(CertificationBatchUploadAuditLog.count).to eq(0)
+        expect(CertificationBatchUploadError.count).to eq(0)
+      end
+    end
   end
 
   describe 'job queuing' do

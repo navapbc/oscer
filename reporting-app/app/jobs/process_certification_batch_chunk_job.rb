@@ -10,9 +10,10 @@ class ProcessCertificationBatchChunkJob < ApplicationJob
   # @param batch_upload_id [String] The UUID of the CertificationBatchUpload record
   # @param chunk_number [Integer] The sequential chunk number (1-indexed)
   # @param records [Array<Hash>] Array of record hashes to process
-  def perform(batch_upload_id, chunk_number, records)
-    batch_upload = CertificationBatchUpload.find(batch_upload_id)
-    processor = UnifiedRecordProcessor.new
+  # @param processor [UnifiedRecordProcessor] The processor to use (injectable for testing)
+  def perform(batch_upload_id, chunk_number, records, processor: UnifiedRecordProcessor.new)
+    batch_upload = CertificationBatchUpload.find_by(id: batch_upload_id)
+    return if batch_upload.nil?  # Batch was deleted, nothing to do
     audit_log = create_audit_log(batch_upload, chunk_number)
 
     results = { succeeded: 0, failed: 0, errors: [] }
