@@ -41,6 +41,7 @@ en:
         invalid_password_format: "Password must be at least 12 characters long"
         username_exists: "An account with the given email already exists"
         user_not_confirmed: "You must confirm your email address first"
+        access_denied: "You do not have permission to access this application"
   date:
     formats:
       default: "%m/%d/%Y"
