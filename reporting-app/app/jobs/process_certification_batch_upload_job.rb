@@ -40,24 +40,36 @@ class ProcessCertificationBatchUploadJob < ApplicationJob
     batch_upload.start_processing!
 
     reader = CsvStreamReader.new
-    chunk_number = 0
     total_records = 0
 
+    # First pass: Count total rows
+    reader.each_chunk(batch_upload.storage_key) do |records|
+      total_records += records.size
+    end
+
+    # Set num_rows before enqueueing any jobs (prevents race condition)
+    batch_upload.update!(num_rows: total_records)
+
+    # Handle empty CSV (headers but no data)
+    if total_records == 0
+      batch_upload.complete_processing!(
+        num_rows_succeeded: 0,
+        num_rows_errored: 0,
+        results: {}
+      )
+      return
+    end
+
+    # Second pass: Enqueue chunk jobs
+    chunk_number = 0
     reader.each_chunk(batch_upload.storage_key) do |records|
       chunk_number += 1
-      total_records += records.size
-
       ProcessCertificationBatchChunkJob.perform_later(
         batch_upload.id,
         chunk_number,
         records
       )
     end
-
-    batch_upload.update!(num_rows: total_records)
-  rescue StandardError => e
-    batch_upload.fail_processing!(error_message: e.message)
-    raise
   end
 
   # FALLBACK: Cloud storage but flag disabled - download and process sequentially

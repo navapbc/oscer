@@ -170,6 +170,47 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
             expect(batch_upload.status).to eq("processing")
           end
         end
+
+        it 'handles empty CSV (headers but no data)' do
+          allow(csv_reader).to receive(:each_chunk)  # No yields = no data rows
+
+          with_batch_upload_v2_enabled do
+            expect {
+              described_class.perform_now(batch_upload.id)
+            }.not_to have_enqueued_job(ProcessCertificationBatchChunkJob)
+
+            batch_upload.reload
+            expect(batch_upload.status).to eq("completed")
+            expect(batch_upload.num_rows).to eq(0)
+            expect(batch_upload.num_rows_succeeded).to eq(0)
+            expect(batch_upload.num_rows_errored).to eq(0)
+          end
+        end
+
+        it 'sets num_rows before enqueueing jobs (race condition prevention)' do
+          call_count = 0
+          num_rows_when_job_enqueued = nil
+
+          # Mock each_chunk to handle both passes
+          allow(csv_reader).to receive(:each_chunk) do |&block|
+            call_count += 1
+            # Yield data on both passes
+            block.call([ { "member_id" => "M400" } ])
+          end
+
+          # Capture num_rows when job is enqueued
+          allow(ProcessCertificationBatchChunkJob).to receive(:perform_later) do |batch_id, *|
+            num_rows_when_job_enqueued = CertificationBatchUpload.find(batch_id).num_rows
+          end
+
+          with_batch_upload_v2_enabled do
+            described_class.perform_now(batch_upload.id)
+          end
+
+          # Verify num_rows was already set when job was enqueued
+          expect(num_rows_when_job_enqueued).to eq(1)
+          expect(call_count).to eq(2)  # Verify two-pass behavior
+        end
       end
 
       context 'when feature flag is DISABLED' do
