@@ -97,10 +97,12 @@ class OidcClient
 
   # Extract user claims from an ID token, mapped to standard names
   # @param id_token [String] JWT ID token
+  # @param expected_nonce [String, nil] Expected nonce value from session (for replay protection)
   # @return [Hash] User claims with keys: :uid, :email, :name, :groups
   # @raise [TokenValidationError] if validation fails
-  def extract_claims(id_token)
+  def extract_claims(id_token, expected_nonce: nil)
     decoded = validate_token(id_token)
+    validate_nonce!(decoded, expected_nonce) if expected_nonce.present?
 
     {
       uid: decoded[@config.dig(:claims, :unique_id)],
@@ -178,6 +180,14 @@ class OidcClient
     return unless expiry_time < Time.current
 
     raise TokenValidationError, "Token expired at #{expiry_time}"
+  end
+
+  def validate_nonce!(claims, expected_nonce)
+    token_nonce = claims["nonce"]
+
+    return if token_nonce.present? && ActiveSupport::SecurityUtils.secure_compare(token_nonce.to_s, expected_nonce.to_s)
+
+    raise TokenValidationError, "Invalid nonce: token replay attack detected"
   end
 
   def parse_json_safely(body)

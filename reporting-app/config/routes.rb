@@ -123,6 +123,13 @@ Rails.application.routes.draw do
     # Defines the root path route ("/")
     root "home#index"
 
+    # Staff SSO authentication
+    scope :auth do
+      get "sso", to: "auth/sso#new", as: :sso_login
+      get "sso/callback", to: "auth/sso#callback", as: :sso_callback
+      delete "sso/logout", to: "auth/sso#destroy", as: :sso_logout
+    end
+
     # Session management
     devise_for :users, controllers: { sessions: "users/sessions" }
     devise_scope :user do
