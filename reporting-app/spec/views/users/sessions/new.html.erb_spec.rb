@@ -19,7 +19,7 @@ RSpec.describe "users/sessions/new", type: :view do
     before do
       allow(view).to receive_messages(
         sso_enabled?: true,
-        sso_login_path: "/auth/sso"
+        sso_login_path: "/sso/login"
       )
     end
 
@@ -28,7 +28,7 @@ RSpec.describe "users/sessions/new", type: :view do
 
       expect(rendered).to have_link(
         I18n.t("users.sessions.new.sso_button"),
-        href: "/auth/sso"
+        href: "/sso/login"
       )
     end
 
@@ -47,8 +47,8 @@ RSpec.describe "users/sessions/new", type: :view do
     it "still displays the regular login form" do
       render
 
-      expect(rendered).to have_field("email")
-      expect(rendered).to have_field("password")
+      expect(rendered).to have_css("input[type='email']")
+      expect(rendered).to have_css("input[type='password']")
     end
   end
 
@@ -72,14 +72,14 @@ RSpec.describe "users/sessions/new", type: :view do
     it "does not display the divider" do
       render
 
-      expect(rendered).not_to have_content(I18n.t("users.sessions.new.or_divider"))
+      expect(rendered).not_to have_css(".border-top.border-base-lighter.margin-y-4")
     end
 
     it "displays the regular login form" do
       render
 
-      expect(rendered).to have_field("email")
-      expect(rendered).to have_field("password")
+      expect(rendered).to have_css("input[type='email']")
+      expect(rendered).to have_css("input[type='password']")
     end
   end
 end

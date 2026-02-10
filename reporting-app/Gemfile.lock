@@ -92,7 +92,9 @@ GEM
       tzinfo (~> 2.0, >= 2.0.5)
     addressable (2.8.7)
       public_suffix (>= 2.0.2, < 7.0)
+    aes_key_wrap (1.1.0)
     ast (2.4.3)
+    attr_required (1.0.2)
     aws-actionmailer-ses (1.0.0)
       actionmailer (>= 7.1.0)
       aws-sdk-ses (~> 1, >= 1.50.0)
@@ -135,6 +137,7 @@ GEM
     bcrypt (3.1.20)
     benchmark (0.5.0)
     bigdecimal (4.0.1)
+    bindata (2.5.1)
     bindex (0.8.1)
     bootsnap (1.19.0)
       msgpack (~> 1.2)
@@ -184,6 +187,8 @@ GEM
       activemodel (>= 7.0)
       activesupport (>= 7.0)
       sorbet-runtime (>= 0.5)
+    email_validator (2.2.4)
+      activemodel
     erb (6.0.1)
     erubi (1.13.1)
     factory_bot (6.5.6)
@@ -197,6 +202,8 @@ GEM
       faraday-net_http (>= 2.0, < 3.5)
       json
       logger
+    faraday-follow_redirects (0.5.0)
+      faraday (>= 1, < 3)
     faraday-net_http (3.4.2)
       net-http (~> 0.5)
     ffi (1.17.2-aarch64-linux-gnu)
@@ -229,6 +236,8 @@ GEM
       rspec (>= 2.99.0, < 4.0)
     hana (1.3.7)
     hashdiff (1.2.1)
+    hashie (5.1.0)
+      logger
     htmlbeautifier (1.4.3)
     htmlentities (4.3.4)
     i18n (1.14.8)
@@ -247,6 +256,13 @@ GEM
       activesupport (>= 7.0.0)
     jmespath (1.6.2)
     json (2.16.0)
+    json-jwt (1.17.0)
+      activesupport (>= 4.2)
+      aes_key_wrap
+      base64
+      bindata
+      faraday (~> 2.0)
+      faraday-follow_redirects
     json_schemer (2.4.0)
       bigdecimal
       hana (~> 1.3)
@@ -335,6 +351,17 @@ GEM
     oas_rails (1.3.0)
       easy_talk_two (~> 1.1.2)
       oas_core (>= 1.1.0)
+    omniauth (2.1.4)
+      hashie (>= 3.4.6)
+      logger
+      rack (>= 2.2.3)
+      rack-protection
+    omniauth-rails_csrf_protection (0.1.2)
+      actionpack (>= 4.2)
+      omniauth (>= 1.3.1)
+    omniauth_openid_connect (0.8.0)
+      omniauth (>= 1.9, < 3)
+      openid_connect (~> 2.2)
     openapi_contracts (0.16.1)
       activesupport (>= 6.1, < 8.1)
       json_schemer (>= 2.1, < 2.5)
@@ -342,6 +369,19 @@ GEM
       rack (>= 2.0.0)
     openapi_parameters (0.3.4)
       rack (>= 2.2)
+    openid_connect (2.3.1)
+      activemodel
+      attr_required (>= 1.0.0)
+      email_validator
+      faraday (~> 2.0)
+      faraday-follow_redirects
+      json-jwt (>= 1.16)
+      mail
+      rack-oauth2 (~> 2.2)
+      swd (~> 2.0)
+      tzinfo
+      validate_url
+      webfinger (~> 2.0)
     orm_adapter (0.5.0)
     ostruct (0.6.3)
     parallel (1.27.0)
@@ -380,6 +420,17 @@ GEM
       rspec-support (~> 3.12)
     racc (1.8.1)
     rack (3.2.4)
+    rack-oauth2 (2.3.0)
+      activesupport
+      attr_required
+      faraday (~> 2.0)
+      faraday-follow_redirects
+      json-jwt (>= 1.11.0)
+      rack (>= 2.1.0)
+    rack-protection (4.2.1)
+      base64 (>= 0.1.0)
+      logger (>= 1.6.0)
+      rack (>= 3.0.0, < 4)
     rack-session (2.1.1)
       base64 (>= 0.1.0)
       rack (>= 3.0.0)
@@ -543,6 +594,11 @@ GEM
     stimulus-rails (1.3.4)
       railties (>= 6.0.0)
     stringio (3.2.0)
+    swd (2.0.3)
+      activesupport (>= 3)
+      attr_required (>= 0.0.5)
+      faraday (~> 2.0)
+      faraday-follow_redirects
     thor (1.5.0)
     timeliness (0.5.3)
     timeout (0.6.0)
@@ -557,6 +613,9 @@ GEM
     unicode-emoji (4.1.0)
     uri (1.1.1)
     useragent (0.16.11)
+    validate_url (1.0.15)
+      activemodel (>= 3.0.0)
+      public_suffix
     validates_timeliness (7.1.0)
       activemodel (>= 7.0.0, < 8)
       timeliness (>= 0.3.10, < 1)
@@ -571,6 +630,10 @@ GEM
       activemodel (>= 6.0.0)
       bindex (>= 0.4.0)
       railties (>= 6.0.0)
+    webfinger (2.1.3)
+      activesupport
+      faraday (~> 2.0)
+      faraday-follow_redirects
     webmock (3.25.1)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
@@ -623,12 +686,15 @@ DEPENDENCIES
   listen
   lookbook (>= 2.3.9)
   oas_rails
+  omniauth-rails_csrf_protection
+  omniauth_openid_connect
   openapi_contracts
   pg (~> 1.1)
   pg-aws_rds_iam (~> 0.7.0)
   puma (>= 5.0)
   pundit
   pundit-matchers
+  rack (>= 3.0)
   rails (~> 7.2.0, >= 7.2.2.1)
   rails-erd
   route_translator
