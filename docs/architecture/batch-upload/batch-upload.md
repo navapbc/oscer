@@ -137,7 +137,7 @@ flowchart TB
     subgraph web [Web Application]
         Controller[BatchUploadsController]
         APIController[API::BatchUploadsController]
-        SignedUrlService[SignedUrlService]
+        ActiveStorage[Active Storage<br/>Direct Upload]
         Orchestrator[BatchUploadOrchestrator]
     end
 
@@ -147,6 +147,7 @@ flowchart TB
         StreamReader[StorageStreamReader]
         Processor[UnifiedRecordProcessor]
         AuditLogger[AuditLogger]
+        PurgeJob[PurgeUnattachedBlobsJob]
     end
 
     subgraph adapters [Storage Adapters]
@@ -155,25 +156,27 @@ flowchart TB
     end
 
     Controller & APIController --> Orchestrator
-    Controller --> SignedUrlService
-    SignedUrlService --> S3Adapter & AzureAdapter
+    Controller --> ActiveStorage
+    ActiveStorage --> S3Adapter & AzureAdapter
     Orchestrator --> ProcessJob
     ProcessJob --> StreamReader
     StreamReader --> S3Adapter & AzureAdapter
     StreamReader --> ChunkJob
     ChunkJob --> Processor
     ChunkJob --> AuditLogger
+    PurgeJob -.->|Periodic cleanup| ActiveStorage
 ```
 
 ### Key Components
 
-| Component                 | Responsibility                                                         |
-| ------------------------- | ---------------------------------------------------------------------- |
-| `SignedUrlService`        | Generates signed URLs for direct browser upload (delegates to adapter) |
-| `BatchUploadOrchestrator` | Entry point for all sources; creates record, enqueues job              |
-| `StorageStreamReader`     | Streams objects from cloud storage without loading entire file         |
-| `UnifiedRecordProcessor`  | Single business logic processor for ALL sources                        |
-| `AuditLogger`             | Writes chunk-level audit logs; stores only failed records              |
+| Component                   | Responsibility                                                                  |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| `Active Storage`            | Rails built-in: Generates presigned URLs, creates blob records for attachments |
+| `BatchUploadOrchestrator`   | Entry point for all sources; creates record, enqueues job                      |
+| `StorageStreamReader`       | Streams objects from cloud storage without loading entire file                 |
+| `UnifiedRecordProcessor`    | Single business logic processor for ALL sources                                |
+| `AuditLogger`               | Writes chunk-level audit logs; stores only failed records                      |
+| `PurgeUnattachedBlobsJob`   | Periodic cleanup of orphaned blobs from abandoned uploads                      |
 
 ### Storage Adapter Interface
 
@@ -225,21 +228,9 @@ end
 ### Service Layer (Cloud-Agnostic)
 
 ```ruby
-class SignedUrlService
-  def initialize(storage_adapter: Rails.configuration.storage_adapter)
-    @storage = storage_adapter
-  end
-
-  def generate_upload_url(filename:, content_type: "text/csv")
-    key = "uploads/#{SecureRandom.uuid}/#{filename}"
-    url = @storage.generate_signed_upload_url(
-      key: key,
-      content_type: content_type,
-      expires_in: 1.hour
-    )
-    { url: url, key: key }
-  end
-end
+# Active Storage handles presigned URLs automatically
+# No custom SignedUrlService needed - Rails provides this via:
+# POST /rails/active_storage/direct_uploads
 
 class StorageStreamReader
   def initialize(storage_adapter: Rails.configuration.storage_adapter)
@@ -264,6 +255,7 @@ class BatchUploadOrchestrator
     # 1. Create BatchUpload record
     # 2. Enqueue ProcessBatchUploadJob
     # 3. Return batch upload for status tracking
+    # Note: For UI uploads with Active Storage, storage_key is batch_upload.file.blob.key
   end
 end
 
@@ -271,6 +263,15 @@ class UnifiedRecordProcessor
   def process(record, context)
     # 1. Validate schema → 2. Check duplicates → 3. Apply business rules
     # 4. Transform → 5. Persist → 6. Trigger business process
+  end
+end
+
+class PurgeUnattachedBlobsJob < ApplicationJob
+  def perform
+    # Clean up blobs uploaded but never attached (abandoned uploads)
+    ActiveStorage::Blob.unattached
+      .where('created_at < ?', 24.hours.ago)
+      .find_each(&:purge)
   end
 end
 ```
@@ -289,17 +290,18 @@ Rails.configuration.storage_adapter = case ENV["CLOUD_PROVIDER"]
   end
 ```
 
-### Upload Flow
+### Upload Flow (Active Storage)
 
 ```mermaid
 sequenceDiagram
-    Client->>WebApp: POST /presigned_url
-    WebApp->>StorageAdapter: Generate signed URL
-    WebApp-->>Client: {url, fields}
+    Client->>ActiveStorage: POST /rails/active_storage/direct_uploads
+    ActiveStorage->>StorageAdapter: Generate signed URL
+    ActiveStorage-->>Client: {url, blob_signed_id}
     Client->>CloudStorage: PUT file (direct)
-    Client->>WebApp: POST /batch_uploads (confirm)
+    Client->>WebApp: POST /batch_uploads (with blob_signed_id)
+    WebApp->>DB: Create BatchUpload + attach blob
     WebApp->>Queue: Enqueue ProcessBatchUploadJob
-    Worker->>StorageAdapter: Stream file
+    Worker->>StorageAdapter: Stream file (using blob.key)
     loop Each chunk (1000 records)
         Worker->>DB: Process records
         Worker->>DB: Log audit + errors
@@ -307,13 +309,32 @@ sequenceDiagram
     Worker->>DB: Update final status
 ```
 
+**Note**: Active Storage handles presigned URL generation automatically via built-in `/rails/active_storage/direct_uploads` endpoint. No custom `SignedUrlService` needed.
+
 ---
 
 ## Decisions
 
+### Direct upload implementation approach
+
+**Decision**: Use Active Storage Direct Upload for browser uploads (standard Rails pattern).
+
+**Context**: Two approaches were evaluated for direct browser-to-S3 uploads:
+1. **Custom implementation**: Custom Stimulus controller, presigned URL endpoint, manual storage key management
+2. **Active Storage Direct Upload**: Rails built-in direct upload functionality
+
+**Rationale**: Active Storage provides the same functionality (direct browser→S3 upload, bypassing Rails memory) with 85% less code to maintain. For multi-state deployments where different IT teams maintain OSCER, Rails conventions reduce knowledge transfer and maintenance burden. See [Direct Upload Approach Comparison](./direct-upload-approach-comparison.md) for detailed analysis.
+
+**Implementation notes**:
+- Active Storage handles presigned URL generation via `/rails/active_storage/direct_uploads`
+- Creates `ActiveStorage::Blob` records (2 additional database rows per upload - negligible overhead)
+- Requires periodic cleanup job for orphaned blobs (files uploaded but never attached)
+- `SignedUrlService` and custom presigned URL endpoints not needed
+- Blob keys used for streaming: `batch_upload.file.blob.key` instead of custom `storage_key`
+
 ### Signed URLs for direct upload
 
-Use signed URLs (AWS presigned URLs / Azure SAS tokens) for browsers to upload directly to cloud storage, bypassing Rails entirely. Large CSV files (100s of MB) cause memory pressure and timeouts when streamed through Rails. This frees Rails resources, avoids timeout issues, and supports up to 5GB files. Tradeoff: requires CORS config on storage and additional client-side complexity.
+Use signed URLs (AWS presigned URLs / Azure SAS tokens) for browsers to upload directly to cloud storage, bypassing Rails entirely. Large CSV files (100s of MB) cause memory pressure and timeouts when streamed through Rails. This frees Rails resources, avoids timeout issues, and supports up to 5GB files. Tradeoff: requires CORS config on storage.
 
 ### Cloud-agnostic adapter pattern
 
