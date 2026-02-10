@@ -3,13 +3,16 @@
 require "rails_helper"
 
 RSpec.describe StaffUserProvisioner, type: :service do
-  let(:role_mapper) { instance_double(RoleMapper) }
   subject(:provisioner) { described_class.new(role_mapper: role_mapper) }
 
+  let(:role_mapper) { instance_double(RoleMapper) }
+
   before do
-    allow(role_mapper).to receive(:map_groups_to_role).and_return("caseworker")
-    allow(role_mapper).to receive(:deny_if_no_match?).and_return(true)
-    allow(role_mapper).to receive(:default_role).and_return(nil)
+    allow(role_mapper).to receive_messages(
+      map_groups_to_role: "caseworker",
+      deny_if_no_match?: true,
+      default_role: nil
+    )
   end
 
   describe "#provision!" do
@@ -136,8 +139,10 @@ RSpec.describe StaffUserProvisioner, type: :service do
 
       context "with assign_default mode" do
         before do
-          allow(role_mapper).to receive(:deny_if_no_match?).and_return(false)
-          allow(role_mapper).to receive(:default_role).and_return("readonly")
+          allow(role_mapper).to receive_messages(
+            deny_if_no_match?: false,
+            default_role: "readonly"
+          )
         end
 
         it "assigns the default role" do
@@ -151,8 +156,10 @@ RSpec.describe StaffUserProvisioner, type: :service do
 
       context "with assign_default mode and nil default" do
         before do
-          allow(role_mapper).to receive(:deny_if_no_match?).and_return(false)
-          allow(role_mapper).to receive(:default_role).and_return(nil)
+          allow(role_mapper).to receive_messages(
+            deny_if_no_match?: false,
+            default_role: nil
+          )
         end
 
         it "sets role to nil" do
@@ -203,8 +210,10 @@ RSpec.describe StaffUserProvisioner, type: :service do
     context "with nil groups" do
       before do
         allow(role_mapper).to receive(:map_groups_to_role).with(nil).and_return(nil)
-        allow(role_mapper).to receive(:deny_if_no_match?).and_return(false)
-        allow(role_mapper).to receive(:default_role).and_return("guest")
+        allow(role_mapper).to receive_messages(
+          deny_if_no_match?: false,
+          default_role: "guest"
+        )
       end
 
       it "handles nil groups gracefully" do
@@ -219,8 +228,10 @@ RSpec.describe StaffUserProvisioner, type: :service do
     context "with empty groups" do
       before do
         allow(role_mapper).to receive(:map_groups_to_role).with([]).and_return(nil)
-        allow(role_mapper).to receive(:deny_if_no_match?).and_return(false)
-        allow(role_mapper).to receive(:default_role).and_return("guest")
+        allow(role_mapper).to receive_messages(
+          deny_if_no_match?: false,
+          default_role: "guest"
+        )
       end
 
       it "handles empty groups gracefully" do
