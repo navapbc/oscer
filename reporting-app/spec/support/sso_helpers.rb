@@ -3,6 +3,20 @@
 # Shared test helpers for SSO/OIDC testing
 # Used by OidcClient, StaffUserProvisioner, RoleMapper, and controller specs
 module SsoHelpers
+  # Returns a mock role mapping configuration hash
+  # @param overrides [Hash] values to override in the default config
+  # @return [Hash] Role mapping configuration
+  def mock_role_mapping_config(overrides = {})
+    {
+      role_mappings: {
+        admin: [ "OSCER-Admin", "CE-Administrators" ],
+        caseworker: [ "OSCER-Caseworker", "OSCER-Staff", "CE-Staff" ]
+      },
+      no_match_behavior: "deny",
+      default_role: nil
+    }.deep_merge(overrides)
+  end
+
   # Returns a mock SSO configuration hash
   # @param overrides [Hash] values to override in the default config
   # @return [Hash] SSO configuration
