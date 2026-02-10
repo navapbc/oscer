@@ -68,6 +68,7 @@ rescue ActiveRecord::PendingMigrationError => e
 end
 
 RSpec.configure do |config|
+  config.include ActiveSupport::Testing::TimeHelpers
   config.include Strata::Testing::ApiAuthHelpers
   config.include Devise::Test::ControllerHelpers, type: :controller
   config.include PunditSpecViewHelper, type: :view
