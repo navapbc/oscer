@@ -73,28 +73,29 @@ RSpec.describe "Auth::Sso", type: :request do
   end
 
   describe "GET /auth/sso/callback" do
-    let(:valid_state) { SecureRandom.hex(32) }
     let(:valid_code) { "valid-authorization-code" }
 
-    before do
-      # Set up session state (simulating the /auth/sso redirect)
+    # Initiate SSO flow to get valid state/nonce in session
+    let(:initiate_sso_flow) do
       get "/auth/sso"
-      @stored_state = session[:sso_state]
-      @stored_nonce = session[:sso_nonce]
+      { state: session[:sso_state], nonce: session[:sso_nonce] }
     end
 
+    let(:stored_state) { initiate_sso_flow[:state] }
+    let(:stored_nonce) { initiate_sso_flow[:nonce] }
+
     # Helper to create claims with the correct nonce
-    def id_token_claims_with_nonce(overrides = {})
-      mock_id_token_claims({ "nonce" => @stored_nonce }.merge(overrides))
+    def id_token_claims_with_nonce(nonce, overrides = {})
+      mock_id_token_claims({ "nonce" => nonce }.merge(overrides))
     end
 
     context "with valid code and state" do
       before do
-        stub_oidc_token_exchange(claims: id_token_claims_with_nonce)
+        stub_oidc_token_exchange(claims: id_token_claims_with_nonce(stored_nonce))
       end
 
       it "creates a new user session" do
-        get "/auth/sso/callback", params: { code: valid_code, state: @stored_state }
+        get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
 
         expect(response).to have_http_status(:redirect)
         expect(controller.current_user).to be_present
@@ -102,19 +103,19 @@ RSpec.describe "Auth::Sso", type: :request do
 
       it "provisions a new user from claims" do
         expect {
-          get "/auth/sso/callback", params: { code: valid_code, state: @stored_state }
+          get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
         }.to change(User, :count).by(1)
       end
 
       it "redirects to the appropriate dashboard" do
-        get "/auth/sso/callback", params: { code: valid_code, state: @stored_state }
+        get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
 
         # After sign in, redirects based on MFA preference
         expect(response).to have_http_status(:redirect)
       end
 
       it "clears SSO session data" do
-        get "/auth/sso/callback", params: { code: valid_code, state: @stored_state }
+        get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
 
         expect(session[:sso_state]).to be_nil
         expect(session[:sso_nonce]).to be_nil
@@ -122,7 +123,7 @@ RSpec.describe "Auth::Sso", type: :request do
 
       it "finds existing user by UID on subsequent login" do
         # First login creates user
-        get "/auth/sso/callback", params: { code: valid_code, state: @stored_state }
+        get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
         logout
 
         # Second login should find existing user
@@ -142,7 +143,7 @@ RSpec.describe "Auth::Sso", type: :request do
         get "/auth/sso/callback", params: {
           error: "access_denied",
           error_description: "User denied consent",
-          state: @stored_state
+          state: stored_state
         }
 
         expect(response).to redirect_to(root_path)
@@ -154,7 +155,7 @@ RSpec.describe "Auth::Sso", type: :request do
         # No stub - if token exchange is called, it will fail
         get "/auth/sso/callback", params: {
           error: "access_denied",
-          state: @stored_state
+          state: stored_state
         }
 
         expect(response).to redirect_to(root_path)
@@ -163,12 +164,13 @@ RSpec.describe "Auth::Sso", type: :request do
 
     context "with invalid nonce" do
       before do
-        # Token has wrong nonce
+        # Ensure SSO flow is initiated first, then stub with wrong nonce
+        stored_state # triggers initiate_sso_flow
         stub_oidc_token_exchange(claims: mock_id_token_claims("nonce" => "wrong-nonce"))
       end
 
       it "redirects with error" do
-        get "/auth/sso/callback", params: { code: valid_code, state: @stored_state }
+        get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
 
         expect(response).to redirect_to(root_path)
         follow_redirect!
@@ -177,14 +179,14 @@ RSpec.describe "Auth::Sso", type: :request do
 
       it "does not create a user" do
         expect {
-          get "/auth/sso/callback", params: { code: valid_code, state: @stored_state }
+          get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
         }.not_to change(User, :count)
       end
     end
 
     context "with invalid state parameter" do
       before do
-        stub_oidc_token_exchange(claims: id_token_claims_with_nonce)
+        stub_oidc_token_exchange(claims: id_token_claims_with_nonce(stored_nonce))
       end
 
       it "redirects with error for mismatched state" do
@@ -210,11 +212,12 @@ RSpec.describe "Auth::Sso", type: :request do
 
     context "with invalid authorization code" do
       before do
+        stored_state # triggers initiate_sso_flow
         stub_oidc_token_exchange_failure
       end
 
       it "redirects with error message" do
-        get "/auth/sso/callback", params: { code: "invalid-code", state: @stored_state }
+        get "/auth/sso/callback", params: { code: "invalid-code", state: stored_state }
 
         expect(response).to redirect_to(root_path)
         follow_redirect!
@@ -223,18 +226,18 @@ RSpec.describe "Auth::Sso", type: :request do
 
       it "does not create a user" do
         expect {
-          get "/auth/sso/callback", params: { code: "invalid-code", state: @stored_state }
+          get "/auth/sso/callback", params: { code: "invalid-code", state: stored_state }
         }.not_to change(User, :count)
       end
     end
 
     context "when user's groups don't match any role" do
       before do
-        stub_oidc_token_exchange(claims: id_token_claims_with_nonce("groups" => ["Unknown-Group"]))
+        stub_oidc_token_exchange(claims: id_token_claims_with_nonce(stored_nonce, "groups" => [ "Unknown-Group" ]))
       end
 
       it "redirects with access denied message" do
-        get "/auth/sso/callback", params: { code: valid_code, state: @stored_state }
+        get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
 
         expect(response).to redirect_to(root_path)
         follow_redirect!
@@ -243,7 +246,7 @@ RSpec.describe "Auth::Sso", type: :request do
 
       it "does not create a user" do
         expect {
-          get "/auth/sso/callback", params: { code: valid_code, state: @stored_state }
+          get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
         }.not_to change(User, :count)
       end
     end

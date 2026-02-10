@@ -14,12 +14,12 @@
 #
 class Auth::SsoController < ApplicationController
   # IdP redirects to callback via GET request, so no CSRF token is available
-  skip_before_action :verify_authenticity_token, only: [:callback]
+  skip_before_action :verify_authenticity_token, only: [ :callback ]
   skip_after_action :verify_authorized
   skip_after_action :verify_policy_scoped
 
-  before_action :require_sso_enabled, except: [:destroy]
-  before_action :redirect_if_authenticated, only: [:new]
+  before_action :require_sso_enabled, except: [ :destroy ]
+  before_action :redirect_if_authenticated, only: [ :new ]
 
   # GET /auth/sso
   # Initiates SSO login by redirecting to the Identity Provider
