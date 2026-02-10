@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe SsoHelper do
+RSpec.describe SsoHelper, type: :helper do
   # Create a test class to include the helper
   let(:helper_class) do
     Class.new do
