@@ -8,7 +8,8 @@ RSpec.describe VaTokenManager do
     {
       client_id_ccg: "test-client-id",
       private_key: private_key.to_pem,
-      audience: "https://test.okta.com/token"
+      audience: "https://fake-va.gov/oauth2/token",
+      token_host: "https://fake-va.gov/host"
     }
   end
   let(:token_manager) { described_class.new(config: config) }
@@ -25,7 +26,7 @@ RSpec.describe VaTokenManager do
 
     context "when no token is cached for the ICN" do
       before do
-        stub_request(:post, config[:audience])
+        stub_request(:post, config[:token_host])
           .to_return(status: 200, body: token_response.to_json, headers: { "Content-Type" => "application/json" })
       end
 
@@ -33,12 +34,12 @@ RSpec.describe VaTokenManager do
         token = token_manager.get_access_token(icn: icn)
         expect(token).to eq("new-access-token")
 
-        expect(WebMock).to have_requested(:post, config[:audience])
+        expect(WebMock).to have_requested(:post, config[:token_host])
           .with { |req|
             body = URI.decode_www_form(req.body).to_h
             expect(body["grant_type"]).to eq("client_credentials")
             expect(body["scope"]).to eq("disability_rating.read launch")
-            
+
             # Verify launch parameter is Base64 encoded patient ICN
             launch = JSON.parse(Base64.strict_decode64(body["launch"]))
             expect(launch["patient"]).to eq(icn)
@@ -48,7 +49,7 @@ RSpec.describe VaTokenManager do
             expect(jwt["iss"]).to eq(config[:client_id_ccg])
             expect(jwt["sub"]).to eq(config[:client_id_ccg])
             expect(jwt["aud"]).to eq(config[:audience])
-            expect(jwt["exp"]).to be_close(Time.current.to_i + 300, 1.second)
+            expect(jwt["exp"]).to be_within(1.second).of(Time.current.to_i + 300)
             true
           }
       end
@@ -58,7 +59,7 @@ RSpec.describe VaTokenManager do
       before do
         stub_request(:post, config[:token_host])
           .to_return(status: 200, body: token_response.to_json, headers: { "Content-Type" => "application/json" })
-        
+
         # First call to populate cache
         token_manager.get_access_token(icn: icn)
       end
@@ -77,16 +78,16 @@ RSpec.describe VaTokenManager do
             { status: 200, body: token_response.merge("access_token" => "old-token", "expires_in" => 10).to_json },
             { status: 200, body: token_response.merge("access_token" => "new-token").to_json }
           )
-        
+
         # First call to populate cache
         token_manager.get_access_token(icn: icn)
-        
+
         # Travel to future where token is expired (using 30s buffer)
-        Timecop.freeze(Time.current + 60)
+        travel_to(Time.current + 60)
       end
 
       after do
-        Timecop.return
+        travel_back
       end
 
       it "refreshes the token" do
