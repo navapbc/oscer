@@ -3,13 +3,16 @@
 require "rails_helper"
 
 RSpec.describe StaffUserProvisioner, type: :service do
-  let(:role_mapper) { instance_double(RoleMapper) }
   subject(:provisioner) { described_class.new(role_mapper: role_mapper) }
 
+  let(:role_mapper) { instance_double(RoleMapper) }
+
   before do
-    allow(role_mapper).to receive(:map_groups_to_role).and_return("caseworker")
-    allow(role_mapper).to receive(:deny_if_no_match?).and_return(true)
-    allow(role_mapper).to receive(:default_role).and_return(nil)
+    allow(role_mapper).to receive_messages(
+      map_groups_to_role: "caseworker",
+      deny_if_no_match?: true,
+      default_role: nil
+    )
   end
 
   describe "#provision!" do
@@ -42,7 +45,7 @@ RSpec.describe StaffUserProvisioner, type: :service do
 
       it "assigns role from RoleMapper" do
         allow(role_mapper).to receive(:map_groups_to_role)
-          .with(["OSCER-Caseworker"])
+          .with([ "OSCER-Caseworker" ])
           .and_return("caseworker")
 
         user = provisioner.provision!(claims)
@@ -79,28 +82,32 @@ RSpec.describe StaffUserProvisioner, type: :service do
       it "updates email when changed in IdP" do
         claims = mock_staff_claims(email: "new.email@example.gov")
 
-        user = provisioner.provision!(claims)
-
-        expect(user.email).to eq("new.email@example.gov")
+        expect { provisioner.provision!(claims) }
+          .to change { existing_user.reload.email }
+          .from("old.email@example.gov")
+          .to("new.email@example.gov")
       end
 
       it "updates name when changed in IdP" do
         claims = mock_staff_claims(name: "New Name")
 
-        user = provisioner.provision!(claims)
-
-        expect(user.full_name).to eq("New Name")
+        expect { provisioner.provision!(claims) }
+          .to change { existing_user.reload.full_name }
+          .from("Old Name")
+          .to("New Name")
       end
 
       it "updates role when group membership changes" do
         allow(role_mapper).to receive(:map_groups_to_role)
-          .with(["OSCER-Admin"])
+          .with([ "OSCER-Admin" ])
           .and_return("admin")
 
-        claims = mock_staff_claims(groups: ["OSCER-Admin"])
-        user = provisioner.provision!(claims)
+        claims = mock_staff_claims(groups: [ "OSCER-Admin" ])
 
-        expect(user.role).to eq("admin")
+        expect { provisioner.provision!(claims) }
+          .to change { existing_user.reload.role }
+          .from("caseworker")
+          .to("admin")
       end
     end
 
@@ -115,14 +122,14 @@ RSpec.describe StaffUserProvisioner, type: :service do
         end
 
         it "raises Auth::Errors::AccessDenied" do
-          claims = mock_staff_claims(groups: ["Unknown-Group"])
+          claims = mock_staff_claims(groups: [ "Unknown-Group" ])
 
           expect { provisioner.provision!(claims) }
             .to raise_error(Auth::Errors::AccessDenied)
         end
 
         it "does not create a user" do
-          claims = mock_staff_claims(groups: ["Unknown-Group"])
+          claims = mock_staff_claims(groups: [ "Unknown-Group" ])
 
           expect {
             provisioner.provision!(claims) rescue nil
@@ -132,12 +139,14 @@ RSpec.describe StaffUserProvisioner, type: :service do
 
       context "with assign_default mode" do
         before do
-          allow(role_mapper).to receive(:deny_if_no_match?).and_return(false)
-          allow(role_mapper).to receive(:default_role).and_return("readonly")
+          allow(role_mapper).to receive_messages(
+            deny_if_no_match?: false,
+            default_role: "readonly"
+          )
         end
 
         it "assigns the default role" do
-          claims = mock_staff_claims(groups: ["Unknown-Group"])
+          claims = mock_staff_claims(groups: [ "Unknown-Group" ])
 
           user = provisioner.provision!(claims)
 
@@ -147,12 +156,14 @@ RSpec.describe StaffUserProvisioner, type: :service do
 
       context "with assign_default mode and nil default" do
         before do
-          allow(role_mapper).to receive(:deny_if_no_match?).and_return(false)
-          allow(role_mapper).to receive(:default_role).and_return(nil)
+          allow(role_mapper).to receive_messages(
+            deny_if_no_match?: false,
+            default_role: nil
+          )
         end
 
         it "sets role to nil" do
-          claims = mock_staff_claims(groups: ["Unknown-Group"])
+          claims = mock_staff_claims(groups: [ "Unknown-Group" ])
 
           user = provisioner.provision!(claims)
 
@@ -199,8 +210,10 @@ RSpec.describe StaffUserProvisioner, type: :service do
     context "with nil groups" do
       before do
         allow(role_mapper).to receive(:map_groups_to_role).with(nil).and_return(nil)
-        allow(role_mapper).to receive(:deny_if_no_match?).and_return(false)
-        allow(role_mapper).to receive(:default_role).and_return("guest")
+        allow(role_mapper).to receive_messages(
+          deny_if_no_match?: false,
+          default_role: "guest"
+        )
       end
 
       it "handles nil groups gracefully" do
@@ -215,8 +228,10 @@ RSpec.describe StaffUserProvisioner, type: :service do
     context "with empty groups" do
       before do
         allow(role_mapper).to receive(:map_groups_to_role).with([]).and_return(nil)
-        allow(role_mapper).to receive(:deny_if_no_match?).and_return(false)
-        allow(role_mapper).to receive(:default_role).and_return("guest")
+        allow(role_mapper).to receive_messages(
+          deny_if_no_match?: false,
+          default_role: "guest"
+        )
       end
 
       it "handles empty groups gracefully" do
@@ -235,7 +250,7 @@ RSpec.describe StaffUserProvisioner, type: :service do
     it "provisions admin user correctly" do
       claims = mock_staff_claims(
         uid: "admin-user",
-        groups: ["OSCER-Admin"]
+        groups: [ "OSCER-Admin" ]
       )
 
       user = provisioner.provision!(claims)
@@ -247,7 +262,7 @@ RSpec.describe StaffUserProvisioner, type: :service do
     it "provisions caseworker user correctly" do
       claims = mock_staff_claims(
         uid: "caseworker-user",
-        groups: ["OSCER-Caseworker"]
+        groups: [ "OSCER-Caseworker" ]
       )
 
       user = provisioner.provision!(claims)
@@ -259,7 +274,7 @@ RSpec.describe StaffUserProvisioner, type: :service do
     it "denies access for unknown groups" do
       claims = mock_staff_claims(
         uid: "unknown-user",
-        groups: ["Unknown-Group"]
+        groups: [ "Unknown-Group" ]
       )
 
       expect { provisioner.provision!(claims) }

@@ -2,15 +2,20 @@
 
 # Maps IdP groups to OSCER roles for Staff SSO
 #
-# Reads configuration from config/sso_role_mapping.yml to determine
-# how IdP group memberships translate to OSCER application roles.
+# Reads configuration from config/sso_role_mapping.yml for the current
+# Rails environment to determine how IdP group memberships translate
+# to OSCER application roles.
 #
 # Usage:
-#   mapper = RoleMapper.new
-#   role = mapper.map_groups_to_role(["OSCER-Admin", "Other-Group"])
+#   # Preferred: Use cached singleton instance (avoids re-parsing YAML)
+#   role = RoleMapper.instance.map_groups_to_role(["OSCER-Admin", "Other-Group"])
 #   # => "admin"
 #
+#   # For testing: Create new instance with custom config
+#   mapper = RoleMapper.new(config: { ... })
+#
 # Configuration supports:
+#   - Environment-specific role mappings (like database.yml)
 #   - Multiple IdP groups mapping to the same OSCER role
 #   - Case-insensitive group matching
 #   - Configurable behavior when no groups match (deny or assign default)
@@ -18,12 +23,32 @@
 class RoleMapper
   class ConfigurationError < StandardError; end
 
+  # No-match behavior options
+  BEHAVIOR_DENY = "deny"
+  BEHAVIOR_ASSIGN_DEFAULT = "assign_default"
+  VALID_BEHAVIORS = [ BEHAVIOR_DENY, BEHAVIOR_ASSIGN_DEFAULT ].freeze
+
   DEFAULT_CONFIG_PATH = Rails.root.join("config/sso_role_mapping.yml")
+
+  class << self
+    # Returns a cached singleton instance of RoleMapper
+    # Config is loaded once and reused for all subsequent calls
+    # @return [RoleMapper]
+    def instance
+      @instance ||= new
+    end
+
+    # Resets the cached instance (useful for testing)
+    def reset_instance!
+      @instance = nil
+    end
+  end
 
   # @param config [Hash, nil] Configuration hash (for testing). If nil, loads from config_path.
   # @param config_path [Pathname, String] Path to YAML config file (default: config/sso_role_mapping.yml)
-  def initialize(config: nil, config_path: DEFAULT_CONFIG_PATH)
-    @config = config&.deep_symbolize_keys || load_config(config_path)
+  # @param environment [String] Rails environment to load config for (default: Rails.env)
+  def initialize(config: nil, config_path: DEFAULT_CONFIG_PATH, environment: Rails.env)
+    @config = config&.deep_symbolize_keys || load_config(config_path, environment)
     validate_config!
     @normalized_mappings = build_normalized_mappings
   end
@@ -48,7 +73,7 @@ class RoleMapper
   # Check if access should be denied when no role matches
   # @return [Boolean]
   def deny_if_no_match?
-    @config[:no_match_behavior] == "deny"
+    @config[:no_match_behavior] == BEHAVIOR_DENY
   end
 
   # Get the default role to assign when no groups match
@@ -60,15 +85,21 @@ class RoleMapper
 
   private
 
-  def load_config(config_path)
+  def load_config(config_path, environment)
     unless File.exist?(config_path)
       raise ConfigurationError, "Role mapping configuration not found: #{config_path}"
     end
 
-    # Use safe_load to prevent arbitrary object deserialization
+    # Use safe_load with aliases enabled (needed for YAML anchors like &default)
     yaml_content = File.read(config_path)
-    YAML.safe_load(yaml_content, permitted_classes: [], permitted_symbols: [], aliases: false)
-        .deep_symbolize_keys
+    all_config = YAML.safe_load(yaml_content, permitted_classes: [], permitted_symbols: [], aliases: true)
+
+    env_config = all_config[environment.to_s]
+    if env_config.nil?
+      raise ConfigurationError, "No configuration found for environment: #{environment}"
+    end
+
+    env_config.deep_symbolize_keys
   rescue Psych::SyntaxError, Psych::DisallowedClass => e
     raise ConfigurationError, "Invalid YAML in role mapping configuration: #{e.message}"
   end
@@ -92,8 +123,8 @@ class RoleMapper
       end
     end
 
-    unless %w[deny assign_default].include?(@config[:no_match_behavior])
-      raise ConfigurationError, "no_match_behavior must be 'deny' or 'assign_default'"
+    unless VALID_BEHAVIORS.include?(@config[:no_match_behavior])
+      raise ConfigurationError, "no_match_behavior must be '#{BEHAVIOR_DENY}' or '#{BEHAVIOR_ASSIGN_DEFAULT}'"
     end
   end
 

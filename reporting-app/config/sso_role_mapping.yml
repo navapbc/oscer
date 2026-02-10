@@ -4,34 +4,68 @@
 # When a user logs in via SSO, their group memberships are checked
 # against this configuration to determine their OSCER role.
 #
-# Configuration:
-#   role_mappings: Hash mapping OSCER role names to arrays of IdP group names
-#   no_match_behavior: What to do when user's groups don't match any role
-#     - "deny": Reject the login (user cannot access OSCER)
-#     - "assign_default": Assign the default_role
-#   default_role: Role to assign when no_match_behavior is "assign_default"
+# Structure:
+#   Each environment section contains:
+#   - role_mappings: Hash mapping OSCER role names to arrays of IdP group names
+#   - no_match_behavior: What to do when user's groups don't match any role
+#       - "deny": Reject the login (user cannot access OSCER)
+#       - "assign_default": Assign the default_role
+#   - default_role: Role to assign when no_match_behavior is "assign_default"
 #
 # Notes:
 #   - Group matching is case-insensitive
-#   - First matching role wins (order matters in this file)
+#   - First matching role wins (order matters)
 #   - Multiple IdP groups can map to the same OSCER role
+#   - Role priority is determined by order - roles listed first take precedence
 #
-# IMPORTANT: Role priority is determined by order in this file.
-# Roles listed first take precedence when a user belongs to multiple groups.
+# Usage:
+#   RoleMapper automatically loads config for Rails.env
 
-role_mappings:
-  admin:
-    - "OSCER-Admin"
-    - "CE-Administrators"
-  caseworker:
-    - "OSCER-Caseworker"
-    - "OSCER-Staff"
-    - "CE-Staff"
+default: &default
+  no_match_behavior: deny
+  default_role: null
 
-# Options: "deny" or "assign_default"
-# - deny: Users without matching groups cannot log in
-# - assign_default: Users without matching groups get default_role
-no_match_behavior: deny
+development:
+  <<: *default
+  role_mappings:
+    admin:
+      - "OSCER-Admin"
+      - "CE-Administrators"
+    caseworker:
+      - "OSCER-Caseworker"
+      - "OSCER-Staff"
+      - "CE-Staff"
 
-# Only used when no_match_behavior is "assign_default"
-default_role: null
+test:
+  <<: *default
+  role_mappings:
+    admin:
+      - "OSCER-Admin"
+      - "CE-Administrators"
+    caseworker:
+      - "OSCER-Caseworker"
+      - "OSCER-Staff"
+      - "CE-Staff"
+
+production:
+  <<: *default
+  role_mappings:
+    admin:
+      - "OSCER-Admin"
+      - "CE-Administrators"
+    caseworker:
+      - "OSCER-Caseworker"
+      - "OSCER-Staff"
+      - "CE-Staff"
+
+# mock-production environment (for local production-like testing)
+mock-production:
+  <<: *default
+  role_mappings:
+    admin:
+      - "OSCER-Admin"
+      - "CE-Administrators"
+    caseworker:
+      - "OSCER-Caseworker"
+      - "OSCER-Staff"
+      - "CE-Staff"

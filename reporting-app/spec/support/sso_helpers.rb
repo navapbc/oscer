@@ -11,7 +11,7 @@ module SsoHelpers
       uid: "staff-user-123",
       email: "jane.doe@example.gov",
       name: "Jane Doe",
-      groups: ["OSCER-Caseworker"]
+      groups: [ "OSCER-Caseworker" ]
     }.merge(overrides)
   end
 
@@ -21,8 +21,8 @@ module SsoHelpers
   def mock_role_mapping_config(overrides = {})
     {
       role_mappings: {
-        admin: ["OSCER-Admin", "CE-Administrators"],
-        caseworker: ["OSCER-Caseworker", "OSCER-Staff", "CE-Staff"]
+        admin: [ "OSCER-Admin", "CE-Administrators" ],
+        caseworker: [ "OSCER-Caseworker", "OSCER-Staff", "CE-Staff" ]
       },
       no_match_behavior: "deny",
       default_role: nil
