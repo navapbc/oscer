@@ -4,8 +4,8 @@ require "rails_helper"
 
 RSpec.describe VeteranAffairsAdapter do
   let(:api_host) { "https://sandbox-api.va.gov" }
-  let(:config) { VeteranAffairsAdapter::Config.new(api_host: api_host) }
-  let(:adapter) { described_class.new(config: config) }
+  let(:connection) { Faraday.new(url: api_host) }
+  let(:adapter) { described_class.new(connection: connection) }
   let(:access_token) { "test-access-token" }
 
   describe "#get_disability_rating" do
@@ -42,7 +42,7 @@ RSpec.describe VeteranAffairsAdapter do
       end
 
       it "returns the parsed response body" do
-        expect(adapter.get_disability_rating(access_token: access_token)).to eq(response_body)
+        expect(adapter.get_disability_rating(access_token: access_token)).to eq(response_body.to_json)
       end
     end
 
@@ -67,7 +67,7 @@ RSpec.describe VeteranAffairsAdapter do
 
       it "raises a RateLimitError" do
         expect { adapter.get_disability_rating(access_token: access_token) }
-          .to raise_error(VeteranAffairsAdapter::RateLimitError, /Rate limited/)
+          .to raise_error(VeteranAffairsAdapter::RateLimitError, /VA API rate limited. Reset in 30s/)
       end
     end
 
@@ -95,14 +95,15 @@ RSpec.describe VeteranAffairsAdapter do
 
     describe "rate limit logging" do
       it "logs a warning when ratelimit-remaining is low" do
+        allow(Rails.logger).to receive(:warn)
         stub_request(:get, endpoint).to_return(
           status: 200,
           body: response_body.to_json,
           headers: { "ratelimit-remaining" => "5" }
         )
 
-        expect(Rails.logger).to receive(:warn).with(/VA API rate limit low: 5 remaining/)
         adapter.get_disability_rating(access_token: access_token)
+        expect(Rails.logger).to have_received(:warn).with(/VA API rate limit low: 5 remaining/)
       end
     end
   end
