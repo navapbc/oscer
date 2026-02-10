@@ -36,24 +36,26 @@ RSpec.describe VeteranDisabilityService do
 
     context "when the adapter raises an ApiError (fail-open)" do
       before do
+        allow(Rails.logger).to receive(:warn)
         allow(token_manager).to receive(:get_access_token).with(icn: icn).and_return(access_token)
         allow(adapter).to receive(:get_disability_rating).and_raise(VeteranAffairsAdapter::ApiError.new("API Down"))
       end
 
       it "returns nil and logs a warning" do
-        expect(Rails.logger).to receive(:warn).with(/VA API check failed: API Down/)
         expect(service.get_disability_rating(icn: icn)).to be_nil
+        expect(Rails.logger).to have_received(:warn).with(/VA API check failed: API Down/)
       end
     end
 
     context "when the token manager raises an error (fail-open)" do
       before do
+        allow(Rails.logger).to receive(:warn)
         allow(token_manager).to receive(:get_access_token).and_raise(VaTokenManager::TokenError.new("Auth failed"))
       end
 
       it "returns nil and logs a warning" do
-        expect(Rails.logger).to receive(:warn).with(/VA API check failed: Auth failed/)
         expect(service.get_disability_rating(icn: icn)).to be_nil
+        expect(Rails.logger).to have_received(:warn).with(/VA API check failed: Auth failed/)
       end
     end
   end
