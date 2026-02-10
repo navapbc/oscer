@@ -269,6 +269,44 @@ RSpec.describe OidcClient, type: :service do
         )
       end
     end
+
+    context "with nonce validation" do
+      let(:expected_nonce) { "expected-nonce-value" }
+      let(:claims) { mock_id_token_claims("nonce" => expected_nonce) }
+
+      it "validates successfully when nonce matches" do
+        expect {
+          client.extract_claims(id_token, expected_nonce: expected_nonce)
+        }.not_to raise_error
+      end
+
+      it "raises error when nonce does not match" do
+        expect {
+          client.extract_claims(id_token, expected_nonce: "wrong-nonce")
+        }.to raise_error(OidcClient::TokenValidationError, /Invalid nonce/)
+      end
+
+      it "raises error when token is missing nonce but expected" do
+        claims_without_nonce = mock_id_token_claims.except("nonce")
+        token_without_nonce = create_test_jwt(claims_without_nonce)
+
+        expect {
+          client.extract_claims(token_without_nonce, expected_nonce: expected_nonce)
+        }.to raise_error(OidcClient::TokenValidationError, /Invalid nonce/)
+      end
+
+      it "skips nonce validation when expected_nonce is nil" do
+        expect {
+          client.extract_claims(id_token, expected_nonce: nil)
+        }.not_to raise_error
+      end
+
+      it "skips nonce validation when expected_nonce is not provided" do
+        expect {
+          client.extract_claims(id_token)
+        }.not_to raise_error
+      end
+    end
   end
 
   describe "configuration validation" do

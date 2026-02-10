@@ -3,6 +3,35 @@
 require "rails_helper"
 
 RSpec.describe RoleMapper, type: :service do
+  describe ".instance" do
+    after do
+      described_class.reset_instance!
+    end
+
+    it "returns a cached RoleMapper instance" do
+      first_call = described_class.instance
+      second_call = described_class.instance
+
+      expect(first_call).to be_a(described_class)
+      expect(first_call).to be(second_call) # Same object
+    end
+
+    it "loads configuration from default path" do
+      instance = described_class.instance
+      expect(instance.map_groups_to_role([ "OSCER-Admin" ])).to eq("admin")
+    end
+  end
+
+  describe ".reset_instance!" do
+    it "clears the cached instance" do
+      first_instance = described_class.instance
+      described_class.reset_instance!
+      second_instance = described_class.instance
+
+      expect(first_instance).not_to be(second_instance)
+    end
+  end
+
   describe "#initialize" do
     context "with valid configuration" do
       it "loads configuration successfully" do

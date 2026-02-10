@@ -3,6 +3,18 @@
 # Shared test helpers for SSO/OIDC testing
 # Used by OidcClient, StaffUserProvisioner, RoleMapper, and controller specs
 module SsoHelpers
+  # Returns mock staff user claims for provisioning tests
+  # @param overrides [Hash] values to override in the default claims
+  # @return [Hash] Staff claims with symbol keys
+  def mock_staff_claims(overrides = {})
+    {
+      uid: "staff-user-123",
+      email: "jane.doe@example.gov",
+      name: "Jane Doe",
+      groups: [ "OSCER-Caseworker" ]
+    }.merge(overrides)
+  end
+
   # Returns a mock role mapping configuration hash
   # @param overrides [Hash] values to override in the default config
   # @return [Hash] Role mapping configuration
@@ -24,6 +36,7 @@ module SsoHelpers
     {
       enabled: true,
       issuer: "https://test-idp.example.com",
+      discovery_url: "https://test-idp.example.com",
       client_id: "test-client-id",
       client_secret: "test-client-secret",
       redirect_uri: "http://localhost:3000/auth/sso/callback",

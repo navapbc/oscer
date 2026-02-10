@@ -49,5 +49,9 @@
       # User tried to do something that requires a verified email, but their email is not verified
       class UserNotConfirmed < BaseAuthError
       end
+
+      # User's IdP groups don't map to any OSCER role (SSO)
+      class AccessDenied < BaseAuthError
+      end
     end
   end
