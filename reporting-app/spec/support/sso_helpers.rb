@@ -11,7 +11,7 @@ module SsoHelpers
       uid: "staff-user-123",
       email: "jane.doe@example.gov",
       name: "Jane Doe",
-      groups: ["OSCER-Caseworker"]
+      groups: [ "OSCER-Caseworker" ]
     }.merge(overrides)
   end
 
