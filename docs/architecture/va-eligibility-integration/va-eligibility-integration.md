@@ -256,8 +256,6 @@ end
 private
 
 def extract_veteran_disability_status(certification)
-  return nil unless va_integration_enabled?
-
   # member data needed
   # ICN OR
 
@@ -432,7 +430,6 @@ end
 | `VA_CLIENT_ID_AUTH_FLOW` | OAuth client ID for Auth Code flow | Option 2 only |
 | `VA_CLIENT_SECRET` | OAuth client secret for Auth Code flow | Option 2 only |
 | `VA_OAUTH_REDIRECT_URI` | Callback URL for Auth Code flow | Option 2 only |
-| `VA_INTEGRATION_ENABLED` | Flag to enable/disable VA integration | Both options |
 
 ### Configuration Example
 
@@ -448,7 +445,6 @@ Rails.application.config.veteran_affairs = {
   client_id_auth_flow: ENV.fetch('VA_CLIENT_ID_AUTH_FLOW'), # Oauth Flow
   client_secret: ENV['VA_CLIENT_SECRET'],  # Oauth Flow
   oauth_redirect_uri: ENV['VA_OAUTH_REDIRECT_URI'], # Oauth Flow
-  enabled: ENV.fetch('VA_INTEGRATION_ENABLED', 'false') == 'true'
 }
 ```
 

@@ -13,7 +13,6 @@
 #   VA_API_HOST      - VA API base endpoint (default: https://sandbox-api.va.gov)
 #   VA_TOKEN_AUDIENCE - OAuth token audience for Client Credentials (default: sandbox Okta endpoint)
 #   VA_TOKEN_HOST    - OAuth token endpoint for Client Credentials (default: sandbox VA endpoint)
-#   VA_INTEGRATION_ENABLED - Flag to enable/disable VA integration (default: false)
 
 Rails.application.config.veteran_affairs = {
   # API Endpoints
