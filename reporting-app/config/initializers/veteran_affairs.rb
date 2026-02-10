@@ -16,8 +16,6 @@
 #   VA_INTEGRATION_ENABLED - Flag to enable/disable VA integration (default: false)
 
 Rails.application.config.veteran_affairs = {
-  enabled: ENV.fetch("VA_INTEGRATION_ENABLED", "false") == "true",
-
   # API Endpoints
   api_host: ENV.fetch("VA_API_HOST", "https://sandbox-api.va.gov"),
   audience: ENV.fetch("VA_TOKEN_AUDIENCE", "https://deptva-eval.okta.com/oauth2/ausi3u00gw66b9Ojk2p7/v1/token"),
