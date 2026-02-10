@@ -14,6 +14,12 @@ RSpec.describe VaTokenManager do
   end
   let(:token_manager) { described_class.new(config: config) }
   let(:icn) { "12345V67890" }
+  let(:memory_store) { ActiveSupport::Cache.lookup_store(:memory_store) }
+
+  before do
+    allow(Rails).to receive(:cache).and_return(memory_store)
+    Rails.cache.clear
+  end
 
   describe "#get_access_token" do
     let(:token_response) do
@@ -75,15 +81,15 @@ RSpec.describe VaTokenManager do
       before do
         stub_request(:post, config[:token_host])
           .to_return(
-            { status: 200, body: token_response.merge("access_token" => "old-token", "expires_in" => 10).to_json },
+            { status: 200, body: token_response.merge("access_token" => "old-token").to_json },
             { status: 200, body: token_response.merge("access_token" => "new-token").to_json }
           )
 
         # First call to populate cache
         token_manager.get_access_token(icn: icn)
 
-        # Travel to future where token is expired (using 30s buffer)
-        travel_to(Time.current + 60)
+        # Travel to future where token is expired
+        travel_to(Time.current + 6.minutes)
       end
 
       after do

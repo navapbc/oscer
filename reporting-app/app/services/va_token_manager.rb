@@ -9,19 +9,19 @@ class VaTokenManager
 
   def initialize(config: Rails.application.config.veteran_affairs)
     @config = config
-    @token_cache = {} # { icn => { token: "...", expires_at: Time } }
   end
 
   def get_access_token(icn:)
-    cached = @token_cache[icn]
-    if cached && cached[:expires_at] > Time.current + 30
-      return cached[:token]
+    Rails.cache.fetch(cache_key(icn), expires_in: 5.minutes) do
+      fetch_new_token(icn: icn)
     end
-
-    fetch_new_token(icn: icn)
   end
 
   private
+
+  def cache_key(icn)
+    "va_access_token_#{icn}"
+  end
 
   def fetch_new_token(icn:)
     assertion = generate_client_assertion
@@ -43,15 +43,7 @@ class VaTokenManager
     end
 
     data = JSON.parse(response.body)
-    token = data["access_token"]
-    expires_in = data["expires_in"].to_i
-
-    @token_cache[icn] = {
-      token: token,
-      expires_at: Time.current + expires_in
-    }
-
-    token
+    data["access_token"]
   rescue Faraday::Error => e
     raise TokenError, "Network error fetching VA token: #{e.message}"
   end
