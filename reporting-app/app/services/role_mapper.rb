@@ -7,9 +7,12 @@
 # to OSCER application roles.
 #
 # Usage:
-#   mapper = RoleMapper.new
-#   role = mapper.map_groups_to_role(["OSCER-Admin", "Other-Group"])
+#   # Preferred: Use cached singleton instance (avoids re-parsing YAML)
+#   role = RoleMapper.instance.map_groups_to_role(["OSCER-Admin", "Other-Group"])
 #   # => "admin"
+#
+#   # For testing: Create new instance with custom config
+#   mapper = RoleMapper.new(config: { ... })
 #
 # Configuration supports:
 #   - Environment-specific role mappings (like database.yml)
@@ -26,6 +29,20 @@ class RoleMapper
   VALID_BEHAVIORS = [ BEHAVIOR_DENY, BEHAVIOR_ASSIGN_DEFAULT ].freeze
 
   DEFAULT_CONFIG_PATH = Rails.root.join("config/sso_role_mapping.yml")
+
+  class << self
+    # Returns a cached singleton instance of RoleMapper
+    # Config is loaded once and reused for all subsequent calls
+    # @return [RoleMapper]
+    def instance
+      @instance ||= new
+    end
+
+    # Resets the cached instance (useful for testing)
+    def reset_instance!
+      @instance = nil
+    end
+  end
 
   # @param config [Hash, nil] Configuration hash (for testing). If nil, loads from config_path.
   # @param config_path [Pathname, String] Path to YAML config file (default: config/sso_role_mapping.yml)
