@@ -6,7 +6,7 @@ class VeteranAffairsAdapter
   class RateLimitError < ApiError; end
   class ServerError < ApiError; end
 
-  def initialize(connection:)
+  def initialize(connection: nil)
     @connection = connection || default_connection
   end
 

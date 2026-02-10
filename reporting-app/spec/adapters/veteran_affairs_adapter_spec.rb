@@ -4,7 +4,13 @@ require "rails_helper"
 
 RSpec.describe VeteranAffairsAdapter do
   let(:api_host) { "https://sandbox-api.va.gov" }
-  let(:connection) { Faraday.new(url: api_host) }
+  let(:connection) do
+    Faraday.new(url: api_host) do |f|
+      f.request :json
+      f.response :json
+      f.adapter Faraday.default_adapter
+    end
+  end
   let(:adapter) { described_class.new(connection: connection) }
   let(:access_token) { "test-access-token" }
 
@@ -42,7 +48,7 @@ RSpec.describe VeteranAffairsAdapter do
       end
 
       it "returns the parsed response body" do
-        expect(adapter.get_disability_rating(access_token: access_token)).to eq(response_body.to_json)
+        expect(adapter.get_disability_rating(access_token: access_token)).to eq(response_body)
       end
     end
 
