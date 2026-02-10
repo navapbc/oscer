@@ -7,7 +7,12 @@ RSpec.describe OidcClient, type: :service do
   let(:client) { described_class.new(config: config) }
 
   before do
+    described_class.reset_discovery_cache!
     stub_oidc_discovery
+  end
+
+  after do
+    described_class.reset_discovery_cache!
   end
 
   describe "#enabled?" do
@@ -344,6 +349,84 @@ RSpec.describe OidcClient, type: :service do
 
       it "does not raise an error" do
         expect { client }.not_to raise_error
+      end
+    end
+  end
+
+  describe "OIDC Discovery" do
+    context "when discovery document is available" do
+      it "fetches authorization endpoint from discovery document" do
+        url = client.authorization_url(state: "state", nonce: "nonce")
+        expect(url).to start_with("https://test-idp.example.com/authorize")
+      end
+
+      it "fetches token endpoint from discovery document" do
+        stub_oidc_token_exchange(claims: mock_id_token_claims)
+        client.exchange_code(code: "test-code")
+
+        expect(WebMock).to have_requested(:post, "https://test-idp.example.com/token")
+      end
+
+      it "caches the discovery document" do
+        # First call
+        client.authorization_url(state: "state1", nonce: "nonce1")
+        # Second call
+        client.authorization_url(state: "state2", nonce: "nonce2")
+
+        # Discovery endpoint should only be called once
+        expect(WebMock).to have_requested(:get, "https://test-idp.example.com/.well-known/openid-configuration").once
+      end
+    end
+
+    context "when discovery document fetch fails" do
+      before do
+        described_class.reset_discovery_cache!
+        stub_request(:get, "https://test-idp.example.com/.well-known/openid-configuration")
+          .to_return(status: 500, body: "Internal Server Error")
+      end
+
+      it "raises DiscoveryError" do
+        expect { client.authorization_url(state: "state", nonce: "nonce") }
+          .to raise_error(OidcClient::DiscoveryError, /Failed to fetch OIDC discovery document/)
+      end
+    end
+
+    context "when discovery document is invalid JSON" do
+      before do
+        described_class.reset_discovery_cache!
+        stub_request(:get, "https://test-idp.example.com/.well-known/openid-configuration")
+          .to_return(status: 200, body: "not-json")
+      end
+
+      it "raises DiscoveryError" do
+        expect { client.authorization_url(state: "state", nonce: "nonce") }
+          .to raise_error(OidcClient::DiscoveryError, /Invalid JSON/)
+      end
+    end
+
+    context "when discovery document is missing required endpoints" do
+      before do
+        described_class.reset_discovery_cache!
+        stub_request(:get, "https://test-idp.example.com/.well-known/openid-configuration")
+          .to_return(status: 200, body: { issuer: "https://test-idp.example.com" }.to_json)
+      end
+
+      it "raises DiscoveryError" do
+        expect { client.authorization_url(state: "state", nonce: "nonce") }
+          .to raise_error(OidcClient::DiscoveryError, /missing required endpoints/)
+      end
+    end
+
+    context "when network error occurs during discovery" do
+      before do
+        described_class.reset_discovery_cache!
+        stub_request(:get, "https://test-idp.example.com/.well-known/openid-configuration")
+          .to_timeout
+      end
+
+      it "raises DiscoveryError" do
+        expect { client.authorization_url(state: "state", nonce: "nonce") }
+          .to raise_error(OidcClient::DiscoveryError, /Network error/)
       end
     end
   end

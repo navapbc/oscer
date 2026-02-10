@@ -36,6 +36,7 @@ module SsoHelpers
     {
       enabled: true,
       issuer: "https://test-idp.example.com",
+      discovery_url: "https://test-idp.example.com",
       client_id: "test-client-id",
       client_secret: "test-client-secret",
       redirect_uri: "http://localhost:3000/auth/sso/callback",

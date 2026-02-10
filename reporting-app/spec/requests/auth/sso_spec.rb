@@ -8,10 +8,13 @@ RSpec.describe "Auth::Sso", type: :request do
   let(:oidc_config) { mock_oidc_config }
 
   before do
+    OidcClient.reset_discovery_cache!
+    stub_oidc_discovery
     allow(Rails.application.config).to receive(:sso).and_return(oidc_config)
   end
 
   after do
+    OidcClient.reset_discovery_cache!
     Warden.test_reset!
   end
 

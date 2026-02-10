@@ -12,6 +12,9 @@
 #   SSO_REDIRECT_URI   - Callback URL (e.g., https://app.example.com/auth/sso/callback)
 #
 # Optional environment variables:
+#   SSO_DISCOVERY_URL  - Internal URL for OIDC discovery (default: SSO_ISSUER_URL)
+#                        Use when app container can't reach IdP via same URL as browser
+#                        (e.g., host.docker.internal:8080 instead of localhost:8080)
 #   SSO_CLAIM_EMAIL    - Claim name for email (default: "email")
 #   SSO_CLAIM_NAME     - Claim name for display name (default: "name")
 #   SSO_CLAIM_GROUPS   - Claim name for group membership (default: "groups")
@@ -23,12 +26,14 @@ Rails.application.config.sso = {
 
   # Identity Provider configuration
   issuer: ENV.fetch("SSO_ISSUER_URL", nil),
+  discovery_url: ENV.fetch("SSO_DISCOVERY_URL", nil) || ENV.fetch("SSO_ISSUER_URL", nil),
   client_id: ENV.fetch("SSO_CLIENT_ID", nil),
   client_secret: ENV.fetch("SSO_CLIENT_SECRET", nil),
   redirect_uri: ENV.fetch("SSO_REDIRECT_URI", nil),
 
   # OIDC scopes to request
-  scopes: %w[openid profile email groups],
+  # Note: 'groups' scope must be configured in IdP; Keycloak needs a custom scope/mapper
+  scopes: ENV.fetch("SSO_SCOPES", "openid profile email").split,
 
   # Claim name mappings (different IdPs may use different claim names)
   claims: {
