@@ -79,28 +79,32 @@ RSpec.describe StaffUserProvisioner, type: :service do
       it "updates email when changed in IdP" do
         claims = mock_staff_claims(email: "new.email@example.gov")
 
-        user = provisioner.provision!(claims)
-
-        expect(user.email).to eq("new.email@example.gov")
+        expect { provisioner.provision!(claims) }
+          .to change { existing_user.reload.email }
+          .from("old.email@example.gov")
+          .to("new.email@example.gov")
       end
 
       it "updates name when changed in IdP" do
         claims = mock_staff_claims(name: "New Name")
 
-        user = provisioner.provision!(claims)
-
-        expect(user.full_name).to eq("New Name")
+        expect { provisioner.provision!(claims) }
+          .to change { existing_user.reload.full_name }
+          .from("Old Name")
+          .to("New Name")
       end
 
       it "updates role when group membership changes" do
         allow(role_mapper).to receive(:map_groups_to_role)
-          .with(["OSCER-Admin"])
+          .with([ "OSCER-Admin" ])
           .and_return("admin")
 
-        claims = mock_staff_claims(groups: ["OSCER-Admin"])
-        user = provisioner.provision!(claims)
+        claims = mock_staff_claims(groups: [ "OSCER-Admin" ])
 
-        expect(user.role).to eq("admin")
+        expect { provisioner.provision!(claims) }
+          .to change { existing_user.reload.role }
+          .from("caseworker")
+          .to("admin")
       end
     end
 

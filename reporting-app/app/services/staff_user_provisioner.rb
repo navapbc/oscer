@@ -27,7 +27,7 @@ class StaffUserProvisioner
   SSO_PROVIDER = "sso"
 
   # @param role_mapper [RoleMapper] Role mapper instance (injectable for testing)
-  def initialize(role_mapper: RoleMapper.new)
+  def initialize(role_mapper: RoleMapper.instance)
     @role_mapper = role_mapper
   end
 
