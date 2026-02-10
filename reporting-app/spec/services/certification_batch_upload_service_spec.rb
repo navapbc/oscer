@@ -53,7 +53,7 @@ RSpec.describe CertificationBatchUploadService do
     end
 
     context 'with missing headers' do
-      required_headers = [ :member_id, :case_number, :member_email, :certification_date, :certification_type ].freeze
+      required_headers = %w[member_id case_number member_email certification_date certification_type].freeze
       let(:csv_content) do
         <<~CSV
           member_id,case_number,member_email,first_name,last_name,certification_type
@@ -262,6 +262,141 @@ RSpec.describe CertificationBatchUploadService do
         expect(service.successes.count).to eq(2)
         expect(service.errors.count).to eq(1)
         expect(service.all_succeeded?).to be false
+      end
+    end
+
+    context 'when delegating to processor' do
+      let(:processor) { instance_double(UnifiedRecordProcessor) }
+      let(:service) { described_class.new(processor: processor) }
+      let(:csv_content) do
+        <<~CSV
+          member_id,case_number,member_email,first_name,last_name,certification_date,certification_type
+          M123,C-001,john@example.com,John,Doe,2025-01-15,new_application
+        CSV
+      end
+      let(:csv_file) do
+        file = Tempfile.new([ 'test', '.csv' ])
+        file.write(csv_content)
+        file.rewind
+        file
+      end
+      let(:uploaded_file) { Rack::Test::UploadedFile.new(csv_file.path, 'text/csv') }
+      let(:mock_certification) { instance_double(Certification, id: 1, case_number: "C-001", member_id: "M123") }
+
+      after do
+        csv_file.close
+        csv_file.unlink
+      end
+
+      it 'calls processor with string-keyed record hash' do
+        expected_record = {
+          "member_id" => "M123",
+          "case_number" => "C-001",
+          "member_email" => "john@example.com",
+          "first_name" => "John",
+          "last_name" => "Doe",
+          "certification_date" => "2025-01-15",
+          "certification_type" => "new_application"
+        }
+
+        allow(processor).to receive(:process).and_return(mock_certification)
+
+        service.process_csv(uploaded_file)
+
+        expect(processor).to have_received(:process)
+          .with(expected_record, context: {})
+      end
+
+      it 'passes batch_upload context when batch_upload present' do
+        batch_upload = create(:certification_batch_upload)
+        service_with_batch = described_class.new(batch_upload: batch_upload, processor: processor)
+
+        allow(processor).to receive(:process).and_return(mock_certification)
+
+        service_with_batch.process_csv(uploaded_file)
+
+        expect(processor).to have_received(:process)
+          .with(anything, context: { batch_upload_id: batch_upload.id })
+      end
+
+      it 'passes empty context when no batch_upload' do
+        allow(processor).to receive(:process).and_return(mock_certification)
+
+        service.process_csv(uploaded_file)
+
+        expect(processor).to have_received(:process)
+          .with(anything, context: {})
+      end
+    end
+
+    context 'when handling processor errors' do
+      let(:processor) { instance_double(UnifiedRecordProcessor) }
+      let(:service) { described_class.new(processor: processor) }
+      let(:csv_content) do
+        <<~CSV
+          member_id,case_number,member_email,first_name,last_name,certification_date,certification_type
+          M123,C-001,john@example.com,John,Doe,2025-01-15,new_application
+        CSV
+      end
+      let(:csv_file) do
+        file = Tempfile.new([ 'test', '.csv' ])
+        file.write(csv_content)
+        file.rewind
+        file
+      end
+      let(:uploaded_file) { Rack::Test::UploadedFile.new(csv_file.path, 'text/csv') }
+
+      after do
+        csv_file.close
+        csv_file.unlink
+      end
+
+      it 'maps ValidationError to service error format' do
+        error = UnifiedRecordProcessor::ValidationError.new("VAL_001", "Missing required fields: member_id")
+        allow(processor).to receive(:process).and_raise(error)
+
+        service.process_csv(uploaded_file)
+
+        expect(service.errors.count).to eq(1)
+        expect(service.errors.first[:row]).to eq(2)
+        expect(service.errors.first[:message]).to eq("Missing required fields: member_id")
+        expect(service.results.first[:status]).to eq(:error)
+      end
+
+      it 'maps DuplicateError to service error format' do
+        error = UnifiedRecordProcessor::DuplicateError.new("DUP_001", "Duplicate certification found")
+        allow(processor).to receive(:process).and_raise(error)
+
+        service.process_csv(uploaded_file)
+
+        expect(service.errors.count).to eq(1)
+        expect(service.errors.first[:row]).to eq(2)
+        expect(service.errors.first[:message]).to eq("Duplicate certification found")
+        expect(service.results.first[:status]).to eq(:duplicate)
+      end
+
+      it 'maps DatabaseError to service error format' do
+        error = UnifiedRecordProcessor::DatabaseError.new("DB_001", "Database save failed")
+        allow(processor).to receive(:process).and_raise(error)
+
+        service.process_csv(uploaded_file)
+
+        expect(service.errors.count).to eq(1)
+        expect(service.errors.first[:row]).to eq(2)
+        expect(service.errors.first[:message]).to eq("Database save failed")
+        expect(service.results.first[:status]).to eq(:error)
+      end
+
+      it 'handles generic StandardError' do
+        error = StandardError.new("Unexpected error occurred")
+        allow(processor).to receive(:process).and_raise(error)
+
+        service.process_csv(uploaded_file)
+
+        expect(service.errors.count).to eq(1)
+        expect(service.errors.first[:row]).to eq(2)
+        expect(service.errors.first[:message]).to eq("Unexpected error occurred")
+        expect(service.results.first[:status]).to eq(:error)
       end
     end
   end
