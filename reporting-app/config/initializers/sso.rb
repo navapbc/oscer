@@ -29,16 +29,18 @@ Rails.application.config.sso = {
 }.freeze
 
 # Configure OmniAuth OpenID Connect strategy
-if Rails.application.config.sso[:enabled]
+# In test environment, always load middleware for OmniAuth.config.mock_auth to work
+if Rails.application.config.sso[:enabled] || Rails.env.test?
   Rails.application.config.middleware.use OmniAuth::Builder do
     provider :openid_connect,
       name: :sso,
-      issuer: ENV.fetch("SSO_ISSUER_URL"),
+      # Use dummy values in test mode - OmniAuth test mode bypasses real IdP
+      issuer: ENV.fetch("SSO_ISSUER_URL", "https://test-idp.example.com"),
       scope: ENV.fetch("SSO_SCOPES", "openid profile email").split,
       response_type: :code,
       client_options: {
-        identifier: ENV.fetch("SSO_CLIENT_ID"),
-        secret: ENV.fetch("SSO_CLIENT_SECRET"),
+        identifier: ENV.fetch("SSO_CLIENT_ID", "test-client"),
+        secret: ENV.fetch("SSO_CLIENT_SECRET", "test-secret"),
         redirect_uri: "http://#{ENV.fetch('APP_HOST', 'localhost')}:#{ENV.fetch('APP_PORT', '3000')}/auth/sso/callback"
       }
   end
