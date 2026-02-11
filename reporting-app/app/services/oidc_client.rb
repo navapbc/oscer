@@ -7,6 +7,10 @@
 # 2. Exchange authorization code for tokens
 # 3. Validate ID token and extract claims
 #
+# Uses OIDC Discovery to automatically fetch IdP endpoints from
+# the .well-known/openid-configuration document, making it compatible
+# with any OIDC-compliant provider (Keycloak, Azure AD, Okta, etc.)
+#
 # Usage:
 #   client = OidcClient.new
 #   auth_url = client.authorization_url(state: state, nonce: nonce)
@@ -23,6 +27,21 @@ class OidcClient
 
   # Raised when configuration is invalid
   class ConfigurationError < StandardError; end
+
+  # Raised when OIDC discovery fails
+  class DiscoveryError < StandardError; end
+
+  # Class-level cache for discovery documents (per issuer)
+  @discovery_cache = {}
+  @discovery_cache_mutex = Mutex.new
+
+  class << self
+    attr_accessor :discovery_cache, :discovery_cache_mutex
+
+    def reset_discovery_cache!
+      @discovery_cache_mutex.synchronize { @discovery_cache = {} }
+    end
+  end
 
   def initialize(config: Rails.application.config.sso)
     @config = config
@@ -127,11 +146,76 @@ class OidcClient
   end
 
   def authorization_endpoint
-    "#{@config[:issuer]}/authorize"
+    # Rewrite to public issuer URL for browser redirects
+    rewrite_endpoint(discovery_document["authorization_endpoint"])
   end
 
   def token_endpoint
-    "#{@config[:issuer]}/token"
+    # Token endpoint is called server-side, use internal URL if available
+    discovery_document["token_endpoint"]
+  end
+
+  # Rewrites an endpoint URL from discovery_url base to public issuer base
+  # This is needed when discovery_url differs from issuer (e.g., Docker scenarios)
+  # Browser redirects must use the public issuer URL, not internal discovery URL
+  def rewrite_endpoint(endpoint_url)
+    discovery_base = @config[:discovery_url] || @config[:issuer]
+    public_base = @config[:issuer]
+
+    return endpoint_url if discovery_base == public_base
+
+    endpoint_url.sub(discovery_base, public_base)
+  end
+
+  def discovery_document
+    # Use discovery_url if set (for Docker/network scenarios where internal URL differs from public issuer)
+    # Falls back to issuer if discovery_url not configured
+    discovery_base = @config[:discovery_url] || @config[:issuer]
+
+    self.class.discovery_cache_mutex.synchronize do
+      cached = self.class.discovery_cache[discovery_base]
+
+      # Return cached document if still valid (cache for 1 hour)
+      if cached && cached[:fetched_at] > 1.hour.ago
+        return cached[:document]
+      end
+
+      # Fetch and cache the discovery document
+      document = fetch_discovery_document(discovery_base)
+      self.class.discovery_cache[discovery_base] = {
+        document: document,
+        fetched_at: Time.current
+      }
+      document
+    end
+  end
+
+  def fetch_discovery_document(issuer)
+    discovery_url = "#{issuer}/.well-known/openid-configuration"
+
+    connection = Faraday.new do |f|
+      f.options.timeout = 10
+      f.options.open_timeout = 5
+    end
+
+    response = connection.get(discovery_url)
+
+    unless response.success?
+      raise DiscoveryError, "Failed to fetch OIDC discovery document from #{discovery_url}: HTTP #{response.status}"
+    end
+
+    document = JSON.parse(response.body)
+
+    # Validate required fields
+    unless document["authorization_endpoint"].present? && document["token_endpoint"].present?
+      raise DiscoveryError, "Invalid OIDC discovery document: missing required endpoints"
+    end
+
+    document
+  rescue Faraday::Error => e
+    raise DiscoveryError, "Network error fetching OIDC discovery document: #{e.message}"
+  rescue JSON::ParserError => e
+    raise DiscoveryError, "Invalid JSON in OIDC discovery document: #{e.message}"
   end
 
   def decode_jwt(token)
