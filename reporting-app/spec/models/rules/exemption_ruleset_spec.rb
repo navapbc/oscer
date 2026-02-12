@@ -83,64 +83,102 @@ RSpec.describe Rules::ExemptionRuleset do
     end
   end
 
+  describe '#is_veteran_with_disability' do
+    context 'when rating_data is nil' do
+      it 'returns nil' do
+        expect(ruleset.is_veteran_with_disability(nil)).to be_nil
+      end
+    end
+
+    context 'when rating is 100' do
+      let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 100 } } } }
+
+      it 'returns true' do
+        expect(ruleset.is_veteran_with_disability(rating_data)).to be true
+      end
+    end
+
+    context 'when rating is not 100' do
+      let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 70 } } } }
+
+      it 'returns false' do
+        expect(ruleset.is_veteran_with_disability(rating_data)).to be false
+      end
+    end
+
+    context 'when rating data is missing attributes' do
+      let(:rating_data) { { "data" => {} } }
+
+      it 'returns false' do
+        expect(ruleset.is_veteran_with_disability(rating_data)).to be false
+      end
+    end
+  end
+
   describe '#eligible_for_exemption' do
     context 'when all parameters are nil' do
       it 'returns nil' do
-        expect(ruleset.eligible_for_exemption(nil, nil, nil, nil)).to be_nil
+        expect(ruleset.eligible_for_exemption(nil, nil, nil, nil, nil)).to be_nil
       end
     end
 
     context 'when only is_pregnant is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exemption(nil, nil, true, nil)).to be true
+        expect(ruleset.eligible_for_exemption(nil, nil, true, nil, nil)).to be true
       end
     end
 
     context 'when only age_under_19 is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exemption(true, nil, nil, nil)).to be true
+        expect(ruleset.eligible_for_exemption(true, nil, nil, nil, nil)).to be true
       end
     end
 
     context 'when only age_over_65 is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exemption(nil, true, nil, nil)).to be true
+        expect(ruleset.eligible_for_exemption(nil, true, nil, nil, nil)).to be true
       end
     end
 
     context 'when only is_american_indian_or_alaska_native is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exemption(nil, nil, nil, true)).to be true
+        expect(ruleset.eligible_for_exemption(nil, nil, nil, true, nil)).to be true
+      end
+    end
+
+    context 'when only is_veteran_with_disability is true' do
+      it 'returns true' do
+        expect(ruleset.eligible_for_exemption(nil, nil, nil, nil, true)).to be true
       end
     end
 
     context 'when age_under_19 and is_pregnant are both true' do
       it 'returns true (multiple reasons)' do
-        expect(ruleset.eligible_for_exemption(true, nil, true, nil)).to be true
+        expect(ruleset.eligible_for_exemption(true, nil, true, nil, nil)).to be true
       end
     end
 
     context 'when all are true' do
       it 'returns true (all reasons)' do
-        expect(ruleset.eligible_for_exemption(true, true, true, true)).to be true
+        expect(ruleset.eligible_for_exemption(true, true, true, true, true)).to be true
       end
     end
 
     context 'when all are false' do
       it 'returns false (no exemption)' do
-        expect(ruleset.eligible_for_exemption(false, false, false, false)).to be false
+        expect(ruleset.eligible_for_exemption(false, false, false, false, false)).to be false
       end
     end
 
     context 'when age-based exemption is false but is_american_indian_or_alaska_native is true' do
       it 'returns true (race-based exemption)' do
-        expect(ruleset.eligible_for_exemption(false, false, false, true)).to be true
+        expect(ruleset.eligible_for_exemption(false, false, false, true, nil)).to be true
       end
     end
 
     context 'when age-based exemption is false but pregnant is true' do
       it 'returns true (pregnant exemption)' do
-        expect(ruleset.eligible_for_exemption(false, false, true, nil)).to be true
+        expect(ruleset.eligible_for_exemption(false, false, true, nil, nil)).to be true
       end
     end
   end
