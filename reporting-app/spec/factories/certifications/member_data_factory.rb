@@ -25,6 +25,10 @@ FactoryBot.define do
       account_email { Faker::Internet.email }
     end
 
+    trait :with_icn do
+      icn { "1012861229V078999" }
+    end
+
     trait :with_no_exemptions do
       date_of_birth { cert_date - rand(19..64).years } # random age between 19 and 64 years old (ineligible for age exemption)
       pregnancy_status { false }
