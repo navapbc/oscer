@@ -26,7 +26,7 @@ FactoryBot.define do
     end
 
     trait :with_icn do
-      icn { "1012861229V078999" }
+      va_icn { "1012861229V078999" }
     end
 
     trait :with_no_exemptions do

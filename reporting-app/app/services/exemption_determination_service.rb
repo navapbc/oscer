@@ -66,9 +66,9 @@ class ExemptionDeterminationService
     end
 
     def extract_veteran_disability_status(certification)
-      return nil unless certification.member_data&.icn.present?
+      return nil unless certification.member_data&.va_icn.present?
 
-      VeteranDisabilityService.new.get_disability_rating(icn: certification.member_data.icn)
+      VeteranDisabilityService.new.get_disability_rating(icn: certification.member_data.va_icn)
     end
   end
 end
