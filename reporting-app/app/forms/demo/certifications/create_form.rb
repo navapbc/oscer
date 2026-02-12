@@ -57,7 +57,7 @@ module Demo
           md.date_of_birth = date_of_birth if date_of_birth.present?
           md.pregnancy_status = pregnancy_status if pregnancy_status.present?
           md.race_ethnicity = race_ethnicity if race_ethnicity.present?
-          md.icn = icn if icn.present?
+          md.va_icn = va_icn if va_icn.present?
         end
 
         @certification = FactoryBot.build(

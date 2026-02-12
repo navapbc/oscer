@@ -18,7 +18,7 @@
   <%= f.name :member_name %>
   <%= f.date_picker :date_of_birth %>
   <%= f.text_field :case_number, label: t("certifications.case_number") %>
-  <%= f.text_field :icn, label: "Veteran ICN" %>
+  <%= f.text_field :va_icn, label: "Veteran ICN" %>
 
   <%= f.hidden_field :certification_type, value: @form.certification_type %>
 
