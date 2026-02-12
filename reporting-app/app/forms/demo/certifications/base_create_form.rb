@@ -23,6 +23,7 @@ module Demo
       strata_attribute :member_name, :name
       strata_attribute :date_of_birth, :us_date
       attribute :case_number, :string
+      attribute :icn, :string
       attribute :pregnancy_status, :boolean, default: false
       attribute :race_ethnicity, :enum, options: RACE_ETHNICITY_OPTIONS
 
