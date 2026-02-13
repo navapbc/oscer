@@ -352,7 +352,10 @@ RSpec.describe CertificationBatchUploadService do
       end
 
       it 'maps ValidationError to service error format' do
-        error = UnifiedRecordProcessor::ValidationError.new("VAL_001", "Missing required fields: member_id")
+        error = UnifiedRecordProcessor::ValidationError.new(
+          BatchUploadErrors::Validation::MISSING_FIELDS,
+          "Missing required fields: member_id"
+        )
         allow(processor).to receive(:process).and_raise(error)
 
         service.process_csv(uploaded_file)
@@ -364,7 +367,10 @@ RSpec.describe CertificationBatchUploadService do
       end
 
       it 'maps DuplicateError to service error format' do
-        error = UnifiedRecordProcessor::DuplicateError.new("DUP_001", "Duplicate certification found")
+        error = UnifiedRecordProcessor::DuplicateError.new(
+          BatchUploadErrors::Duplicate::EXISTING_CERTIFICATION,
+          "Duplicate certification found"
+        )
         allow(processor).to receive(:process).and_raise(error)
 
         service.process_csv(uploaded_file)
@@ -376,7 +382,10 @@ RSpec.describe CertificationBatchUploadService do
       end
 
       it 'maps DatabaseError to service error format' do
-        error = UnifiedRecordProcessor::DatabaseError.new("DB_001", "Database save failed")
+        error = UnifiedRecordProcessor::DatabaseError.new(
+          BatchUploadErrors::Database::SAVE_FAILED,
+          "Database save failed"
+        )
         allow(processor).to receive(:process).and_raise(error)
 
         service.process_csv(uploaded_file)

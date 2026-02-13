@@ -26,8 +26,9 @@ class UnifiedRecordProcessor
   # Required fields for all certification records
   REQUIRED_FIELDS = %w[member_id case_number member_email certification_date certification_type].freeze
 
-  def initialize(certification_service: CertificationService.new)
+  def initialize(certification_service: CertificationService.new, validator: BatchUploadRecordValidator.new)
     @certification_service = certification_service
+    @validator = validator
   end
 
   # Process a single certification record
@@ -38,6 +39,7 @@ class UnifiedRecordProcessor
   # @raise [DuplicateError] if certification already exists
   # @raise [DatabaseError] if save fails
   def process(record, context: {})
+    validate_with_validator!(record)
     validate_schema!(record)
     check_duplicate!(record)
     persist!(record, context)
@@ -45,14 +47,22 @@ class UnifiedRecordProcessor
 
   private
 
-  # Validate required fields are present
+  # Validate record with comprehensive validator (fail-fast)
+  def validate_with_validator!(record)
+    result = @validator.validate(record)
+    return if result.success?
+
+    raise ValidationError.new(result.error_code, result.error_message)
+  end
+
+  # Validate required fields are present (defense-in-depth safety net)
   # Extracted from CertificationBatchUploadService (lines 28-34)
   def validate_schema!(record)
     missing = REQUIRED_FIELDS - record.keys
     return if missing.empty?
 
     raise ValidationError.new(
-      "VAL_001",
+      BatchUploadErrors::Validation::MISSING_FIELDS,
       "Missing required fields: #{missing.join(', ')}"
     )
   end
@@ -68,7 +78,7 @@ class UnifiedRecordProcessor
       certification_date: record["certification_date"]
     )
       raise DuplicateError.new(
-        "DUP_001",
+        BatchUploadErrors::Duplicate::EXISTING_CERTIFICATION,
         "Duplicate certification for member_id #{record['member_id']}, " \
         "case_number #{record['case_number']}, certification_date #{record['certification_date']}"
       )
@@ -95,7 +105,7 @@ class UnifiedRecordProcessor
 
     certification
   rescue ActiveRecord::RecordInvalid => e
-    raise DatabaseError.new("DB_001", e.message)
+    raise DatabaseError.new(BatchUploadErrors::Database::SAVE_FAILED, e.message)
   end
 
   # Build certification object from record

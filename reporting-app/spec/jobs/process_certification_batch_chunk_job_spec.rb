@@ -133,7 +133,7 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
         # Invalid record error (row 3) and duplicate record error (row 4)
         expect(errors).to match([
           [ 3, a_string_starting_with("VAL_"), a_string_including("Missing required fields") ],
-          [ 4, "DUP_001", a_string_including("Duplicate certification") ]
+          [ 4, BatchUploadErrors::Duplicate::EXISTING_CERTIFICATION, a_string_including("Duplicate certification") ]
         ])
       end
 
@@ -283,6 +283,51 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
         # Should not create audit logs or errors
         expect(CertificationBatchUploadAuditLog.count).to eq(0)
         expect(CertificationBatchUploadError.count).to eq(0)
+      end
+    end
+
+    context 'with unexpected errors' do
+      let(:processor) { instance_double(UnifiedRecordProcessor) }
+      let(:records) { [ valid_record ] }
+
+      it 'catches unexpected StandardError and logs with backtrace' do
+        error = StandardError.new("Something went wrong")
+        allow(processor).to receive(:process).and_raise(error)
+        allow(Rails.logger).to receive(:error)
+
+        described_class.perform_now(batch_upload.id, 1, records, processor: processor)
+
+        expect(Rails.logger).to have_received(:error).with(/Unexpected error processing row 2: StandardError - Something went wrong/)
+        expect(Rails.logger).to have_received(:error).with(/Backtrace:/)
+      end
+
+      it 'stores error with UNK_001 code and exception class' do
+        error = RuntimeError.new("Unexpected failure")
+        allow(processor).to receive(:process).and_raise(error)
+        allow(Rails.logger).to receive(:error)
+
+        described_class.perform_now(batch_upload.id, 1, records, processor: processor)
+
+        errors = CertificationBatchUploadError
+          .where(certification_batch_upload_id: batch_upload.id)
+          .pluck(:error_code, :error_message)
+
+        expect(errors).to eq([
+          [ BatchUploadErrors::Unknown::UNEXPECTED, "Unexpected error: RuntimeError - Unexpected failure" ]
+        ])
+      end
+
+      it 'increments error counter for unexpected errors' do
+        error = StandardError.new("Something went wrong")
+        allow(processor).to receive(:process).and_raise(error)
+        allow(Rails.logger).to receive(:error)
+
+        described_class.perform_now(batch_upload.id, 1, records, processor: processor)
+        batch_id = batch_upload.id
+        batch_upload = CertificationBatchUpload.find(batch_id)
+
+        expect(batch_upload.num_rows_errored).to eq(1)
+        expect(batch_upload.num_rows_succeeded).to eq(0)
       end
     end
   end
