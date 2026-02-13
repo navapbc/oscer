@@ -30,7 +30,7 @@ module Rules
       combined_rating = veteran_disability_rating.dig("data", "attributes", "combined_disability_rating")
       return false if combined_rating.nil?
 
-      combined_rating == 100
+      combined_rating.to_i == 100
     end
 
     def eligible_for_exemption(age_under_19, age_over_65, is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability)
