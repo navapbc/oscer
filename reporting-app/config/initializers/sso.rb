@@ -2,14 +2,14 @@
 
 # Build redirect URI with correct scheme and port
 # Defaults to HTTPS (production assumption) unless explicitly disabled
-# Set ENABLE_HTTPS=false for local development without SSL
+# Set DISABLE_HTTPS=true for local development without SSL
 def build_sso_redirect_uri
   host = ENV.fetch("APP_HOST", "localhost")
   port = ENV.fetch("APP_PORT", "443")
-  https_enabled = ENV.fetch("ENABLE_HTTPS", "true") == "true"
+  https_disabled = ENV.fetch("DISABLE_HTTPS", "false") == "true"
 
-  scheme = https_enabled ? "https" : "http"
-  standard_port = https_enabled ? "443" : "80"
+  scheme = https_disabled ? "http" : "https"
+  standard_port = https_disabled ? "80" : "443"
   port_suffix = (port == standard_port) ? "" : ":#{port}"
 
   "#{scheme}://#{host}#{port_suffix}/auth/sso/callback"
