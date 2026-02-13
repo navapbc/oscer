@@ -79,10 +79,10 @@ end
 # OmniAuth configuration
 OmniAuth.config.logger = Rails.logger
 # Only allow POST for security (CVE-2015-9284)
-# The /sso/login page auto-submits a form via POST
+# The /sso/login page auto-submits a form via POST with Rails CSRF token
 OmniAuth.config.allowed_request_methods = [ :post ]
-# Disable OmniAuth's built-in CSRF check - Rails handles CSRF protection
-# for the /sso/login page which renders the form that POSTs to /auth/sso
+# The omniauth-rails_csrf_protection gem validates Rails CSRF token via before_request_phase
+# Disable OmniAuth's built-in Rack-based CSRF check (which uses different token format)
 OmniAuth.config.request_validation_phase = nil
 
 # WORKAROUND: Skip issuer verification for local HTTP development

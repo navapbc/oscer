@@ -15,7 +15,7 @@
 #
 class Auth::SsoController < ApplicationController
   # Use minimal layout for the auto-submit form (no flash messages, headers, etc.)
-  layout false, only: [ :new ]
+  layout "sso", only: [ :new ]
 
   skip_before_action :verify_authenticity_token, only: [ :callback ]
   skip_after_action :verify_authorized

@@ -1,0 +1,30 @@
+// SSO redirect page styles
+.sso-redirect-page {
+  font-family: system-ui, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  background: #f0f0f0;
+}
+
+.sso-redirect-container {
+  text-align: center;
+  padding: 2rem;
+}
+
+.sso-redirect-spinner {
+  border: 3px solid #e0e0e0;
+  border-top: 3px solid #005ea2;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: sso-spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes sso-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
