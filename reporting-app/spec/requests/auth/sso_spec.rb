@@ -50,6 +50,16 @@ RSpec.describe "Auth::Sso", type: :request do
         expect(response.location).not_to include("/auth/sso")
       end
     end
+
+    context "with origin parameter (deep link)" do
+      it "passes origin to OmniAuth request phase" do
+        get "/sso/login", params: { origin: "/certifications/123" }
+
+        expect(response).to have_http_status(:redirect)
+        expect(response.location).to include("/auth/sso")
+        expect(response.location).to include("origin=")
+      end
+    end
   end
 
   describe "GET /auth/sso/callback" do
@@ -79,6 +89,33 @@ RSpec.describe "Auth::Sso", type: :request do
         }.not_to change(User, :count)
 
         expect(controller.current_user).to eq(created_user)
+      end
+
+      context "with deep link (omniauth.origin)" do
+        before do
+          # Pre-create user with MFA preference to skip MFA setup redirect
+          create(:user, :as_caseworker,
+            uid: "user-123",
+            email: "staff@example.gov",
+            provider: "sso",
+            mfa_preference: "opt_out"
+          )
+          # Simulate OmniAuth storing the origin
+          OmniAuth.config.before_callback_phase do |env|
+            env["omniauth.origin"] = "/certifications/123"
+          end
+        end
+
+        after do
+          OmniAuth.config.before_callback_phase { |_env| }
+        end
+
+        it "redirects to the original requested path" do
+          get "/auth/sso/callback"
+
+          expect(response).to have_http_status(:redirect)
+          expect(response.location).to include("/certifications/123")
+        end
       end
     end
 

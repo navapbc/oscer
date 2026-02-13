@@ -23,9 +23,17 @@ class Auth::SsoController < ApplicationController
 
   # GET /sso/login
   # Initiates SSO login by redirecting to OmniAuth request phase
+  # Supports deep links via origin parameter
   def new
-    # Redirect to OmniAuth's request phase at /auth/sso
-    redirect_to "/auth/sso"
+    # Pass origin to OmniAuth for deep link support
+    # OmniAuth stores this and makes it available as omniauth.origin in callback
+    origin = params[:origin] || stored_location_for(:user)
+
+    if origin.present?
+      redirect_to "/auth/sso?origin=#{CGI.escape(origin)}", allow_other_host: true
+    else
+      redirect_to "/auth/sso", allow_other_host: true
+    end
   end
 
   # GET /auth/sso/callback
