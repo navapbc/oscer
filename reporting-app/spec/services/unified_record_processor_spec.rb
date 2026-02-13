@@ -114,7 +114,7 @@ RSpec.describe UnifiedRecordProcessor do
           .to raise_error(UnifiedRecordProcessor::ValidationError) do |error|
             expect(error.message).to include("case_number")
             expect(error.message).to include("member_email")
-            expect(error.code).to eq("VAL_001")
+            expect(error.code).to eq(BatchUploadErrors::Validation::MISSING_FIELDS)
           end
       end
     end
@@ -152,7 +152,7 @@ RSpec.describe UnifiedRecordProcessor do
       it "includes error code in exception" do
         expect { processor.process(record) }
           .to raise_error(UnifiedRecordProcessor::DuplicateError) do |error|
-            expect(error.code).to eq("DUP_001")
+            expect(error.code).to eq(BatchUploadErrors::Duplicate::EXISTING_CERTIFICATION)
             expect(error.message).to include("Duplicate certification")
           end
       end
@@ -175,7 +175,7 @@ RSpec.describe UnifiedRecordProcessor do
         {
           "member_id" => "M12345",
           "case_number" => "C-001",
-          "member_email" => "invalid-email",
+          "member_email" => "valid@example.com",
           "certification_date" => "2025-01-15",
           "certification_type" => "new_application"
         }
@@ -201,7 +201,7 @@ RSpec.describe UnifiedRecordProcessor do
 
         expect { processor.process(record) }
           .to raise_error(UnifiedRecordProcessor::DatabaseError) do |error|
-            expect(error.code).to eq("DB_001")
+            expect(error.code).to eq(BatchUploadErrors::Database::SAVE_FAILED)
           end
       end
     end
@@ -220,6 +220,60 @@ RSpec.describe UnifiedRecordProcessor do
         error = UnifiedRecordProcessor::ProcessingError.new("TEST_001", "Test message")
         expect(error.code).to eq("TEST_001")
         expect(error.message).to eq("Test message")
+      end
+    end
+
+    context "with validator integration" do
+      let(:base_record) do
+        {
+          "member_id" => "M12345",
+          "case_number" => "C-001",
+          "member_email" => "test@example.com",
+          "first_name" => "Alice",
+          "last_name" => "Smith",
+          "certification_date" => "2025-01-15",
+          "certification_type" => "new_application"
+        }
+      end
+
+      it "raises ValidationError for invalid date format (VAL_002)" do
+        record = base_record.merge("certification_date" => "01/15/2025")
+
+        expect { processor.process(record) }
+          .to raise_error(UnifiedRecordProcessor::ValidationError) do |error|
+            expect(error.code).to eq(BatchUploadErrors::Validation::INVALID_DATE)
+            expect(error.message).to include("invalid date format")
+          end
+      end
+
+      it "raises ValidationError for invalid email format (VAL_003)" do
+        record = base_record.merge("member_email" => "not-an-email")
+
+        expect { processor.process(record) }
+          .to raise_error(UnifiedRecordProcessor::ValidationError) do |error|
+            expect(error.code).to eq(BatchUploadErrors::Validation::INVALID_EMAIL)
+            expect(error.message).to include("invalid email format")
+          end
+      end
+
+      it "raises ValidationError for invalid certification_type (VAL_004)" do
+        record = base_record.merge("certification_type" => "invalid_type")
+
+        expect { processor.process(record) }
+          .to raise_error(UnifiedRecordProcessor::ValidationError) do |error|
+            expect(error.code).to eq(BatchUploadErrors::Validation::INVALID_TYPE)
+            expect(error.message).to include("invalid value")
+          end
+      end
+
+      it "raises ValidationError for invalid integer field (VAL_005)" do
+        record = base_record.merge("lookback_period" => "not-a-number")
+
+        expect { processor.process(record) }
+          .to raise_error(UnifiedRecordProcessor::ValidationError) do |error|
+            expect(error.code).to eq(BatchUploadErrors::Validation::INVALID_INTEGER)
+            expect(error.message).to include("invalid integer value")
+          end
       end
     end
   end

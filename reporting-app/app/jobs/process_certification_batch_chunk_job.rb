@@ -35,11 +35,13 @@ class ProcessCertificationBatchChunkJob < ApplicationJob
         }
       rescue StandardError => e
         # Catch unexpected errors (shouldn't happen, but safety net)
+        Rails.logger.error("Unexpected error processing row #{row_number}: #{e.class} - #{e.message}")
+        Rails.logger.error("Backtrace: #{e.backtrace.join("\n")}")
         results[:failed] += 1
         results[:errors] << {
           row_number: row_number,
-          error_code: "ERR_UNKNOWN",
-          error_message: e.message,
+          error_code: BatchUploadErrors::Unknown::UNEXPECTED,
+          error_message: "Unexpected error: #{e.class} - #{e.message}",
           row_data: record
         }
       end
@@ -129,6 +131,11 @@ class ProcessCertificationBatchChunkJob < ApplicationJob
       retries += 1
       if retries < 3
         Rails.logger.info("Lock timeout on completion check (attempt #{retries}/3), retrying after backoff")
+        # Using blocking sleep for lock contention retry (not ActiveJob retry_on) because:
+        # 1. Retrying specific lock operation, not entire job
+        # 2. Short backoff periods (2-8s) with expected brief contention
+        # 3. ActiveJob retry_on would restart whole job (overkill for lock timeout)
+        # 4. Standard pattern for pessimistic lock contention handling
         sleep(2**retries) # Exponential backoff: 2s, 4s, 8s
         retry
       else
