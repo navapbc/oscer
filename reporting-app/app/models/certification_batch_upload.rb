@@ -27,6 +27,9 @@ class CertificationBatchUpload < ApplicationRecord
 
   validates :filename, presence: true
   validates :file, attached: true, on: :create
+  validates :file, content_type: [ "text/csv", "text/plain", "application/vnd.ms-excel" ],
+                   size: { less_than: 100.megabytes, message: "must be less than 100MB" },
+                   on: :create
 
   default_scope { with_attached_file }
   scope :recent, -> { order(created_at: :desc) }

@@ -54,6 +54,10 @@ en:
         csv_file_label: "Select CSV file"
         upload_button: "Upload and Process"
         cancel: "Cancel"
+      upload_form_v2:
+        csv_file_label: "Select CSV file"
+        upload_button: "Upload and Process"
+        cancel: "Cancel"
       show:
         title: "Batch Upload Details"
         uploader: "Uploaded by"
