@@ -27,7 +27,8 @@ class Auth::SsoController < ApplicationController
   def new
     # Pass origin to OmniAuth for deep link support
     # OmniAuth stores this and makes it available as omniauth.origin in callback
-    origin = params[:origin] || stored_location_for(:user)
+    # Use session key directly to PEEK at stored location without clearing it
+    origin = params[:origin] || session["user_return_to"]
 
     if origin.present?
       redirect_to "/auth/sso?origin=#{CGI.escape(origin)}", allow_other_host: true

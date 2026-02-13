@@ -5,6 +5,12 @@ class Users::SessionsController < Devise::SessionsController
   skip_after_action :verify_authorized
 
   def new
+    # Auto-redirect to SSO if enabled (skip login page)
+    # Add ?local=true to bypass and show the login form
+    if sso_enabled? && !params[:local]
+      return redirect_to sso_login_path
+    end
+
     @form = Users::NewSessionForm.new
   end
 
@@ -85,6 +91,12 @@ class Users::SessionsController < Devise::SessionsController
   # end
 
   private
+
+    def sso_enabled?
+      Rails.application.config.sso[:enabled] == true
+    rescue NoMethodError
+      false
+    end
 
     def auth_service
       AuthService.new

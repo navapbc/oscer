@@ -1,5 +1,20 @@
 # frozen_string_literal: true
 
+# Build redirect URI with correct scheme based on port
+def build_sso_redirect_uri
+  host = ENV.fetch("APP_HOST", "localhost")
+  port = ENV.fetch("APP_PORT", "3000")
+
+  # Use HTTPS for port 443 (ngrok/production), HTTP otherwise
+  if port == "443"
+    "https://#{host}/auth/sso/callback"
+  elsif port == "80"
+    "http://#{host}/auth/sso/callback"
+  else
+    "http://#{host}:#{port}/auth/sso/callback"
+  end
+end
+
 # SSO Configuration for Staff Single Sign-On via OIDC
 #
 # Required environment variables (when SSO_ENABLED=true):
@@ -43,7 +58,7 @@ if Rails.application.config.sso[:enabled] || Rails.env.test?
       client_options: {
         identifier: ENV.fetch("SSO_CLIENT_ID", "test-client"),
         secret: ENV.fetch("SSO_CLIENT_SECRET", "test-secret"),
-        redirect_uri: "http://#{ENV.fetch('APP_HOST', 'localhost')}:#{ENV.fetch('APP_PORT', '3000')}/auth/sso/callback"
+        redirect_uri: build_sso_redirect_uri
       }
     }
 

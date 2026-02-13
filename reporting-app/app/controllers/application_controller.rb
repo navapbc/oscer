@@ -26,15 +26,22 @@ class ApplicationController < ActionController::Base
       raise "Unexpected resource type"
     end
 
+    # Determine the final return path (before any redirects)
+    return_path = safe_return_path(request.env["omniauth.origin"]) ||
+                  safe_return_path(stored_location_for(resource)) ||
+                  safe_return_path(session.delete("user_return_to")) ||
+                  safe_return_path(session["post_login_redirect"]) ||
+                  dashboard_path
+
     if resource.mfa_preference.nil?
+      # Store return path for after MFA setup
+      session["post_login_redirect"] = return_path
       return users_mfa_preference_path
     end
 
-    # Check for stored location (set by Devise's authenticate_user!)
-    # or OmniAuth origin (passed through SSO flow)
-    safe_return_path(stored_location_for(resource)) ||
-      safe_return_path(request.env["omniauth.origin"]) ||
-      dashboard_path
+    # Clear and return the stored path
+    session.delete("post_login_redirect")
+    return_path
   end
 
   private
