@@ -47,6 +47,10 @@ en:
       logout_success: "Successfully signed out"
       authentication_failed: "Authentication failed. Please try again."
       not_enabled: "SSO is not enabled for this application"
+      redirecting_title: "Redirecting to Sign In..."
+      redirecting_message: "Redirecting to your organization's sign in..."
+      javascript_required: "JavaScript is required for automatic redirect. Click below to continue."
+      continue_button: "Continue to Sign In"
   date:
     formats:
       default: "%m/%d/%Y"

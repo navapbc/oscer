@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= t("auth.sso.redirecting_title", default: "Redirecting to Sign In...") %></title>
+  <style>
+    body { font-family: system-ui, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f0f0f0; }
+    .container { text-align: center; padding: 2rem; }
+    .spinner { border: 3px solid #e0e0e0; border-top: 3px solid #005ea2; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    button { background: #005ea2; color: white; border: none; padding: 0.75rem 1.5rem; font-size: 1rem; cursor: pointer; border-radius: 4px; }
+    button:hover { background: #1a4480; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="spinner"></div>
+    <p><%= t("auth.sso.redirecting_message", default: "Redirecting to your organization's sign in...") %></p>
+
+    <%# Auto-submit form to OmniAuth via POST (more secure than GET redirect) %>
+    <%= form_with url: "/auth/sso", method: :post, id: "sso-auto-submit-form", local: true, authenticity_token: true, data: { turbo: false } do %>
+      <% if @origin.present? %>
+        <%= hidden_field_tag :origin, @origin %>
+      <% end %>
+      <noscript>
+        <p><%= t("auth.sso.javascript_required") %></p>
+        <button type="submit"><%= t("auth.sso.continue_button") %></button>
+      </noscript>
+    <% end %>
+  </div>
+
+  <script>
+    // Auto-submit the form after DOM is ready
+    document.addEventListener("DOMContentLoaded", function() {
+      document.getElementById("sso-auto-submit-form").submit();
+    });
+  </script>
+</body>
+</html>

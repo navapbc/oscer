@@ -78,7 +78,12 @@ end
 
 # OmniAuth configuration
 OmniAuth.config.logger = Rails.logger
-OmniAuth.config.allowed_request_methods = [ :post, :get ]
+# Only allow POST for security (CVE-2015-9284)
+# The /sso/login page auto-submits a form via POST
+OmniAuth.config.allowed_request_methods = [ :post ]
+# Disable OmniAuth's built-in CSRF check - Rails handles CSRF protection
+# for the /sso/login page which renders the form that POSTs to /auth/sso
+OmniAuth.config.request_validation_phase = nil
 
 # WORKAROUND: Skip issuer verification for local HTTP development
 # The openid_connect gem doesn't properly pass issuer when discovery is disabled

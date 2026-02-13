@@ -14,6 +14,9 @@
 # - Error handling
 #
 class Auth::SsoController < ApplicationController
+  # Use minimal layout for the auto-submit form (no flash messages, headers, etc.)
+  layout false, only: [ :new ]
+
   skip_before_action :verify_authenticity_token, only: [ :callback ]
   skip_after_action :verify_authorized
   skip_after_action :verify_policy_scoped
@@ -22,19 +25,13 @@ class Auth::SsoController < ApplicationController
   before_action :redirect_if_authenticated, only: [ :new ]
 
   # GET /sso/login
-  # Initiates SSO login by redirecting to OmniAuth request phase
+  # Renders a form that POSTs to OmniAuth (more secure than GET redirect)
   # Supports deep links via origin parameter
   def new
     # Pass origin to OmniAuth for deep link support
     # OmniAuth stores this and makes it available as omniauth.origin in callback
-    # Use session key directly to PEEK at stored location without clearing it
-    origin = params[:origin] || session["user_return_to"]
-
-    if origin.present?
-      redirect_to "/auth/sso?origin=#{CGI.escape(origin)}", allow_other_host: true
-    else
-      redirect_to "/auth/sso", allow_other_host: true
-    end
+    @origin = params[:origin] || session["user_return_to"]
+    # Render the SSO login form which auto-submits via POST
   end
 
   # GET /auth/sso/callback

@@ -8,6 +8,9 @@ class Users::SessionsController < Devise::SessionsController
     # Auto-redirect to SSO if enabled (skip login page)
     # Add ?local=true to bypass and show the login form
     if sso_enabled? && !params[:local]
+      # Clear Devise's "sign in before continuing" flash for SSO flow
+      # The message is confusing since SSO handles auth differently
+      flash.discard(:alert)
       return redirect_to sso_login_path
     end
 

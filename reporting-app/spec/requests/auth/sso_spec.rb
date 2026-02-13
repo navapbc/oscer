@@ -18,11 +18,12 @@ RSpec.describe "Auth::Sso", type: :request do
 
   describe "GET /sso/login (login initiation)" do
     context "when SSO is enabled" do
-      it "redirects to OmniAuth request phase" do
+      it "renders the auto-submit form page" do
         get "/sso/login"
 
-        expect(response).to have_http_status(:redirect)
-        expect(response.location).to include("/auth/sso")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include('action="/auth/sso"')
+        expect(response.body).to include('method="post"')
       end
     end
 
@@ -52,12 +53,12 @@ RSpec.describe "Auth::Sso", type: :request do
     end
 
     context "with origin parameter (deep link)" do
-      it "passes origin to OmniAuth request phase" do
+      it "includes origin in the form as a hidden field" do
         get "/sso/login", params: { origin: "/certifications/123" }
 
-        expect(response).to have_http_status(:redirect)
-        expect(response.location).to include("/auth/sso")
-        expect(response.location).to include("origin=")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include('name="origin"')
+        expect(response.body).to include("/certifications/123")
       end
     end
   end
