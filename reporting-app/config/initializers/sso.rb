@@ -1,25 +1,18 @@
 # frozen_string_literal: true
 
-# Build redirect URI with correct scheme
+# Build redirect URI with correct scheme and port
 # Defaults to HTTPS (production assumption) unless explicitly disabled
 # Set ENABLE_HTTPS=false for local development without SSL
 def build_sso_redirect_uri
   host = ENV.fetch("APP_HOST", "localhost")
-  port = ENV.fetch("APP_PORT", "3000")
-  # Default to HTTPS - only use HTTP if explicitly disabled
-  https_disabled = ENV.fetch("ENABLE_HTTPS", "true") == "false"
+  port = ENV.fetch("APP_PORT", "443")
+  https_enabled = ENV.fetch("ENABLE_HTTPS", "true") == "true"
 
-  # Local dev: ENABLE_HTTPS=false uses port-based detection
-  if https_disabled
-    if port == "80"
-      "http://#{host}/auth/sso/callback"
-    else
-      "http://#{host}:#{port}/auth/sso/callback"
-    end
-  # Production/default: use HTTPS (load balancer handles SSL)
-  else
-    "https://#{host}/auth/sso/callback"
-  end
+  scheme = https_enabled ? "https" : "http"
+  standard_port = https_enabled ? "443" : "80"
+  port_suffix = (port == standard_port) ? "" : ":#{port}"
+
+  "#{scheme}://#{host}#{port_suffix}/auth/sso/callback"
 end
 
 # SSO Configuration for Staff Single Sign-On via OIDC
