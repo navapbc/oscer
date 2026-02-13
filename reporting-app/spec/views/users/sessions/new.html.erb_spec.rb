@@ -19,7 +19,7 @@ RSpec.describe "users/sessions/new", type: :view do
     before do
       allow(view).to receive_messages(
         sso_enabled?: true,
-        sso_login_path: "/auth/sso"
+        sso_login_path: "/sso/login"
       )
     end
 
@@ -28,7 +28,7 @@ RSpec.describe "users/sessions/new", type: :view do
 
       expect(rendered).to have_link(
         I18n.t("users.sessions.new.sso_button"),
-        href: "/auth/sso"
+        href: "/sso/login"
       )
     end
 

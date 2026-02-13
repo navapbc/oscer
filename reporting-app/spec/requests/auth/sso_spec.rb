@@ -5,55 +5,33 @@ require "rails_helper"
 RSpec.describe "Auth::Sso", type: :request do
   include Warden::Test::Helpers
 
-  let(:oidc_config) { mock_oidc_config }
+  let(:sso_config) { mock_sso_config }
 
   before do
-    OidcClient.reset_discovery_cache!
-    stub_oidc_discovery
-    allow(Rails.application.config).to receive(:sso).and_return(oidc_config)
+    configure_sso_for_test(sso_config)
+    setup_omniauth_mock
   end
 
   after do
-    OidcClient.reset_discovery_cache!
     Warden.test_reset!
   end
 
-  describe "GET /auth/sso" do
+  describe "GET /sso/login (login initiation)" do
     context "when SSO is enabled" do
-      it "redirects to the IdP authorization URL" do
-        get "/auth/sso"
+      it "renders the auto-submit form page" do
+        get "/sso/login"
 
-        expect(response).to have_http_status(:redirect)
-        expect(response.location).to start_with("https://test-idp.example.com/authorize")
-      end
-
-      it "includes required OAuth parameters" do
-        get "/auth/sso"
-
-        location = URI.parse(response.location)
-        params = Rack::Utils.parse_query(location.query)
-
-        expect(params["response_type"]).to eq("code")
-        expect(params["client_id"]).to eq("test-client-id")
-        expect(params["redirect_uri"]).to eq("http://localhost:3000/auth/sso/callback")
-        expect(params["scope"]).to include("openid")
-        expect(params["state"]).to be_present
-        expect(params["nonce"]).to be_present
-      end
-
-      it "stores state and nonce in session" do
-        get "/auth/sso"
-
-        expect(session[:sso_state]).to be_present
-        expect(session[:sso_nonce]).to be_present
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include('action="/auth/sso"')
+        expect(response.body).to include('method="post"')
       end
     end
 
     context "when SSO is disabled" do
-      let(:oidc_config) { mock_oidc_config(enabled: false) }
+      let(:sso_config) { mock_sso_config(enabled: false) }
 
       it "redirects to root with error message" do
-        get "/auth/sso"
+        get "/sso/login"
 
         expect(response).to redirect_to(root_path)
         follow_redirect!
@@ -66,39 +44,29 @@ RSpec.describe "Auth::Sso", type: :request do
 
       before { login_as(user) }
 
-      it "redirects to the appropriate dashboard" do
-        get "/auth/sso"
+      it "redirects to dashboard" do
+        get "/sso/login"
 
         expect(response).to have_http_status(:redirect)
-        expect(response.location).not_to include("authorize")
+        expect(response.location).not_to include("/auth/sso")
+      end
+    end
+
+    context "with origin parameter (deep link)" do
+      it "includes origin in the form as a hidden field" do
+        get "/sso/login", params: { origin: "/certifications/123" }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include('name="origin"')
+        expect(response.body).to include("/certifications/123")
       end
     end
   end
 
   describe "GET /auth/sso/callback" do
-    let(:valid_code) { "valid-authorization-code" }
-
-    # Initiate SSO flow to get valid state/nonce in session
-    let(:initiate_sso_flow) do
-      get "/auth/sso"
-      { state: session[:sso_state], nonce: session[:sso_nonce] }
-    end
-
-    let(:stored_state) { initiate_sso_flow[:state] }
-    let(:stored_nonce) { initiate_sso_flow[:nonce] }
-
-    # Helper to create claims with the correct nonce
-    def id_token_claims_with_nonce(nonce, overrides = {})
-      mock_id_token_claims({ "nonce" => nonce }.merge(overrides))
-    end
-
-    context "with valid code and state" do
-      before do
-        stub_oidc_token_exchange(claims: id_token_claims_with_nonce(stored_nonce))
-      end
-
+    context "with successful authentication" do
       it "creates a new user session" do
-        get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
+        get "/auth/sso/callback"
 
         expect(response).to have_http_status(:redirect)
         expect(controller.current_user).to be_present
@@ -106,141 +74,68 @@ RSpec.describe "Auth::Sso", type: :request do
 
       it "provisions a new user from claims" do
         expect {
-          get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
+          get "/auth/sso/callback"
         }.to change(User, :count).by(1)
-      end
-
-      it "redirects to the appropriate dashboard" do
-        get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
-
-        # After sign in, redirects based on MFA preference
-        expect(response).to have_http_status(:redirect)
-      end
-
-      it "clears SSO session data" do
-        get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
-
-        expect(session[:sso_state]).to be_nil
-        expect(session[:sso_nonce]).to be_nil
       end
 
       it "finds existing user by UID on subsequent login" do
         # First login creates user
-        get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
+        get "/auth/sso/callback"
+        created_user = User.last
         logout
 
         # Second login should find existing user
-        get "/auth/sso"
-        new_state = session[:sso_state]
-        new_nonce = session[:sso_nonce]
-        stub_oidc_token_exchange(claims: mock_id_token_claims("nonce" => new_nonce))
-
         expect {
-          get "/auth/sso/callback", params: { code: valid_code, state: new_state }
+          get "/auth/sso/callback"
         }.not_to change(User, :count)
-      end
-    end
 
-    context "with OAuth error from IdP" do
-      it "redirects with error when user denies consent" do
-        get "/auth/sso/callback", params: {
-          error: "access_denied",
-          error_description: "User denied consent",
-          state: stored_state
-        }
-
-        expect(response).to redirect_to(root_path)
-        follow_redirect!
-        expect(response.body).to include("Authentication failed")
+        expect(controller.current_user).to eq(created_user)
       end
 
-      it "does not attempt token exchange" do
-        # No stub - if token exchange is called, it will fail
-        get "/auth/sso/callback", params: {
-          error: "access_denied",
-          state: stored_state
-        }
+      context "with deep link (omniauth.origin)" do
+        before do
+          # Pre-create user with MFA preference to skip MFA setup redirect
+          create(:user, :as_caseworker,
+            uid: "user-123",
+            email: "staff@example.gov",
+            provider: "sso",
+            mfa_preference: "opt_out"
+          )
+          # Simulate OmniAuth storing the origin
+          OmniAuth.config.before_callback_phase do |env|
+            env["omniauth.origin"] = "/certifications/123"
+          end
+        end
 
-        expect(response).to redirect_to(root_path)
-      end
-    end
+        after do
+          OmniAuth.config.before_callback_phase { |_env| }
+        end
 
-    context "with invalid nonce" do
-      before do
-        # Ensure SSO flow is initiated first, then stub with wrong nonce
-        stored_state # triggers initiate_sso_flow
-        stub_oidc_token_exchange(claims: mock_id_token_claims("nonce" => "wrong-nonce"))
-      end
+        it "redirects to the original requested path" do
+          get "/auth/sso/callback"
 
-      it "redirects with error" do
-        get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
-
-        expect(response).to redirect_to(root_path)
-        follow_redirect!
-        expect(response.body).to include("Authentication failed")
-      end
-
-      it "does not create a user" do
-        expect {
-          get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
-        }.not_to change(User, :count)
-      end
-    end
-
-    context "with invalid state parameter" do
-      before do
-        stub_oidc_token_exchange(claims: id_token_claims_with_nonce(stored_nonce))
-      end
-
-      it "redirects with error for mismatched state" do
-        get "/auth/sso/callback", params: { code: valid_code, state: "wrong-state" }
-
-        expect(response).to redirect_to(root_path)
-        follow_redirect!
-        expect(response.body).to include("Authentication failed")
-      end
-
-      it "redirects with error for missing state" do
-        get "/auth/sso/callback", params: { code: valid_code }
-
-        expect(response).to redirect_to(root_path)
-      end
-
-      it "does not create a user" do
-        expect {
-          get "/auth/sso/callback", params: { code: valid_code, state: "wrong-state" }
-        }.not_to change(User, :count)
-      end
-    end
-
-    context "with invalid authorization code" do
-      before do
-        stored_state # triggers initiate_sso_flow
-        stub_oidc_token_exchange_failure
-      end
-
-      it "redirects with error message" do
-        get "/auth/sso/callback", params: { code: "invalid-code", state: stored_state }
-
-        expect(response).to redirect_to(root_path)
-        follow_redirect!
-        expect(response.body).to include("Authentication failed")
-      end
-
-      it "does not create a user" do
-        expect {
-          get "/auth/sso/callback", params: { code: "invalid-code", state: stored_state }
-        }.not_to change(User, :count)
+          expect(response).to have_http_status(:redirect)
+          expect(response.location).to include("/certifications/123")
+        end
       end
     end
 
     context "when user's groups don't match any role" do
       before do
-        stub_oidc_token_exchange(claims: id_token_claims_with_nonce(stored_nonce, "groups" => [ "Unknown-Group" ]))
+        setup_omniauth_mock(mock_omniauth_hash(
+          extra: {
+            raw_info: {
+              "sub" => "user-123",
+              "email" => "staff@example.gov",
+              "name" => "Jane Doe",
+              "groups" => [ "Unknown-Group" ]
+            }
+          }
+        ))
       end
 
       it "redirects with access denied message" do
-        get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
+        get "/auth/sso/callback"
 
         expect(response).to redirect_to(root_path)
         follow_redirect!
@@ -249,19 +144,23 @@ RSpec.describe "Auth::Sso", type: :request do
 
       it "does not create a user" do
         expect {
-          get "/auth/sso/callback", params: { code: valid_code, state: stored_state }
+          get "/auth/sso/callback"
         }.not_to change(User, :count)
       end
     end
+  end
 
-    context "when SSO is disabled" do
-      let(:oidc_config) { mock_oidc_config(enabled: false) }
+  describe "GET /auth/failure" do
+    before do
+      setup_omniauth_failure(:invalid_credentials)
+    end
 
-      it "redirects to root" do
-        get "/auth/sso/callback", params: { code: valid_code, state: "any-state" }
+    it "redirects with error message" do
+      get "/auth/failure", params: { message: "invalid_credentials" }
 
-        expect(response).to redirect_to(root_path)
-      end
+      expect(response).to redirect_to(root_path)
+      follow_redirect!
+      expect(response.body).to include("Authentication failed")
     end
   end
 

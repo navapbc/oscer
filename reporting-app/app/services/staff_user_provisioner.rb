@@ -67,6 +67,10 @@ class StaffUserProvisioner
   def sync_attributes(user, claims)
     user.email = claims[:email]
     user.full_name = claims[:name]
+
+    # SSO users don't need OSCER MFA - they authenticate through the IdP
+    # which may have its own MFA requirements
+    user.mfa_preference ||= "opt_out"
   end
 
   def assign_role(user, groups)

@@ -2,64 +2,59 @@
 
 # SSO Controller for Staff Single Sign-On via OIDC
 #
-# Handles the OIDC authorization code flow:
-# 1. new: Initiates login by redirecting to IdP with state/nonce
-# 2. callback: Exchanges code for tokens, provisions user, creates session
-# 3. destroy: Logs out the user (local logout only)
+# Uses OmniAuth to handle the OIDC authorization code flow.
+# OmniAuth automatically handles:
+# - Authorization URL generation with state/nonce
+# - Token exchange
+# - ID token validation
 #
-# Security:
-# - State parameter prevents CSRF attacks
-# - Nonce parameter prevents replay attacks
-# - Secure comparison prevents timing attacks
+# This controller only handles:
+# - Provisioning users from OmniAuth auth hash
+# - Session management
+# - Error handling
 #
 class Auth::SsoController < ApplicationController
-  # IdP redirects to callback via GET request, so no CSRF token is available
+  # Use minimal layout for the auto-submit form (no flash messages, headers, etc.)
+  layout "sso", only: [ :new ]
+
   skip_before_action :verify_authenticity_token, only: [ :callback ]
   skip_after_action :verify_authorized
   skip_after_action :verify_policy_scoped
 
-  before_action :require_sso_enabled, except: [ :destroy ]
+  before_action :require_sso_enabled, only: [ :new ]
   before_action :redirect_if_authenticated, only: [ :new ]
 
-  # GET /auth/sso
-  # Initiates SSO login by redirecting to the Identity Provider
+  # GET /sso/login
+  # Renders a form that POSTs to OmniAuth (more secure than GET redirect)
+  # Supports deep links via origin parameter
   def new
-    state = SecureRandom.hex(32)
-    nonce = SecureRandom.hex(32)
-
-    session[:sso_state] = state
-    session[:sso_nonce] = nonce
-
-    redirect_to oidc_client.authorization_url(state: state, nonce: nonce),
-                allow_other_host: true
+    # Pass origin to OmniAuth for deep link support
+    # OmniAuth stores this and makes it available as omniauth.origin in callback
+    @origin = params[:origin] || session["user_return_to"]
+    # Render the SSO login form which auto-submits via POST
   end
 
   # GET /auth/sso/callback
-  # Handles the IdP callback after authentication
+  # Handles the OmniAuth callback after successful authentication
   def callback
-    # Handle OAuth error responses (e.g., user denied consent)
-    if params[:error].present?
-      Rails.logger.warn("SSO error from IdP: #{params[:error]} - #{params[:error_description]}")
-      return redirect_to root_path, alert: t("auth.sso.authentication_failed")
-    end
+    auth = request.env["omniauth.auth"]
 
-    verify_state!
-    nonce = session[:sso_nonce]
-    clear_sso_session
-
-    tokens = oidc_client.exchange_code(code: params[:code])
-    claims = oidc_client.extract_claims(tokens["id_token"], expected_nonce: nonce)
-
+    claims = extract_claims(auth)
     user = provisioner.provision!(claims)
     sign_in(user)
 
     redirect_to after_sign_in_path_for(user), notice: t("auth.sso.login_success")
-  rescue OidcClient::TokenExchangeError, OidcClient::TokenValidationError => e
-    Rails.logger.error("SSO authentication failed: #{e.message}")
-    redirect_to root_path, alert: t("auth.sso.authentication_failed")
   rescue Auth::Errors::AccessDenied => e
     Rails.logger.warn("SSO access denied: #{e.message}")
     redirect_to root_path, alert: e.message
+  end
+
+  # GET /auth/sso/failure
+  # Handles OmniAuth authentication failures
+  def failure
+    message = params[:message] || "unknown_error"
+    Rails.logger.error("SSO authentication failed: #{message}")
+    redirect_to root_path, alert: t("auth.sso.authentication_failed")
   end
 
   # DELETE /auth/sso/logout
@@ -71,18 +66,18 @@ class Auth::SsoController < ApplicationController
 
   private
 
-  def oidc_client
-    @oidc_client ||= OidcClient.new
-  end
-
   def provisioner
     @provisioner ||= StaffUserProvisioner.new
   end
 
   def require_sso_enabled
-    return if oidc_client.enabled?
+    return if sso_enabled?
 
     redirect_to root_path, alert: t("auth.sso.not_enabled")
+  end
+
+  def sso_enabled?
+    Rails.application.config.sso[:enabled]
   end
 
   def redirect_if_authenticated
@@ -91,18 +86,16 @@ class Auth::SsoController < ApplicationController
     redirect_to after_sign_in_path_for(current_user)
   end
 
-  def verify_state!
-    expected_state = session[:sso_state].to_s
-    received_state = params[:state].to_s
+  # Extract claims from OmniAuth auth hash using configured claim names
+  def extract_claims(auth)
+    claim_config = Rails.application.config.sso[:claims]
+    raw_info = auth.extra.raw_info
 
-    return if expected_state.present? && ActiveSupport::SecurityUtils.secure_compare(expected_state, received_state)
-
-    clear_sso_session
-    raise OidcClient::TokenValidationError, "Invalid state parameter"
-  end
-
-  def clear_sso_session
-    session.delete(:sso_state)
-    session.delete(:sso_nonce)
+    {
+      uid: auth.uid,
+      email: raw_info[claim_config[:email]],
+      name: raw_info[claim_config[:name]],
+      groups: Array(raw_info[claim_config[:groups]])
+    }
   end
 end

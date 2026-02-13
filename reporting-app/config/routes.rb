@@ -123,12 +123,13 @@ Rails.application.routes.draw do
     # Defines the root path route ("/")
     root "home#index"
 
-    # Staff SSO authentication
-    scope :auth do
-      get "sso", to: "auth/sso#new", as: :sso_login
-      get "sso/callback", to: "auth/sso#callback", as: :sso_callback
-      delete "sso/logout", to: "auth/sso#destroy", as: :sso_logout
-    end
+    # Staff SSO authentication (OmniAuth)
+    # /auth/sso is handled by OmniAuth middleware - don't define a route for it
+    get "auth/sso/callback", to: "auth/sso#callback", as: :sso_callback
+    get "auth/failure", to: "auth/sso#failure", as: :sso_failure
+    delete "auth/sso/logout", to: "auth/sso#destroy", as: :sso_logout
+    # Login initiation route (checks SSO enabled, then redirects to OmniAuth)
+    get "sso/login", to: "auth/sso#new", as: :sso_login
 
     # Session management
     devise_for :users, controllers: { sessions: "users/sessions" }

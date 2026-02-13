@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-# Shared test helpers for SSO/OIDC testing
-# Used by OidcClient, StaffUserProvisioner, RoleMapper, and controller specs
+# Shared test helpers for SSO testing
+# Used by StaffUserProvisioner, RoleMapper, and controller specs
 module SsoHelpers
   # Returns mock staff user claims for provisioning tests
   # @param overrides [Hash] values to override in the default claims
@@ -29,18 +29,12 @@ module SsoHelpers
     }.deep_merge(overrides)
   end
 
-  # Returns a mock SSO configuration hash
+  # Returns a mock SSO configuration hash for Rails.application.config.sso
   # @param overrides [Hash] values to override in the default config
   # @return [Hash] SSO configuration
-  def mock_oidc_config(overrides = {})
+  def mock_sso_config(overrides = {})
     {
       enabled: true,
-      issuer: "https://test-idp.example.com",
-      discovery_url: "https://test-idp.example.com",
-      client_id: "test-client-id",
-      client_secret: "test-client-secret",
-      redirect_uri: "http://localhost:3000/auth/sso/callback",
-      scopes: %w[openid profile email groups],
       claims: {
         email: "email",
         name: "name",
@@ -50,110 +44,55 @@ module SsoHelpers
     }.deep_merge(overrides)
   end
 
-  # Returns mock ID token claims
-  # @param overrides [Hash] values to override in the default claims
-  # @return [Hash] JWT claims
-  def mock_id_token_claims(overrides = {})
-    {
-      "sub" => "user-123",
-      "email" => "staff@example.gov",
-      "name" => "Jane Doe",
-      "groups" => [ "OSCER-Caseworker" ],
-      "iss" => "https://test-idp.example.com",
-      "aud" => "test-client-id",
-      "exp" => 1.hour.from_now.to_i,
-      "iat" => Time.current.to_i,
-      "nonce" => "test-nonce"
-    }.merge(overrides)
+  # Creates a mock OmniAuth auth hash for testing callbacks
+  # @param overrides [Hash] values to override in the default auth hash
+  # @return [OmniAuth::AuthHash] Mock auth hash
+  def mock_omniauth_hash(overrides = {})
+    defaults = {
+      provider: "sso",
+      uid: "user-123",
+      info: {
+        email: "staff@example.gov",
+        name: "Jane Doe"
+      },
+      extra: {
+        raw_info: {
+          "sub" => "user-123",
+          "email" => "staff@example.gov",
+          "name" => "Jane Doe",
+          "groups" => [ "OSCER-Caseworker" ]
+        }
+      }
+    }
+
+    OmniAuth::AuthHash.new(defaults.deep_merge(overrides))
   end
 
-  # Creates a valid JWT token from claims (unsigned, for testing)
-  # @param claims [Hash] JWT claims
-  # @return [String] JWT token string
-  def create_test_jwt(claims)
-    header = { alg: "RS256", typ: "JWT" }
-    payload = claims
-
-    # Create unsigned JWT for testing (signature verification is mocked)
-    [
-      Base64.urlsafe_encode64(header.to_json, padding: false),
-      Base64.urlsafe_encode64(payload.to_json, padding: false),
-      "test-signature"
-    ].join(".")
+  # Sets up OmniAuth test mode with a mock auth hash
+  # @param auth_hash [OmniAuth::AuthHash] Auth hash to return (uses mock_omniauth_hash by default)
+  def setup_omniauth_mock(auth_hash = nil)
+    auth_hash ||= mock_omniauth_hash
+    OmniAuth.config.test_mode = true
+    OmniAuth.config.mock_auth[:sso] = auth_hash
   end
 
-  # Stubs the Faraday HTTP response for token exchange
-  # @param claims [Hash] claims to include in the ID token
-  # @param access_token [String] optional access token
-  def stub_oidc_token_exchange(claims:, access_token: "test-access-token")
-    id_token = create_test_jwt(claims)
-
-    response_body = {
-      "access_token" => access_token,
-      "id_token" => id_token,
-      "token_type" => "Bearer",
-      "expires_in" => 3600
-    }.to_json
-
-    stub_request(:post, "https://test-idp.example.com/token")
-      .to_return(
-        status: 200,
-        body: response_body,
-        headers: { "Content-Type" => "application/json" }
-      )
+  # Sets up OmniAuth to return a failure
+  # @param message [Symbol] Failure message/type
+  def setup_omniauth_failure(message = :invalid_credentials)
+    OmniAuth.config.test_mode = true
+    OmniAuth.config.mock_auth[:sso] = message
   end
 
-  # Stubs a failed token exchange
-  # @param error [String] error code
-  # @param description [String] error description
-  def stub_oidc_token_exchange_failure(error: "invalid_grant", description: "Invalid authorization code")
-    response_body = {
-      "error" => error,
-      "error_description" => description
-    }.to_json
-
-    stub_request(:post, "https://test-idp.example.com/token")
-      .to_return(
-        status: 400,
-        body: response_body,
-        headers: { "Content-Type" => "application/json" }
-      )
-  end
-
-  # Stubs the OIDC discovery endpoint (JWKS)
-  # @param issuer [String] the IdP issuer URL
-  def stub_oidc_discovery(issuer: "https://test-idp.example.com")
-    # OpenID Configuration
-    openid_config = {
-      "issuer" => issuer,
-      "authorization_endpoint" => "#{issuer}/authorize",
-      "token_endpoint" => "#{issuer}/token",
-      "jwks_uri" => "#{issuer}/.well-known/jwks.json",
-      "userinfo_endpoint" => "#{issuer}/userinfo"
-    }.to_json
-
-    stub_request(:get, "#{issuer}/.well-known/openid-configuration")
-      .to_return(
-        status: 200,
-        body: openid_config,
-        headers: { "Content-Type" => "application/json" }
-      )
-
-    # JWKS (empty for now - we'll mock JWT validation)
-    jwks = { "keys" => [] }.to_json
-
-    stub_request(:get, "#{issuer}/.well-known/jwks.json")
-      .to_return(
-        status: 200,
-        body: jwks,
-        headers: { "Content-Type" => "application/json" }
-      )
+  # Resets OmniAuth test mode
+  def reset_omniauth
+    OmniAuth.config.test_mode = false
+    OmniAuth.config.mock_auth[:sso] = nil
   end
 
   # Sets up SSO config in Rails for testing
-  # @param config [Hash] SSO configuration (uses mock_oidc_config by default)
+  # @param config [Hash] SSO configuration (uses mock_sso_config by default)
   def configure_sso_for_test(config = nil)
-    config ||= mock_oidc_config
+    config ||= mock_sso_config
     allow(Rails.application.config).to receive(:sso).and_return(config)
   end
 end
@@ -161,5 +100,12 @@ end
 RSpec.configure do |config|
   config.include SsoHelpers, type: :service
   config.include SsoHelpers, type: :request
+  config.include SsoHelpers, type: :helper
   config.include SsoHelpers, sso: true
+
+  # Reset OmniAuth after each SSO test
+  config.after(:each, type: :request) do
+    OmniAuth.config.test_mode = false
+    OmniAuth.config.mock_auth[:sso] = nil
+  end
 end
