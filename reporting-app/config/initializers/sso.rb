@@ -1,18 +1,18 @@
 # frozen_string_literal: true
 
-# Build redirect URI with correct scheme based on port
+# Build redirect URI with correct scheme and port
+# Defaults to HTTPS (production assumption) unless explicitly disabled
+# Set DISABLE_HTTPS=true for local development without SSL
 def build_sso_redirect_uri
   host = ENV.fetch("APP_HOST", "localhost")
-  port = ENV.fetch("APP_PORT", "3000")
+  port = ENV.fetch("APP_PORT", "443")
+  https_disabled = ENV.fetch("DISABLE_HTTPS", "false") == "true"
 
-  # Use HTTPS for port 443 (ngrok/production), HTTP otherwise
-  if port == "443"
-    "https://#{host}/auth/sso/callback"
-  elsif port == "80"
-    "http://#{host}/auth/sso/callback"
-  else
-    "http://#{host}:#{port}/auth/sso/callback"
-  end
+  scheme = https_disabled ? "http" : "https"
+  standard_port = https_disabled ? "80" : "443"
+  port_suffix = (port == standard_port) ? "" : ":#{port}"
+
+  "#{scheme}://#{host}#{port_suffix}/auth/sso/callback"
 end
 
 # SSO Configuration for Staff Single Sign-On via OIDC
