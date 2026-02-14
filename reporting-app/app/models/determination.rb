@@ -39,7 +39,8 @@ class Determination < Strata::Determination
     income_reported_compliant: "income_reported_compliant",
     hours_reported_compliant: "hours_reported_compliant",
     hours_reported_insufficient: "hours_reported_insufficient",
-    exemption_request_compliant: "exemption_request_compliant"
+    exemption_request_compliant: "exemption_request_compliant",
+    is_veteran_with_disability: "veteran_disability_exempt"
   }.freeze
 
   VALID_REASONS = REASON_CODE_MAPPING.values.freeze
