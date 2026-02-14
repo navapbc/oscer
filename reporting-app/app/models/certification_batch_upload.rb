@@ -26,7 +26,7 @@ class CertificationBatchUpload < ApplicationRecord
            dependent: :destroy
 
   validates :filename, presence: true
-  validate :file_or_storage_key_present, on: :create
+  validates :file, attached: true, on: :create
 
   default_scope { with_attached_file }
   scope :recent, -> { order(created_at: :desc) }
@@ -79,25 +79,9 @@ class CertificationBatchUpload < ApplicationRecord
     CertificationOrigin.from_batch_upload(id).count
   end
 
-  # Check if this upload uses cloud storage directly (batch upload v2)
-  # @return [Boolean] true if storage_key is present
-  def uses_cloud_storage?
-    storage_key.present?
-  end
-
-  # Check if this upload uses Active Storage (legacy v1 uploads)
-  # @return [Boolean] true if file is attached and storage_key is blank
-  def uses_active_storage?
-    file.attached? && storage_key.blank?
-  end
-
-  private
-
-  # Validation: ensure either file or storage_key is present on create
-  # V1 uploads use file (ActiveStorage), V2 uploads use storage_key (cloud storage)
-  def file_or_storage_key_present
-    return if file.attached? || storage_key.present?
-
-    errors.add(:base, "Must provide either a file upload or storage key")
+  # Get the storage key for streaming the CSV file
+  # @return [String, nil] S3 key for the uploaded file, or nil if no file attached
+  def storage_key
+    file.blob.key if file.attached?
   end
 end

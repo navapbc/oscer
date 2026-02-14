@@ -3,21 +3,13 @@
 require "aws-sdk-s3"
 
 module Storage
-  # AWS S3 implementation of the storage adapter interface
+  # AWS S3 streaming adapter for batch upload processing.
+  # Active Storage handles uploads/deletes; this adapter handles efficient streaming.
   class S3Adapter < BaseAdapter
     def initialize(client: nil, bucket: nil, region: nil)
       @bucket = bucket || ENV.fetch("BUCKET_NAME")
       @region = region || ENV.fetch("AWS_REGION", "us-east-1")
       @client = client || Aws::S3::Client.new(region: @region)
-    end
-
-    # Delete an object from S3
-    # @param key [String] The object key (path) in the bucket
-    def delete_object(key:)
-      @client.delete_object(
-        bucket: @bucket,
-        key: key
-      )
     end
 
     # Check if an object exists in S3
@@ -33,22 +25,6 @@ module Storage
       # responses have no body. AWS SDK creates the error class dynamically from
       # the HTTP 404 status code without a specific error code from the response body.
       false
-    end
-
-    # Generate a presigned URL for uploading an object to S3
-    # @param key [String] The object key (path) in the bucket
-    # @param content_type [String] MIME type of the object
-    # @param expires_in [Integer] URL expiration time in seconds
-    def generate_signed_upload_url(key:, content_type:, expires_in:)
-      presigner = Aws::S3::Presigner.new(client: @client)
-      url = presigner.presigned_url(
-        :put_object,
-        bucket: @bucket,
-        key: key,
-        expires_in: expires_in,
-        content_type: content_type
-      )
-      { url: url, key: key }
     end
 
     # Stream an object from S3 line by line

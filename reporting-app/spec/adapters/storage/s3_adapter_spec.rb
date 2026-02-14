@@ -7,14 +7,6 @@ RSpec.describe Storage::S3Adapter do
   let(:adapter) { described_class.new(client: s3_client, bucket: "test-bucket", region: "us-east-1") }
   let(:test_key) { "uploads/test-file.csv" }
 
-  describe "#delete_object" do
-    it "deletes an object from S3" do
-      expect do
-        adapter.delete_object(key: test_key)
-      end.not_to raise_error
-    end
-  end
-
   describe "#object_exists?" do
     it "returns true when object exists" do
       s3_client.stub_responses(:head_object, {
@@ -29,33 +21,6 @@ RSpec.describe Storage::S3Adapter do
       s3_client.stub_responses(:head_object, "NotFound")
 
       expect(adapter.object_exists?(key: test_key)).to be false
-    end
-  end
-
-  describe "#generate_signed_upload_url" do
-    it "generates a presigned URL for uploading" do
-      result = adapter.generate_signed_upload_url(
-        key: test_key,
-        content_type: "text/csv",
-        expires_in: 3600
-      )
-
-      expect(result[:url]).to be_a(String)
-      expect(result[:url]).to include("test-bucket")
-      expect(result[:url]).to include(test_key)
-      expect(result[:key]).to eq(test_key)
-    end
-
-    it "accepts custom content_type and expires_in parameters" do
-      expect do
-        result = adapter.generate_signed_upload_url(
-          key: test_key,
-          content_type: "text/csv; charset=utf-8",
-          expires_in: 1800
-        )
-        expect(result[:url]).to be_a(String)
-        expect(result[:key]).to eq(test_key)
-      end.not_to raise_error
     end
   end
 

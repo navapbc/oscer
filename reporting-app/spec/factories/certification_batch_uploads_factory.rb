@@ -7,8 +7,8 @@ FactoryBot.define do
     association :uploader, factory: :user
 
     after(:build) do |batch_upload|
-      # Attach a dummy CSV file for v1 uploads (unless storage_key is set for v2)
-      if batch_upload.storage_key.blank?
+      # Always attach a file (all uploads use Active Storage after Story 14)
+      unless batch_upload.file.attached?
         batch_upload.file.attach(
           io: StringIO.new("member_id,case_number\nM001,C-001"),
           filename: batch_upload.filename,

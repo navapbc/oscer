@@ -47,7 +47,8 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
 
       it 'processes records and updates batch' do
         described_class.perform_now(batch_upload.id, 1, records)
-        batch_upload.reload
+        batch_id = batch_upload.id
+        batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
 
         expect(batch_upload.num_rows_processed).to eq(1)
         expect(batch_upload.num_rows_succeeded).to eq(1)
@@ -103,7 +104,8 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
 
       it 'processes all records and tracks results' do
         described_class.perform_now(batch_upload.id, 1, records)
-        batch_upload.reload
+        batch_id = batch_upload.id
+        batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
 
         expect(batch_upload.num_rows_processed).to eq(3)
         expect(batch_upload.num_rows_succeeded).to eq(1) # Only valid_record
@@ -137,9 +139,11 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
 
       it 'continues processing after validation errors' do
         # All three records should be attempted, not stopped at first error
-        described_class.perform_now(batch_upload.id, 1, records)
+        batch_id = batch_upload.id
+        described_class.perform_now(batch_id, 1, records)
 
-        expect(batch_upload.reload.num_rows_processed).to eq(3)
+        batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
+        expect(batch_upload.num_rows_processed).to eq(3)
       end
     end
 
@@ -166,12 +170,14 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
         # Process chunks 1 and 2
         described_class.perform_now(batch_upload.id, 1, chunk_1_records)
         described_class.perform_now(batch_upload.id, 2, chunk_2_records)
-        batch_upload.reload
+        batch_id = batch_upload.id
+        batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
         expect(batch_upload.status).to eq("processing")
 
         # Process final chunk
         described_class.perform_now(batch_upload.id, 3, chunk_3_records)
-        batch_upload.reload
+        batch_id = batch_upload.id
+        batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
         expect(batch_upload.status).to eq("completed")
       end
 
@@ -184,7 +190,9 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
         ]
         threads.each(&:join)
 
-        batch_upload.reload
+        batch_id = batch_upload.id
+
+        batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
         expect(batch_upload.status).to eq("completed")
         expect(batch_upload.num_rows_processed).to eq(3)
         expect(batch_upload.num_rows_succeeded).to eq(3)

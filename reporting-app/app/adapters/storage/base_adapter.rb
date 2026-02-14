@@ -1,30 +1,17 @@
 # frozen_string_literal: true
 
 module Storage
-  # Base adapter defining the interface for cloud storage implementations.
+  # Base adapter defining the streaming interface for cloud storage.
+  # Active Storage handles uploads/deletes; this adapter handles efficient streaming.
   # All storage adapters must implement these methods.
   class BaseAdapter
     def initialize(**options)
       # Subclasses define their own initialization parameters
     end
 
-    # Delete an object from storage
-    # @param key [String] The object key (path) in the bucket
-    def delete_object(key:)
-      raise NotImplementedError
-    end
-
-    # Check if an object exists in storage
+    # Check if an object exists in storage (used for validation)
     # @param key [String] The object key (path) in the bucket
     def object_exists?(key:)
-      raise NotImplementedError
-    end
-
-    # Generate a presigned URL for uploading an object
-    # @param key [String] The object key (path) in the bucket
-    # @param content_type [String] MIME type of the object
-    # @param expires_in [Integer] URL expiration time in seconds
-    def generate_signed_upload_url(key:, content_type:, expires_in:)
       raise NotImplementedError
     end
 
@@ -34,16 +21,6 @@ module Storage
     # @param key [String] The object key (path) in the bucket
     def stream_object(key:, &block)
       raise NotImplementedError
-    end
-
-    # Download an object from storage to a file
-    # Note: Prefer stream_object for large files when possible.
-    # This method is provided for scenarios where you need the complete
-    # file available (e.g., passing to libraries that expect file paths).
-    # @param key [String] The object key (path) in the bucket
-    # @param file [File, Tempfile] The file object to write to
-    def download_to_file(key:, file:)
-      stream_object(key: key) { |line| file.write(line) }
     end
   end
 end
