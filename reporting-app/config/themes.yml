@@ -1,0 +1,45 @@
+# Theme configuration for OSCER deployments
+# Each theme defines branding, colors, and contact information
+#
+# Usage:
+#   Set OSCER_THEME environment variable to select a theme
+#   Example: OSCER_THEME=nava_state
+#
+# If OSCER_THEME is not set or references an unknown theme,
+# the system falls back to 'default'
+
+default:
+  name: "OSCER"
+  agency_name: "OSCER Platform"
+  primary_color: "#005ea2"
+  secondary_color: "#1a4480"
+  accent_color: "#e52207"
+  background_color: "#f5f5f5"
+  text_color: "#1a1a1a"
+  logo: "oscer-logo.svg"
+  favicon: "oscer-favicon.png"
+  contact_email: "support@oscer.gov"
+  banner_text: null
+  footer_links:
+    - label: "Privacy Policy"
+      url: "/privacy"
+    - label: "Accessibility"
+      url: "/accessibility"
+
+nava_state:
+  name: "State of Nava PBC"
+  agency_name: "State of Nava PBC - Department of Health Services"
+  primary_color: "#1a3d5c"
+  secondary_color: "#2d5a7b"
+  accent_color: "#f0c14b"
+  background_color: "#f5f5f5"
+  text_color: "#1a1a1a"
+  logo: "nava-state-logo.svg"
+  favicon: "nava-state-favicon.png"
+  contact_email: "help@dhs.nava.gov"
+  banner_text: "Official State of Nava PBC Government Website"
+  footer_links:
+    - label: "Privacy"
+      url: "https://nava.gov/privacy"
+    - label: "Contact"
+      url: "https://nava.gov/contact"
