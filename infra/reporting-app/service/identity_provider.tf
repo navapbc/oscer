@@ -1,6 +1,9 @@
 locals {
   identity_provider_config = local.environment_config.identity_provider_config
 
+  # Check if SSO is enabled for this environment
+  enable_sso = local.identity_provider_config != null ? local.identity_provider_config.enable_sso : false
+
   # If this is a temporary environment, re-use an existing Cognito user pool. Otherwise, create a new one.
   identity_provider_user_pool_id = module.app_config.enable_identity_provider ? (
     local.is_temporary ? module.existing_identity_provider[0].user_pool_id : module.identity_provider[0].user_pool_id
@@ -8,6 +11,14 @@ locals {
   identity_provider_environment_variables = module.app_config.enable_identity_provider ? {
     COGNITO_USER_POOL_ID = local.identity_provider_user_pool_id,
     COGNITO_CLIENT_ID    = module.identity_provider_client[0].client_id
+  } : {}
+
+  # SSO uses the same Cognito app client (callback URLs are merged in identity_provider_config)
+  # Only add SSO env vars when SSO is enabled
+  sso_environment_variables = local.enable_sso ? {
+    # SSO issuer URL is Cognito's OIDC issuer endpoint
+    SSO_ISSUER_URL = "https://cognito-idp.${local.service_config.region}.amazonaws.com/${local.identity_provider_user_pool_id}"
+    SSO_CLIENT_ID  = module.identity_provider_client[0].client_id
   } : {}
 }
 
@@ -42,6 +53,7 @@ module "existing_identity_provider" {
 # If the app has `enable_identity_provider` set to true, create a new identity provider
 # client for the service. A new client is created for all environments, including
 # temporary environments.
+# When SSO is enabled, the callback URLs include /auth/sso/callback (merged in identity_provider_config)
 module "identity_provider_client" {
   count  = module.app_config.enable_identity_provider ? 1 : 0
   source = "../../modules/identity-provider-client/resources"

@@ -98,6 +98,7 @@ module "service" {
       BUCKET_NAME = local.bucket_name
     },
     local.identity_provider_environment_variables,
+    local.sso_environment_variables,
     local.notifications_environment_variables,
     local.service_config.extra_environment_variables
   )
@@ -110,6 +111,11 @@ module "service" {
     local.feature_flags_secrets,
     module.app_config.enable_identity_provider ? [{
       name      = "COGNITO_CLIENT_SECRET"
+      valueFrom = module.identity_provider_client[0].client_secret_arn
+    }] : [],
+    # SSO uses the same Cognito client, so SSO_CLIENT_SECRET = COGNITO_CLIENT_SECRET
+    local.enable_sso ? [{
+      name      = "SSO_CLIENT_SECRET"
       valueFrom = module.identity_provider_client[0].client_secret_arn
     }] : []
   )
