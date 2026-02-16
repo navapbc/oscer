@@ -109,14 +109,22 @@ class AuthService
           email,
           response[:provider]
         )
-      elsif user.email != email
-        # If the user's email changed outside of our system, then sync the changes
-        user.update!(email: email)
       end
+
+      # Sync attributes that may have changed in the IdP
+      sync_user_attributes(user, email, response[:region])
 
       {
         access_token: response[:access_token],
         user: user
       }
+    end
+
+    def sync_user_attributes(user, email, region)
+      updates = {}
+      updates[:email] = email if user.email != email
+      updates[:region] = region if region.present? && user.region != region
+
+      user.update!(updates) if updates.any?
     end
 end
