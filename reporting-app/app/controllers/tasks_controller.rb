@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class TasksController < Strata::TasksController
-  before_action :authenticate_user!
+  # Note: authenticate_user! and authorize_staff_access are inherited from StaffController
   after_action :verify_authorized
 
   before_action :set_certification, only: [ :show ]
