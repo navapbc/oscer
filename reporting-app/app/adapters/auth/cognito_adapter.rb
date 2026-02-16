@@ -268,10 +268,12 @@ class Auth::CognitoAdapter
   private
     # https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/CognitoIdentityProvider/Types/AuthenticationResultType.html
     def get_auth_result(response)
+      claims = decode_id_token(response.authentication_result.id_token)
       {
         provider: @@provider_name,
-        uid: get_sub_from_id_token(response.authentication_result.id_token),
-        access_token: response.authentication_result.access_token
+        uid: claims["sub"],
+        access_token: response.authentication_result.access_token,
+        region: claims["custom:region"]
       }
     end
 
@@ -281,8 +283,8 @@ class Auth::CognitoAdapter
       Base64.strict_encode64(OpenSSL::HMAC.digest("sha256", key, message))
     end
 
-    def get_sub_from_id_token(id_token)
-      JWT.decode(id_token, nil, false)[0]["sub"]
+    def decode_id_token(id_token)
+      JWT.decode(id_token, nil, false)[0]
     end
 
     # Convert an AWS Cognito SDK exception to our app's auth error equivalent
