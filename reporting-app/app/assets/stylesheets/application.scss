@@ -5,6 +5,331 @@
 @use "uswds-core" as *;
 
 // =========================================================
+// State of Nava PBC Theme Customizations
+// =========================================================
+// Color Palette (from State-mock-state-system.html):
+// - Header top/banner: #0f2940 (darkest blue)
+// - Header main: #1a3d5c (dark blue)
+// - Navigation: #2d5a7b (medium blue)
+// - Accent/Gold: #c9a227 / #f0c14b
+// - Background: #f5f5f5
+// - Text: #1a1a1a
+// - Light links: #a8c5dd
+
+// Page background
+body {
+  background-color: #f5f5f5;
+}
+
+// =========================================================
+// Global link styling - prevent visited purple color
+// =========================================================
+a,
+a:visited {
+  color: #1a3d5c;
+}
+
+a:hover {
+  color: #2d5a7b;
+}
+
+// Table links
+.usa-table a,
+.usa-table a:visited {
+  color: #1a3d5c !important;
+}
+
+// Buttons - ensure legibility
+.usa-button,
+.usa-button:visited {
+  color: white !important;
+  background-color: #1a3d5c !important;
+}
+
+.usa-button:hover {
+  background-color: #2d5a7b !important;
+}
+
+.usa-button--outline,
+.usa-button--outline:visited {
+  color: #1a3d5c !important;
+  background-color: transparent !important;
+  border: 2px solid #1a3d5c !important;
+}
+
+.usa-button--unstyled,
+.usa-button--unstyled:visited,
+.usa-button--unstyled:link {
+  color: #1a3d5c !important;
+  background-color: transparent !important;
+  text-decoration: underline !important;
+  padding: 0 !important;
+}
+
+.usa-button--unstyled.text-error,
+.usa-button--unstyled.text-error:visited {
+  color: #b50909 !important;
+  background-color: transparent !important;
+}
+
+// =========================================================
+// Top Banner (dark blue strip)
+// =========================================================
+.nava-state-banner {
+  background-color: #0f2940;
+  padding: 8px 24px;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nava-state-banner__text {
+  color: white;
+  font-weight: 400;
+}
+
+.nava-state-banner__links {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nava-state-banner__link,
+.nava-state-banner__link:visited,
+.nava-state-banner__link:link {
+  color: #a8c5dd !important;
+  text-decoration: none !important;
+  
+  &:hover {
+    text-decoration: underline !important;
+    color: white !important;
+  }
+}
+
+.nava-state-banner__separator {
+  color: #a8c5dd;
+}
+
+// =========================================================
+// Header - Custom Nava State styling
+// =========================================================
+.nava-header {
+  background-color: transparent;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.nava-header.usa-header--basic {
+  border-bottom: none !important;
+}
+
+// Header Main (logo area) - dark blue #1a3d5c
+.nava-header__main {
+  background-color: #1a3d5c;
+  padding: 15px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+// Reset USWDS logo spacing
+.nava-header .usa-logo {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+// Logo styling
+.nava-header .usa-logo__text {
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+  margin: 0 !important;
+  line-height: 1.5;
+}
+
+.nava-logo-subtitle {
+  font-size: 13px;
+  opacity: 0.9;
+  color: white;
+  margin: 0;
+}
+
+// State seal logo styling
+.nava-state-seal {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #c9a227 0%, #e8d48b 50%, #c9a227 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #1a3d5c;
+  font-size: 12px;
+  text-align: center;
+  border: 2px solid #e8d48b;
+  flex-shrink: 0;
+}
+
+// =========================================================
+// Navigation Bar - medium blue (#2d5a7b)
+// =========================================================
+.nava-nav {
+  background-color: #2d5a7b !important;
+  padding: 0 24px;
+  width: 100%;
+}
+
+.nava-nav__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.nava-nav__item {
+  margin: 0;
+}
+
+// Nav links - force white color over USWDS defaults
+.nava-nav__link,
+.nava-nav__link:visited,
+.nava-nav__link:link {
+  display: block;
+  color: white !important;
+  text-decoration: none !important;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent !important;
+  cursor: pointer;
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+  }
+}
+
+// Active nav item - gold underline (only this one)
+.nava-nav__link--active,
+.nava-nav__link--active:visited,
+.nava-nav__link--active:link {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border-bottom-color: #f0c14b !important;
+  color: white !important;
+}
+
+// Language toggle in nav - override USWDS button styles
+.nava-nav .usa-language--small {
+  margin: 0;
+}
+
+.nava-nav .usa-language--small a,
+.nava-nav .usa-language--small a.usa-button,
+.nava-nav .usa-language--small a.usa-button--outline {
+  color: white !important;
+  border-color: white !important;
+  background: transparent !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  box-shadow: none !important;
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+  }
+}
+
+// Logout button (button_to creates a form)
+.nava-nav__item form {
+  margin: 0;
+  
+  button,
+  input[type="submit"] {
+    display: block;
+    color: white !important;
+    text-decoration: none !important;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    border: none !important;
+    border-bottom: 3px solid transparent;
+    background: transparent !important;
+    cursor: pointer;
+    
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1) !important;
+      color: white !important;
+    }
+  }
+}
+
+// Menu button (mobile)
+.nava-header .usa-menu-btn {
+  color: white !important;
+  background-color: transparent !important;
+  border: 1px solid white;
+  
+  &:hover {
+    background-color: #2d5a7b !important;
+  }
+}
+
+// =========================================================
+// Footer styling
+// =========================================================
+.usa-footer {
+  margin-top: 48px;
+}
+
+.nava-footer .usa-footer__secondary-section {
+  background-color: #1a3d5c !important;
+  color: white !important;
+  padding: 24px !important;
+  font-size: 13px;
+  
+  .grid-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  p {
+    margin: 0 !important;
+    color: white !important;
+    
+    & + p {
+      margin-top: 8px;
+    }
+  }
+  
+  a {
+    color: #a8c5dd !important;
+    text-decoration: none;
+    
+    &:hover {
+      color: white !important;
+      text-decoration: underline;
+    }
+  }
+}
+
+// Primary buttons
+.usa-button {
+  background-color: #1a3d5c;
+  
+  &:hover {
+    background-color: #2d5a7b;
+  }
+}
+
+// =========================================================
 // Base typography
 // =========================================================
 h1,

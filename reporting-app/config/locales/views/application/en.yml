@@ -12,7 +12,18 @@ en:
     dashboard: Dashboard
     language_toggle: English
     logout: "Log out"
-    title: "Medicaid Work Reporting Portal"
+    title: "State of Nava PBC"
+    subtitle: "Department of Health & Social Services"
+    close: "Close"
+  banner:
+    official: "State of Nava PBC Official Website"
+    help: "Help"
+    contact: "Contact"
+  footer:
+    privacy: "Privacy Policy"
+    accessibility: "Accessibility"
+    contact: "Contact"
+    agency_name: "State of Nava PBC - Department of Health & Social Services"
     close: "Close"
   flash:
     error_heading:

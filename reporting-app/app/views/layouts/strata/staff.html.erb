@@ -1,10 +1,8 @@
-<%# Top-level layout for all pages in the application %>
+<%# Override SDK staff layout to use themed header/banner/footer %>
 <!DOCTYPE html>
 <html lang="<%= I18n.locale %>">
   <head>
-    <title>
-      <%= content_for?(:title) ? "#{ yield(:title) } | #{ t('header.title') }" : t("header.title") %>
-    </title>
+    <title><%= content_for?(:title) ? "#{ yield(:title) } | #{ t('header.title') }" : t("header.title") %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
@@ -21,7 +19,7 @@
   <body>
     <div class="display-flex flex-column minh-viewport">
       <%= render partial: 'application/banner' %>
-      <%= render partial: 'application/header' %>
+      <%= render partial: 'strata/staff/header' %>
 
       <main id="main-content" class="grid-col-fill display-flex flex-column">
         <div class="grid-col-fill <%= yield :main_col_class %>">
@@ -31,7 +29,15 @@
             </div>
           </section>
 
-          <%= content_for?(:main_content) ? yield(:main_content) : yield %>
+          <section class="usa-section">
+            <div class="grid-container">
+              <div class="grid-row grid-gap">
+                <div class="grid-col-12 <%= yield :content_col_class %>" id="content">
+                  <%= content_for?(:content) ? yield(:content) : yield %>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </main>
 

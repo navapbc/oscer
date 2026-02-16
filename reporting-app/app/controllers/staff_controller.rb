@@ -11,12 +11,16 @@ class StaffController < Strata::StaffController
 
   protected
 
+  helper_method :header_links
+
   def header_links
     batch_uploads_link = policy(CertificationBatchUpload).index? ? [ { name: "Batch Uploads", path: certification_batch_uploads_path } ] : []
     organization_settings_link = policy(:admin).index? ? [ { name: "Organization Settings", path: users_path } ] : []
+    tasks_link = [ { name: "Tasks", path: "/staff/tasks" } ]
+    cases_link = [ { name: "Certification Cases", path: certification_cases_path } ]
     [
       { name: "Search", path: search_members_path }
-    ] + batch_uploads_link + super + organization_settings_link
+    ] + batch_uploads_link + cases_link + tasks_link + organization_settings_link
   end
 
   def case_classes

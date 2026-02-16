@@ -1,0 +1,54 @@
+<%# Override SDK staff header with themed styling %>
+<div class="usa-overlay"></div>
+<header class="usa-header usa-header--basic nava-header">
+  <!-- Header Main: Logo and title -->
+  <div class="nava-header__main">
+    <div class="usa-logo">
+      <a href="<%= main_app.staff_path %>" class="display-flex flex-align-center gap-2 text-no-underline">
+        <div class="nava-state-seal">NAVA</div>
+        <div class="display-flex flex-column">
+          <span class="usa-logo__text"><%= t('header.title') %></span>
+          <span class="nava-logo-subtitle"><%= t('header.subtitle') %></span>
+        </div>
+      </a>
+    </div>
+    <div class="nava-staff-info display-none desktop:display-flex flex-align-center gap-2">
+      <% if defined?(current_user) && current_user %>
+        <span class="text-white font-sans-xs"><%= current_user.email %></span>
+      <% end %>
+    </div>
+    <button type="button" class="usa-menu-btn desktop:display-none">Menu</button>
+  </div>
+
+  <!-- Navigation Bar -->
+  <nav aria-label="Primary navigation" class="nava-nav">
+    <button type="button" class="usa-nav__close desktop:display-none">
+      <img src="<%= asset_path('@uswds/uswds/dist/img/usa-icons/close.svg') %>" alt="<%= t 'header.close' %>" />
+    </button>
+    <ul class="nava-nav__list">
+      <%# Header links (Search, Batch Uploads, Tasks, Organization Settings) %>
+      <% if respond_to?(:header_links) && header_links.present? %>
+        <% header_links.each do |link| %>
+          <li class="nava-nav__item">
+            <%= link_to link[:name], link[:path], 
+                class: "nava-nav__link#{' nava-nav__link--active' if current_page?(link[:path])}" %>
+          </li>
+        <% end %>
+      <% end %>
+      
+      <%# Cases links from SDK (Certification Cases, etc.) %>
+      <% if respond_to?(:cases_links) && cases_links.present? %>
+        <% cases_links.each do |link| %>
+          <li class="nava-nav__item">
+            <%= link_to link[:name], link[:path], 
+                class: "nava-nav__link#{' nava-nav__link--active' if request.path.start_with?(link[:path])}" %>
+          </li>
+        <% end %>
+      <% end %>
+      
+      <li class="nava-nav__item">
+        <%= button_to t('header.logout'), main_app.destroy_user_session_path, method: :delete, class: "nava-nav__link" %>
+      </li>
+    </ul>
+  </nav>
+</header>

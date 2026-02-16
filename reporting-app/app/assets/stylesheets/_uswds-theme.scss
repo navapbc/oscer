@@ -5,6 +5,15 @@ USWDS settings overrides
 See https://designsystem.digital.gov/documentation/settings/
 for a full list of available settings.
 ----------------------------------------
+
+State of Nava PBC Theme
+Color Palette:
+- Primary (header/buttons): #1a3d5c
+- Secondary (nav): #2d5a7b
+- Accent (gold): #f0c14b
+- Background: #f5f5f5
+- Text: #1a1a1a
+----------------------------------------
 */
 
 @use "uswds-core" with (
@@ -19,7 +28,42 @@ for a full list of available settings.
     responsive: true
   ),
 
-  // Use USWDS defaults for typography
+  // ----------------------------------------
+  // State of Nava PBC - Color Theme
+  // ----------------------------------------
+  // Primary color - used for header, buttons, links
+  $theme-color-primary-darkest: #0d1e2e,
+  $theme-color-primary-darker: #142d44,
+  $theme-color-primary-dark: #1a3d5c,
+  $theme-color-primary: #1a3d5c,
+  $theme-color-primary-light: #2d5a7b,
+  $theme-color-primary-lighter: #4a7a9c,
+  $theme-color-primary-lightest: #e8f0f5,
+
+  // Secondary color
+  $theme-color-secondary-darkest: #1a3d5c,
+  $theme-color-secondary-darker: #1a3d5c,
+  $theme-color-secondary-dark: #2d5a7b,
+  $theme-color-secondary: #2d5a7b,
+  $theme-color-secondary-light: #4a7a9c,
+  $theme-color-secondary-lighter: #7aa3c0,
+  $theme-color-secondary-lightest: #e8f0f5,
+
+  // Accent color (gold)
+  $theme-color-accent-cool: #2d5a7b,
+  $theme-color-accent-cool-dark: #1a3d5c,
+  $theme-color-accent-cool-light: #4a7a9c,
+  $theme-color-accent-warm: #f0c14b,
+  $theme-color-accent-warm-dark: #c9a23c,
+  $theme-color-accent-warm-light: #f5d478,
+
+  // Base colors
+  $theme-color-base-darkest: #1a1a1a,
+  $theme-color-base-ink: #1a1a1a,
+
+  // ----------------------------------------
+  // Typography
+  // ----------------------------------------
   $theme-style-body-element: true,
   $theme-font-type-sans: "public-sans",
   $theme-global-content-styles: true,

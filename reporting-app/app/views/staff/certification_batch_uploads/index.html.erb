@@ -22,7 +22,7 @@
           <td>
             <%= link_to batch_upload.filename, certification_batch_upload_path(batch_upload) %>
           </td>
-          <td><%= batch_upload.uploader.email %></td>
+          <td><%= batch_upload.uploader&.email || "—" %></td>
           <td><%= batch_upload.created_at.strftime("%m/%d/%Y %I:%M %p") %></td>
           <td>
             <span class="usa-tag <%= status_tag_class(batch_upload.status) %>">
