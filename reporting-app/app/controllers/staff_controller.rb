@@ -35,7 +35,15 @@ class StaffController < Strata::StaffController
   end
 
   def user_not_authorized
-    # TODO: render unauthorized template in follow-up PR
+    # If user is not authenticated, redirect to login (which will redirect to SSO if enabled)
+    unless user_signed_in?
+      # Store the requested URL so user is redirected back after login
+      store_location_for(:user, request.fullpath)
+      redirect_to new_user_session_path
+      return
+    end
+
+    # User is authenticated but not authorized - redirect based on their permissions
     if policy(:staff).index?
       redirect_to staff_path
       return
