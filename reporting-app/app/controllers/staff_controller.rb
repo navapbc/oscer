@@ -3,7 +3,7 @@
 class StaffController < Strata::StaffController
   class_attribute :authorization_resource, default: :staff
 
-  before_action :authenticate_user!
+  before_action :authenticate_staff!
   before_action :authorize_staff_access
   after_action :verify_authorized
 
@@ -26,6 +26,21 @@ class StaffController < Strata::StaffController
 
   private
 
+  # Custom authentication for staff that redirects to SSO if enabled
+  def authenticate_staff!
+    return if user_signed_in?
+
+    # Store the requested URL for redirect after login
+    store_location_for(:user, request.fullpath)
+
+    # Staff users go directly to SSO if enabled
+    if sso_enabled?
+      redirect_to sso_login_path
+    else
+      redirect_to new_user_session_path
+    end
+  end
+
   def authorize_staff_access
     authorize authorization_resource
   end
@@ -35,20 +50,20 @@ class StaffController < Strata::StaffController
   end
 
   def user_not_authorized
-    # If user is not authenticated, redirect to login (which will redirect to SSO if enabled)
-    unless user_signed_in?
-      # Store the requested URL so user is redirected back after login
-      store_location_for(:user, request.fullpath)
-      redirect_to new_user_session_path
-      return
-    end
-
-    # User is authenticated but not authorized - redirect based on their permissions
-    if policy(:staff).index?
+    # User is authenticated but not authorized for this staff action
+    # This can happen if a non-staff user somehow reaches a staff URL
+    if user_signed_in? && policy(:staff).index?
       redirect_to staff_path
       return
     end
 
+    # Non-staff users go to their dashboard
     redirect_to dashboard_path
+  end
+
+  def sso_enabled?
+    Rails.application.config.sso[:enabled] == true
+  rescue NoMethodError
+    false
   end
 end
