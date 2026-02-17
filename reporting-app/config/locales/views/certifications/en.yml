@@ -2,7 +2,7 @@ en:
   certifications:
     member_id: "Member ID"
     case_number: "Medicaid case number"
-    va_icn: "Veteran ICN"
+    va_icn: "Veteran Affairs ICN"
     certification_requirements: "Certification requirements"
     member_data: "Member data"
     index:
