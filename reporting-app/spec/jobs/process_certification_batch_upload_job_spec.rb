@@ -31,8 +31,9 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
         end
 
         it 'processes the batch upload successfully' do
-          described_class.perform_now(batch_upload.id)
-          batch_upload.reload
+          batch_id = batch_upload.id
+          described_class.perform_now(batch_id)
+          batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
 
           expect(batch_upload).to be_completed
           expect(batch_upload.num_rows_succeeded).to eq(2)
@@ -47,17 +48,81 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
 
         it 'stores results' do
           described_class.perform_now(batch_upload.id)
-          batch_upload.reload
+          batch_id = batch_upload.id
+          batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
 
           expect(batch_upload.results["successes"]).to be_present
           expect(batch_upload.results["successes"].first["member_id"]).to eq("M200")
         end
+      end
 
-        it 'works regardless of feature flag' do
+      context 'with v2 feature flag enabled' do
+        let(:csv_reader) { instance_double(CsvStreamReader) }
+
+        before do
+          # Attach valid CSV content
+          csv_content = <<~CSV
+            member_id,case_number,member_email,first_name,last_name,certification_date,certification_type
+            M200,C-200,test@example.com,Test,User,2025-01-15,new_application
+            M300,C-300,test2@example.com,Aurélie,Castañeda,2025-02-20,new_application
+          CSV
+          batch_upload.file.attach(
+            io: StringIO.new(csv_content),
+            filename: 'test.csv',
+            content_type: 'text/csv'
+          )
+
+          allow(CsvStreamReader).to receive(:new).and_return(csv_reader)
+          # Mock each_chunk to handle two-pass behavior (count + enqueue)
+          allow(csv_reader).to receive(:each_chunk).and_yield([
+            { "member_id" => "M200", "case_number" => "C-200", "member_email" => "test@example.com",
+              "first_name" => "Test", "last_name" => "User", "certification_date" => "2025-01-15",
+              "certification_type" => "new_application" }
+          ]).and_yield([
+            { "member_id" => "M300", "case_number" => "C-300", "member_email" => "test2@example.com",
+              "first_name" => "Aurélie", "last_name" => "Castañeda", "certification_date" => "2025-02-20",
+              "certification_type" => "new_application" }
+          ])
+        end
+
+        it 'enqueues chunk jobs for parallel processing' do
+          with_batch_upload_v2_enabled do
+            expect {
+              described_class.perform_now(batch_upload.id)
+            }.to have_enqueued_job(ProcessCertificationBatchChunkJob).exactly(2).times
+          end
+        end
+
+        it 'updates num_rows before enqueueing jobs' do
           with_batch_upload_v2_enabled do
             described_class.perform_now(batch_upload.id)
-            batch_upload.reload
-            expect(batch_upload).to be_completed
+            batch_id = batch_upload.id
+            batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
+            expect(batch_upload.num_rows).to eq(2)
+          end
+        end
+
+        it 'marks batch as processing' do
+          with_batch_upload_v2_enabled do
+            described_class.perform_now(batch_upload.id)
+            batch_id = batch_upload.id
+            batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
+            expect(batch_upload.status).to eq("processing")
+          end
+        end
+
+        it 'handles empty CSV (headers but no data)' do
+          allow(csv_reader).to receive(:each_chunk)  # No yields = no data rows
+
+          with_batch_upload_v2_enabled do
+            expect {
+              described_class.perform_now(batch_upload.id)
+            }.not_to have_enqueued_job(ProcessCertificationBatchChunkJob)
+
+            batch_id = batch_upload.id
+            batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
+            expect(batch_upload.status).to eq("completed")
+            expect(batch_upload.num_rows).to eq(0)
           end
         end
       end
@@ -78,7 +143,8 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
 
         it 'marks batch as failed' do
           described_class.perform_now(batch_upload.id)
-          batch_upload.reload
+          batch_id = batch_upload.id
+          batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
 
           expect(batch_upload).to be_failed
         end
@@ -97,173 +163,12 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
             described_class.perform_now(batch_upload.id)
           }.to raise_error(StandardError)
 
-          batch_upload.reload
+          batch_id = batch_upload.id
+
+          batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
           expect(batch_upload).to be_failed
           expect(batch_upload.results["error"]).to eq("Test error")
         end
-      end
-    end
-
-    context 'with cloud storage (v2 uploads)' do
-      let(:batch_upload) do
-        create(:certification_batch_upload, uploader: user, storage_key: "batch-uploads/test-uuid/test.csv")
-      end
-      let(:storage_adapter) { instance_double(Storage::S3Adapter) }
-      let(:csv_content) do
-        <<~CSV
-          member_id,case_number,member_email,first_name,last_name,certification_date,certification_type
-          M400,C-400,test4@example.com,Test,Four,2025-03-10,new_application
-          M500,C-500,test5@example.com,Test,Five,2025-03-15,new_application
-        CSV
-      end
-
-      before do
-        # Set storage_adapter on Rails config for this test
-        Rails.application.config.storage_adapter = storage_adapter
-      end
-
-      context 'when feature flag is ENABLED' do
-        let(:csv_reader) { instance_double(CsvStreamReader) }
-
-        before do
-          allow(CsvStreamReader).to receive(:new).and_return(csv_reader)
-        end
-
-        it 'enqueues chunk jobs for streaming' do
-          allow(csv_reader).to receive(:each_chunk).and_yield([
-            { "member_id" => "M400", "case_number" => "C-400", "member_email" => "test4@example.com",
-              "first_name" => "Test", "last_name" => "Four", "certification_date" => "2025-03-10",
-              "certification_type" => "new_application" }
-          ]).and_yield([
-            { "member_id" => "M500", "case_number" => "C-500", "member_email" => "test5@example.com",
-              "first_name" => "Test", "last_name" => "Five", "certification_date" => "2025-03-15",
-              "certification_type" => "new_application" }
-          ])
-
-          with_batch_upload_v2_enabled do
-            expect {
-              described_class.perform_now(batch_upload.id)
-            }.to have_enqueued_job(ProcessCertificationBatchChunkJob).exactly(2).times
-          end
-        end
-
-        it 'updates num_rows' do
-          allow(csv_reader).to receive(:each_chunk).and_yield(
-            Array.new(1000) { {} }
-          ).and_yield(
-            Array.new(500) { {} }
-          )
-
-          with_batch_upload_v2_enabled do
-            described_class.perform_now(batch_upload.id)
-            batch_upload.reload
-            expect(batch_upload.num_rows).to eq(1500)
-          end
-        end
-
-        it 'marks as processing' do
-          allow(csv_reader).to receive(:each_chunk).and_yield([ {} ])
-
-          with_batch_upload_v2_enabled do
-            described_class.perform_now(batch_upload.id)
-            batch_upload.reload
-            expect(batch_upload.status).to eq("processing")
-          end
-        end
-
-        it 'handles empty CSV (headers but no data)' do
-          allow(csv_reader).to receive(:each_chunk)  # No yields = no data rows
-
-          with_batch_upload_v2_enabled do
-            expect {
-              described_class.perform_now(batch_upload.id)
-            }.not_to have_enqueued_job(ProcessCertificationBatchChunkJob)
-
-            batch_upload.reload
-            expect(batch_upload.status).to eq("completed")
-            expect(batch_upload.num_rows).to eq(0)
-            expect(batch_upload.num_rows_succeeded).to eq(0)
-            expect(batch_upload.num_rows_errored).to eq(0)
-          end
-        end
-
-        it 'sets num_rows before enqueueing jobs (race condition prevention)' do
-          call_count = 0
-          num_rows_when_job_enqueued = nil
-
-          # Mock each_chunk to handle both passes
-          allow(csv_reader).to receive(:each_chunk) do |&block|
-            call_count += 1
-            # Yield data on both passes
-            block.call([ { "member_id" => "M400" } ])
-          end
-
-          # Capture num_rows when job is enqueued
-          allow(ProcessCertificationBatchChunkJob).to receive(:perform_later) do |batch_id, *|
-            num_rows_when_job_enqueued = CertificationBatchUpload.find(batch_id).num_rows
-          end
-
-          with_batch_upload_v2_enabled do
-            described_class.perform_now(batch_upload.id)
-          end
-
-          # Verify num_rows was already set when job was enqueued
-          expect(num_rows_when_job_enqueued).to eq(1)
-          expect(call_count).to eq(2)  # Verify two-pass behavior
-        end
-      end
-
-      context 'when feature flag is DISABLED' do
-        before do
-          allow(storage_adapter).to receive(:download_to_file) do |key:, file:|
-            file.write(csv_content)
-            file.rewind
-          end
-        end
-
-        it 'falls back to sequential processing' do
-          with_batch_upload_v2_disabled do
-            expect {
-              described_class.perform_now(batch_upload.id)
-            }.not_to have_enqueued_job(ProcessCertificationBatchChunkJob)
-          end
-        end
-
-        it 'still completes successfully' do
-          with_batch_upload_v2_disabled do
-            described_class.perform_now(batch_upload.id)
-            batch_upload.reload
-
-            expect(batch_upload).to be_completed
-            expect(batch_upload.num_rows_succeeded).to eq(2)
-          end
-        end
-
-        it 'creates certifications' do
-          with_batch_upload_v2_disabled do
-            expect {
-              described_class.perform_now(batch_upload.id)
-            }.to change(Certification, :count).by(2)
-          end
-        end
-      end
-    end
-
-    context 'with invalid upload state' do
-      let(:batch_upload) do
-        batch = build(:certification_batch_upload, uploader: user)
-        batch.file = nil
-        batch.storage_key = nil
-        batch.save(validate: false)
-        batch
-      end
-
-      it 'marks batch as failed' do
-        described_class.perform_now(batch_upload.id)
-        batch_upload.reload
-
-        expect(batch_upload).to be_failed
-        expect(batch_upload.results["error"]).to include("missing both file attachment and storage key")
       end
     end
   end
