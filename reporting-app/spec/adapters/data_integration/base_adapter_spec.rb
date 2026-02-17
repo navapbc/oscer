@@ -3,10 +3,16 @@
 require "rails_helper"
 
 class TestAdapter < DataIntegration::BaseAdapter
-  attr_reader :before_hook_called, :after_hook_called, :last_response
+  attr_reader :before_hook_called, :after_hook_called, :last_response, :hooks_called
 
   before_request :my_before_hook
+  before_request :another_before_hook
   after_request :my_after_hook
+
+  def initialize(connection: nil)
+    super
+    @hooks_called = []
+  end
 
   def call_api(connection)
     with_error_handling do
@@ -32,6 +38,11 @@ class TestAdapter < DataIntegration::BaseAdapter
 
   def my_before_hook
     @before_hook_called = true
+    @hooks_called << :my_before_hook
+  end
+
+  def another_before_hook
+    @hooks_called << :another_before_hook
   end
 
   def my_after_hook(response)
@@ -63,10 +74,11 @@ RSpec.describe DataIntegration::BaseAdapter do
   describe "hooks" do
     let(:sub_test_adapter) { Class.new(TestAdapter) }
 
-    it "runs before_request hooks" do
+    it "runs all before_request hooks in order" do
       stubs.get("/test") { [ 200, {}, "ok" ] }
       adapter.call_api(connection)
       expect(adapter.before_hook_called).to be true
+      expect(adapter.hooks_called).to eq([ :my_before_hook, :another_before_hook ])
     end
 
     it "runs after_request hooks with the response" do
@@ -77,7 +89,7 @@ RSpec.describe DataIntegration::BaseAdapter do
     end
 
     it "inherits hooks from parent class" do
-      expect(sub_test_adapter.before_request_hooks).to include(:my_before_hook)
+      expect(sub_test_adapter.before_request_hooks).to include(:my_before_hook, :another_before_hook)
       expect(sub_test_adapter.after_request_hooks).to include(:my_after_hook)
     end
   end
