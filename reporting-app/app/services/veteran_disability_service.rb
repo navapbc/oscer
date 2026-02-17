@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-class VeteranDisabilityService
+class VeteranDisabilityService < DataIntegration::BaseService
   def initialize(adapter: VeteranAffairsAdapter.new, token_manager: VaTokenManager.new)
-    @adapter = adapter
+    super(adapter: adapter)
     @token_manager = token_manager
   end
 
@@ -10,7 +10,12 @@ class VeteranDisabilityService
     access_token = @token_manager.get_access_token(icn: icn)
     @adapter.get_disability_rating(access_token: access_token)
   rescue VeteranAffairsAdapter::ApiError, VaTokenManager::TokenError => e
-    Rails.logger.warn("VA API check failed: #{e.message}")
-    nil
+    handle_integration_error(e)
+  end
+
+  private
+
+  def service_name
+    "VA API"
   end
 end
