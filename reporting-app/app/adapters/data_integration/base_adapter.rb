@@ -9,6 +9,30 @@ module DataIntegration
     class ServerError < ApiError; end
     class RateLimitError < ApiError; end
 
+    class << self
+      def before_request(method_name)
+        before_request_hooks << method_name
+      end
+
+      def after_request(method_name)
+        after_request_hooks << method_name
+      end
+
+      def before_request_hooks
+        @before_request_hooks ||= []
+      end
+
+      def after_request_hooks
+        @after_request_hooks ||= []
+      end
+
+      def inherited(subclass)
+        super
+        subclass.instance_variable_set(:@before_request_hooks, before_request_hooks.dup)
+        subclass.instance_variable_set(:@after_request_hooks, after_request_hooks.dup)
+      end
+    end
+
     def initialize(connection: nil)
       @connection = connection || default_connection
     end
@@ -46,7 +70,11 @@ module DataIntegration
     private
 
     def with_error_handling
+      run_before_request_hooks
+
       response = yield
+
+      run_after_request_hooks(response)
 
       case response.status
       when 200..299
@@ -62,6 +90,18 @@ module DataIntegration
       end
     rescue Faraday::Error => e
       handle_connection_error(e)
+    end
+
+    def run_before_request_hooks
+      self.class.before_request_hooks.each do |hook|
+        send(hook)
+      end
+    end
+
+    def run_after_request_hooks(response)
+      self.class.after_request_hooks.each do |hook|
+        send(hook, response)
+      end
     end
   end
 end
