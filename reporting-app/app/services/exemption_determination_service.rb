@@ -28,12 +28,14 @@ class ExemptionDeterminationService
       date_of_birth = extract_date_of_birth(certification)
       pregnancy_status = extract_pregnancy_status(certification)
       race_ethnicity = extract_race_ethnicity(certification)
+      veteran_disability_rating = extract_veteran_disability_status(certification)
 
       engine.set_facts(
         date_of_birth: date_of_birth,
         evaluated_on: evaluation_date,
         pregnancy_status: pregnancy_status,
-        race_ethnicity: race_ethnicity
+        race_ethnicity: race_ethnicity,
+        veteran_disability_rating: veteran_disability_rating
       )
 
       engine.evaluate(:eligible_for_exemption)
@@ -61,6 +63,12 @@ class ExemptionDeterminationService
       return nil unless certification.member_data
 
       certification.member_data.race_ethnicity
+    end
+
+    def extract_veteran_disability_status(certification)
+      return nil unless certification.member_data&.va_icn.present?
+
+      VeteranDisabilityService.new.get_disability_rating(icn: certification.member_data.va_icn)
     end
   end
 end

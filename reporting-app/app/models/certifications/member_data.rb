@@ -54,6 +54,7 @@ class Certifications::MemberData < ValueObject
   end
 
   attribute :account_email, :string
+  attribute :va_icn, :string
   attribute :contact, ContactData.to_type
   attribute :name, ActiveModel::Type::Json.new(Strata::Name)
   attribute :date_of_birth, :date

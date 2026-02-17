@@ -220,6 +220,18 @@ RSpec.describe "/demo/certifications", type: :request do
         cert = Certification.order(created_at: :desc).last
         expect(cert.member_data.race_ethnicity).to eq("white")
       end
+
+      it "creates a new Certification with icn entered" do
+        create_attrs = valid_request_attributes.merge({ va_icn: "1012861229V078999", ex_parte_scenario: "No data" })
+
+        expect {
+          post demo_certifications_url,
+               params: { demo_certifications_create_form: create_attrs }
+        }.to change(Certification, :count).by(1)
+
+        cert = Certification.order(created_at: :desc).last
+        expect(cert.member_data.va_icn).to eq("1012861229V078999")
+      end
     end
 
     context "with region" do

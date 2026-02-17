@@ -24,10 +24,20 @@ module Rules
       AMERICAN_INDIAN_OR_ALASKA_NATIVE.include?(race_ethnicity.downcase.gsub(/\s+/, "_"))
     end
 
-    def eligible_for_exemption(age_under_19, age_over_65, is_pregnant, is_american_indian_or_alaska_native)
-      return if [ age_under_19, age_over_65, is_pregnant, is_american_indian_or_alaska_native ].all?(&:nil?)
+    def is_veteran_with_disability(veteran_disability_rating)
+      return if veteran_disability_rating.nil?
 
-      [ age_under_19, age_over_65, is_pregnant, is_american_indian_or_alaska_native ].any?
+      combined_rating = veteran_disability_rating.dig("data", "attributes", "combined_disability_rating")
+      return false if combined_rating.nil?
+
+      combined_rating.to_i == 100
+    end
+
+    def eligible_for_exemption(age_under_19, age_over_65, is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability)
+      facts = [ age_under_19, age_over_65, is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability ]
+      return if facts.all?(&:nil?)
+
+      facts.any?
     end
   end
 end

@@ -6,6 +6,12 @@ RSpec.describe ExemptionDeterminationService do
   let(:service) { described_class }
   let(:cert_date) { Date.new(2025, 7, 1) }
   let(:member_data) { build(:certification_member_data, date_of_birth: dob, cert_date: cert_date) }
+  let(:rating_data) { nil }
+  let(:veteran_disability_service) { instance_double(VeteranDisabilityService, get_disability_rating: rating_data) }
+
+  before do
+    allow(VeteranDisabilityService).to receive(:new).and_return(veteran_disability_service)
+  end
 
   describe '#determine' do
     let(:certification) { create(:certification, member_data: member_data) }
@@ -251,6 +257,53 @@ RSpec.describe ExemptionDeterminationService do
         service.determine(kase)
         kase.reload
         expect(kase.exemption_request_approval_status).to be_nil
+      end
+    end
+
+    context 'when member is a veteran with 100% disability' do
+      let(:member_data) { build(:certification_member_data, :with_icn, cert_date: cert_date) }
+      let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 100 } } } }
+
+      it 'publishes DeterminedExempt event' do
+        service.determine(kase)
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id, certification_id: kase.certification_id })
+      end
+
+      it 'closes the case' do
+        service.determine(kase)
+        kase.reload
+        expect(kase.status).to eq("closed")
+      end
+
+      it 'sets exemption_request_approval_status to approved' do
+        service.determine(kase)
+        kase.reload
+        expect(kase.exemption_request_approval_status).to eq("approved")
+      end
+    end
+
+    context 'when member is a veteran but does not have 100% disability' do
+      let(:member_data) { build(:certification_member_data, :with_icn, cert_date: cert_date) }
+      let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 70 } } } }
+
+      it 'publishes DeterminedNotExempt event' do
+        service.determine(kase)
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id, certification_id: kase.certification_id })
+      end
+
+      it 'does not close the case' do
+        service.determine(kase)
+        kase.reload
+        expect(kase.status).to eq("open")
+      end
+    end
+
+    context 'when VA service returns nil (fail-open)' do
+      let(:member_data) { build(:certification_member_data, :with_icn, cert_date: cert_date) }
+
+      it 'publishes DeterminedNotExempt event' do
+        service.determine(kase)
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id, certification_id: kase.certification_id })
       end
     end
   end

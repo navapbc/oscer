@@ -37,6 +37,7 @@ RSpec.describe Determination, type: :model do
           hours_reported_compliant
           hours_reported_insufficient
           exemption_request_compliant
+          veteran_disability_exempt
         ]
         expect(Determination::VALID_REASONS).to match_array(expected_reasons)
       end
