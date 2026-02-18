@@ -23,7 +23,7 @@ While participants understood the concept after reading the full explanation in 
 When external system data or data from state sources appeared in their activity table or dashboard, participants were confused about where it came from. Guesses ranged from the initial application onboarding, to employer reporting, indicating a lack of clarity on how the system "found" their hours. 
 
 ## Secondary Insights.
-* **Homepage navigation is seamless:** All users found the exemption page and the reporting flow without trouble; the "About" sections provide helpful context for the portal’s purpose.
+* **Homepage navigation is seamless:** All users found the exemption page and the reporting flow without trouble. The "About" sections provide helpful context for the portal’s purpose.
 * **Disabled state tooltips may be invisible:** About half of the users saw the tooltip when the "upload" button was disabled, but none commented on it, making it unclear if the guidance is actually being read. That said, no users erroneously clicked on the “Upload documents” button before a document was selected, which is an improvement from what we saw in the first research sprint.
 * **Minor usability issues in the stepper:** Most users navigated the "Activity Type" page easily, though one user missed that there were two distinct questions on the screen. Additionally, there is slight confusion regarding specific reporting timeframes (e.g., the exact start/end dates of the reporting period).
 * **Trust is tied to official branding:** Participants noted a lack of "government feel." One user explicitly requested "dog whistle" branding—like a Medicaid or State of California logo—to feel secure that the site isn't a scam.
