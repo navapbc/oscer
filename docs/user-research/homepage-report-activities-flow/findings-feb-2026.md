@@ -30,7 +30,7 @@ When external system data or data from state sources appeared in their activity 
 ⠀
 ## Opportunities
 ### Add more contextual guidance 
-Use progressive disclosure in the stepper to further explain what types of activities are accepted, document/proof requirements, reporting period timelines, and external data. 
+Use progressive disclosure in the flow to report community engagement activities to further explain what types of activities are accepted, document/proof requirements, reporting period timelines, and external data. 
 
 ### Branding for Trust
 Explore how customizations/theming with official state or agency logos and/or branding can verify the site's authenticity and build user confidence.
