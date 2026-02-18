@@ -11,7 +11,7 @@ We need to determine if this layout successfully guides users toward the correct
 ## Research Questions 
 1. When users first land on the site, how clearly do they understand what the program is, who it’s for, and what they need to do next?
 2. At what point do users feel ready to proceed into the flow—and what information is critical for that readiness?
-3. How do users interpret the term “Community Engagement” versus "work activities"? without additional context?
+3. How do users interpret the term “Community Engagement” versus "work activities," without additional context?
 4. Does expanding on what “Community Engagement” means improve comprehension of required actions?
 5. How do users understand the “80-hour” requirement when they first encounter it?
 6. Are users able to accurately describe how often the 80-hour requirement applies (e.g., weekly, monthly)?
