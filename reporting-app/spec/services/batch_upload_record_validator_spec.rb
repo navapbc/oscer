@@ -27,8 +27,8 @@ RSpec.describe BatchUploadRecordValidator do
         result = validator.validate(valid_record)
 
         expect(result.success?).to be(true)
-        expect(result.error_code).to be_nil
-        expect(result.error_message).to be_nil
+        expect(result.error_codes).to be_empty
+        expect(result.error_messages).to be_empty
       end
 
       it "accepts new_application certification type" do
@@ -90,9 +90,9 @@ RSpec.describe BatchUploadRecordValidator do
           result = validator.validate(record)
 
           expect(result.success?).to be(false)
-          expect(result.error_code).to eq(BatchUploadErrors::Validation::MISSING_FIELDS)
-          expect(result.error_message).to include("Missing required fields")
-          expect(result.error_message).to include(field)
+          expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::MISSING_FIELDS)
+          expect(result.error_messages.first).to include("Missing required fields")
+          expect(result.error_messages.first).to include(field)
         end
       end
 
@@ -102,11 +102,45 @@ RSpec.describe BatchUploadRecordValidator do
         result = validator.validate(record)
 
         expect(result.success?).to be(false)
-        expect(result.error_code).to eq(BatchUploadErrors::Validation::MISSING_FIELDS)
-        expect(result.error_message).to include("case_number")
-        expect(result.error_message).to include("member_email")
-        expect(result.error_message).to include("certification_date")
-        expect(result.error_message).to include("certification_type")
+        expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::MISSING_FIELDS)
+        expect(result.error_messages.first).to include("case_number")
+        expect(result.error_messages.first).to include("member_email")
+        expect(result.error_messages.first).to include("certification_date")
+        expect(result.error_messages.first).to include("certification_type")
+      end
+
+      it "treats blank strings as missing (CSV always creates keys for all columns)" do
+        record = {
+          "member_id" => "",
+          "case_number" => "C-001",
+          "member_email" => "test@example.com",
+          "certification_date" => "2025-01-15",
+          "certification_type" => "new_application"
+        }
+
+        result = validator.validate(record)
+
+        expect(result.success?).to be(false)
+        expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::MISSING_FIELDS)
+        expect(result.error_messages.first).to include("member_id")
+      end
+
+      it "catches multiple blank fields in one error" do
+        record = {
+          "member_id" => "",
+          "case_number" => "",
+          "member_email" => "",
+          "certification_date" => "2025-01-15",
+          "certification_type" => "new_application"
+        }
+
+        result = validator.validate(record)
+
+        expect(result.success?).to be(false)
+        expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::MISSING_FIELDS)
+        expect(result.error_messages.first).to include("member_id")
+        expect(result.error_messages.first).to include("case_number")
+        expect(result.error_messages.first).to include("member_email")
       end
     end
 
@@ -128,10 +162,10 @@ RSpec.describe BatchUploadRecordValidator do
           result = validator.validate(base_record)
 
           expect(result.success?).to be(false)
-          expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_DATE)
-          expect(result.error_message).to include("certification_date")
-          expect(result.error_message).to include("01/15/2025")
-          expect(result.error_message).to include("YYYY-MM-DD")
+          expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_DATE)
+          expect(result.error_messages.first).to include("certification_date")
+          expect(result.error_messages.first).to include("01/15/2025")
+          expect(result.error_messages.first).to include("YYYY-MM-DD")
         end
 
         it "fails with wrong format (DD-MM-YYYY)" do
@@ -140,8 +174,8 @@ RSpec.describe BatchUploadRecordValidator do
           result = validator.validate(base_record)
 
           expect(result.success?).to be(false)
-          expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_DATE)
-          expect(result.error_message).to include("certification_date")
+          expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_DATE)
+          expect(result.error_messages.first).to include("certification_date")
         end
 
         it "fails with unparseable date (invalid month)" do
@@ -150,9 +184,9 @@ RSpec.describe BatchUploadRecordValidator do
           result = validator.validate(base_record)
 
           expect(result.success?).to be(false)
-          expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_DATE)
-          expect(result.error_message).to include("unparseable")
-          expect(result.error_message).to include("2025-13-01")
+          expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_DATE)
+          expect(result.error_messages.first).to include("unparseable")
+          expect(result.error_messages.first).to include("2025-13-01")
         end
 
         it "fails with unparseable date (invalid day)" do
@@ -161,8 +195,8 @@ RSpec.describe BatchUploadRecordValidator do
           result = validator.validate(base_record)
 
           expect(result.success?).to be(false)
-          expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_DATE)
-          expect(result.error_message).to include("unparseable")
+          expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_DATE)
+          expect(result.error_messages.first).to include("unparseable")
         end
 
         it "fails with text instead of date" do
@@ -171,7 +205,7 @@ RSpec.describe BatchUploadRecordValidator do
           result = validator.validate(base_record)
 
           expect(result.success?).to be(false)
-          expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_DATE)
+          expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_DATE)
         end
       end
 
@@ -182,9 +216,9 @@ RSpec.describe BatchUploadRecordValidator do
           result = validator.validate(base_record)
 
           expect(result.success?).to be(false)
-          expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_DATE)
-          expect(result.error_message).to include("date_of_birth")
-          expect(result.error_message).to include("05/15/1990")
+          expect(result.error_codes).to include(BatchUploadErrors::Validation::INVALID_DATE)
+          expect(result.error_messages.join).to include("date_of_birth")
+          expect(result.error_messages.join).to include("05/15/1990")
         end
 
         it "fails with unparseable date when present" do
@@ -193,8 +227,8 @@ RSpec.describe BatchUploadRecordValidator do
           result = validator.validate(base_record)
 
           expect(result.success?).to be(false)
-          expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_DATE)
-          expect(result.error_message).to include("unparseable")
+          expect(result.error_codes).to include(BatchUploadErrors::Validation::INVALID_DATE)
+          expect(result.error_messages.join).to include("unparseable")
         end
 
         it "succeeds when date_of_birth is blank" do
@@ -231,10 +265,10 @@ RSpec.describe BatchUploadRecordValidator do
         result = validator.validate(base_record)
 
         expect(result.success?).to be(false)
-        expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_EMAIL)
-        expect(result.error_message).to include("member_email")
-        expect(result.error_message).to include("testexample.com")
-        expect(result.error_message).to include("user@example.com")
+        expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_EMAIL)
+        expect(result.error_messages.first).to include("member_email")
+        expect(result.error_messages.first).to include("testexample.com")
+        expect(result.error_messages.first).to include("user@example.com")
       end
 
       it "fails with missing domain" do
@@ -243,8 +277,8 @@ RSpec.describe BatchUploadRecordValidator do
         result = validator.validate(base_record)
 
         expect(result.success?).to be(false)
-        expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_EMAIL)
-        expect(result.error_message).to include("test@")
+        expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_EMAIL)
+        expect(result.error_messages.first).to include("test@")
       end
 
       it "fails with missing local part" do
@@ -253,7 +287,7 @@ RSpec.describe BatchUploadRecordValidator do
         result = validator.validate(base_record)
 
         expect(result.success?).to be(false)
-        expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_EMAIL)
+        expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_EMAIL)
       end
 
       it "fails with spaces in email" do
@@ -262,8 +296,8 @@ RSpec.describe BatchUploadRecordValidator do
         result = validator.validate(base_record)
 
         expect(result.success?).to be(false)
-        expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_EMAIL)
-        expect(result.error_message).to include("test user@example.com")
+        expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_EMAIL)
+        expect(result.error_messages.first).to include("test user@example.com")
       end
 
       it "fails with invalid characters" do
@@ -272,7 +306,7 @@ RSpec.describe BatchUploadRecordValidator do
         result = validator.validate(base_record)
 
         expect(result.success?).to be(false)
-        expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_EMAIL)
+        expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_EMAIL)
       end
 
       it "accepts valid email with subdomain" do
@@ -317,22 +351,22 @@ RSpec.describe BatchUploadRecordValidator do
         result = validator.validate(base_record)
 
         expect(result.success?).to be(false)
-        expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_TYPE)
-        expect(result.error_message).to include("certification_type")
-        expect(result.error_message).to include("renewal")
-        expect(result.error_message).to include("new_application")
-        expect(result.error_message).to include("recertification")
+        expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_TYPE)
+        expect(result.error_messages.first).to include("certification_type")
+        expect(result.error_messages.first).to include("renewal")
+        expect(result.error_messages.first).to include("new_application")
+        expect(result.error_messages.first).to include("recertification")
       end
 
-      it "succeeds with empty string (skipped as blank)" do
+      it "fails with blank certification_type (treated as missing field)" do
         base_record["certification_type"] = ""
 
         result = validator.validate(base_record)
 
-        # Empty string is not caught by required fields (key exists)
-        # Certification type validation skips blank values
-        # ActiveRecord validation will catch this later during save
-        expect(result.success?).to be(true)
+        # Blank values are caught by required fields validation (blank? check)
+        expect(result.success?).to be(false)
+        expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::MISSING_FIELDS)
+        expect(result.error_messages.first).to include("certification_type")
       end
 
       it "fails with wrong case" do
@@ -341,8 +375,8 @@ RSpec.describe BatchUploadRecordValidator do
         result = validator.validate(base_record)
 
         expect(result.success?).to be(false)
-        expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_TYPE)
-        expect(result.error_message).to include("NEW_APPLICATION")
+        expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_TYPE)
+        expect(result.error_messages.first).to include("NEW_APPLICATION")
       end
 
       it "fails with typo" do
@@ -351,7 +385,7 @@ RSpec.describe BatchUploadRecordValidator do
         result = validator.validate(base_record)
 
         expect(result.success?).to be(false)
-        expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_TYPE)
+        expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_TYPE)
       end
     end
 
@@ -373,10 +407,10 @@ RSpec.describe BatchUploadRecordValidator do
           result = validator.validate(base_record)
 
           expect(result.success?).to be(false)
-          expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_INTEGER)
-          expect(result.error_message).to include("lookback_period")
-          expect(result.error_message).to include("thirty")
-          expect(result.error_message).to include("positive integer")
+          expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_INTEGER)
+          expect(result.error_messages.first).to include("lookback_period")
+          expect(result.error_messages.first).to include("thirty")
+          expect(result.error_messages.first).to include("positive integer")
         end
 
         it "fails with decimal value" do
@@ -385,8 +419,8 @@ RSpec.describe BatchUploadRecordValidator do
           result = validator.validate(base_record)
 
           expect(result.success?).to be(false)
-          expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_INTEGER)
-          expect(result.error_message).to include("30.5")
+          expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_INTEGER)
+          expect(result.error_messages.first).to include("30.5")
         end
 
         it "fails with negative value" do
@@ -395,7 +429,7 @@ RSpec.describe BatchUploadRecordValidator do
           result = validator.validate(base_record)
 
           expect(result.success?).to be(false)
-          expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_INTEGER)
+          expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_INTEGER)
         end
 
         it "succeeds when blank" do
@@ -429,9 +463,9 @@ RSpec.describe BatchUploadRecordValidator do
           result = validator.validate(base_record)
 
           expect(result.success?).to be(false)
-          expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_INTEGER)
-          expect(result.error_message).to include("number_of_months_to_certify")
-          expect(result.error_message).to include("six")
+          expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_INTEGER)
+          expect(result.error_messages.first).to include("number_of_months_to_certify")
+          expect(result.error_messages.first).to include("six")
         end
 
         it "succeeds with valid integer" do
@@ -450,9 +484,9 @@ RSpec.describe BatchUploadRecordValidator do
           result = validator.validate(base_record)
 
           expect(result.success?).to be(false)
-          expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_INTEGER)
-          expect(result.error_message).to include("due_period_days")
-          expect(result.error_message).to include("30 days")
+          expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_INTEGER)
+          expect(result.error_messages.first).to include("due_period_days")
+          expect(result.error_messages.first).to include("30 days")
         end
 
         it "succeeds with valid integer" do
@@ -471,9 +505,9 @@ RSpec.describe BatchUploadRecordValidator do
           result = validator.validate(base_record)
 
           expect(result.success?).to be(false)
-          expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_INTEGER)
-          expect(result.error_message).to include("work_hours")
-          expect(result.error_message).to include("twenty")
+          expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_INTEGER)
+          expect(result.error_messages.first).to include("work_hours")
+          expect(result.error_messages.first).to include("twenty")
         end
 
         it "succeeds with valid integer" do
@@ -494,20 +528,22 @@ RSpec.describe BatchUploadRecordValidator do
       end
     end
 
-    context "with validation priority (fail-fast)" do
-      it "returns required fields error before date format error" do
+    context "with multiple concurrent errors (collect-all)" do
+      it "collects required fields error and date format error together" do
         record = {
           "member_id" => "M12345",
           "certification_date" => "invalid-date"
-          # Missing required fields
+          # Missing: case_number, member_email, certification_type
         }
 
         result = validator.validate(record)
 
-        expect(result.error_code).to eq(BatchUploadErrors::Validation::MISSING_FIELDS)
+        expect(result.success?).to be(false)
+        expect(result.error_codes).to include(BatchUploadErrors::Validation::MISSING_FIELDS)
+        expect(result.error_codes).to include(BatchUploadErrors::Validation::INVALID_DATE)
       end
 
-      it "returns date format error before email format error" do
+      it "collects date format error and email format error together" do
         record = {
           "member_id" => "M12345",
           "case_number" => "C-001",
@@ -518,10 +554,12 @@ RSpec.describe BatchUploadRecordValidator do
 
         result = validator.validate(record)
 
-        expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_DATE)
+        expect(result.success?).to be(false)
+        expect(result.error_codes).to include(BatchUploadErrors::Validation::INVALID_DATE)
+        expect(result.error_codes).to include(BatchUploadErrors::Validation::INVALID_EMAIL)
       end
 
-      it "returns email format error before certification type error" do
+      it "collects email format error and certification type error together" do
         record = {
           "member_id" => "M12345",
           "case_number" => "C-001",
@@ -532,10 +570,12 @@ RSpec.describe BatchUploadRecordValidator do
 
         result = validator.validate(record)
 
-        expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_EMAIL)
+        expect(result.success?).to be(false)
+        expect(result.error_codes).to include(BatchUploadErrors::Validation::INVALID_EMAIL)
+        expect(result.error_codes).to include(BatchUploadErrors::Validation::INVALID_TYPE)
       end
 
-      it "returns certification type error before integer format error" do
+      it "collects certification type error and integer format error together" do
         record = {
           "member_id" => "M12345",
           "case_number" => "C-001",
@@ -547,7 +587,30 @@ RSpec.describe BatchUploadRecordValidator do
 
         result = validator.validate(record)
 
-        expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_TYPE)
+        expect(result.success?).to be(false)
+        expect(result.error_codes).to include(BatchUploadErrors::Validation::INVALID_TYPE)
+        expect(result.error_codes).to include(BatchUploadErrors::Validation::INVALID_INTEGER)
+      end
+
+      it "collects errors from all invalid integer fields" do
+        record = {
+          "member_id" => "M12345",
+          "case_number" => "C-001",
+          "member_email" => "test@example.com",
+          "certification_date" => "2025-01-15",
+          "certification_type" => "new_application",
+          "lookback_period" => "thirty",
+          "number_of_months_to_certify" => "six",
+          "due_period_days" => "30 days"
+        }
+
+        result = validator.validate(record)
+
+        expect(result.success?).to be(false)
+        expect(result.error_codes.count(BatchUploadErrors::Validation::INVALID_INTEGER)).to eq(3)
+        expect(result.error_messages.join).to include("lookback_period")
+        expect(result.error_messages.join).to include("number_of_months_to_certify")
+        expect(result.error_messages.join).to include("due_period_days")
       end
     end
 
@@ -598,7 +661,7 @@ RSpec.describe BatchUploadRecordValidator do
         result = validator.validate(base_record)
 
         expect(result.success?).to be(false)
-        expect(result.error_code).to eq(BatchUploadErrors::Validation::INVALID_DATE)
+        expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_DATE)
       end
 
       it "accepts very large integers" do
@@ -616,18 +679,22 @@ RSpec.describe BatchUploadRecordValidator do
           result = described_class::ValidationResult.success
 
           expect(result.success?).to be(true)
-          expect(result.error_code).to be_nil
-          expect(result.error_message).to be_nil
+          expect(result.error_codes).to be_empty
+          expect(result.error_messages).to be_empty
         end
       end
 
-      describe ".error" do
-        it "creates error result with code and message" do
-          result = described_class::ValidationResult.error("TEST_001", "Test error")
+      describe ".failure" do
+        it "creates failure result with codes and messages arrays" do
+          errors = [
+            { code: "TEST_001", message: "First error" },
+            { code: "TEST_002", message: "Second error" }
+          ]
+          result = described_class::ValidationResult.failure(errors)
 
           expect(result.success?).to be(false)
-          expect(result.error_code).to eq("TEST_001")
-          expect(result.error_message).to eq("Test error")
+          expect(result.error_codes).to eq([ "TEST_001", "TEST_002" ])
+          expect(result.error_messages).to eq([ "First error", "Second error" ])
         end
       end
     end

@@ -131,11 +131,9 @@ class ProcessCertificationBatchChunkJob < ApplicationJob
       retries += 1
       if retries < 3
         Rails.logger.info("Lock timeout on completion check (attempt #{retries}/3), retrying after backoff")
-        # Using blocking sleep for lock contention retry (not ActiveJob retry_on) because:
-        # 1. Retrying specific lock operation, not entire job
-        # 2. Short backoff periods (2-8s) with expected brief contention
-        # 3. ActiveJob retry_on would restart whole job (overkill for lock timeout)
-        # 4. Standard pattern for pessimistic lock contention handling
+        # Use sleep rather than ActiveJob retry_on: retry_on restarts the entire job,
+        # re-processing all records and losing completed work. We only need to retry
+        # this specific lock acquisition, not the whole job.
         sleep(2**retries) # Exponential backoff: 2s, 4s, 8s
         retry
       else

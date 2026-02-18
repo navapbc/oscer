@@ -62,4 +62,4 @@ expect(error.code).to eq(BatchUploadErrors::Validation::MISSING_FIELDS)
 
 ## Architecture Reference
 
-See `/Users/giverm/Projects/oscer/docs/architecture/batch-upload/batch-upload.md` for error handling strategy and retry logic.
+See `docs/architecture/batch-upload/batch-upload.md` for error handling strategy and retry logic.

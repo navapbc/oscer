@@ -4,8 +4,8 @@
 # Performs comprehensive field-level validation before processing
 # Returns structured ValidationResult with error codes from BatchUploadErrors
 #
-# Validation rules (fail-fast, returns on first error):
-# 1. Required fields present
+# Validation rules (collect-all, returns all errors found):
+# 1. Required fields present and not blank (blank values treated as missing)
 # 2. Date formats (YYYY-MM-DD + parseability)
 # 3. Email format (RFC 5322)
 # 4. Certification type enum
@@ -35,127 +35,119 @@ class BatchUploadRecordValidator
 
   # Result structure for validation outcome
   # Note: Using `success?` instead of `valid?` to avoid shadowing Rails' `valid?` convention
-  ValidationResult = Struct.new(:success?, :error_code, :error_message, keyword_init: true) do
+  ValidationResult = Struct.new(:success?, :error_codes, :error_messages, keyword_init: true) do
     def self.success
-      new(success?: true, error_code: nil, error_message: nil)
+      new(success?: true, error_codes: [], error_messages: [])
     end
 
-    def self.error(code, message)
-      new(success?: false, error_code: code, error_message: message)
+    def self.failure(errors)
+      new(
+        success?: false,
+        error_codes: errors.map { |e| e[:code] },
+        error_messages: errors.map { |e| e[:message] }
+      )
     end
   end
 
-  # Validate a single record
+  # Validate a single record, collecting all errors
   # @param record [Hash] Record data with string keys
-  # @return [ValidationResult] Validation outcome with error details if invalid
+  # @return [ValidationResult] Validation outcome with all error details if invalid
   def validate(record)
-    validate_required_fields(record) ||
-      validate_date_formats(record) ||
-      validate_email_format(record) ||
-      validate_certification_type(record) ||
-      validate_integer_fields(record) ||
-      ValidationResult.success
+    errors = []
+    errors.concat(validate_required_fields(record))
+    errors.concat(validate_date_formats(record))
+    errors.concat(validate_email_format(record))
+    errors.concat(validate_certification_type(record))
+    errors.concat(validate_integer_fields(record))
+
+    errors.empty? ? ValidationResult.success : ValidationResult.failure(errors)
   end
 
   private
 
-  # Validate all required fields are present
+  # Validate all required fields are present and not blank
+  # Uses blank? check (not key presence) since CSV always creates keys for all columns
   def validate_required_fields(record)
-    missing = REQUIRED_FIELDS - record.keys
-    return nil if missing.empty?
+    missing = REQUIRED_FIELDS.select { |field| record[field].blank? }
+    return [] if missing.empty?
 
-    ValidationResult.error(
-      BatchUploadErrors::Validation::MISSING_FIELDS,
-      "Missing required fields: #{missing.join(', ')}"
-    )
+    [ { code: BatchUploadErrors::Validation::MISSING_FIELDS,
+        message: "Missing required fields: #{missing.join(', ')}" } ]
   end
 
   # Validate date field formats and parseability
   def validate_date_formats(record)
-    # Validate required date fields
+    errors = []
+
     DATE_FIELDS.each do |field|
-      result = validate_date_field(record, field)
-      return result if result
+      error = validate_date_field(record, field)
+      errors << error if error
     end
 
-    # Validate optional date fields (only if present)
     OPTIONAL_DATE_FIELDS.each do |field|
       next if record[field].blank?
 
-      result = validate_date_field(record, field)
-      return result if result
+      error = validate_date_field(record, field)
+      errors << error if error
     end
 
-    nil
+    errors
   end
 
-  # Validate a single date field
+  # Validate a single date field, returns error hash or nil
   def validate_date_field(record, field)
     value = record[field]
+    return nil if value.nil?
 
     # Check format (YYYY-MM-DD)
     unless value.match?(DATE_FORMAT)
-      return ValidationResult.error(
-        BatchUploadErrors::Validation::INVALID_DATE,
-        "Field '#{field}' has invalid date format '#{value}'. Expected YYYY-MM-DD (e.g., 2025-01-15)"
-      )
+      return { code: BatchUploadErrors::Validation::INVALID_DATE,
+               message: "Field '#{field}' has invalid date format '#{value}'. Expected YYYY-MM-DD (e.g., 2025-01-15)" }
     end
 
     # Check parseability
     Date.parse(value)
     nil
   rescue Date::Error
-    ValidationResult.error(
-      BatchUploadErrors::Validation::INVALID_DATE,
-      "Field '#{field}' has unparseable date '#{value}'. Expected valid date in YYYY-MM-DD format"
-    )
+    { code: BatchUploadErrors::Validation::INVALID_DATE,
+      message: "Field '#{field}' has unparseable date '#{value}'. Expected valid date in YYYY-MM-DD format" }
   end
 
   # Validate email format
   def validate_email_format(record)
     email = record["member_email"]
-    return nil if email.blank? # Already caught by required fields validation
+    return [] if email.blank?
+    return [] if email.match?(EMAIL_REGEX)
 
-    unless email.match?(EMAIL_REGEX)
-      return ValidationResult.error(
-        BatchUploadErrors::Validation::INVALID_EMAIL,
-        "Field 'member_email' has invalid email format '#{email}'. Expected valid email (e.g., user@example.com)"
-      )
-    end
-
-    nil
+    [ { code: BatchUploadErrors::Validation::INVALID_EMAIL,
+        message: "Field 'member_email' has invalid email format '#{email}'. Expected valid email (e.g., user@example.com)" } ]
   end
 
   # Validate certification type is in allowed values
   def validate_certification_type(record)
     cert_type = record["certification_type"]
-    return nil if cert_type.blank? # Already caught by required fields validation
+    return [] if cert_type.blank?
+    return [] if CERTIFICATION_TYPES.include?(cert_type)
 
-    unless CERTIFICATION_TYPES.include?(cert_type)
-      return ValidationResult.error(
-        BatchUploadErrors::Validation::INVALID_TYPE,
-        "Field 'certification_type' has invalid value '#{cert_type}'. " \
-        "Allowed values: #{CERTIFICATION_TYPES.join(', ')}"
-      )
-    end
-
-    nil
+    [ { code: BatchUploadErrors::Validation::INVALID_TYPE,
+        message: "Field 'certification_type' has invalid value '#{cert_type}'. " \
+                 "Allowed values: #{CERTIFICATION_TYPES.join(', ')}" } ]
   end
 
   # Validate integer fields (when present)
   def validate_integer_fields(record)
+    errors = []
+
     INTEGER_FIELDS.each do |field|
       value = record[field]
-      next if value.blank? # Optional fields
+      next if value.blank?
 
       unless value.to_s.match?(INTEGER_FORMAT)
-        return ValidationResult.error(
-          BatchUploadErrors::Validation::INVALID_INTEGER,
-          "Field '#{field}' has invalid integer value '#{value}'. Expected positive integer (e.g., 30)"
-        )
+        errors << { code: BatchUploadErrors::Validation::INVALID_INTEGER,
+                    message: "Field '#{field}' has invalid integer value '#{value}'. Expected positive integer (e.g., 30)" }
       end
     end
 
-    nil
+    errors
   end
 end

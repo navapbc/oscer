@@ -47,12 +47,12 @@ class UnifiedRecordProcessor
 
   private
 
-  # Validate record with comprehensive validator (fail-fast)
+  # Validate record with comprehensive validator (collect-all errors)
   def validate_with_validator!(record)
     result = @validator.validate(record)
     return if result.success?
 
-    raise ValidationError.new(result.error_code, result.error_message)
+    raise ValidationError.new(result.error_codes.first, result.error_messages.join("; "))
   end
 
   # Validate required fields are present (defense-in-depth safety net)
