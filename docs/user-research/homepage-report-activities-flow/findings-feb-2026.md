@@ -17,7 +17,7 @@ This document outlines the findings and recommendations derived from the moderat
 While participants understood the concept after reading the full explanation in the “about reporting activities” section, the phrase is confusing on its own. There is a clear need to define this term more explicitly throughout the user journey.
 
 ### The Document uploader is easier to use, but there is still opportunity for improvement
- All users successfully selected and uploaded a document without help. However, we found that gathering proof varied in ease. Those who have access to payroll information from their employer found the process to be fairly simple, however for a self employed participant the burden was much higher. They must collect multiple documents, redact sensitive info, and follow strict naming conventions, which feels cumbersome compared to traditional payroll users.
+ All users successfully selected and uploaded a document without help. However, we found that gathering proof varied in ease. Those who have access to payroll information from their employer (e.g. W2 employees) found the process to be fairly simple; however, for a self-employed participant(s) the burden was much higher. They must collect multiple documents, redact sensitive information, and follow strict naming conventions. This feels cumbersome for self-employed workers compared to traditional payroll users.
 
 ### External data lacks transparency
 When external system data or data from state sources appeared in their activity table or dashboard, participants were confused about where it came from. Guesses ranged from the initial application onboarding, to employer reporting, indicating a lack of clarity on how the system "found" their hours. 
