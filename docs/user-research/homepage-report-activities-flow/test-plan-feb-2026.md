@@ -1,4 +1,4 @@
-# Usability testing 2: OSCER homepage entry point
+# Usability testing 2: OSCER homepage entry point and document uploader
 
 ## Background
 We want to validate the current OSCER homepage entry point before investing in high-fidelity V2 design prototypes or engineering effort. By testing the current landing page and document uploader now, we can identify immediate friction points in how members interpret their reporting requirements and the exemption process.
