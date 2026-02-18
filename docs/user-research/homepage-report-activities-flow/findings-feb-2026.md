@@ -20,7 +20,7 @@ While participants understood the concept after reading the full explanation in 
  All users successfully selected and uploaded a document without help. However, we found that gathering proof varied in ease. Those who have access to payroll information from their employer found the process to be fairly simple, however for a self employed participant the burden was much higher. They must collect multiple documents, redact sensitive info, and follow strict naming conventions, which feels cumbersome compared to traditional payroll users.
 
 ### External data lacks transparency
-When external system data appeared, participants were confused about where it came from. Guesses ranged from the initial application onboarding, to employer reporting, indicating a lack of clarity on how the system "found" their hours. 
+When external system data or data from state sources appeared in their activity table or dashboard, participants were confused about where it came from. Guesses ranged from the initial application onboarding, to employer reporting, indicating a lack of clarity on how the system "found" their hours. 
 
 ## Secondary Insights.
 * **Homepage navigation is seamless:** All users found the exemption page and the reporting flow without trouble; the "About" sections provide helpful context for the portal’s purpose.
