@@ -7,6 +7,10 @@ locals {
     VA_API_HOST       = "https://sandbox-api.va.gov"
     VA_TOKEN_AUDIENCE = "https://deptva-eval.okta.com/oauth2/ausi3u00gw66b9Ojk2p7/v1/token"
     VA_TOKEN_HOST     = "https://sandbox-api.va.gov/oauth2/veteran-verification/system/v1/token"
+
+    # Cloud provider for storage adapter selection
+    # BUCKET_NAME is set in service/main.tf
+    CLOUD_PROVIDER = "aws"
   }
 
   # Configuration for secrets
