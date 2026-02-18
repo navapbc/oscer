@@ -4,8 +4,9 @@ Rails.application.configure do
   # Run jobs in web process (no separate worker containers)
   config.good_job.execution_mode = :async
 
-  # Use same thread pool size as Puma
-  config.good_job.max_threads = ENV.fetch("RAILS_MAX_THREADS", 5).to_i
+  # Use fewer threads than Puma to avoid DB connection exhaustion
+  # Pool size: Puma (5) + GoodJob (2) + buffer (1) = 8
+  config.good_job.max_threads = ENV.fetch("GOOD_JOB_MAX_THREADS", 2).to_i
 
   # Process all queues
   config.good_job.queues = "*"
