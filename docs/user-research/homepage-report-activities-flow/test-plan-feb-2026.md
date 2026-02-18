@@ -31,6 +31,8 @@ We need to determine if this layout successfully guides users toward the correct
 | **Device** | Desktop (primary) |
 | **Asset** | Current homepage and reporting activities flow |
 
+![feb26-report](https://github.com/user-attachments/assets/dab00466-cb54-4830-a93b-6b053df91505)
+![feb26-exemption](https://github.com/user-attachments/assets/4c5964f5-fb42-4709-9db9-e5bd7573ea50)
 
 ## Participant Screener
 ### Include (must answer YES)
