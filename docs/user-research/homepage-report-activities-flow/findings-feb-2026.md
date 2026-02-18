@@ -1,4 +1,4 @@
-# Usability 2: OSCER homepage and report activities findings
+# Usability testing 2: OSCER homepage entry point and document uploader
 
 ## Intro
 This document outlines the findings and recommendations derived from the moderated usability testing of the OSCER landing page and activity reporting flow. The primary goal was to determine if users could successfully navigate the initial entry points, understand the program, and submit proof of activity without significant friction.
