@@ -11,6 +11,12 @@ locals {
     # Cloud provider for storage adapter selection
     # BUCKET_NAME is set in service/main.tf
     CLOUD_PROVIDER = "aws"
+
+    # GoodJob background job processing (async mode)
+    # Pool size accommodates Puma (5) + GoodJob (2) + buffer (1) = 8
+    GOOD_JOB_EXECUTION_MODE = "async"
+    GOOD_JOB_MAX_THREADS    = "2"
+    DATABASE_POOL           = "8"
   }
 
   # Configuration for secrets
