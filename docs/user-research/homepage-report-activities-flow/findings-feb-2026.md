@@ -9,7 +9,7 @@ This document outlines the findings and recommendations derived from the moderat
 * **Key Tasks:**
   * Navigate the homepage to find the exemption and reporting sections.
   * Interpret the "Community Engagement" requirement.
-  * Complete the activity reporting stepper, including uploading documentation.
+  * Complete the flow to report community engagement activities, including uploading documentation.
   * Identify and react to pre-filled (external) data within the flow.
 ⠀
 ## Key Insights
