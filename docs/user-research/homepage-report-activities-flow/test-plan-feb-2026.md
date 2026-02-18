@@ -69,7 +69,7 @@ In your own words, what do you think this page is for? What is it asking you to 
 **Task 5 — Verbal Response**
 Look at the phrase "Community Engagement activities." at the bottom of the screen. (under accordion) What does that mean to you?	
 
-## Section 3: Scenario A — New Member, ex parte found
+## Section 3: Scenario A — New Member, data from the state found
 
 **Task 8 — Read scenario, then verbal response**
 Now we’ll look at some scenarios.
