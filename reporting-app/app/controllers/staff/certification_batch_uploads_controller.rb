@@ -18,30 +18,10 @@ module Staff
 
     # POST /staff/certification_batch_uploads
     def create
-      uploaded_file = params[:csv_file]
-
-      if uploaded_file.blank?
-        flash.now[:alert] = "Please select a CSV file to upload"
-        @batch_upload = CertificationBatchUpload.new
-        render :new, status: :unprocessable_content
-        return
-      end
-
-      @batch_upload = CertificationBatchUpload.new(
-        filename: uploaded_file.original_filename,
-        uploader: current_user
-      )
-      @batch_upload.file.attach(uploaded_file)
-
-      respond_to do |format|
-        if @batch_upload.save
-          format.html { redirect_to certification_batch_uploads_path, notice: "File uploaded successfully. You can now process it from the queue." }
-          format.json { render :show, status: :created, location: @batch_upload }
-        else
-          message = "Failed to upload file: #{@batch_upload.errors.full_messages.join(', ')}"
-          format.html { redirect_to new_certification_batch_upload_path, alert: message }
-          format.json { render json: { error: message }, status: :unprocessable_content }
-        end
+      if Features.batch_upload_v2_enabled?
+        create_with_direct_upload
+      else
+        create_with_legacy_upload
       end
     end
 
@@ -106,6 +86,74 @@ module Staff
       else
         @cases_to_show = @certification_cases
       end
+    end
+
+    # v2: Direct upload to cloud storage (file already uploaded via Active Storage Direct Upload)
+    def create_with_direct_upload
+      create_batch_upload(source_type: :ui)
+    end
+
+    # v1: Legacy multipart upload (file uploaded through Rails)
+    def create_with_legacy_upload
+      create_batch_upload(source_type: :ui)
+    end
+
+    # Common upload logic for both v2 and v1 paths
+    def create_batch_upload(source_type:)
+      uploaded_file = params[:csv_file]
+
+      if uploaded_file.blank?
+        flash.now[:alert] = "Please select a CSV file to upload"
+        @batch_upload = CertificationBatchUpload.new
+        render :new, status: :unprocessable_content
+        return
+      end
+
+      @batch_upload = CertificationBatchUpload.new(
+        filename: sanitize_filename(uploaded_file.original_filename),
+        uploader: current_user,
+        source_type: source_type
+      )
+      @batch_upload.file.attach(uploaded_file)
+
+      return handle_upload_failure unless @batch_upload.save
+
+      handle_upload_success
+    end
+
+    def handle_upload_success
+      # v2: Automatically start processing ("Upload and Process" UX)
+      if Features.batch_upload_v2_enabled?
+        ProcessCertificationBatchUploadJob.perform_later(@batch_upload.id)
+        redirect_path = certification_batch_upload_path(@batch_upload)
+        notice_message = "Processing started for #{@batch_upload.filename}. Results will be available shortly."
+      # v1: Redirect to queue for manual processing
+      else
+        redirect_path = certification_batch_uploads_path
+        notice_message = "File uploaded successfully. You can now process it from the queue."
+      end
+
+      respond_to do |format|
+        format.html { redirect_to redirect_path, notice: notice_message }
+        format.json { render :show, status: :created, location: @batch_upload }
+      end
+    end
+
+    def handle_upload_failure
+      message = "Failed to upload file: #{@batch_upload.errors.full_messages.join(', ')}"
+      respond_to do |format|
+        format.html { redirect_to new_certification_batch_upload_path, alert: message }
+        format.json { render json: { error: message }, status: :unprocessable_content }
+      end
+    end
+
+    # Sanitize uploaded filename to prevent path traversal and XSS
+    # - Uses ActiveStorage::Filename for Rails-native path component removal and
+    #   filesystem character normalization (path separators, RTL markers, shell metacharacters)
+    # - Applies strict allowlist to ensure only alphanumeric, hyphen, underscore, period remain
+    def sanitize_filename(filename)
+      ActiveStorage::Filename.new(File.basename(filename)).sanitized
+                             .gsub(/[^\w\-.]/, "_")
     end
   end
 end

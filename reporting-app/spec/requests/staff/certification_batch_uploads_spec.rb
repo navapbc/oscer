@@ -24,6 +24,30 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
       expect(response).to be_successful
       expect(response.body).to include("Upload Certification Roster")
     end
+
+    context "with batch_upload_v2 feature flag enabled" do
+      it "renders the direct upload form" do
+        with_batch_upload_v2_enabled do
+          get new_certification_batch_upload_path
+
+          expect(response).to be_successful
+          expect(response.body).to include("Upload Certification Roster")
+          expect(response.body).to include('data-direct-upload-url')
+        end
+      end
+    end
+
+    context "with batch_upload_v2 feature flag disabled" do
+      it "renders the legacy upload form" do
+        with_batch_upload_v2_disabled do
+          get new_certification_batch_upload_path
+
+          expect(response).to be_successful
+          expect(response.body).to include("Upload Certification Roster")
+          expect(response.body).not_to include('data-direct-upload-url')
+        end
+      end
+    end
   end
 
   describe "POST /staff/staff/certification_batch_uploads" do
@@ -72,6 +96,104 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
           post certification_batch_uploads_path, params: { csv_file: uploaded_file }
         }.not_to change(Certification, :count)
       end
+
+      context "with batch_upload_v2 feature flag enabled" do
+        it "creates batch upload with source_type ui" do
+          with_batch_upload_v2_enabled do
+            post certification_batch_uploads_path, params: { csv_file: uploaded_file }
+
+            batch_upload = CertificationBatchUpload.last
+            expect(batch_upload.source_type).to eq("ui")
+          end
+        end
+
+        it "attaches the file via direct upload" do
+          with_batch_upload_v2_enabled do
+            post certification_batch_uploads_path, params: { csv_file: uploaded_file }
+
+            batch_upload = CertificationBatchUpload.last
+            expect(batch_upload.file).to be_attached
+            expect(batch_upload.filename).to include("test")
+          end
+        end
+
+        it "automatically enqueues processing job" do
+          with_batch_upload_v2_enabled do
+            expect {
+              post certification_batch_uploads_path, params: { csv_file: uploaded_file }
+            }.to have_enqueued_job(ProcessCertificationBatchUploadJob)
+          end
+        end
+
+        it "redirects to show page (not index)" do
+          with_batch_upload_v2_enabled do
+            post certification_batch_uploads_path, params: { csv_file: uploaded_file }
+
+            batch_upload = CertificationBatchUpload.last
+            expect(response).to redirect_to(certification_batch_upload_path(batch_upload))
+          end
+        end
+
+        it "displays processing started message" do
+          with_batch_upload_v2_enabled do
+            post certification_batch_uploads_path, params: { csv_file: uploaded_file }
+
+            follow_redirect!
+            expect(response.body).to include("Processing started")
+          end
+        end
+      end
+
+      context "with malicious filename" do
+        let(:malicious_file) do
+          # Create temp file
+          file = Tempfile.new([ "test", ".csv" ])
+          file.write("member_id,case_number\n123,ABC")
+          file.rewind
+          # Set malicious original_filename
+          Rack::Test::UploadedFile.new(
+            file.path,
+            "text/csv",
+            original_filename: "../../etc/passwd<script>alert('xss')</script>.csv"
+          )
+        end
+
+        it "sanitizes filename to prevent path traversal and XSS" do
+          post certification_batch_uploads_path, params: { csv_file: malicious_file }
+
+          batch_upload = CertificationBatchUpload.last
+          # Should remove path components and replace special characters with underscores
+          expect(batch_upload.filename).not_to include("..")
+          expect(batch_upload.filename).not_to include("/")
+          expect(batch_upload.filename).not_to include("<")
+          expect(batch_upload.filename).not_to include(">")
+          expect(batch_upload.filename).not_to include("(")
+          expect(batch_upload.filename).not_to include(")")
+          expect(batch_upload.filename).not_to include("'")
+          # Should end with .csv and only contain safe characters (alphanumeric, dash, underscore, period)
+          expect(batch_upload.filename).to match(/\A[\w\-\.]+\.csv\z/)
+        end
+      end
+
+      context "with batch_upload_v2 feature flag disabled" do
+        it "creates batch upload with source_type ui" do
+          with_batch_upload_v2_disabled do
+            post certification_batch_uploads_path, params: { csv_file: uploaded_file }
+
+            batch_upload = CertificationBatchUpload.last
+            expect(batch_upload.source_type).to eq("ui")
+          end
+        end
+
+        it "attaches the file via legacy multipart upload" do
+          with_batch_upload_v2_disabled do
+            post certification_batch_uploads_path, params: { csv_file: uploaded_file }
+
+            batch_upload = CertificationBatchUpload.last
+            expect(batch_upload.file).to be_attached
+          end
+        end
+      end
     end
 
     context "without CSV file" do
@@ -81,6 +203,18 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
         expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include("Upload Certification Roster")
         expect(flash[:alert]).to eq("Please select a CSV file to upload")
+      end
+
+      context "with batch_upload_v2 feature flag enabled" do
+        it "shows error and re-renders form" do
+          with_batch_upload_v2_enabled do
+            post certification_batch_uploads_path, params: { csv_file: nil }
+
+            expect(response).to have_http_status(:unprocessable_content)
+            expect(response.body).to include("Upload Certification Roster")
+            expect(flash[:alert]).to eq("Please select a CSV file to upload")
+          end
+        end
       end
     end
   end
