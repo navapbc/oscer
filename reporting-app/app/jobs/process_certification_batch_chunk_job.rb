@@ -35,11 +35,13 @@ class ProcessCertificationBatchChunkJob < ApplicationJob
         }
       rescue StandardError => e
         # Catch unexpected errors (shouldn't happen, but safety net)
+        Rails.logger.error("Unexpected error processing row #{row_number}: #{e.class} - #{e.message}")
+        Rails.logger.error("Backtrace: #{e.backtrace.join("\n")}")
         results[:failed] += 1
         results[:errors] << {
           row_number: row_number,
-          error_code: "ERR_UNKNOWN",
-          error_message: e.message,
+          error_code: BatchUploadErrors::Unknown::UNEXPECTED,
+          error_message: "Unexpected error: #{e.class} - #{e.message}",
           row_data: record
         }
       end
@@ -110,31 +112,24 @@ class ProcessCertificationBatchChunkJob < ApplicationJob
     CertificationBatchUploadError.insert_all(error_records)
   end
 
-  # Check if batch is complete and transition to completed state
-  # Uses pessimistic lock with retry to handle concurrent chunk completion
+  # Check if batch is complete and transition to completed state.
+  # The counter lock in update_counters! ensures accurate totals; this lock
+  # serializes the completion check. Two guards:
+  # - num_rows_processed >= num_rows: skips all chunks that haven't pushed the
+  #   total to completion yet
+  # - completed?: handles the rare race where two chunks both see the final count
+  #   before either acquires this lock — first one completes the batch, second
+  #   finds it already done
   def check_completion!(batch_upload)
-    retries = 0
-    begin
-      batch_upload.with_lock do
-        return unless batch_upload.num_rows_processed >= batch_upload.num_rows
-        return if batch_upload.completed?
+    batch_upload.with_lock do
+      return unless batch_upload.num_rows_processed >= batch_upload.num_rows
+      return if batch_upload.completed?
 
-        batch_upload.complete_processing!(
-          num_rows_succeeded: batch_upload.num_rows_succeeded,
-          num_rows_errored: batch_upload.num_rows_errored,
-          results: {} # Results now in audit_logs and upload_errors tables
-        )
-      end
-    rescue ActiveRecord::LockWaitTimeout => e
-      retries += 1
-      if retries < 3
-        Rails.logger.info("Lock timeout on completion check (attempt #{retries}/3), retrying after backoff")
-        sleep(2**retries) # Exponential backoff: 2s, 4s, 8s
-        retry
-      else
-        Rails.logger.error("Failed to acquire completion lock after 3 retries: #{e.message}")
-        raise
-      end
+      batch_upload.complete_processing!(
+        num_rows_succeeded: batch_upload.num_rows_succeeded,
+        num_rows_errored: batch_upload.num_rows_errored,
+        results: {} # Results now in audit_logs and upload_errors tables
+      )
     end
   end
 end

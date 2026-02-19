@@ -10,7 +10,7 @@ RSpec.describe CertificationBatchUploadError, type: :model do
     it "requires row_number" do
       error = described_class.new(
         certification_batch_upload: batch_upload,
-        error_code: "VAL_001",
+        error_code: "BatchUploadErrors::Validation::MISSING_FIELDS",
         error_message: "Missing field"
       )
       expect(error).not_to be_valid
@@ -21,7 +21,7 @@ RSpec.describe CertificationBatchUploadError, type: :model do
       error = described_class.new(
         certification_batch_upload: batch_upload,
         row_number: 0,
-        error_code: "VAL_001",
+        error_code: "BatchUploadErrors::Validation::MISSING_FIELDS",
         error_message: "Missing field"
       )
       expect(error).not_to be_valid
@@ -42,7 +42,7 @@ RSpec.describe CertificationBatchUploadError, type: :model do
       error = described_class.new(
         certification_batch_upload: batch_upload,
         row_number: 1,
-        error_code: "VAL_001"
+        error_code: "BatchUploadErrors::Validation::MISSING_FIELDS"
       )
       expect(error).not_to be_valid
       expect(error.errors[:error_message]).to be_present
@@ -55,7 +55,7 @@ RSpec.describe CertificationBatchUploadError, type: :model do
 
       expect(error).to be_persisted
       expect(error.row_number).to eq(42)
-      expect(error.error_code).to eq("VAL_001")
+      expect(error.error_code).to eq(BatchUploadErrors::Validation::MISSING_FIELDS)
       expect(error.error_message).to be_present
     end
 
