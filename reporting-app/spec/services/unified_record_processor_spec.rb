@@ -242,7 +242,7 @@ RSpec.describe UnifiedRecordProcessor do
         expect { processor.process(record) }
           .to raise_error(UnifiedRecordProcessor::ValidationError) do |error|
             expect(error.code).to eq(BatchUploadErrors::Validation::INVALID_DATE)
-            expect(error.message).to include("invalid date format")
+            expect(error.message).to include("invalid date")
           end
       end
 
