@@ -18,6 +18,17 @@ RSpec.describe CertificationBatchUpload, type: :model do
       expect(batch_upload).not_to be_valid
       expect(batch_upload.errors[:file]).to be_present
     end
+
+    it 'accepts modern xlsx MIME type' do
+      batch_upload = described_class.new(filename: "test.xlsx", uploader: user)
+      batch_upload.file.attach(
+        io: StringIO.new("PK\x03\x04"),
+        filename: "test.xlsx",
+        content_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      )
+      batch_upload.valid?
+      expect(batch_upload.errors[:file]).not_to include(a_string_matching(/content type/i))
+    end
   end
 
   describe 'status enum' do

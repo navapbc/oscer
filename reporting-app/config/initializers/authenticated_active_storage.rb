@@ -8,7 +8,7 @@
 # Security rationale:
 # - Prevents unauthorized uploads from filling S3 bucket
 # - Prevents cost attacks (unauthorized AWS charges)
-# - Aligns direct upload permissions with batch upload permissions (staff only)
+# - Restricts direct uploads to admins, aligning with batch upload access control
 #
 # The authentication check happens BEFORE the file is uploaded to S3.
 
@@ -19,9 +19,9 @@ Rails.application.config.to_prepare do
     private
 
     def authenticate_user!
-      return if current_user.present?
+      return if current_user&.admin?
 
-      render json: { error: "Authentication required" }, status: :unauthorized
+      render json: { error: "Unauthorized" }, status: :unauthorized
     end
 
     # Current user from Warden (Devise's authentication library)

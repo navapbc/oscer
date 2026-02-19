@@ -176,12 +176,12 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
       end
 
       context "with batch_upload_v2 feature flag disabled" do
-        it "creates batch upload with legacy upload (no source_type)" do
+        it "creates batch upload with source_type ui" do
           with_batch_upload_v2_disabled do
             post certification_batch_uploads_path, params: { csv_file: uploaded_file }
 
             batch_upload = CertificationBatchUpload.last
-            expect(batch_upload.source_type).to be_nil
+            expect(batch_upload.source_type).to eq("ui")
           end
         end
 

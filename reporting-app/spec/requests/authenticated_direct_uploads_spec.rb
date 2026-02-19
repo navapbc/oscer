@@ -15,8 +15,8 @@ RSpec.describe "AuthenticatedDirectUploads", type: :request do
       }
     end
 
-    context "when user is authenticated" do
-      let(:user) { create(:user) }
+    context "when user is an admin" do
+      let(:user) { create(:user, :as_admin) }
 
       before do
         login_as user
@@ -39,13 +39,53 @@ RSpec.describe "AuthenticatedDirectUploads", type: :request do
       end
     end
 
+    context "when user is a caseworker" do
+      before do
+        login_as create(:user, :as_caseworker)
+      end
+
+      it "returns unauthorized" do
+        post "/rails/active_storage/direct_uploads", params: { blob: blob_args }, as: :json
+
+        expect(response).to have_http_status(:unauthorized)
+        json = JSON.parse(response.body)
+        expect(json["error"]).to eq("Unauthorized")
+      end
+
+      it "does not create a blob" do
+        expect {
+          post "/rails/active_storage/direct_uploads", params: { blob: blob_args }, as: :json
+        }.not_to change(ActiveStorage::Blob, :count)
+      end
+    end
+
+    context "when user has no role (member)" do
+      before do
+        login_as create(:user)
+      end
+
+      it "returns unauthorized" do
+        post "/rails/active_storage/direct_uploads", params: { blob: blob_args }, as: :json
+
+        expect(response).to have_http_status(:unauthorized)
+        json = JSON.parse(response.body)
+        expect(json["error"]).to eq("Unauthorized")
+      end
+
+      it "does not create a blob" do
+        expect {
+          post "/rails/active_storage/direct_uploads", params: { blob: blob_args }, as: :json
+        }.not_to change(ActiveStorage::Blob, :count)
+      end
+    end
+
     context "when user is not authenticated" do
       it "returns unauthorized" do
         post "/rails/active_storage/direct_uploads", params: { blob: blob_args }, as: :json
 
         expect(response).to have_http_status(:unauthorized)
         json = JSON.parse(response.body)
-        expect(json["error"]).to eq("Authentication required")
+        expect(json["error"]).to eq("Unauthorized")
       end
 
       it "does not create a blob" do

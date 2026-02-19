@@ -95,7 +95,7 @@ module Staff
 
     # v1: Legacy multipart upload (file uploaded through Rails)
     def create_with_legacy_upload
-      create_batch_upload(source_type: nil)
+      create_batch_upload(source_type: :ui)
     end
 
     # Common upload logic for both v2 and v1 paths
@@ -148,16 +148,12 @@ module Staff
     end
 
     # Sanitize uploaded filename to prevent path traversal and XSS
-    # - Removes directory components (path traversal protection)
-    # - Removes special characters that could cause issues
-    # - Preserves file extension
+    # - Uses ActiveStorage::Filename for Rails-native path component removal and
+    #   filesystem character normalization (path separators, RTL markers, shell metacharacters)
+    # - Applies strict allowlist to ensure only alphanumeric, hyphen, underscore, period remain
     def sanitize_filename(filename)
-      # Remove path components (e.g., "../../etc/passwd" becomes "passwd")
-      basename = File.basename(filename)
-
-      # Remove special characters except alphanumeric, hyphens, underscores, periods
-      # This prevents issues with filenames containing quotes, brackets, etc.
-      basename.gsub(/[^\w\-.]/, "_")
+      ActiveStorage::Filename.new(File.basename(filename)).sanitized
+                             .gsub(/[^\w\-.]/, "_")
     end
   end
 end
