@@ -73,16 +73,27 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
           )
 
           allow(CsvStreamReader).to receive(:new).and_return(csv_reader)
-          # Mock each_chunk to handle two-pass behavior (count + enqueue)
-          allow(csv_reader).to receive(:each_chunk).and_yield([
-            { "member_id" => "M200", "case_number" => "C-200", "member_email" => "test@example.com",
-              "first_name" => "Test", "last_name" => "User", "certification_date" => "2025-01-15",
-              "certification_type" => "new_application" }
-          ]).and_yield([
-            { "member_id" => "M300", "case_number" => "C-300", "member_email" => "test2@example.com",
-              "first_name" => "Aurélie", "last_name" => "Castañeda", "certification_date" => "2025-02-20",
-              "certification_type" => "new_application" }
-          ])
+          # Mock each_chunk_with_offsets for single-pass behavior
+          allow(csv_reader).to receive(:each_chunk_with_offsets)
+            .and_yield(
+              [
+                { "member_id" => "M200", "case_number" => "C-200", "member_email" => "test@example.com",
+                  "first_name" => "Test", "last_name" => "User", "certification_date" => "2025-01-15",
+                  "certification_type" => "new_application" }
+              ],
+              %w[member_id case_number member_email first_name last_name certification_date certification_type],
+              0,
+              100
+            ).and_yield(
+              [
+                { "member_id" => "M300", "case_number" => "C-300", "member_email" => "test2@example.com",
+                  "first_name" => "Aurélie", "last_name" => "Castañeda", "certification_date" => "2025-02-20",
+                  "certification_type" => "new_application" }
+              ],
+              %w[member_id case_number member_email first_name last_name certification_date certification_type],
+              101,
+              200
+            )
         end
 
         it 'enqueues chunk jobs for parallel processing' do
@@ -90,6 +101,32 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
             expect {
               described_class.perform_now(batch_upload.id)
             }.to have_enqueued_job(ProcessCertificationBatchChunkJob).exactly(2).times
+
+            # Verify the new argument format: (id, chunk_number, headers, start_byte, end_byte)
+            enqueued = queue_adapter.enqueued_jobs.select do |j|
+              j["job_class"] == "ProcessCertificationBatchChunkJob"
+            end
+            expected_headers = %w[
+              member_id case_number member_email first_name last_name certification_date certification_type
+            ]
+            expect(enqueued[0]["arguments"]).to eq(
+              [
+                batch_upload.id,
+                1,
+                expected_headers,
+                0,
+                100
+              ]
+            )
+            expect(enqueued[1]["arguments"]).to eq(
+              [
+                batch_upload.id,
+                2,
+                expected_headers,
+                101,
+                200
+              ]
+            )
           end
         end
 
@@ -111,8 +148,24 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
           end
         end
 
+        it 'marks batch as failed when streaming raises' do
+          allow(csv_reader).to receive(:each_chunk_with_offsets)
+            .and_raise(StandardError, "S3 connection lost")
+
+          with_batch_upload_v2_enabled do
+            expect {
+              described_class.perform_now(batch_upload.id)
+            }.to raise_error(StandardError, "S3 connection lost")
+
+            batch_id = batch_upload.id
+            batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
+            expect(batch_upload).to be_failed
+            expect(batch_upload.results["error"]).to eq("S3 connection lost")
+          end
+        end
+
         it 'handles empty CSV (headers but no data)' do
-          allow(csv_reader).to receive(:each_chunk)  # No yields = no data rows
+          allow(csv_reader).to receive(:each_chunk_with_offsets)  # No yields = no data rows
 
           with_batch_upload_v2_enabled do
             expect {
