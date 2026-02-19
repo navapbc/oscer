@@ -95,22 +95,15 @@ class BatchUploadRecordValidator
   end
 
   # Validate a single date field, returns error hash or nil
+  # Enforces YYYY-MM-DD format and uses Strata's date casting for validity (e.g., rejects month 13, day 32)
   def validate_date_field(record, field)
     value = record[field]
     return nil if value.nil?
 
-    # Check format (YYYY-MM-DD)
-    unless value.match?(DATE_FORMAT)
-      return { code: BatchUploadErrors::Validation::INVALID_DATE,
-               message: "Field '#{field}' has invalid date format '#{value}'. Expected YYYY-MM-DD (e.g., 2025-01-15)" }
-    end
+    return nil if value.match?(DATE_FORMAT) && Strata::USDate.cast(value).present?
 
-    # Check parseability
-    Date.parse(value)
-    nil
-  rescue Date::Error
     { code: BatchUploadErrors::Validation::INVALID_DATE,
-      message: "Field '#{field}' has unparseable date '#{value}'. Expected valid date in YYYY-MM-DD format" }
+      message: "Field '#{field}' has invalid date '#{value}'. Expected valid date in YYYY-MM-DD format (e.g., 2025-01-15)" }
   end
 
   # Validate email format

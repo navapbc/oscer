@@ -185,7 +185,6 @@ RSpec.describe BatchUploadRecordValidator do
 
           expect(result.success?).to be(false)
           expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_DATE)
-          expect(result.error_messages.first).to include("unparseable")
           expect(result.error_messages.first).to include("2025-13-01")
         end
 
@@ -196,7 +195,7 @@ RSpec.describe BatchUploadRecordValidator do
 
           expect(result.success?).to be(false)
           expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_DATE)
-          expect(result.error_messages.first).to include("unparseable")
+          expect(result.error_messages.first).to include("2025-02-30")
         end
 
         it "fails with text instead of date" do
@@ -228,7 +227,7 @@ RSpec.describe BatchUploadRecordValidator do
 
           expect(result.success?).to be(false)
           expect(result.error_codes).to include(BatchUploadErrors::Validation::INVALID_DATE)
-          expect(result.error_messages.join).to include("unparseable")
+          expect(result.error_messages.join).to include("1990-13-45")
         end
 
         it "succeeds when date_of_birth is blank" do
