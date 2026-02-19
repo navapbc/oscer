@@ -71,8 +71,12 @@ class BatchUploadRecordValidator
     missing = REQUIRED_FIELDS.select { |field| record[field].blank? }
     return [] if missing.empty?
 
-    [ { code: BatchUploadErrors::Validation::MISSING_FIELDS,
-        message: "Missing required fields: #{missing.join(', ')}" } ]
+    [
+      {
+        code: BatchUploadErrors::Validation::MISSING_FIELDS,
+        message: "Missing required fields: #{missing.join(', ')}"
+      }
+    ]
   end
 
   # Validate date field formats and parseability
@@ -102,8 +106,10 @@ class BatchUploadRecordValidator
 
     return nil if value.match?(DATE_FORMAT) && Strata::USDate.cast(value).present?
 
-    { code: BatchUploadErrors::Validation::INVALID_DATE,
-      message: "Field '#{field}' has invalid date '#{value}'. Expected valid date in YYYY-MM-DD format (e.g., 2025-01-15)" }
+    {
+      code: BatchUploadErrors::Validation::INVALID_DATE,
+      message: "Field '#{field}' has invalid date '#{value}'. Expected valid date in YYYY-MM-DD format (e.g., 2025-01-15)"
+    }
   end
 
   # Validate email format
@@ -112,8 +118,12 @@ class BatchUploadRecordValidator
     return [] if email.blank?
     return [] if email.match?(EMAIL_REGEX)
 
-    [ { code: BatchUploadErrors::Validation::INVALID_EMAIL,
-        message: "Field 'member_email' has invalid email format '#{email}'. Expected valid email (e.g., user@example.com)" } ]
+    [
+      {
+        code: BatchUploadErrors::Validation::INVALID_EMAIL,
+        message: "Field 'member_email' has invalid email format '#{email}'. Expected valid email (e.g., user@example.com)"
+      }
+    ]
   end
 
   # Validate certification type is in allowed values
@@ -122,9 +132,13 @@ class BatchUploadRecordValidator
     return [] if cert_type.blank?
     return [] if CERTIFICATION_TYPES.include?(cert_type)
 
-    [ { code: BatchUploadErrors::Validation::INVALID_TYPE,
+    [
+      {
+        code: BatchUploadErrors::Validation::INVALID_TYPE,
         message: "Field 'certification_type' has invalid value '#{cert_type}'. " \
-                 "Allowed values: #{CERTIFICATION_TYPES.join(', ')}" } ]
+                 "Allowed values: #{CERTIFICATION_TYPES.join(', ')}"
+      }
+    ]
   end
 
   # Validate integer fields (when present)
@@ -136,8 +150,10 @@ class BatchUploadRecordValidator
       next if value.blank?
 
       unless value.to_s.match?(INTEGER_FORMAT)
-        errors << { code: BatchUploadErrors::Validation::INVALID_INTEGER,
-                    message: "Field '#{field}' has invalid integer value '#{value}'. Expected positive integer (e.g., 30)" }
+        errors << {
+          code: BatchUploadErrors::Validation::INVALID_INTEGER,
+          message: "Field '#{field}' has invalid integer value '#{value}'. Expected positive integer (e.g., 30)"
+        }
       end
     end
 
