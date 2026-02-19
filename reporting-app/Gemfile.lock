@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: 102b940c678748e0f814626ee0b9ca13d303eebc
+  revision: 9090105591430cb6dae441329e81f51d34e89508
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -660,7 +660,7 @@ GEM
     xpath (3.2.0)
       nokogiri (~> 1.8)
     yard (0.9.37)
-    zeitwerk (2.7.4)
+    zeitwerk (2.7.5)
 
 PLATFORMS
   aarch64-linux
