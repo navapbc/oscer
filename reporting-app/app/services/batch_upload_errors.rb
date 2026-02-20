@@ -21,7 +21,8 @@ module BatchUploadErrors
 
   # Duplicate errors - record already exists
   module Duplicate
-    EXISTING_CERTIFICATION = "DUP_001"  # Certification already exists
+    EXISTING_CERTIFICATION = "DUP_001"  # Certification already exists in database
+    WITHIN_BATCH = "DUP_002"            # Duplicate within same batch chunk
   end
 
   # Database errors - persistence failures
