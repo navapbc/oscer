@@ -30,33 +30,14 @@ class ProcessCertificationBatchChunkJob < ApplicationJob
     results = { succeeded: 0, failed: 0, errors: [] }
     context = { batch_upload_id: batch_upload.id }
 
-    records.each_with_index do |record, index|
-      row_number = calculate_row_number(chunk_number, index)
+    # Phase 1: Validate all records
+    valid_entries = validate_all_records(records, chunk_number, processor, results)
 
-      begin
-        processor.process(record, context: context)
-        results[:succeeded] += 1
-      rescue UnifiedRecordProcessor::ProcessingError => e
-        results[:failed] += 1
-        results[:errors] << {
-          row_number: row_number,
-          error_code: e.code,
-          error_message: e.message,
-          row_data: record
-        }
-      rescue StandardError => e
-        # Catch unexpected errors (shouldn't happen, but safety net)
-        Rails.logger.error("Unexpected error processing row #{row_number}: #{e.class} - #{e.message}")
-        Rails.logger.error("Backtrace: #{e.backtrace.join("\n")}")
-        results[:failed] += 1
-        results[:errors] << {
-          row_number: row_number,
-          error_code: BatchUploadErrors::Unknown::UNEXPECTED,
-          error_message: "Unexpected error: #{e.class} - #{e.message}",
-          row_data: record
-        }
-      end
-    end
+    # Phase 2: Batch duplicate check + within-batch dedup
+    non_duplicate_entries = filter_duplicates(valid_entries, processor, results)
+
+    # Phase 3: Bulk persist + publish events
+    bulk_create_certifications(non_duplicate_entries, context, processor, results)
 
     complete_audit_log(audit_log, results)
     update_counters!(batch_upload, records.size, results)
@@ -72,6 +53,102 @@ class ProcessCertificationBatchChunkJob < ApplicationJob
   end
 
   private
+
+  # Phase 1: Validate all records, separate valid from invalid
+  # Returns array of { record:, row_number: } for valid records
+  def validate_all_records(records, chunk_number, processor, results)
+    valid_entries = []
+
+    records.each_with_index do |record, index|
+      row_number = calculate_row_number(chunk_number, index)
+      validation = processor.validate_record(record)
+
+      if validation[:valid]
+        valid_entries << { record: record, row_number: row_number }
+      else
+        results[:failed] += 1
+        results[:errors] << {
+          row_number: row_number,
+          error_code: validation[:error_code],
+          error_message: validation[:error_message],
+          row_data: record
+        }
+      end
+    end
+
+    valid_entries
+  end
+
+  # Phase 2: Batch duplicate check against DB + within-batch dedup
+  # Returns array of { record:, row_number: } for non-duplicate records
+  def filter_duplicates(valid_entries, processor, results)
+    return [] if valid_entries.empty?
+
+    records_only = valid_entries.map { |e| e[:record] }
+    existing_keys = processor.find_existing_duplicates(records_only)
+    seen_keys = Set.new
+    non_duplicate_entries = []
+
+    valid_entries.each do |entry|
+      record = entry[:record]
+
+      # Skip duplicate check for records with blank key fields (matches existing behavior)
+      if record["member_id"].blank? || record["case_number"].blank? || record["certification_date"].blank?
+        non_duplicate_entries << entry
+        next
+      end
+
+      key = processor.compound_key(record["member_id"], record["case_number"], record["certification_date"])
+
+      if existing_keys.include?(key)
+        results[:failed] += 1
+        results[:errors] << {
+          row_number: entry[:row_number],
+          error_code: BatchUploadErrors::Duplicate::EXISTING_CERTIFICATION,
+          error_message: "Duplicate certification for member_id #{record['member_id']}, " \
+                         "case_number #{record['case_number']}, certification_date #{record['certification_date']}",
+          row_data: record
+        }
+      elsif seen_keys.include?(key)
+        results[:failed] += 1
+        results[:errors] << {
+          row_number: entry[:row_number],
+          error_code: BatchUploadErrors::Duplicate::WITHIN_BATCH,
+          error_message: "Duplicate within batch for member_id #{record['member_id']}, " \
+                         "case_number #{record['case_number']}, certification_date #{record['certification_date']}",
+          row_data: record
+        }
+      else
+        seen_keys.add(key)
+        non_duplicate_entries << entry
+      end
+    end
+
+    non_duplicate_entries
+  end
+
+  # Phase 3: Bulk insert all non-duplicate records
+  def bulk_create_certifications(entries, context, processor, results)
+    return if entries.empty?
+
+    records_only = entries.map { |e| e[:record] }
+    processor.bulk_persist!(records_only, context)
+    results[:succeeded] += entries.size
+  rescue StandardError => e
+    Rails.logger.error("Bulk insert failed: #{e.class} - #{e.message}")
+    Rails.logger.error("Backtrace: #{e.backtrace.join("\n")}")
+
+    # Mark all records in this batch as failed
+    entries.each do |entry|
+      results[:failed] += 1
+      results[:errors] << {
+        row_number: entry[:row_number],
+        error_code: BatchUploadErrors::Database::SAVE_FAILED,
+        error_message: "Bulk insert failed: #{e.class} - #{e.message}",
+        row_data: entry[:record]
+      }
+    end
+  end
 
   def create_audit_log(batch_upload, chunk_number)
     CertificationBatchUploadAuditLog.create!(

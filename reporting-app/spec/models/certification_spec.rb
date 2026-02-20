@@ -3,16 +3,27 @@
 require 'rails_helper'
 
 RSpec.describe Certification, type: :model do
-  describe 'after_create_commit callback' do
+  describe '.publish_created_event' do
     it 'publishes CertificationCreated event with certification_id' do
       allow(Strata::EventManager).to receive(:publish)
+
+      described_class.publish_created_event("test-id-123")
+
+      expect(Strata::EventManager).to have_received(:publish).with(
+        'CertificationCreated',
+        { certification_id: "test-id-123" }
+      )
+    end
+  end
+
+  describe 'after_create_commit callback' do
+    it 'calls publish_created_event' do
+      allow(described_class).to receive(:publish_created_event)
       certification = build(:certification)
 
       certification.save!
-      expect(Strata::EventManager).to have_received(:publish).with(
-        'CertificationCreated',
-        { certification_id: certification.id }
-      )
+
+      expect(described_class).to have_received(:publish_created_event).with(certification.id)
     end
   end
 
