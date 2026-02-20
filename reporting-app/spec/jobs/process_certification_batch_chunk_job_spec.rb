@@ -298,30 +298,38 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
     context 'when delegating to processor' do
       let(:processor) { instance_double(UnifiedRecordProcessor) }
       let(:records) { [ valid_record ] }
-      let(:mock_certification) { instance_double(Certification, id: 1) }
 
       before do
         allow(csv_reader).to receive(:read_chunk).and_return(records)
+        allow(processor).to receive_messages(validate_record: { valid: true }, find_existing_duplicates: Set.new, compound_key: "M600|C-600|2025-04-10", bulk_persist!: [ "fake-id-1" ])
       end
 
-      it 'calls processor with record and context' do
-        allow(processor).to receive(:process).and_return(mock_certification)
-
+      it 'calls validate_record for each record' do
         described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte, processor: processor)
 
-        expect(processor).to have_received(:process)
-          .with(valid_record, context: { batch_upload_id: batch_upload.id })
+        expect(processor).to have_received(:validate_record).with(valid_record)
+      end
+
+      it 'calls find_existing_duplicates with valid records' do
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte, processor: processor)
+
+        expect(processor).to have_received(:find_existing_duplicates).with([ valid_record ])
+      end
+
+      it 'calls bulk_persist! with non-duplicate records and context' do
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte, processor: processor)
+
+        expect(processor).to have_received(:bulk_persist!)
+          .with([ valid_record ], { batch_upload_id: batch_upload.id })
       end
 
       it 'uses injected processor instead of creating new one' do
-        allow(processor).to receive(:process).and_return(mock_certification)
         allow(UnifiedRecordProcessor).to receive(:new).and_call_original
 
         described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte, processor: processor)
 
-        # Should use injected processor, not create a new one
         expect(UnifiedRecordProcessor).not_to have_received(:new)
-        expect(processor).to have_received(:process)
+        expect(processor).to have_received(:validate_record)
       end
     end
 
@@ -356,28 +364,27 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
       end
     end
 
-    context 'with unexpected errors' do
+    context 'when bulk insert fails' do
       let(:processor) { instance_double(UnifiedRecordProcessor) }
       let(:records) { [ valid_record ] }
 
       before do
         allow(csv_reader).to receive(:read_chunk).and_return(records)
+        allow(processor).to receive_messages(validate_record: { valid: true }, find_existing_duplicates: Set.new, compound_key: "M600|C-600|2025-04-10")
       end
 
-      it 'catches unexpected StandardError and logs with backtrace' do
-        error = StandardError.new("Something went wrong")
-        allow(processor).to receive(:process).and_raise(error)
+      it 'catches bulk insert failure and logs with backtrace' do
+        allow(processor).to receive(:bulk_persist!).and_raise(StandardError, "DB connection lost")
         allow(Rails.logger).to receive(:error)
 
         described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte, processor: processor)
 
-        expect(Rails.logger).to have_received(:error).with(/Unexpected error processing row 2: StandardError - Something went wrong/)
+        expect(Rails.logger).to have_received(:error).with(/Bulk insert failed: StandardError - DB connection lost/)
         expect(Rails.logger).to have_received(:error).with(/Backtrace:/)
       end
 
-      it 'stores error with UNK_001 code and exception class' do
-        error = RuntimeError.new("Unexpected failure")
-        allow(processor).to receive(:process).and_raise(error)
+      it 'stores error with DB_001 code for all records in batch' do
+        allow(processor).to receive(:bulk_persist!).and_raise(StandardError, "DB connection lost")
         allow(Rails.logger).to receive(:error)
 
         described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte, processor: processor)
@@ -387,13 +394,15 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
           .pluck(:error_code, :error_message)
 
         expect(errors).to eq([
-          [ BatchUploadErrors::Unknown::UNEXPECTED, "Unexpected error: RuntimeError - Unexpected failure" ]
+          [
+            BatchUploadErrors::Database::SAVE_FAILED,
+            "Bulk insert failed: StandardError - DB connection lost"
+          ]
         ])
       end
 
-      it 'increments error counter for unexpected errors' do
-        error = StandardError.new("Something went wrong")
-        allow(processor).to receive(:process).and_raise(error)
+      it 'increments error counter for all records when bulk insert fails' do
+        allow(processor).to receive(:bulk_persist!).and_raise(StandardError, "DB connection lost")
         allow(Rails.logger).to receive(:error)
 
         described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte, processor: processor)
@@ -402,6 +411,53 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
 
         expect(batch_upload.num_rows_errored).to eq(1)
         expect(batch_upload.num_rows_succeeded).to eq(0)
+      end
+    end
+
+    context 'with within-batch duplicates' do
+      let(:duplicate_within_batch) do
+        valid_record.dup  # Same member_id, case_number, certification_date
+      end
+      let(:records) { [ valid_record, duplicate_within_batch ] }
+
+      before do
+        allow(csv_reader).to receive(:read_chunk).and_return(records)
+      end
+
+      it 'keeps first occurrence and errors on duplicate' do
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte)
+
+        batch_id = batch_upload.id
+        batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
+
+        expect(batch_upload.num_rows_succeeded).to eq(1)
+        expect(batch_upload.num_rows_errored).to eq(1)
+      end
+
+      it 'stores DUP_002 error for within-batch duplicate' do
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte)
+
+        errors = CertificationBatchUploadError
+          .where(certification_batch_upload_id: batch_upload.id)
+          .pluck(:error_code)
+
+        expect(errors).to eq([ BatchUploadErrors::Duplicate::WITHIN_BATCH ])
+      end
+    end
+
+    context 'with CertificationCreated event publishing' do
+      let(:records) { [ valid_record ] }
+
+      before do
+        allow(csv_reader).to receive(:read_chunk).and_return(records)
+      end
+
+      it 'publishes CertificationCreated event for each created certification' do
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte)
+
+        cert_id = Certification.last.id
+        expect(Strata::EventManager).to have_received(:publish)
+          .with("CertificationCreated", { certification_id: cert_id })
       end
     end
   end
