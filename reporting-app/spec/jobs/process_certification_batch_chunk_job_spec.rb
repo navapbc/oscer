@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'rails_helper'
+require 'aws-sdk-s3'
 
 RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
   include ActiveJob::TestHelper
