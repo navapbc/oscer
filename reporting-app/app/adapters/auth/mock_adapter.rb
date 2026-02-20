@@ -63,7 +63,8 @@ class Auth::MockAdapter
     {
       uid: uid,
       provider: "mock",
-      token: generate_token(email)
+      token: generate_token(email),
+      region: existing_user&.region
     }
   end
 
@@ -93,7 +94,8 @@ class Auth::MockAdapter
     {
       uid: @uid_generator.call,
       provider: "mock",
-      token: generate_token("challenge-user@example.com")
+      token: generate_token("challenge-user@example.com"),
+      region: nil
     }
   end
 

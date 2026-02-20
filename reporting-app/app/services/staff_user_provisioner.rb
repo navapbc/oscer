@@ -14,7 +14,8 @@
 #     uid: "unique-id-from-idp",
 #     email: "user@example.gov",
 #     name: "Jane Doe",
-#     groups: ["OSCER-Admin", "Other-Group"]
+#     groups: ["OSCER-Admin", "Other-Group"],
+#     region: "Northeast"
 #   }
 #
 # Behavior:
@@ -38,6 +39,7 @@ class StaffUserProvisioner
   # @option claims [String] :email User's email address (required)
   # @option claims [String] :name User's full name
   # @option claims [Array<String>] :groups IdP group memberships
+  # @option claims [String] :region User's region (from custom:region attribute)
   # @return [User] The provisioned user record
   # @raise [Auth::Errors::AccessDenied] If no matching role and deny mode is enabled
   # @raise [ActiveRecord::RecordInvalid] If user validation fails
@@ -67,6 +69,7 @@ class StaffUserProvisioner
   def sync_attributes(user, claims)
     user.email = claims[:email]
     user.full_name = claims[:name]
+    user.region = claims[:region] if claims[:region].present?
 
     # SSO users don't need OSCER MFA - they authenticate through the IdP
     # which may have its own MFA requirements
