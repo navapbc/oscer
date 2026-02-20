@@ -18,11 +18,7 @@ module Staff
 
     # POST /staff/certification_batch_uploads
     def create
-      if Features.batch_upload_v2_enabled?
-        create_with_direct_upload
-      else
-        create_with_legacy_upload
-      end
+      create_batch_upload(source_type: :ui)
     end
 
     # GET /staff/certification_batch_uploads/:id
@@ -88,17 +84,6 @@ module Staff
       end
     end
 
-    # v2: Direct upload to cloud storage (file already uploaded via Active Storage Direct Upload)
-    def create_with_direct_upload
-      create_batch_upload(source_type: :ui)
-    end
-
-    # v1: Legacy multipart upload (file uploaded through Rails)
-    def create_with_legacy_upload
-      create_batch_upload(source_type: :ui)
-    end
-
-    # Common upload logic for both v2 and v1 paths
     def create_batch_upload(source_type:)
       uploaded_file = params[:csv_file]
 

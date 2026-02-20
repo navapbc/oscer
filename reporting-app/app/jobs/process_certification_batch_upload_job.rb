@@ -8,6 +8,7 @@ class ProcessCertificationBatchUploadJob < ApplicationJob
   # @param batch_upload_id [String] The UUID of the CertificationBatchUpload record
   def perform(batch_upload_id)
     batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_upload_id)
+    batch_upload.start_processing!
 
     # Route to appropriate processing path based on feature flag
     if Features.batch_upload_v2_enabled?
@@ -29,8 +30,6 @@ class ProcessCertificationBatchUploadJob < ApplicationJob
 
   # V2: Streaming path with parallel chunk processing (requires feature flag)
   def process_streaming(batch_upload)
-    batch_upload.start_processing!
-
     reader = CsvStreamReader.new
     total_records = 0
     chunks = []
@@ -68,8 +67,6 @@ class ProcessCertificationBatchUploadJob < ApplicationJob
 
   # V1: Sequential processing (legacy path, no parallel chunks)
   def process_from_active_storage(batch_upload)
-    batch_upload.start_processing!
-
     temp_file = Tempfile.new([ "batch_upload", ".csv" ], encoding: "UTF-8")
     begin
       temp_file.write(batch_upload.file.download.force_encoding("UTF-8"))
@@ -83,9 +80,6 @@ class ProcessCertificationBatchUploadJob < ApplicationJob
       temp_file.close
       temp_file.unlink
     end
-  rescue StandardError => e
-    batch_upload.fail_processing!(error_message: e.message)
-    raise
   end
 
   def handle_service_result(batch_upload, service, success)
