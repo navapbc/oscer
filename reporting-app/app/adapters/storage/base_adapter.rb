@@ -22,5 +22,14 @@ module Storage
     def stream_object(key:, &block)
       raise NotImplementedError
     end
+
+    # Stream a byte range from an object in storage, line by line
+    # Used by chunk jobs to re-read their slice of a CSV file from S3
+    # @param key [String] The object key (path) in the bucket
+    # @param start_byte [Integer] Start of byte range (inclusive, must be >= 0)
+    # @param end_byte [Integer] End of byte range (inclusive, must be >= start_byte)
+    def stream_object_range(key:, start_byte:, end_byte:, &block)
+      raise NotImplementedError
+    end
   end
 end

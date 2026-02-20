@@ -6,15 +6,26 @@ class ProcessCertificationBatchChunkJob < ApplicationJob
   queue_as :default
   retry_on ActiveRecord::Deadlocked, wait: :exponentially_longer, attempts: 3
 
-  # Process a chunk of certification records
+  # Process a chunk of certification records by reading from S3
   # @param batch_upload_id [String] The UUID of the CertificationBatchUpload record
   # @param chunk_number [Integer] The sequential chunk number (1-indexed)
-  # @param records [Array<Hash>] Array of record hashes to process
+  # @param headers [Array<String>] CSV column headers
+  # @param start_byte [Integer] Start of byte range in S3 object (inclusive)
+  # @param end_byte [Integer] End of byte range in S3 object (inclusive)
   # @param processor [UnifiedRecordProcessor] The processor to use (injectable for testing)
-  def perform(batch_upload_id, chunk_number, records, processor: UnifiedRecordProcessor.new)
+  def perform(batch_upload_id, chunk_number, headers, start_byte, end_byte, processor: UnifiedRecordProcessor.new)
     batch_upload = CertificationBatchUpload.find_by(id: batch_upload_id)
     return if batch_upload.nil?  # Batch was deleted, nothing to do
     audit_log = create_audit_log(batch_upload, chunk_number)
+
+    # Read records from S3 using byte-range coordinates
+    reader = CsvStreamReader.new
+    records = reader.read_chunk(
+      batch_upload.storage_key,
+      headers: headers,
+      start_byte: start_byte,
+      end_byte: end_byte
+    )
 
     results = { succeeded: 0, failed: 0, errors: [] }
     context = { batch_upload_id: batch_upload.id }
