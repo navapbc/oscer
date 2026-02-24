@@ -1,0 +1,49 @@
+<tr>
+  <td>
+    <%= link_to batch_upload.filename, certification_batch_upload_path(batch_upload), data: { turbo_frame: "_top" } %>
+  </td>
+  <td><%= batch_upload.uploader.email %></td>
+  <td><%= batch_upload.created_at.strftime("%m/%d/%Y %I:%M %p") %></td>
+  <td>
+    <span class="usa-tag <%= status_tag_class(batch_upload.status) %>">
+      <%= t("certification_batch_uploads.statuses.#{batch_upload.status}") %>
+    </span>
+  </td>
+  <td>
+    <% if batch_upload.num_rows > 0 %>
+      <%= batch_upload.num_rows_processed %> / <%= batch_upload.num_rows %>
+      <% if batch_upload.completed? %>
+        <% if feature_enabled?(:batch_upload_v2) %>
+          <% if batch_upload.num_rows_errored > 0 %>
+            (<%= batch_upload.num_rows_succeeded %> <%= t(".succeeded") %>,
+            <%= link_to t(".errors_count", count: batch_upload.num_rows_errored), certification_batch_upload_path(batch_upload), data: { turbo_frame: "_top" } %>)
+          <% else %>
+            (<%= batch_upload.num_rows_succeeded %> <%= t(".succeeded") %>, <%= t(".no_errors") %>)
+          <% end %>
+        <% else %>
+          (<%= batch_upload.num_rows_succeeded %> success, <%= batch_upload.num_rows_errored %> errors)
+        <% end %>
+      <% end %>
+    <% else %>
+      —
+    <% end %>
+  </td>
+  <td>
+    <% if batch_upload.pending? %>
+      <%= button_to t(".process"), process_batch_certification_batch_upload_path(batch_upload),
+            method: :post,
+            class: "usa-button usa-button--outline",
+            data: { confirm: t(".confirm_process", filename: batch_upload.filename) } %>
+    <% elsif batch_upload.processing? %>
+      <span class="text-base-dark"><%= t(".processing") %>...</span>
+    <% elsif batch_upload.completed? %>
+      <%= link_to t(".view_results"), results_certification_batch_upload_path(batch_upload), class: "usa-button usa-button--unstyled", data: { turbo_frame: "_top" } %>
+      <% if feature_enabled?(:batch_upload_v2) && batch_upload.num_rows_errored > 0 %>
+        <br>
+        <%= link_to t(".download_errors"), download_errors_certification_batch_upload_path(batch_upload), class: "usa-button usa-button--unstyled", data: { turbo: false } %>
+      <% end %>
+    <% elsif batch_upload.failed? %>
+      <%= link_to t(".view_error"), certification_batch_upload_path(batch_upload), class: "usa-button usa-button--unstyled text-error", data: { turbo_frame: "_top" } %>
+    <% end %>
+  </td>
+</tr>

@@ -18,12 +18,19 @@ en:
           status: "Status"
           progress: "Progress"
           actions: "Actions"
+        no_uploads: "No batch uploads found. Upload a CSV file to get started."
+      upload_row:
         process: "Process"
         processing: "Processing"
         view_results: "View Results"
         view_error: "View Error"
         confirm_process: "Are you sure you want to process %{filename}? This will create certifications for all valid rows."
-        no_uploads: "No batch uploads found. Upload a CSV file to get started."
+        succeeded: "succeeded"
+        no_errors: "No errors"
+        errors_count:
+          one: "%{count} error"
+          other: "%{count} errors"
+        download_errors: "Download Errors"
       new:
         title: "Batch Upload Certifications"
         heading: "Upload Certification Roster"

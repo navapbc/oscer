@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
+require "csv"
+
 module Staff
   class CertificationBatchUploadsController < AdminController
     self.authorization_resource = CertificationBatchUpload
 
-    before_action :set_batch_upload, only: [ :show, :process_batch, :results ]
+    before_action :set_batch_upload, only: [ :show, :process_batch, :results, :download_errors ]
 
     # GET /staff/certification_batch_uploads
     def index
@@ -67,6 +69,30 @@ module Staff
       end
     end
 
+    # GET /staff/certification_batch_uploads/:id/download_errors
+    def download_errors
+      unless Features.batch_upload_v2_enabled?
+        redirect_to certification_batch_upload_path(@batch_upload), alert: "This feature is not available."
+        return
+      end
+
+      errors = CertificationBatchUploadError
+        .where(certification_batch_upload: @batch_upload)
+        .order(:row_number)
+
+      csv_data = CSV.generate do |csv|
+        csv << [ "Row", "Error Code", "Error Message", "Row Data" ]
+        errors.each do |error|
+          csv << [ error.row_number, error.error_code, error.error_message, error.row_data&.to_json ]
+        end
+      end
+
+      send_data csv_data,
+                filename: "#{File.basename(@batch_upload.filename, '.*')}_errors.csv",
+                type: "text/csv",
+                disposition: "attachment"
+    end
+
     private
 
     def set_batch_upload
@@ -109,12 +135,23 @@ module Staff
         return
       end
 
+      # Direct upload (v2) sends a signed blob ID string;
+      # legacy upload (v1) sends an ActionDispatch::Http::UploadedFile
+      begin
+        filename, attachable = resolve_file_upload(uploaded_file)
+      rescue ActiveSupport::MessageVerifier::InvalidSignature, ActiveRecord::RecordNotFound
+        flash.now[:alert] = "Upload failed. Please try again."
+        @batch_upload = CertificationBatchUpload.new
+        render :new, status: :unprocessable_content
+        return
+      end
+
       @batch_upload = CertificationBatchUpload.new(
-        filename: sanitize_filename(uploaded_file.original_filename),
+        filename: sanitize_filename(filename),
         uploader: current_user,
         source_type: source_type
       )
-      @batch_upload.file.attach(uploaded_file)
+      @batch_upload.file.attach(attachable)
 
       return handle_upload_failure unless @batch_upload.save
 
@@ -123,9 +160,10 @@ module Staff
 
     def handle_upload_success
       # v2: Automatically start processing ("Upload and Process" UX)
+      # Redirect to index (dashboard) so staff sees live auto-refresh status
       if Features.batch_upload_v2_enabled?
         ProcessCertificationBatchUploadJob.perform_later(@batch_upload.id)
-        redirect_path = certification_batch_upload_path(@batch_upload)
+        redirect_path = certification_batch_uploads_path
         notice_message = "Processing started for #{@batch_upload.filename}. Results will be available shortly."
       # v1: Redirect to queue for manual processing
       else
@@ -144,6 +182,18 @@ module Staff
       respond_to do |format|
         format.html { redirect_to new_certification_batch_upload_path, alert: message }
         format.json { render json: { error: message }, status: :unprocessable_content }
+      end
+    end
+
+    # Resolves the filename and attachable object from the file param.
+    # Direct upload (v2) submits a signed blob ID string;
+    # legacy upload (v1) submits an ActionDispatch::Http::UploadedFile.
+    def resolve_file_upload(uploaded_file)
+      if uploaded_file.is_a?(String)
+        blob = ActiveStorage::Blob.find_signed!(uploaded_file)
+        [ blob.filename.to_s, blob ]
+      else
+        [ uploaded_file.original_filename, uploaded_file ]
       end
     end
 
