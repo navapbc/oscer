@@ -6,7 +6,6 @@ class Users::SessionsController < Devise::SessionsController
 
   def new
     @form = Users::NewSessionForm.new
-    @sso_enabled = sso_enabled?
   end
 
   def create
@@ -86,12 +85,6 @@ class Users::SessionsController < Devise::SessionsController
   # end
 
   private
-
-    def sso_enabled?
-      Rails.application.config.sso[:enabled] == true
-    rescue NoMethodError
-      false
-    end
 
     def auth_service
       AuthService.new
