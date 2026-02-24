@@ -106,12 +106,13 @@ flowchart TB
 
 ### Key Components
 
-| Component           | Responsibility                                                                      |
-|---------------------|-------------------------------------------------------------------------------------|
-| `DocAiAdapter`      | POSTs file via Faraday multipart; maps HTTP errors to typed exceptions              |
-| `DocAiService`      | Invokes adapter; builds result value object; raises `ProcessingError` on failure    |
-| `DocAiResult`       | Base value object: response envelope, generic field accessors, subclass factory     |
-| `DocAiResult::Payslip` | Payslip-specific typed accessors; delegates to `field_value` on base class      |
+| Component                  | Responsibility                                                                                    |
+|----------------------------|---------------------------------------------------------------------------------------------------|
+| `DocAiAdapter`             | POSTs file via Faraday multipart; maps HTTP errors to typed exceptions                            |
+| `DocAiService`             | Invokes adapter; builds result value object; raises `ProcessingError` on failure                  |
+| `DocAiResult`              | Base value object: response envelope, `FieldValue` accessor, self-registration factory            |
+| `DocAiResult::FieldValue`  | Immutable struct wrapping `value` + `confidence`; exposes `low_confidence?` predicate             |
+| `DocAiResult::Payslip`     | Payslip subclass; self-registers via `register "Payslip"`; typed `field_for` accessors per field  |
 
 ---
 
@@ -203,8 +204,10 @@ A job may complete with HTTP 200 but indicate a processing failure via `status: 
 ### Field Reference (Payslip)
 
 > **Note**: Response field names are **lowercased and concatenated** even though the official schema uses PascalCase (e.g., `payperiodstartdate` maps to `PayPeriodStartDate`). Dot-notation compound fields like `EmployeeName.FirstName` become `employeename.firstname` in the response.
+>
+> All data accessors return a `DocAiResult::FieldValue` wrapping the value and confidence score. Boolean validation flag accessors (`gross_pay_valid?` etc.) return `true`/`false` directly.
 
-| API Field Key                 | Ruby Accessor                    | Type    |
+| API Field Key                 | Ruby Accessor                    | Value type inside `FieldValue` |
 |-------------------------------|----------------------------------|---------|
 | `payperiodstartdate`          | `pay_period_start_date`          | String  |
 | `payperiodenddate`            | `pay_period_end_date`            | String  |
@@ -319,14 +322,63 @@ class DocAiService < DataIntegration::BaseService
 end
 ```
 
+### DocAiResult::FieldValue
+
+A lightweight struct wrapping the `value` and `confidence` score for a single extracted field. All subclass field accessors return a `FieldValue` (or `nil` if the field was absent from the response).
+
+```ruby
+# Defined inside doc_ai_result.rb — no separate file needed
+FieldValue = Data.define(:value, :confidence) do
+  LOW_CONFIDENCE_THRESHOLD = 0.7
+
+  # true when the model is uncertain; callers may surface these to staff for manual review
+  def low_confidence? = confidence.nil? || confidence < LOW_CONFIDENCE_THRESHOLD
+
+  def to_s = value.to_s
+end
+```
+
+**Usage example:**
+
+```ruby
+result = DocAiService.new.analyze(file: uploaded_file)
+
+gross_pay = result.current_gross_pay   # => #<data DocAiResult::FieldValue value=1627.74, confidence=0.93>
+gross_pay.value          # => 1627.74
+gross_pay.confidence     # => 0.93
+gross_pay.low_confidence? # => false
+
+result.pay_date.low_confidence?  # => true  (confidence: 0.23 — flag for staff review)
+```
+
+---
+
 ### DocAiResult (Base Value Object)
 
-Holds the response envelope, generic field accessors, and the subclass factory. Extends `Strata::ValueObject`.
+Holds the response envelope, the `FieldValue` accessor, and the self-registration factory. Extends `Strata::ValueObject`.
 
 ```ruby
 # app/models/doc_ai_result.rb
 class DocAiResult < Strata::ValueObject
   include Strata::Attributes
+
+  # Wraps a single extracted field's value and confidence score.
+  FieldValue = Data.define(:value, :confidence) do
+    LOW_CONFIDENCE_THRESHOLD = 0.7
+
+    def low_confidence? = confidence.nil? || confidence < LOW_CONFIDENCE_THRESHOLD
+    def to_s            = value.to_s
+  end
+
+  # Subclass registry — populated at load time by each subclass calling .register.
+  REGISTRY = {}
+
+  # Called by each subclass to associate its DocAI document class name with the Ruby class.
+  # Subclass files must be required below the class definition so they register before
+  # from_response is called (Rails eager loading handles this in production automatically).
+  def self.register(document_class)
+    REGISTRY[document_class] = self
+  end
 
   # Response envelope
   strata_attribute :job_id, :string
@@ -342,14 +394,10 @@ class DocAiResult < Strata::ValueObject
   # Raw fields hash — preserves all confidence + value pairs from the API
   strata_attribute :fields, :immutable_value_object
 
-  DOCUMENT_CLASS_MAP = {
-    "Payslip" => "DocAiResult::Payslip"
-  }.freeze
-
-  # Factory: returns the appropriate subclass based on matchedDocumentClass.
-  # Falls back to base DocAiResult for unknown document types.
+  # Factory: dispatches to the registered subclass for the given matchedDocumentClass.
+  # Falls back to base DocAiResult for unregistered document types.
   def self.from_response(response)
-    klass = DOCUMENT_CLASS_MAP.fetch(response["matchedDocumentClass"], "DocAiResult").constantize
+    klass = REGISTRY.fetch(response["matchedDocumentClass"], DocAiResult)
     klass.build(response)
   end
 
@@ -371,83 +419,103 @@ class DocAiResult < Strata::ValueObject
   def completed? = status == "completed"
   def failed?    = status == "failed"
 
-  # Generic accessor for any field by its API key
-  def field_value(api_key)      = fields.dig(api_key.to_s, "value")
-  def field_confidence(api_key) = fields.dig(api_key.to_s, "confidence")
+  # Returns a FieldValue containing both the extracted value and its confidence score.
+  # Returns nil if the field was not present in the API response.
+  def field_for(api_key)
+    raw = fields.dig(api_key.to_s)
+    return nil unless raw
+    FieldValue.new(value: raw["value"], confidence: raw["confidence"])
+  end
 end
+
+# Subclass files are required explicitly so their .register calls populate REGISTRY
+# before any call to DocAiResult.from_response.
+require_relative "doc_ai_result/payslip"
 ```
 
 ### DocAiResult::Payslip (Subclass Value Object)
 
-Exposes every Payslip schema field as an idiomatic Ruby snake_case method by delegating to `field_value` on the base class.
+Registers itself with the base class factory and exposes every Payslip schema field as an idiomatic Ruby snake_case method. Each accessor returns a `FieldValue` (or `nil` if the field was absent). Boolean validation flags are predicates that unwrap the value directly.
 
 ```ruby
 # app/models/doc_ai_result/payslip.rb
 class DocAiResult::Payslip < DocAiResult
+  register "Payslip"
+
   # --- Pay period ---
-  def pay_period_start_date    = field_value("payperiodstartdate")
-  def pay_period_end_date      = field_value("payperiodenddate")
-  def pay_date                 = field_value("paydate")
+  def pay_period_start_date    = field_for("payperiodstartdate")
+  def pay_period_end_date      = field_for("payperiodenddate")
+  def pay_date                 = field_for("paydate")
 
   # --- Current period pay ---
-  def current_gross_pay        = field_value("currentgrosspay")
-  def current_net_pay          = field_value("currentnetpay")
-  def current_total_deductions = field_value("currenttotaldeductions")
+  def current_gross_pay        = field_for("currentgrosspay")
+  def current_net_pay          = field_for("currentnetpay")
+  def current_total_deductions = field_for("currenttotaldeductions")
 
   # --- Year-to-date ---
-  def ytd_gross_pay            = field_value("ytdgrosspay")
-  def ytd_net_pay              = field_value("ytdnetpay")
-  def ytd_federal_tax          = field_value("ytdfederaltax")
-  def ytd_state_tax            = field_value("ytdstatetax")
-  def ytd_city_tax             = field_value("ytdcitytax")
-  def ytd_total_deductions     = field_value("ytdtotaldeductions")
+  def ytd_gross_pay            = field_for("ytdgrosspay")
+  def ytd_net_pay              = field_for("ytdnetpay")
+  def ytd_federal_tax          = field_for("ytdfederaltax")
+  def ytd_state_tax            = field_for("ytdstatetax")
+  def ytd_city_tax             = field_for("ytdcitytax")
+  def ytd_total_deductions     = field_for("ytdtotaldeductions")
 
   # --- Rates ---
-  def regular_hourly_rate      = field_value("regularhourlyrate")
-  def holiday_hourly_rate      = field_value("holidayhourlyrate")
+  def regular_hourly_rate      = field_for("regularhourlyrate")
+  def holiday_hourly_rate      = field_for("holidayhourlyrate")
 
   # --- Filing status ---
-  def federal_filing_status    = field_value("federalfilingstatus")
-  def state_filing_status      = field_value("statefilingstatus")
+  def federal_filing_status    = field_for("federalfilingstatus")
+  def state_filing_status      = field_for("statefilingstatus")
 
   # --- Identifiers ---
-  def employee_number          = field_value("employeenumber")
-  def payroll_number           = field_value("payrollnumber")
-  def currency                 = field_value("currency")
+  def employee_number          = field_for("employeenumber")
+  def payroll_number           = field_for("payrollnumber")
+  def currency                 = field_for("currency")
 
   # --- Employee name ---
-  def employee_first_name      = field_value("employeename.firstname")
-  def employee_middle_name     = field_value("employeename.middlename")
-  def employee_last_name       = field_value("employeename.lastname")
-  def employee_suffix_name     = field_value("employeename.suffixname")
+  def employee_first_name      = field_for("employeename.firstname")
+  def employee_middle_name     = field_for("employeename.middlename")
+  def employee_last_name       = field_for("employeename.lastname")
+  def employee_suffix_name     = field_for("employeename.suffixname")
 
   # --- Employee address ---
-  def employee_address_line1   = field_value("employeeaddress.line1")
-  def employee_address_line2   = field_value("employeeaddress.line2")
-  def employee_address_city    = field_value("employeeaddress.city")
-  def employee_address_state   = field_value("employeeaddress.state")
-  def employee_address_zipcode = field_value("employeeaddress.zipcode")
+  def employee_address_line1   = field_for("employeeaddress.line1")
+  def employee_address_line2   = field_for("employeeaddress.line2")
+  def employee_address_city    = field_for("employeeaddress.city")
+  def employee_address_state   = field_for("employeeaddress.state")
+  def employee_address_zipcode = field_for("employeeaddress.zipcode")
 
   # --- Company address ---
-  def company_address_line1    = field_value("companyaddress.line1")
-  def company_address_line2    = field_value("companyaddress.line2")
-  def company_address_city     = field_value("companyaddress.city")
-  def company_address_state    = field_value("companyaddress.state")
-  def company_address_zipcode  = field_value("companyaddress.zipcode")
+  def company_address_line1    = field_for("companyaddress.line1")
+  def company_address_line2    = field_for("companyaddress.line2")
+  def company_address_city     = field_for("companyaddress.city")
+  def company_address_state    = field_for("companyaddress.state")
+  def company_address_zipcode  = field_for("companyaddress.zipcode")
 
-  # --- Validation flags ---
-  def gross_pay_valid?        = field_value("isgrosspayvali") == true
-  def ytd_gross_pay_highest?  = field_value("isytdgrosspayhighest") == true
-  def field_names_sufficient? = field_value("arefieldnamessufficient") == true
+  # --- Validation flags (boolean predicates — unwrap value directly) ---
+  def gross_pay_valid?        = field_for("isgrosspayvali")&.value == true
+  def ytd_gross_pay_highest?  = field_for("isytdgrosspayhighest")&.value == true
+  def field_names_sufficient? = field_for("arefieldnamessufficient")&.value == true
 end
 ```
 
 ### Extending for New Document Types
 
-Adding support for W2 or 1099 requires only two steps:
+Adding support for a new document type (W-2, 1099, etc.) requires one step: create the subclass and call `register`. No changes to `DocAiResult` are needed.
 
-1. Create `DocAiResult::W2 < DocAiResult` with W2-specific accessors
-2. Add `"W2" => "DocAiResult::W2"` to `DOCUMENT_CLASS_MAP` in `DocAiResult`
+```ruby
+# app/models/doc_ai_result/w2.rb
+class DocAiResult::W2 < DocAiResult
+  register "W2"
+
+  def employer_name = field_for("employername")
+  def wages         = field_for("wages")
+  # ...
+end
+```
+
+Add `require_relative "doc_ai_result/w2"` to the bottom of `doc_ai_result.rb` alongside the existing `payslip` require.
 
 ---
 
@@ -520,13 +588,21 @@ DOC_AI_TIMEOUT_SECONDS=60
 
 **Tradeoff**: A web request thread is held for up to 60 seconds per upload. Puma and any rack-timeout middleware must be configured with a limit above 60 seconds (see Configuration). Under high concurrent upload load, this may exhaust Puma threads; consider a dedicated thread pool or route-level concurrency controls for the upload endpoint if this becomes a bottleneck.
 
-### Subclass-per-document-class value objects
+### Subclass-per-document-class value objects with self-registration
 
-**Decision**: Model each document type (Payslip, W2, 1099, etc.) as a subclass of `DocAiResult` rather than a single generic class.
+**Decision**: Model each document type (Payslip, W2, 1099, etc.) as a subclass of `DocAiResult`. Each subclass self-registers via `register "ClassName"`, populating a `REGISTRY` hash on the base class at load time. The factory method dispatches using `REGISTRY` rather than a statically-maintained map.
 
-**Rationale**: Typed subclasses provide compile-time method name discovery, make callers self-documenting, and allow document-type-specific validation. The factory method on the base class centralizes dispatch, keeping the service layer unaware of document type specifics.
+**Rationale**: Typed subclasses provide method-name discoverability, make callers self-documenting, and allow document-type-specific validation. Self-registration keeps the base class closed to modification: adding a new document type requires only creating its subclass and calling `register` — `DocAiResult` itself does not need to change.
 
-**Tradeoff**: Adding a new document type requires a new subclass and a `DOCUMENT_CLASS_MAP` entry. Callers that need to handle multiple document types generically can use the base class `field_value`/`field_confidence` accessors.
+**Tradeoff**: Subclass files must be required (via `require_relative` at the bottom of `doc_ai_result.rb`) so their `register` calls execute before `from_response` is invoked. Rails eager loading handles this automatically in production; in development/test, the explicit requires guarantee consistent behaviour regardless of autoload order.
+
+### Confidence as a first-class concept via `FieldValue`
+
+**Decision**: All field accessors on `DocAiResult` subclasses return a `DocAiResult::FieldValue` struct — a `Data.define` value object wrapping `value` and `confidence` together — rather than raw values. A `low_confidence?` predicate (threshold: 0.7) is built into the struct.
+
+**Rationale**: Confidence scores are part of every field the API returns. Exposing them as a paired struct rather than a separate accessor call makes it impossible for callers to accidentally use an extracted value without having access to its reliability signal. Callers that only need the value call `.value`; callers that need to gate on confidence call `.low_confidence?`. The threshold constant lives on `FieldValue`, not in application config or controller code, giving a single place to adjust it.
+
+**Tradeoff**: Callers that previously compared `result.current_gross_pay == 1627.74` now compare `result.current_gross_pay.value == 1627.74`. Boolean validation flag accessors (`gross_pay_valid?` etc.) remain plain predicates by unwrapping the value directly, since confidence on a flag is not semantically meaningful to callers.
 
 ### Graceful degradation on integration errors
 
@@ -565,13 +641,13 @@ Possible approaches (to be confirmed with the DocAI team):
 
 Only `Payslip` is supported in the initial implementation. Future document types (W-2, 1099, bank statements) follow the same pattern:
 
-1. Create `DocAiResult::<ClassName> < DocAiResult`
-2. Add entry to `DocAiResult::DOCUMENT_CLASS_MAP`
+1. Create `DocAiResult::<ClassName> < DocAiResult` with `register "<ClassName>"` and typed `field_for` accessors
+2. Add `require_relative "doc_ai_result/<class_name>"` to the bottom of `doc_ai_result.rb`
 3. Add accessor specs to `spec/models/doc_ai_result/<class_name>_spec.rb`
 
-### Confidence Score Thresholds
+### Configurable confidence thresholds
 
-Each field includes a `confidence` score (0–1). A future enhancement could surface low-confidence fields to staff for manual review rather than treating all extracted values as authoritative. Confidence thresholds would live in configuration or the value object layer, not the adapter.
+`FieldValue::LOW_CONFIDENCE_THRESHOLD` is currently a constant (0.7). A future enhancement could make this configurable per-field or per-document-class — for example, requiring higher confidence on `current_gross_pay` than on `employee_address_line2`. This would live on the value object or subclass layer, not in the adapter or service.
 
 ### Asynchronous Processing
 
