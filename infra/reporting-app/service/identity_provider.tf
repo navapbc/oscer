@@ -51,4 +51,8 @@ module "identity_provider_client" {
   name          = "${local.prefix}${local.identity_provider_config.identity_provider_name}"
 
   user_pool_id = local.identity_provider_user_pool_id
+
+  # Explicit dependency to ensure the User Pool schema (including custom:region)
+  # is fully created before the client tries to reference it in read/write attributes
+  depends_on = [module.identity_provider]
 }

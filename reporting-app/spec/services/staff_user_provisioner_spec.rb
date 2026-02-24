@@ -60,6 +60,22 @@ RSpec.describe StaffUserProvisioner, type: :service do
 
         expect(user.full_name).to be_nil
       end
+
+      it "sets region from claims" do
+        claims = mock_staff_claims(region: "Northeast")
+
+        user = provisioner.provision!(claims)
+
+        expect(user.region).to eq("Northeast")
+      end
+
+      it "handles nil region gracefully" do
+        claims = mock_staff_claims(region: nil)
+
+        user = provisioner.provision!(claims)
+
+        expect(user.region).to be_nil
+      end
     end
 
     context "when user already exists" do
@@ -108,6 +124,16 @@ RSpec.describe StaffUserProvisioner, type: :service do
           .to change { existing_user.reload.role }
           .from("caseworker")
           .to("admin")
+      end
+
+      it "updates region when changed in IdP" do
+        existing_user.update!(region: "Southwest")
+        claims = mock_staff_claims(region: "Northeast")
+
+        expect { provisioner.provision!(claims) }
+          .to change { existing_user.reload.region }
+          .from("Southwest")
+          .to("Northeast")
       end
     end
 

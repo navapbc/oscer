@@ -26,8 +26,8 @@ resource "aws_cognito_user_pool_client" "client" {
   enable_token_revocation                       = true
   enable_propagate_additional_user_context_data = false
 
-  read_attributes  = ["email", "email_verified", "phone_number", "phone_number_verified", "updated_at"]
-  write_attributes = ["email", "updated_at", "phone_number"]
+  read_attributes  = ["custom:region", "email", "email_verified", "phone_number", "phone_number_verified", "updated_at"]
+  write_attributes = ["custom:region", "email", "updated_at", "phone_number"]
 }
 
 resource "aws_ssm_parameter" "client_secret" {

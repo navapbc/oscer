@@ -33,7 +33,8 @@ Rails.application.config.sso = {
     email: ENV.fetch("SSO_CLAIM_EMAIL", "email"),
     name: ENV.fetch("SSO_CLAIM_NAME", "name"),
     groups: ENV.fetch("SSO_CLAIM_GROUPS", "groups"),
-    unique_id: ENV.fetch("SSO_CLAIM_UID", "sub")
+    unique_id: ENV.fetch("SSO_CLAIM_UID", "sub"),
+    region: ENV.fetch("SSO_CLAIM_REGION", "custom:region")
   }
 }.freeze
 
