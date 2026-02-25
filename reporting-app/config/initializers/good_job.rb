@@ -11,8 +11,15 @@ Rails.application.configure do
   # Process all queues
   config.good_job.queues = "*"
 
-  # Enable cron for future scheduled jobs
+  # Enable cron for scheduled jobs
   config.good_job.enable_cron = true
+  config.good_job.cron = {
+    purge_unattached_blobs: {
+      cron: "0 3 * * *",
+      class: "PurgeUnattachedBlobsJob",
+      description: "Clean up orphaned Active Storage blobs from abandoned uploads"
+    }
+  }
 
   # Retry failed jobs automatically
   config.good_job.retry_on_unhandled_error = true
