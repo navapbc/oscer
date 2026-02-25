@@ -15,21 +15,79 @@ Integrating with the NavaPBC DocAI service enables:
 
 A thin adapter + service + value object pattern integrates DocAI into existing OSCER workflows without coupling business logic to the external API:
 
+- **`DocumentStagingController`** — Accepts a file upload from the browser (triggered automatically on file selection), validates content type (PDF) and size (≤30 MB), stages the file in S3, delegates to `DocAiService`, promotes to permanent S3 storage on a valid Payslip result, and returns extracted fields as JSON for UI prefill
 - **`DocAiAdapter`** — Handles the HTTP boundary: POSTs a file to DocAI via multipart upload and returns the raw response body
-- **`DocAiService`** — Orchestrates the call: invokes the adapter, maps the response to a typed value object, and raises `ProcessingError` for failed jobs
+- **`DocAiService`** — Orchestrates the call: invokes the adapter, maps the response to a typed value object, logs the DocAI `job_id`, and raises `ProcessingError` for failed jobs
 - **`DocAiResult` / `DocAiResult::Payslip`** — Immutable value objects representing the API response; the base class holds the response envelope and a factory method; subclasses expose typed, snake_case accessors per document class
 
 ```mermaid
 flowchart LR
+    Browser -->|"file input change\n(Stimulus auto-upload)"| Controller[DocumentStagingController]
+    Controller -->|"validate PDF ≤30 MB"| Controller
+    Controller -->|file| S3Staging[(S3 Staging)]
     Controller -->|file| DocAiService
     DocAiService -->|file| DocAiAdapter
     DocAiAdapter -->|"POST /v1/documents?wait=true\n(60s timeout)"| DocAI[DocAI API]
     DocAI -->|JSON response| DocAiAdapter
     DocAiAdapter -->|response body| DocAiService
-    DocAiService -->|DocAiResult| Controller
+    DocAiService -->|DocAiResult::Payslip| Controller
+    Controller -->|promote| S3Perm[(S3 Permanent)]
+    Controller -->|"JSON extracted fields"| Browser
 ```
 
 **Processing model**: The `wait=true` parameter causes DocAI to block until processing completes, returning a single synchronous response within the upload request. No polling or webhook handling is required. If DocAI does not respond within 60 seconds, Faraday raises a `TimeoutError` and the service returns an error to the controller.
+
+---
+
+## User Interaction Flow
+
+> End-to-end sequence from file selection to form prefill
+
+```mermaid
+sequenceDiagram
+    actor Member
+    participant UI as Browser (Stimulus)
+    participant Controller as DocumentStagingController
+    participant S3S as S3 Staging Bucket
+    participant DocAI as DocAiService
+    participant S3P as S3 Permanent Bucket
+
+    Member->>UI: Selects file via file input
+    UI->>Controller: POST /documents/stage (multipart/form-data)
+    Controller->>Controller: Validate content type (PDF) + size (≤30 MB)
+
+    alt Validation fails
+        Controller->>UI: 422 { error: "File must be a PDF" }
+        UI->>Member: Inline validation error
+    end
+
+    Controller->>S3S: Upload file to staging bucket
+    Controller->>DocAI: analyze(file:)
+    DocAI->>DocAI: POST DocAI API (≤60s)
+
+    alt DocAI returns DocAiResult::Payslip
+        Controller->>S3P: Promote file from staging to permanent bucket
+        Controller->>S3S: Delete staging copy
+        Controller->>UI: 200 { fields: { current_gross_pay: ..., ... } }
+        UI->>Member: Prefill application form fields
+    else Not a Payslip
+        Controller->>S3S: Delete staging copy
+        Controller->>UI: 422 { error: "Document is not a recognised pay stub" }
+        UI->>Member: Inline error — re-upload prompt
+    else DocAI unavailable (nil result)
+        Controller->>S3S: Delete staging copy
+        Controller->>UI: 503 { error: "Document analysis temporarily unavailable" }
+        UI->>Member: Error — manual entry fallback
+    end
+```
+
+| Step | Notes |
+|------|-------|
+| File selection | A Stimulus controller listens on the `change` event of the file input and auto-submits via `fetch`; no submit button required |
+| Staging upload | The file is staged in S3 before DocAI is called; the two operations are intentionally separate |
+| Payslip check | `result.is_a?(DocAiResult::Payslip)` — documents matched to any other class (W-2, 1099) are rejected at this step |
+| Promotion | Only files that pass DocAI classification are written to permanent storage; staging copies are always deleted |
+| UI prefill | Only extracted `.value` fields are returned to the browser; confidence scores are retained server-side for staff review |
 
 ---
 
@@ -62,15 +120,19 @@ flowchart TB
 flowchart TB
     Member[Member] -->|"HTTPS"| WebApp[Web Application - Rails]
     WebApp --> DB[(PostgreSQL)]
+    WebApp -->|"stage / delete"| S3Staging[(S3 Staging Bucket)]
+    WebApp -->|"promote validated documents"| S3Perm[(S3 Permanent Bucket)]
     WebApp -->|"POST multipart file\n(synchronous, ≤60s)"| DocAI[DocAI External Service]
     DocAI -->|"JSON response"| WebApp
 ```
 
-| Container           | Technology     | Responsibilities                                                       |
-|---------------------|----------------|------------------------------------------------------------------------|
-| Web Application     | Rails 7.2      | HTTP handling, file receipt, synchronous DocAI validation per request  |
-| PostgreSQL          | PostgreSQL 14+ | Persistent storage                                                     |
-| DocAI External Service | NavaPBC DocAI | Document classification and field extraction                          |
+| Container              | Technology     | Responsibilities                                                                     |
+|------------------------|----------------|--------------------------------------------------------------------------------------|
+| Web Application        | Rails 7.2      | HTTP handling, file validation, staging orchestration, DocAI delegation, UI prefill  |
+| PostgreSQL             | PostgreSQL 14+ | Persistent storage                                                                   |
+| S3 Staging Bucket      | AWS S3         | Temporary file storage pending DocAI validation; objects are always deleted after    |
+| S3 Permanent Bucket    | AWS S3         | Durable storage for documents that passed DocAI Payslip classification               |
+| DocAI External Service | NavaPBC DocAI  | Document classification and field extraction                                         |
 
 ---
 
@@ -81,7 +143,14 @@ flowchart TB
 ```mermaid
 flowchart TB
     subgraph web [Web Application]
-        Controller[UploadController]
+        Controller[DocumentStagingController]
+        Validator[File Validator\nPDF · ≤30 MB]
+    end
+
+    subgraph storage [Storage Layer]
+        StorageAdapter[StorageAdapter]
+        S3Staging[(S3 Staging)]
+        S3Perm[(S3 Permanent)]
     end
 
     subgraph integration [Integration Layer]
@@ -94,6 +163,10 @@ flowchart TB
         Payslip[DocAiResult::Payslip\nsubclass]
     end
 
+    Controller --> Validator
+    Controller --> StorageAdapter
+    StorageAdapter --> S3Staging
+    StorageAdapter --> S3Perm
     Controller -->|"analyze(file:)"| Service
     Service -->|"analyze_document(file:)"| Adapter
     Adapter -->|"POST /v1/documents?wait=true\n(60s timeout)"| DocAI[DocAI API]
@@ -106,13 +179,16 @@ flowchart TB
 
 ### Key Components
 
-| Component                  | Responsibility                                                                                    |
-|----------------------------|---------------------------------------------------------------------------------------------------|
-| `DocAiAdapter`             | POSTs file via Faraday multipart; maps HTTP errors to typed exceptions                            |
-| `DocAiService`             | Invokes adapter; builds result value object; raises `ProcessingError` on failure                  |
-| `DocAiResult`              | Base value object: response envelope, `FieldValue` accessor, self-registration factory            |
-| `DocAiResult::FieldValue`  | Immutable struct wrapping `value` + `confidence`; exposes `low_confidence?` predicate             |
-| `DocAiResult::Payslip`     | Payslip subclass; self-registers via `register "Payslip"`; typed `field_for` accessors per field  |
+| Component                    | Responsibility                                                                                                      |
+|------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| `DocumentStagingController`  | Validates upload, stages in S3, calls `DocAiService`, promotes on Payslip success, returns JSON fields for UI prefill |
+| File Validator               | Enforces PDF content type and ≤30 MB size limit before any S3 or DocAI operations                                  |
+| `StorageAdapter`             | Uploads/promotes/deletes files in S3 staging and permanent buckets                                                  |
+| `DocAiAdapter`               | POSTs file via Faraday multipart; maps HTTP errors to typed exceptions                                              |
+| `DocAiService`               | Invokes adapter; builds result value object; logs `job_id`; raises `ProcessingError` on failure                    |
+| `DocAiResult`                | Base value object: response envelope, `FieldValue` accessor, self-registration factory                              |
+| `DocAiResult::FieldValue`    | Immutable struct wrapping `value` + `confidence`; exposes `low_confidence?` predicate                               |
+| `DocAiResult::Payslip`       | Payslip subclass; self-registers via `register "Payslip"`; typed `field_for` accessors per field                   |
 
 ---
 
@@ -257,10 +333,83 @@ A job may complete with HTTP 200 but indicate a processing failure via `status: 
 | Request timeout (> 60s)    | —           | —                            | Faraday raises `TimeoutError` → caught as `ApiError` → `handle_integration_error` returns `nil` |
 | DocAI processing failed    | 200         | `{"status":"failed",...}`    | `DocAiService` checks `result.failed?` → raises `ProcessingError`                               |
 | Graceful degradation       | any         | —                            | `handle_integration_error` logs warning and returns `nil`                                       |
+| Document not a Payslip     | 200         | `{"matchedDocumentClass":"..."}` | Controller checks `result.is_a?(DocAiResult::Payslip)`; deletes staging copy; returns 422  |
 
 ---
 
 ## Key Interfaces
+
+### DocumentStagingController
+
+Entry point for all document uploads. Validates the file before any S3 or DocAI operations, orchestrates staging and promotion, and returns a JSON payload consumed by the Stimulus controller to prefill the active application form.
+
+```ruby
+# app/controllers/document_staging_controller.rb
+class DocumentStagingController < ApplicationController
+  ALLOWED_CONTENT_TYPES = %w[application/pdf].freeze
+  MAX_FILE_SIZE_BYTES    = 30.megabytes
+
+  def create
+    file = params.require(:file)
+    return render_error("must be a PDF", :unprocessable_entity)    unless valid_content_type?(file)
+    return render_error("must be under 30 MB", :unprocessable_entity) unless valid_file_size?(file)
+
+    staging_key = storage_adapter.stage(file)
+    result      = DocAiService.new.analyze(file: file)
+
+    if result.nil?
+      storage_adapter.delete(staging_key)
+      return render_error("Document analysis temporarily unavailable — please try again", :service_unavailable)
+    end
+
+    unless result.is_a?(DocAiResult::Payslip)
+      storage_adapter.delete(staging_key)
+      return render_error("Document is not a recognised pay stub — please upload a pay stub", :unprocessable_entity)
+    end
+
+    storage_adapter.promote(staging_key)
+    render json: { fields: serialise_fields(result) }, status: :ok
+  end
+
+  private
+
+  def valid_content_type?(file) = file.content_type.in?(ALLOWED_CONTENT_TYPES)
+  def valid_file_size?(file)    = file.size <= MAX_FILE_SIZE_BYTES
+
+  def render_error(message, status)
+    render json: { error: message }, status: status
+  end
+
+  def storage_adapter
+    @storage_adapter ||= StorageAdapter.new
+  end
+
+  def serialise_fields(result)
+    {
+      pay_period_start_date:  result.pay_period_start_date&.value,
+      pay_period_end_date:    result.pay_period_end_date&.value,
+      pay_date:               result.pay_date&.value,
+      current_gross_pay:      result.current_gross_pay&.value,
+      current_net_pay:        result.current_net_pay&.value,
+      current_total_deductions: result.current_total_deductions&.value,
+      ytd_gross_pay:          result.ytd_gross_pay&.value,
+      ytd_net_pay:            result.ytd_net_pay&.value,
+      employee_first_name:    result.employee_first_name&.value,
+      employee_last_name:     result.employee_last_name&.value,
+      employee_address_line1: result.employee_address_line1&.value,
+      employee_address_city:  result.employee_address_city&.value,
+      employee_address_state: result.employee_address_state&.value,
+      employee_address_zipcode: result.employee_address_zipcode&.value
+    }
+  end
+end
+```
+
+> **CSRF**: Include the Rails CSRF token in every Stimulus fetch request (`headers: { "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content }`). Do not disable forgery protection on this endpoint.
+>
+> **Authorization**: Call `authorize :document, :create?` (or the appropriate Pundit policy) at the top of `#create` to enforce member authentication before any file processing.
+
+---
 
 ### DocAiAdapter
 
@@ -313,8 +462,14 @@ class DocAiService < DataIntegration::BaseService
 
   def analyze(file:)
     response = @adapter.analyze_document(file: file)
-    result = DocAiResult.from_response(response)
+    result   = DocAiResult.from_response(response)
     raise ProcessingError, result.error if result.failed?
+
+    Rails.logger.info(
+      "[DocAiService] job_id=#{result.job_id} status=#{result.status} " \
+      "matched_class=#{result.matched_document_class} " \
+      "processing_seconds=#{result.total_processing_time_seconds}"
+    )
     result
   rescue DocAiAdapter::ApiError, ProcessingError => e
     handle_integration_error(e)
@@ -431,6 +586,12 @@ end
 # Subclass files are required explicitly so their .register calls populate REGISTRY
 # before any call to DocAiResult.from_response.
 require_relative "doc_ai_result/payslip"
+
+# Freeze the registry after all subclasses have loaded to prevent accidental
+# post-load mutation. Any require_relative for new document types must appear above.
+REGISTRY.freeze
+
+private_class_method :build
 ```
 
 ### DocAiResult::Payslip (Subclass Value Object)
@@ -523,11 +684,13 @@ Add `require_relative "doc_ai_result/w2"` to the bottom of `doc_ai_result.rb` al
 
 | File | Purpose |
 |------|---------|
+| `app/controllers/document_staging_controller.rb` | Validates upload (PDF, ≤30 MB); stages/promotes via `StorageAdapter`; orchestrates DocAI |
 | `app/adapters/doc_ai_adapter.rb` | Extends `DataIntegration::BaseAdapter`; POSTs file via Faraday multipart |
 | `app/services/doc_ai_service.rb` | Extends `DataIntegration::BaseService`; accepts file, returns `DocAiResult` |
 | `app/models/doc_ai_result.rb` | Base `Strata::ValueObject`; envelope fields, generic accessors, subclass factory |
 | `app/models/doc_ai_result/payslip.rb` | `DocAiResult::Payslip` subclass; all Payslip snake_case field accessors |
 | `config/initializers/doc_ai.rb` | App config for env vars |
+| `spec/controllers/document_staging_controller_spec.rb` | Controller tests: file validation, S3 staging/promotion, DocAI delegation |
 | `spec/adapters/doc_ai_adapter_spec.rb` | Adapter tests (WebMock stubs) |
 | `spec/services/doc_ai_service_spec.rb` | Service tests |
 | `spec/models/doc_ai_result_spec.rb` | Base value object tests |
@@ -603,6 +766,14 @@ DOC_AI_TIMEOUT_SECONDS=60
 **Rationale**: Confidence scores are part of every field the API returns. Exposing them as a paired struct rather than a separate accessor call makes it impossible for callers to accidentally use an extracted value without having access to its reliability signal. Callers that only need the value call `.value`; callers that need to gate on confidence call `.low_confidence?`. The threshold constant lives on `FieldValue`, not in application config or controller code, giving a single place to adjust it.
 
 **Tradeoff**: Callers that previously compared `result.current_gross_pay == 1627.74` now compare `result.current_gross_pay.value == 1627.74`. Boolean validation flag accessors (`gross_pay_valid?` etc.) remain plain predicates by unwrapping the value directly, since confidence on a flag is not semantically meaningful to callers.
+
+### Two-bucket staging and promotion
+
+**Decision**: Uploaded files are written to an S3 staging bucket before DocAI is called. Only files that DocAI classifies as `DocAiResult::Payslip` are promoted to the permanent bucket; all other outcomes delete the staging copy.
+
+**Rationale**: Staging creates an explicit gate: the permanent bucket contains only documents that have passed classification. Separating the upload receipt from the promotion decision also ensures that a DocAI timeout or processing failure cannot leave an unverified document in permanent storage.
+
+**Tradeoff**: Two S3 operations (stage then promote or delete) add latency to the happy path and introduce an orphan-object risk if Rails crashes between staging and the promote/delete call. An S3 lifecycle policy expiring objects in the staging bucket after 24 hours is recommended as a safety net against accumulation.
 
 ### Graceful degradation on integration errors
 
