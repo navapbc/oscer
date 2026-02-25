@@ -15,7 +15,8 @@ Integrating with the NavaPBC DocAI service enables:
 
 A thin adapter + service + value object pattern integrates DocAI into existing OSCER workflows without coupling business logic to the external API:
 
-- **`DocumentStagingController`** — Accepts a file upload from the browser (triggered automatically on file selection), validates content type (PDF) and size (≤30 MB), stages the file in S3, delegates to `DocAiService`, promotes to permanent S3 storage on a valid Payslip result, and returns extracted fields as JSON for UI prefill
+- **`DocumentStagingController`** — Accepts a file upload from the browser (triggered automatically on file selection), validates content type (PDF) and size (≤30 MB), creates a `StagedDocument` record, attaches the uploaded file via ActiveStorage, delegates to `DocAiService`, updates the record's status and extracted fields, and returns a signed global ID (`sgid`) and extracted fields as JSON for UI prefill
+- **`StagedDocument`** — ActiveRecord model that owns the uploaded file (via `has_one_attached :file`) and tracks DocAI validation state, extracted fields, and the `job_id`. Retained permanently as an audit record; `activity_id` is set when the blob is transferred to an `Activity`
 - **`DocAiAdapter`** — Handles the HTTP boundary: POSTs a file to DocAI via multipart upload and returns the raw response body
 - **`DocAiService`** — Orchestrates the call: invokes the adapter, maps the response to a typed value object, logs the DocAI `job_id`, and raises `ProcessingError` for failed jobs
 - **`DocAiResult` / `DocAiResult::Payslip`** — Immutable value objects representing the API response; the base class holds the response envelope and a factory method; subclasses expose typed, snake_case accessors per document class
@@ -24,15 +25,16 @@ A thin adapter + service + value object pattern integrates DocAI into existing O
 flowchart LR
     Browser -->|"file input change\n(Stimulus auto-upload)"| Controller[DocumentStagingController]
     Controller -->|"validate PDF ≤30 MB"| Controller
-    Controller -->|file| S3Staging[(S3 Staging)]
-    Controller -->|file| DocAiService
+    Controller -->|"StagedDocument.create!(pending)"| DB[(PostgreSQL)]
+    Controller -->|"file.attach"| AS[ActiveStorage / S3]
+    Controller -->|"staged_document.file"| DocAiService
     DocAiService -->|file| DocAiAdapter
     DocAiAdapter -->|"POST /v1/documents?wait=true\n(60s timeout)"| DocAI[DocAI API]
     DocAI -->|JSON response| DocAiAdapter
     DocAiAdapter -->|response body| DocAiService
     DocAiService -->|DocAiResult::Payslip| Controller
-    Controller -->|promote| S3Perm[(S3 Permanent)]
-    Controller -->|"JSON extracted fields"| Browser
+    Controller -->|"update!(validated, fields, job_id)"| DB
+    Controller -->|"JSON { staged_document_sgid, fields }"| Browser
 ```
 
 **Processing model**: The `wait=true` parameter causes DocAI to block until processing completes, returning a single synchronous response within the upload request. No polling or webhook handling is required. If DocAI does not respond within 60 seconds, Faraday raises a `TimeoutError` and the service returns an error to the controller.
@@ -48,9 +50,8 @@ sequenceDiagram
     actor Member
     participant UI as Browser (Stimulus)
     participant Controller as DocumentStagingController
-    participant S3S as S3 Staging Bucket
+    participant DB as StagedDocument (DB)
     participant DocAI as DocAiService
-    participant S3P as S3 Permanent Bucket
 
     Member->>UI: Selects file via file input
     UI->>Controller: POST /documents/stage (multipart/form-data)
@@ -61,21 +62,21 @@ sequenceDiagram
         UI->>Member: Inline validation error
     end
 
-    Controller->>S3S: Upload file to staging bucket
-    Controller->>DocAI: analyze(file:)
+    Controller->>DB: StagedDocument.create!(status: :pending)
+    Controller->>DB: staged_document.file.attach(file)
+    Controller->>DocAI: analyze(file: staged_document.file)
     DocAI->>DocAI: POST DocAI API (≤60s)
 
     alt DocAI returns DocAiResult::Payslip
-        Controller->>S3P: Promote file from staging to permanent bucket
-        Controller->>S3S: Delete staging copy
-        Controller->>UI: 200 { fields: { current_gross_pay: ..., ... } }
+        Controller->>DB: update!(status: :validated, extracted_fields, job_id, validated_at)
+        Controller->>UI: 200 { staged_document_sgid: "...", fields: { current_gross_pay: ..., ... } }
         UI->>Member: Prefill application form fields
     else Not a Payslip
-        Controller->>S3S: Delete staging copy
+        Controller->>DB: update!(status: :rejected)
         Controller->>UI: 422 { error: "Document is not a recognised pay stub" }
         UI->>Member: Inline error — re-upload prompt
     else DocAI unavailable (nil result)
-        Controller->>S3S: Delete staging copy
+        Controller->>DB: update!(status: :failed)
         Controller->>UI: 503 { error: "Document analysis temporarily unavailable" }
         UI->>Member: Error — manual entry fallback
     end
@@ -84,65 +85,66 @@ sequenceDiagram
 | Step | Notes |
 |------|-------|
 | File selection | A Stimulus controller listens on the `change` event of the file input and auto-submits via `fetch`; no submit button required |
-| Staging upload | The file is staged in S3 before DocAI is called; the two operations are intentionally separate |
+| StagedDocument creation | A `StagedDocument` record is created with `status: :pending` before DocAI is called; the file is attached via ActiveStorage (which handles S3 transparently) |
 | Payslip check | `result.is_a?(DocAiResult::Payslip)` — documents matched to any other class (W-2, 1099) are rejected at this step |
-| Promotion | Only files that pass DocAI classification are written to permanent storage; staging copies are always deleted |
+| Status update | All outcomes update the `StagedDocument` status (`validated`, `rejected`, or `failed`) — the record is retained permanently as an audit trail |
 | UI prefill | Only extracted `.value` fields are returned to the browser; confidence scores are retained server-side for staff review |
 
 ---
 
 ## Activity Attachment Flow
 
-> How a staged, validated document gets attached to an `Activity` record and how the manual upload step is bypassed
+> How a validated `StagedDocument` gets attached to an `Activity` record and how the manual upload step is bypassed
 
-After `DocumentStagingController` promotes a file to permanent S3, the file exists in storage but is not yet associated with any Rails model. This section describes the three-part handoff that connects the staged file to an `Activity` record via ActiveStorage.
+After `DocumentStagingController` validates the file with DocAI, the `StagedDocument` record holds the file via ActiveStorage and has `status: :validated`. This section describes the three-part handoff that connects the staged document to an `Activity` record.
 
-### 1. `DocumentStagingController` returns a `signed_id`
+### 1. `DocumentStagingController` returns a `staged_document_sgid`
 
-After promoting to permanent S3, the controller creates an `ActiveStorage::Blob` record pointing at the permanent key and includes its `signed_id` in the JSON response alongside the extracted fields. The `signed_id` is the standard Rails mechanism for attaching a pre-uploaded blob from a form submission — it is a secure, HMAC-signed, time-limited token the browser can pass back without exposing the raw storage key.
+After updating the `StagedDocument` to `validated`, the controller returns a signed global ID (`sgid`) and the extracted fields in the JSON response. The `sgid` is an HMAC-signed, time-limited token (1 hour expiry) that the browser can pass back without exposing the raw record UUID. It cannot be forged or replayed after expiry, and a purpose scope (`'activity_attachment'`) prevents token reuse across different operations.
 
 ```ruby
-blob = ActiveStorage::Blob.create!(
-  key:          permanent_key,
-  filename:     file.original_filename,
-  content_type: file.content_type,
-  byte_size:    file.size,
-  checksum:     ActiveStorage::Blob.compute_checksum_in_chunks(file),
-  service_name: Rails.application.config.active_storage.service.to_s
-)
-
-render json: { signed_id: blob.signed_id, fields: serialise_fields(result) }, status: :ok
+render json: {
+  staged_document_sgid: staged_document.to_sgid(expires_in: 1.hour).to_s,
+  fields:               staged_document.extracted_fields
+}, status: :ok
 ```
 
-The `signed_id` is opaque to the browser — it carries no path information and cannot be forged or replayed beyond its expiry window.
+### 2. Stimulus controller stores `staged_document_sgid` in a hidden field
 
-### 2. Stimulus controller stores `signed_id` in a hidden field
+The existing Stimulus auto-upload controller (which already handles the `change` event and prefills form fields from the `fields` payload) is also responsible for the `sgid` handoff:
 
-The existing Stimulus auto-upload controller (which already handles the `change` event and prefills form fields from the `fields` payload) is also responsible for the `signed_id` handoff:
-
-- **On success (200)**: populate a hidden `<input name="activity[staged_document_signed_id]">` alongside the existing activity form fields with the returned `signed_id`
-- **On any error (422 / 503)**: clear the hidden field so no stale `signed_id` is submitted with the form
+- **On success (200)**: populate a hidden `<input name="activity[staged_document_sgid]">` alongside the existing activity form fields with the returned `staged_document_sgid`
+- **On any error (422 / 503)**: clear the hidden field so no stale `sgid` is submitted with the form
 
 No change to the form builder or the existing `Activity` form structure is needed — the hidden field lives alongside the other form fields and is ignored if empty.
 
 ### 3. `ActivitiesController#create` attaches the blob and skips the upload step
 
-When `params[:activity][:staged_document_signed_id]` is present, the controller attaches the already-existing blob to the activity and redirects directly to the next step, bypassing the `documents` upload page:
+When `params[:activity][:staged_document_sgid]` is present, the controller resolves the `StagedDocument` via `find_signed`, attaches its blob directly to the activity (no S3 copy is made — the same blob is shared), marks the staged document as consumed, and redirects to the next step, bypassing the `documents` upload page:
 
 ```ruby
-if (signed_id = activity_params[:staged_document_signed_id]).present?
-  @activity.supporting_documents.attach(signed_id)
-  redirect_to activity_report_application_form_path(@activity_report_application_form),
-              notice: t(".created_with_document")
+if (sgid = activity_params[:staged_document_sgid]).present?
+  staged = StagedDocument.find_signed(sgid, purpose: 'activity_attachment')
+
+  if staged&.validated?
+    @activity.supporting_documents.attach(staged.file.blob)
+    staged.update!(activity_id: @activity.id)
+    redirect_to activity_report_application_form_path(@activity_report_application_form),
+                notice: t(".created_with_document")
+  else
+    # sgid expired or record not validated — fall through to upload page
+    redirect_to documents_activity_report_application_form_activity_path(
+                  @activity_report_application_form, @activity)
+  end
 else
   redirect_to documents_activity_report_application_form_activity_path(
                 @activity_report_application_form, @activity)
 end
 ```
 
-`staged_document_signed_id` must be added to the permitted params list in `ActivitiesController`.
+`staged_document_sgid` must be added to the permitted params list in `ActivitiesController`.
 
-When no `signed_id` is present — because DocAI was unavailable, the member has not yet uploaded a file, or the upload was skipped — the existing redirect to the `documents` upload page is preserved unchanged. Degradation is graceful; the manual upload path remains fully functional.
+When no `sgid` is present — because DocAI was unavailable, the member has not yet uploaded a file, or the upload was skipped — the existing redirect to the `documents` upload page is preserved unchanged. Degradation is graceful; the manual upload path remains fully functional.
 
 ### End-to-End Sequence Diagram
 
@@ -153,23 +155,23 @@ sequenceDiagram
     actor Member
     participant UI as Browser (Stimulus)
     participant Staging as DocumentStagingController
-    participant S3P as S3 Permanent Bucket
-    participant AS as ActiveStorage
+    participant DB as StagedDocument (DB)
     participant Activities as ActivitiesController
 
     Member->>UI: Selects file via file input
     UI->>Staging: POST /documents/stage (multipart/form-data)
     Staging->>Staging: Validate PDF + size
-    Staging->>S3P: Stage → DocAI → promote file
-    Staging->>AS: ActiveStorage::Blob.create!(key: permanent_key, ...)
-    Staging->>UI: 200 { signed_id: "...", fields: { current_gross_pay: ..., ... } }
+    Staging->>DB: StagedDocument.create!(pending) + file.attach → DocAI → update!(validated, fields, job_id)
+    Staging->>UI: 200 { staged_document_sgid: "...", fields: { current_gross_pay: ..., ... } }
     UI->>UI: Prefill form fields from fields payload
-    UI->>UI: Store signed_id in hidden input[name="activity[staged_document_signed_id]"]
+    UI->>UI: Store sgid in hidden input[name="activity[staged_document_sgid]"]
 
     Member->>UI: Fills remaining fields, submits activity form
     UI->>Activities: POST /activity_report_application_forms/:id/activities
-    Activities->>Activities: activity_params includes staged_document_signed_id
-    Activities->>AS: @activity.supporting_documents.attach(signed_id)
+    Activities->>DB: StagedDocument.find_signed(sgid, purpose: 'activity_attachment')
+    Activities->>Activities: staged.validated? → true
+    Activities->>Activities: @activity.supporting_documents.attach(staged.file.blob)
+    Activities->>DB: staged.update!(activity_id: @activity.id)
     Activities->>UI: Redirect to next step (skip documents upload page)
 ```
 
@@ -180,27 +182,33 @@ sequenceDiagram
     actor Member
     participant UI as Browser (Stimulus)
     participant Staging as DocumentStagingController
+    participant DB as StagedDocument (DB)
     participant Activities as ActivitiesController
     participant Upload as Documents Upload Page
 
     Member->>UI: Selects file via file input
     UI->>Staging: POST /documents/stage (multipart/form-data)
+    Staging->>DB: StagedDocument.create!(pending) + file.attach → update!(failed)
     Staging->>UI: 503 { error: "Document analysis temporarily unavailable" }
-    UI->>UI: Show inline error; clear staged_document_signed_id hidden field
+    UI->>UI: Show inline error; clear staged_document_sgid hidden field
     UI->>Member: Error — manual entry fallback
 
     Member->>UI: Fills fields manually, submits activity form
     UI->>Activities: POST /activity_report_application_forms/:id/activities
-    Activities->>Activities: No staged_document_signed_id in params
+    Activities->>Activities: No staged_document_sgid in params
     Activities->>Upload: Redirect to documents_activity_report_application_form_activity_path
     Upload->>Member: Existing manual upload flow (unchanged)
 ```
 
 ### Design Decisions
 
-**`signed_id` as the hand-off token** — Uses the standard Rails ActiveStorage mechanism with no custom tables or token schemes. The blob is created server-side after promotion (not via client-initiated direct upload), so the `signed_id` attaches an already-existing, already-validated blob rather than initiating a new upload.
+**`sgid` as the hand-off token** — A signed global ID is tamper-proof and time-limited (1 hour). A raw UUID would require an explicit authorization check in `ActivitiesController` to prevent IDOR (member A passing member B's staged_document UUID). The `sgid` approach eliminates this attack surface without a DB membership query. `GlobalID::Locator.locate_signed` resolves directly to the `StagedDocument` record with one method call.
 
-**Graceful degradation preserved** — When `staged_document_signed_id` is absent, the existing `documents` upload page is still reachable, maintaining the current flow as a fallback with no changes to `ActivityReportApplicationFormsController`.
+**Blob sharing, not blob copying** — `staged.file.blob` returns the existing `ActiveStorage::Blob`. Attaching it to `Activity.supporting_documents` creates a new `active_storage_attachments` row pointing at the same S3 object — no storage copy is made. Both the `StagedDocument` and the `Activity` reference the same physical file.
+
+**`StagedDocument` retained as audit record** — Unlike a staging copy that would be deleted after use, `StagedDocument` rows are retained permanently. `activity_id` is set when the blob is transferred, marking the record as consumed. Since `StagedDocument` records are never purged, the blob is safe from premature deletion even after it is attached to an Activity.
+
+**Graceful degradation preserved** — When `staged_document_sgid` is absent, the existing `documents` upload page is still reachable, maintaining the current flow as a fallback with no changes to `ActivityReportApplicationFormsController`.
 
 **No changes to `ActivityReportApplicationFormsController`** — The flow change lives entirely in `ActivitiesController#create` and the Stimulus controller. The multi-step form orchestration layer is unaffected.
 
@@ -235,19 +243,17 @@ flowchart TB
 flowchart TB
     Member[Member] -->|"HTTPS"| WebApp[Web Application - Rails]
     WebApp --> DB[(PostgreSQL)]
-    WebApp -->|"stage / delete"| S3Staging[(S3 Staging Bucket)]
-    WebApp -->|"promote validated documents"| S3Perm[(S3 Permanent Bucket)]
+    WebApp -->|"ActiveStorage: attach / read"| S3[(S3 via ActiveStorage)]
     WebApp -->|"POST multipart file\n(synchronous, ≤60s)"| DocAI[DocAI External Service]
     DocAI -->|"JSON response"| WebApp
 ```
 
-| Container              | Technology     | Responsibilities                                                                     |
-|------------------------|----------------|--------------------------------------------------------------------------------------|
-| Web Application        | Rails 7.2      | HTTP handling, file validation, staging orchestration, DocAI delegation, UI prefill  |
-| PostgreSQL             | PostgreSQL 14+ | Persistent storage                                                                   |
-| S3 Staging Bucket      | AWS S3         | Temporary file storage pending DocAI validation; objects are always deleted after    |
-| S3 Permanent Bucket    | AWS S3         | Durable storage for documents that passed DocAI Payslip classification               |
-| DocAI External Service | NavaPBC DocAI  | Document classification and field extraction                                         |
+| Container              | Technology     | Responsibilities                                                                                  |
+|------------------------|----------------|---------------------------------------------------------------------------------------------------|
+| Web Application        | Rails 7.2      | HTTP handling, file validation, `StagedDocument` lifecycle, DocAI delegation, UI prefill          |
+| PostgreSQL             | PostgreSQL 14+ | Persistent storage including `staged_documents` table                                             |
+| S3 (via ActiveStorage) | AWS S3         | Durable file storage; bucket configuration managed by ActiveStorage (no custom S3 operations)     |
+| DocAI External Service | NavaPBC DocAI  | Document classification and field extraction                                                      |
 
 ---
 
@@ -262,10 +268,9 @@ flowchart TB
         Validator[File Validator\nPDF · ≤30 MB]
     end
 
-    subgraph storage [Storage Layer]
-        StorageAdapter[StorageAdapter]
-        S3Staging[(S3 Staging)]
-        S3Perm[(S3 Permanent)]
+    subgraph domain [Domain Layer]
+        StagedDoc[StagedDocument\nstatus · file · extracted_fields]
+        AS[ActiveStorage / S3]
     end
 
     subgraph integration [Integration Layer]
@@ -273,16 +278,15 @@ flowchart TB
         Adapter[DocAiAdapter]
     end
 
-    subgraph domain [Domain Layer]
+    subgraph results [Value Objects]
         Result[DocAiResult\nbase value object]
         Payslip[DocAiResult::Payslip\nsubclass]
     end
 
     Controller --> Validator
-    Controller --> StorageAdapter
-    StorageAdapter --> S3Staging
-    StorageAdapter --> S3Perm
-    Controller -->|"analyze(file:)"| Service
+    Controller -->|"create! + file.attach"| StagedDoc
+    StagedDoc --> AS
+    Controller -->|"analyze(file: staged_document.file)"| Service
     Service -->|"analyze_document(file:)"| Adapter
     Adapter -->|"POST /v1/documents?wait=true\n(60s timeout)"| DocAI[DocAI API]
     DocAI -->|"JSON body"| Adapter
@@ -290,20 +294,21 @@ flowchart TB
     Service -->|"DocAiResult.from_response"| Result
     Result -->|"DocAiResult::Payslip"| Payslip
     Service -->|"DocAiResult::Payslip"| Controller
+    Controller -->|"update!(validated, fields, job_id)"| StagedDoc
 ```
 
 ### Key Components
 
-| Component                    | Responsibility                                                                                                      |
-|------------------------------|---------------------------------------------------------------------------------------------------------------------|
-| `DocumentStagingController`  | Validates upload, stages in S3, calls `DocAiService`, promotes on Payslip success, returns JSON fields for UI prefill |
-| File Validator               | Enforces PDF content type and ≤30 MB size limit before any S3 or DocAI operations                                  |
-| `StorageAdapter`             | Uploads/promotes/deletes files in S3 staging and permanent buckets                                                  |
-| `DocAiAdapter`               | POSTs file via Faraday multipart; maps HTTP errors to typed exceptions                                              |
-| `DocAiService`               | Invokes adapter; builds result value object; logs `job_id`; raises `ProcessingError` on failure                    |
-| `DocAiResult`                | Base value object: response envelope, `FieldValue` accessor, self-registration factory                              |
-| `DocAiResult::FieldValue`    | Immutable struct wrapping `value` + `confidence`; exposes `low_confidence?` predicate                               |
-| `DocAiResult::Payslip`       | Payslip subclass; self-registers via `register "Payslip"`; typed `field_for` accessors per field                   |
+| Component                    | Responsibility                                                                                                              |
+|------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| `DocumentStagingController`  | Validates upload, creates `StagedDocument`, attaches file, calls `DocAiService`, updates status/fields, returns `sgid` + JSON fields for UI prefill |
+| File Validator               | Enforces PDF content type and ≤30 MB size limit before any DB or DocAI operations                                          |
+| `StagedDocument`             | ActiveRecord model: owns uploaded file via `has_one_attached :file`; tracks DocAI validation status, extracted fields, `job_id`, and `activity_id` |
+| `DocAiAdapter`               | POSTs file via Faraday multipart; maps HTTP errors to typed exceptions                                                      |
+| `DocAiService`               | Invokes adapter; builds result value object; logs `job_id`; raises `ProcessingError` on failure                            |
+| `DocAiResult`                | Base value object: response envelope, `FieldValue` accessor, self-registration factory                                      |
+| `DocAiResult::FieldValue`    | Immutable struct wrapping `value` + `confidence`; exposes `low_confidence?` predicate                                       |
+| `DocAiResult::Payslip`       | Payslip subclass; self-registers via `register "Payslip"`; typed `field_for` accessors per field                           |
 
 ---
 
@@ -440,23 +445,61 @@ A job may complete with HTTP 200 but indicate a processing failure via `status: 
 
 ## Error Handling
 
-| Scenario                   | HTTP Status | Body                         | Handling                                                                                        |
-|----------------------------|-------------|------------------------------|-------------------------------------------------------------------------------------------------|
-| Bad request / parse failure | 4xx        | `{"detail": "..."}`          | `DocAiAdapter#handle_error` → raises `ApiError` with detail msg                                 |
-| Server error               | 5xx         | —                            | `BaseAdapter#handle_server_error` → raises `ServerError`                                        |
-| Network failure            | —           | —                            | `BaseAdapter#handle_connection_error` → raises `ApiError`                                       |
-| Request timeout (> 60s)    | —           | —                            | Faraday raises `TimeoutError` → caught as `ApiError` → `handle_integration_error` returns `nil` |
-| DocAI processing failed    | 200         | `{"status":"failed",...}`    | `DocAiService` checks `result.failed?` → raises `ProcessingError`                               |
-| Graceful degradation       | any         | —                            | `handle_integration_error` logs warning and returns `nil`                                       |
-| Document not a Payslip     | 200         | `{"matchedDocumentClass":"..."}` | Controller checks `result.is_a?(DocAiResult::Payslip)`; deletes staging copy; returns 422  |
+| Scenario                   | HTTP Status | Body                         | Handling                                                                                                             |
+|----------------------------|-------------|------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| Bad request / parse failure | 4xx        | `{"detail": "..."}`          | `DocAiAdapter#handle_error` → raises `ApiError` with detail msg                                                      |
+| Server error               | 5xx         | —                            | `BaseAdapter#handle_server_error` → raises `ServerError`                                                             |
+| Network failure            | —           | —                            | `BaseAdapter#handle_connection_error` → raises `ApiError`                                                            |
+| Request timeout (> 60s)    | —           | —                            | Faraday raises `TimeoutError` → caught as `ApiError` → `handle_integration_error` returns `nil`                      |
+| DocAI processing failed    | 200         | `{"status":"failed",...}`    | `DocAiService` checks `result.failed?` → raises `ProcessingError`                                                    |
+| Graceful degradation       | any         | —                            | `handle_integration_error` logs warning and returns `nil`; controller updates `StagedDocument` to `status: :failed`  |
+| Document not a Payslip     | 200         | `{"matchedDocumentClass":"..."}` | Controller checks `result.is_a?(DocAiResult::Payslip)`; updates `StagedDocument` to `status: :rejected`; returns 422 |
 
 ---
 
 ## Key Interfaces
 
+### StagedDocument
+
+Intermediate ActiveRecord model that owns an uploaded file and tracks its DocAI validation lifecycle. Retained permanently as an audit record — `activity_id` is populated when the blob is transferred to an `Activity`.
+
+```ruby
+# db/migrate/<timestamp>_create_staged_documents.rb
+create_table :staged_documents, id: :uuid do |t|
+  t.string  :status,              null: false, default: "pending"
+  t.string  :doc_ai_job_id
+  t.string  :doc_ai_matched_class
+  t.jsonb   :extracted_fields,    null: false, default: {}
+  t.datetime :validated_at
+  t.uuid    :activity_id          # populated when attached to an Activity (audit trail)
+  t.timestamps
+end
+```
+
+```ruby
+# app/models/staged_document.rb
+class StagedDocument < ApplicationRecord
+  has_one_attached :file
+
+  enum :status, {
+    pending:   "pending",    # file received, DocAI not yet called
+    validated: "validated",  # DocAI returned a recognised Payslip
+    rejected:  "rejected",   # DocAI returned non-Payslip or validation failure
+    failed:    "failed"      # DocAI service error (graceful degradation)
+  }
+
+  validates :status, presence: true
+  validates :file, attached: true
+end
+```
+
+**Blob sharing:** When `ActivitiesController` calls `@activity.supporting_documents.attach(staged.file.blob)`, it creates a new `active_storage_attachments` row pointing at the same `ActiveStorage::Blob` — no S3 copy is made. Both the `StagedDocument` and the `Activity` reference the same physical file. Since `StagedDocument` records are never purged, there is no risk of the blob being deleted out from under the Activity.
+
+---
+
 ### DocumentStagingController
 
-Entry point for all document uploads. Validates the file before any S3 or DocAI operations, orchestrates staging and promotion, and returns a JSON payload consumed by the Stimulus controller to prefill the active application form.
+Entry point for all document uploads. Validates the file before any DB or DocAI operations, creates a `StagedDocument` record with `has_one_attached :file`, delegates to `DocAiService`, updates the record's status and extracted fields, and returns a JSON payload consumed by the Stimulus controller to prefill the active application form.
 
 ```ruby
 # app/controllers/document_staging_controller.rb
@@ -466,24 +509,36 @@ class DocumentStagingController < ApplicationController
 
   def create
     file = params.require(:file)
-    return render_error("must be a PDF", :unprocessable_entity)    unless valid_content_type?(file)
+    return render_error("must be a PDF", :unprocessable_entity)      unless valid_content_type?(file)
     return render_error("must be under 30 MB", :unprocessable_entity) unless valid_file_size?(file)
 
-    staging_key = storage_adapter.stage(file)
-    result      = DocAiService.new.analyze(file: file)
+    staged_document = StagedDocument.create!(status: :pending)
+    staged_document.file.attach(file)
+
+    result = DocAiService.new.analyze(file: staged_document.file)
 
     if result.nil?
-      storage_adapter.delete(staging_key)
+      staged_document.update!(status: :failed)
       return render_error("Document analysis temporarily unavailable — please try again", :service_unavailable)
     end
 
     unless result.is_a?(DocAiResult::Payslip)
-      storage_adapter.delete(staging_key)
+      staged_document.update!(status: :rejected)
       return render_error("Document is not a recognised pay stub — please upload a pay stub", :unprocessable_entity)
     end
 
-    storage_adapter.promote(staging_key)
-    render json: { fields: serialise_fields(result) }, status: :ok
+    staged_document.update!(
+      status:               :validated,
+      doc_ai_job_id:        result.job_id,
+      doc_ai_matched_class: result.matched_document_class,
+      extracted_fields:     serialise_fields(result),
+      validated_at:         Time.current
+    )
+
+    render json: {
+      staged_document_sgid: staged_document.to_sgid(expires_in: 1.hour).to_s,
+      fields:               staged_document.extracted_fields
+    }, status: :ok
   end
 
   private
@@ -495,25 +550,21 @@ class DocumentStagingController < ApplicationController
     render json: { error: message }, status: status
   end
 
-  def storage_adapter
-    @storage_adapter ||= StorageAdapter.new
-  end
-
   def serialise_fields(result)
     {
-      pay_period_start_date:  result.pay_period_start_date&.value,
-      pay_period_end_date:    result.pay_period_end_date&.value,
-      pay_date:               result.pay_date&.value,
-      current_gross_pay:      result.current_gross_pay&.value,
-      current_net_pay:        result.current_net_pay&.value,
+      pay_period_start_date:    result.pay_period_start_date&.value,
+      pay_period_end_date:      result.pay_period_end_date&.value,
+      pay_date:                 result.pay_date&.value,
+      current_gross_pay:        result.current_gross_pay&.value,
+      current_net_pay:          result.current_net_pay&.value,
       current_total_deductions: result.current_total_deductions&.value,
-      ytd_gross_pay:          result.ytd_gross_pay&.value,
-      ytd_net_pay:            result.ytd_net_pay&.value,
-      employee_first_name:    result.employee_first_name&.value,
-      employee_last_name:     result.employee_last_name&.value,
-      employee_address_line1: result.employee_address_line1&.value,
-      employee_address_city:  result.employee_address_city&.value,
-      employee_address_state: result.employee_address_state&.value,
+      ytd_gross_pay:            result.ytd_gross_pay&.value,
+      ytd_net_pay:              result.ytd_net_pay&.value,
+      employee_first_name:      result.employee_first_name&.value,
+      employee_last_name:       result.employee_last_name&.value,
+      employee_address_line1:   result.employee_address_line1&.value,
+      employee_address_city:    result.employee_address_city&.value,
+      employee_address_state:   result.employee_address_state&.value,
       employee_address_zipcode: result.employee_address_zipcode&.value
     }
   end
@@ -799,13 +850,16 @@ Add `require_relative "doc_ai_result/w2"` to the bottom of `doc_ai_result.rb` al
 
 | File | Purpose |
 |------|---------|
-| `app/controllers/document_staging_controller.rb` | Validates upload (PDF, ≤30 MB); stages/promotes via `StorageAdapter`; orchestrates DocAI |
+| `app/models/staged_document.rb` | `StagedDocument` model — status enum, `has_one_attached :file`, `extracted_fields` JSONB |
+| `db/migrate/<timestamp>_create_staged_documents.rb` | Migration for `staged_documents` table (uuid pk, status, doc_ai_job_id, extracted_fields, activity_id) |
+| `app/controllers/document_staging_controller.rb` | Validates upload (PDF, ≤30 MB); creates `StagedDocument`; attaches file; orchestrates DocAI; returns `sgid` + fields |
 | `app/adapters/doc_ai_adapter.rb` | Extends `DataIntegration::BaseAdapter`; POSTs file via Faraday multipart |
-| `app/services/doc_ai_service.rb` | Extends `DataIntegration::BaseService`; accepts file, returns `DocAiResult` |
+| `app/services/doc_ai_service.rb` | Extends `DataIntegration::BaseService`; accepts ActiveStorage attachment, returns `DocAiResult` |
 | `app/models/doc_ai_result.rb` | Base `Strata::ValueObject`; envelope fields, generic accessors, subclass factory |
 | `app/models/doc_ai_result/payslip.rb` | `DocAiResult::Payslip` subclass; all Payslip snake_case field accessors |
 | `config/initializers/doc_ai.rb` | App config for env vars |
-| `spec/controllers/document_staging_controller_spec.rb` | Controller tests: file validation, S3 staging/promotion, DocAI delegation |
+| `spec/models/staged_document_spec.rb` | Model validations and enum tests |
+| `spec/controllers/document_staging_controller_spec.rb` | Controller tests: file validation, `StagedDocument` lifecycle, DocAI delegation |
 | `spec/adapters/doc_ai_adapter_spec.rb` | Adapter tests (WebMock stubs) |
 | `spec/services/doc_ai_service_spec.rb` | Service tests |
 | `spec/models/doc_ai_result_spec.rb` | Base value object tests |
@@ -813,10 +867,12 @@ Add `require_relative "doc_ai_result/w2"` to the bottom of `doc_ai_result.rb` al
 
 ```
 app/models/
+  staged_document.rb
   doc_ai_result.rb
   doc_ai_result/
     payslip.rb
 spec/models/
+  staged_document_spec.rb
   doc_ai_result_spec.rb
   doc_ai_result/
     payslip_spec.rb
@@ -828,8 +884,7 @@ spec/models/
 |------|--------|
 | `Gemfile` | Add `faraday-multipart` if not already present |
 | `local.env.example` | Add `DOC_AI_API_HOST` |
-| `app/controllers/document_staging_controller.rb` | Create `ActiveStorage::Blob` after S3 promotion; include `signed_id` in JSON response alongside extracted fields |
-| `app/controllers/activities_controller.rb` | Accept `staged_document_signed_id` in permitted params; attach blob via `signed_id` and skip upload redirect when present |
+| `app/controllers/activities_controller.rb` | Accept `staged_document_sgid` in permitted params; resolve `StagedDocument` via `find_signed`, attach blob, and skip upload redirect when present |
 
 ---
 
@@ -884,13 +939,37 @@ DOC_AI_TIMEOUT_SECONDS=60
 
 **Tradeoff**: Callers that previously compared `result.current_gross_pay == 1627.74` now compare `result.current_gross_pay.value == 1627.74`. Boolean validation flag accessors (`gross_pay_valid?` etc.) remain plain predicates by unwrapping the value directly, since confidence on a flag is not semantically meaningful to callers.
 
-### Two-bucket staging and promotion
+### `StagedDocument` as audit record
 
-**Decision**: Uploaded files are written to an S3 staging bucket before DocAI is called. Only files that DocAI classifies as `DocAiResult::Payslip` are promoted to the permanent bucket; all other outcomes delete the staging copy.
+**Decision**: Create a `StagedDocument` ActiveRecord model that owns the uploaded file via `has_one_attached :file` and tracks the full DocAI validation lifecycle (status, `job_id`, `matched_class`, `extracted_fields`, `validated_at`, `activity_id`). Records are retained permanently; they are never purged.
 
-**Rationale**: Staging creates an explicit gate: the permanent bucket contains only documents that have passed classification. Separating the upload receipt from the promotion decision also ensures that a DocAI timeout or processing failure cannot leave an unverified document in permanent storage.
+**Rationale**: Unlike the previous staging copy (deleted after promotion), `StagedDocument` rows serve as a permanent audit trail. Staff and developers can query validation failure rates (`rejected`, `failed` counts), inspect the DocAI `job_id` for any processed document, and confirm which `Activity` a validated document was ultimately attached to — all without log scraping. ActiveStorage handles S3 bucket configuration transparently, eliminating the dual-bucket abstraction and the associated orphan-object risk.
 
-**Tradeoff**: Two S3 operations (stage then promote or delete) add latency to the happy path and introduce an orphan-object risk if Rails crashes between staging and the promote/delete call. An S3 lifecycle policy expiring objects in the staging bucket after 24 hours is recommended as a safety net against accumulation.
+**Tradeoff**: `staged_documents` rows accumulate over time. For high-volume deployments, a periodic archival or soft-delete strategy may be desirable — but this is an operational concern, not an architectural one. The table schema is designed to support it.
+
+### Blob sharing, not blob copying
+
+**Decision**: When `ActivitiesController` attaches a validated document to an `Activity`, it calls `@activity.supporting_documents.attach(staged.file.blob)` — passing the existing `ActiveStorage::Blob` object rather than re-uploading the file.
+
+**Rationale**: Attaching a blob creates a new `active_storage_attachments` row pointing at the same `active_storage_blobs` record and the same S3 object. No data is duplicated in storage. Since `StagedDocument` records are never purged, the blob is safe from premature deletion even after it is shared with an `Activity`.
+
+**Tradeoff**: The `StagedDocument.file` attachment and the `Activity.supporting_documents` attachment reference the same S3 object. Purging one attachment would affect the other. The retention policy (never purge `StagedDocument`) prevents this; any future purge logic must be aware of the sharing.
+
+### `sgid` over raw UUID for the hand-off token
+
+**Decision**: `DocumentStagingController` returns `staged_document.to_sgid(expires_in: 1.hour).to_s` as the hand-off token. `ActivitiesController` resolves it with `StagedDocument.find_signed(sgid, purpose: 'activity_attachment')`.
+
+**Rationale**: A raw UUID would allow IDOR — a member could substitute another member's `staged_document_id` in the form params and attach a document they did not upload. The `sgid` is HMAC-signed, so it cannot be forged or tampered with. The 1-hour expiry prevents stale hidden fields from attaching old documents. The `purpose:` scope prevents token reuse across different operations. `GlobalID::Locator.locate_signed` resolves the token in one call with no manual authorization check needed.
+
+**Tradeoff**: If the member's session takes longer than 1 hour between file selection and form submission, the `sgid` will have expired. `find_signed` returns `nil`, and `ActivitiesController` falls back to the existing documents upload page — consistent with the graceful degradation behavior for DocAI unavailability.
+
+### `DocAiService` receives an ActiveStorage attachment, not a raw file
+
+**Decision**: The controller passes `staged_document.file` (an `ActiveStorage::Attached::One` object) to `DocAiService`, after attaching the upload to the `StagedDocument`. The adapter must be able to accept this object and open it for multipart POST.
+
+**Rationale**: This is a minor interface change from the original spec (which passed a raw `ActionDispatch::Http::UploadedFile`). Using the ActiveStorage attachment as the input ensures the service always works with the stored copy of the file, not a transient HTTP upload object that may be garbage collected.
+
+**Tradeoff**: The `DocAiAdapter` must handle `ActiveStorage::Attached::One` (e.g., via `file.download` or by opening it with `file.blob.open`). Test doubles must replicate this interface.
 
 ### Graceful degradation on integration errors
 
