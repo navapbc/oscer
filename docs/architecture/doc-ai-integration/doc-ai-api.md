@@ -91,6 +91,121 @@ sequenceDiagram
 
 ---
 
+## Activity Attachment Flow
+
+> How a staged, validated document gets attached to an `Activity` record and how the manual upload step is bypassed
+
+After `DocumentStagingController` promotes a file to permanent S3, the file exists in storage but is not yet associated with any Rails model. This section describes the three-part handoff that connects the staged file to an `Activity` record via ActiveStorage.
+
+### 1. `DocumentStagingController` returns a `signed_id`
+
+After promoting to permanent S3, the controller creates an `ActiveStorage::Blob` record pointing at the permanent key and includes its `signed_id` in the JSON response alongside the extracted fields. The `signed_id` is the standard Rails mechanism for attaching a pre-uploaded blob from a form submission — it is a secure, HMAC-signed, time-limited token the browser can pass back without exposing the raw storage key.
+
+```ruby
+blob = ActiveStorage::Blob.create!(
+  key:          permanent_key,
+  filename:     file.original_filename,
+  content_type: file.content_type,
+  byte_size:    file.size,
+  checksum:     ActiveStorage::Blob.compute_checksum_in_chunks(file),
+  service_name: Rails.application.config.active_storage.service.to_s
+)
+
+render json: { signed_id: blob.signed_id, fields: serialise_fields(result) }, status: :ok
+```
+
+The `signed_id` is opaque to the browser — it carries no path information and cannot be forged or replayed beyond its expiry window.
+
+### 2. Stimulus controller stores `signed_id` in a hidden field
+
+The existing Stimulus auto-upload controller (which already handles the `change` event and prefills form fields from the `fields` payload) is also responsible for the `signed_id` handoff:
+
+- **On success (200)**: populate a hidden `<input name="activity[staged_document_signed_id]">` alongside the existing activity form fields with the returned `signed_id`
+- **On any error (422 / 503)**: clear the hidden field so no stale `signed_id` is submitted with the form
+
+No change to the form builder or the existing `Activity` form structure is needed — the hidden field lives alongside the other form fields and is ignored if empty.
+
+### 3. `ActivitiesController#create` attaches the blob and skips the upload step
+
+When `params[:activity][:staged_document_signed_id]` is present, the controller attaches the already-existing blob to the activity and redirects directly to the next step, bypassing the `documents` upload page:
+
+```ruby
+if (signed_id = activity_params[:staged_document_signed_id]).present?
+  @activity.supporting_documents.attach(signed_id)
+  redirect_to activity_report_application_form_path(@activity_report_application_form),
+              notice: t(".created_with_document")
+else
+  redirect_to documents_activity_report_application_form_activity_path(
+                @activity_report_application_form, @activity)
+end
+```
+
+`staged_document_signed_id` must be added to the permitted params list in `ActivitiesController`.
+
+When no `signed_id` is present — because DocAI was unavailable, the member has not yet uploaded a file, or the upload was skipped — the existing redirect to the `documents` upload page is preserved unchanged. Degradation is graceful; the manual upload path remains fully functional.
+
+### End-to-End Sequence Diagram
+
+#### Happy path (DocAI available, file is a valid Payslip)
+
+```mermaid
+sequenceDiagram
+    actor Member
+    participant UI as Browser (Stimulus)
+    participant Staging as DocumentStagingController
+    participant S3P as S3 Permanent Bucket
+    participant AS as ActiveStorage
+    participant Activities as ActivitiesController
+
+    Member->>UI: Selects file via file input
+    UI->>Staging: POST /documents/stage (multipart/form-data)
+    Staging->>Staging: Validate PDF + size
+    Staging->>S3P: Stage → DocAI → promote file
+    Staging->>AS: ActiveStorage::Blob.create!(key: permanent_key, ...)
+    Staging->>UI: 200 { signed_id: "...", fields: { current_gross_pay: ..., ... } }
+    UI->>UI: Prefill form fields from fields payload
+    UI->>UI: Store signed_id in hidden input[name="activity[staged_document_signed_id]"]
+
+    Member->>UI: Fills remaining fields, submits activity form
+    UI->>Activities: POST /activity_report_application_forms/:id/activities
+    Activities->>Activities: activity_params includes staged_document_signed_id
+    Activities->>AS: @activity.supporting_documents.attach(signed_id)
+    Activities->>UI: Redirect to next step (skip documents upload page)
+```
+
+#### Fallback path (DocAI unavailable)
+
+```mermaid
+sequenceDiagram
+    actor Member
+    participant UI as Browser (Stimulus)
+    participant Staging as DocumentStagingController
+    participant Activities as ActivitiesController
+    participant Upload as Documents Upload Page
+
+    Member->>UI: Selects file via file input
+    UI->>Staging: POST /documents/stage (multipart/form-data)
+    Staging->>UI: 503 { error: "Document analysis temporarily unavailable" }
+    UI->>UI: Show inline error; clear staged_document_signed_id hidden field
+    UI->>Member: Error — manual entry fallback
+
+    Member->>UI: Fills fields manually, submits activity form
+    UI->>Activities: POST /activity_report_application_forms/:id/activities
+    Activities->>Activities: No staged_document_signed_id in params
+    Activities->>Upload: Redirect to documents_activity_report_application_form_activity_path
+    Upload->>Member: Existing manual upload flow (unchanged)
+```
+
+### Design Decisions
+
+**`signed_id` as the hand-off token** — Uses the standard Rails ActiveStorage mechanism with no custom tables or token schemes. The blob is created server-side after promotion (not via client-initiated direct upload), so the `signed_id` attaches an already-existing, already-validated blob rather than initiating a new upload.
+
+**Graceful degradation preserved** — When `staged_document_signed_id` is absent, the existing `documents` upload page is still reachable, maintaining the current flow as a fallback with no changes to `ActivityReportApplicationFormsController`.
+
+**No changes to `ActivityReportApplicationFormsController`** — The flow change lives entirely in `ActivitiesController#create` and the Stimulus controller. The multi-step form orchestration layer is unaffected.
+
+---
+
 ## C4 Context Diagram
 
 > Level 1: External actors and systems
@@ -713,6 +828,8 @@ spec/models/
 |------|--------|
 | `Gemfile` | Add `faraday-multipart` if not already present |
 | `local.env.example` | Add `DOC_AI_API_HOST` |
+| `app/controllers/document_staging_controller.rb` | Create `ActiveStorage::Blob` after S3 promotion; include `signed_id` in JSON response alongside extracted fields |
+| `app/controllers/activities_controller.rb` | Accept `staged_document_signed_id` in permitted params; attach blob via `signed_id` and skip upload redirect when present |
 
 ---
 
