@@ -62,6 +62,7 @@ Rails.application.routes.draw do
       member do
         post :process_batch
         get :results
+        get :download_errors
       end
     end
 

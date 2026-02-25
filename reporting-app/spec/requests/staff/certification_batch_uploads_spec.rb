@@ -125,12 +125,11 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
           end
         end
 
-        it "redirects to show page (not index)" do
+        it "redirects to index (dashboard) for live status updates" do
           with_batch_upload_v2_enabled do
             post certification_batch_uploads_path, params: { csv_file: uploaded_file }
 
-            batch_upload = CertificationBatchUpload.last
-            expect(response).to redirect_to(certification_batch_upload_path(batch_upload))
+            expect(response).to redirect_to(certification_batch_uploads_path)
           end
         end
 
@@ -394,13 +393,201 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
     end
   end
 
-  describe "GET /staff/staff/certification_batch_uploads" do
+  describe "GET /staff/staff/certification_batch_uploads (dashboard)" do
+    context "with batch_upload_v2 enabled" do
+      describe "auto-refresh behavior" do
+        it "renders auto-refresh active when processing uploads exist" do
+          with_batch_upload_v2_enabled do
+            create(:certification_batch_upload, :processing, uploader: user)
+
+            get certification_batch_uploads_path
+
+            expect(response).to be_successful
+            expect(response.body).to include('data-auto-refresh-active-value="true"')
+          end
+        end
+
+        it "renders auto-refresh inactive when only completed uploads exist" do
+          with_batch_upload_v2_enabled do
+            create(:certification_batch_upload, :completed, uploader: user)
+
+            get certification_batch_uploads_path
+
+            expect(response).to be_successful
+            expect(response.body).to include('data-auto-refresh-active-value="false"')
+          end
+        end
+
+        it "responds to Turbo Frame requests" do
+          with_batch_upload_v2_enabled do
+            create(:certification_batch_upload, uploader: user)
+
+            get certification_batch_uploads_path, headers: { "Turbo-Frame" => "uploads_table" }
+
+            expect(response).to be_successful
+            expect(response.body).to include("uploads_table")
+          end
+        end
+      end
+
+      describe "error display" do
+        let(:batch_upload) { create(:certification_batch_upload, :completed, uploader: user) }
+
+        it "shows error count for completed upload with errors" do
+          with_batch_upload_v2_enabled do
+            create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 1)
+            create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 2)
+
+            get certification_batch_uploads_path
+
+            expect(response).to be_successful
+            expect(response.body).to include("2 errors")
+          end
+        end
+
+        it "shows download errors link for completed upload with errors" do
+          with_batch_upload_v2_enabled do
+            create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 1)
+
+            get certification_batch_uploads_path
+
+            expect(response).to be_successful
+            expect(response.body).to include("Download Errors")
+          end
+        end
+
+        it "shows 'No errors' for completed upload without errors" do
+          with_batch_upload_v2_enabled do
+            create(:certification_batch_upload, :completed, uploader: user, num_rows_errored: 0)
+
+            get certification_batch_uploads_path
+
+            expect(response).to be_successful
+            expect(response.body).to include("No errors")
+            expect(response.body).not_to include("Download Errors")
+          end
+        end
+      end
+    end
+
+    context "with batch_upload_v2 disabled" do
+      it "renders auto-refresh inactive even with processing uploads" do
+        with_batch_upload_v2_disabled do
+          create(:certification_batch_upload, :processing, uploader: user)
+
+          get certification_batch_uploads_path
+
+          expect(response).to be_successful
+          expect(response.body).to include('data-auto-refresh-active-value="false"')
+        end
+      end
+
+      it "shows legacy progress display for completed uploads" do
+        with_batch_upload_v2_disabled do
+          create(:certification_batch_upload, :completed, uploader: user)
+
+          get certification_batch_uploads_path
+
+          expect(response).to be_successful
+          expect(response.body).to include("8 success")
+          expect(response.body).not_to include("Download Errors")
+        end
+      end
+    end
+  end
+
+  describe "GET /staff/staff/certification_batch_uploads/:id/download_errors" do
+    let(:batch_upload) { create(:certification_batch_upload, :completed, uploader: user) }
+
+    context "with batch_upload_v2 enabled" do
+      it "returns CSV with correct headers and data" do
+        with_batch_upload_v2_enabled do
+          create(
+            :certification_batch_upload_error,
+            certification_batch_upload: batch_upload,
+            row_number: 2,
+            error_code: "VAL_001",
+            error_message: "Missing required field",
+            row_data: { "member_id" => "M001", "case_number" => "C-001" }
+          )
+
+          get download_errors_certification_batch_upload_path(batch_upload)
+
+          expect(response).to be_successful
+          expect(response.content_type).to include("text/csv")
+          expect(response.headers["Content-Disposition"]).to include("attachment")
+          expect(response.headers["Content-Disposition"]).to include("errors.csv")
+          expect(response.body).to include("Row,Error Code,Error Message,Row Data")
+          expect(response.body).to include("2,VAL_001,Missing required field,")
+        end
+      end
+
+      it "orders errors by row_number" do
+        with_batch_upload_v2_enabled do
+          create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 5, error_message: "Error five")
+          create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 2, error_message: "Error two")
+          create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 10, error_message: "Error ten")
+
+          get download_errors_certification_batch_upload_path(batch_upload)
+
+          lines = response.body.strip.split("\n")
+          data_lines = lines[1..]
+          row_numbers = data_lines.map { |line| line.split(",").first.to_i }
+          expect(row_numbers).to eq([ 2, 5, 10 ])
+        end
+      end
+
+      it "returns header-only CSV when no errors exist" do
+        with_batch_upload_v2_enabled do
+          get download_errors_certification_batch_upload_path(batch_upload)
+
+          expect(response).to be_successful
+          expect(response.body.strip).to eq("Row,Error Code,Error Message,Row Data")
+        end
+      end
+    end
+
+    context "with batch_upload_v2 disabled" do
+      it "redirects to show page" do
+        with_batch_upload_v2_disabled do
+          get download_errors_certification_batch_upload_path(batch_upload)
+
+          expect(response).to redirect_to(certification_batch_upload_path(batch_upload))
+          expect(flash[:alert]).to include("not available")
+        end
+      end
+    end
+
     context "when the user is a caseworker" do
       before do
         login_as create(:user, :as_caseworker)
       end
 
-      it "renders a 403 response" do
+      it "redirects (unauthorized)" do
+        get download_errors_certification_batch_upload_path(batch_upload)
+        expect(response).to redirect_to("/staff")
+      end
+    end
+
+    context "when the user is a member" do
+      before do
+        login_as create(:user)
+      end
+
+      it "redirects (unauthorized)" do
+        get download_errors_certification_batch_upload_path(batch_upload)
+        expect(response).to redirect_to("/dashboard")
+      end
+    end
+  end
+
+  describe "authorization" do
+    context "when the user is a caseworker" do
+      before do
+        login_as create(:user, :as_caseworker)
+      end
+
+      it "redirects from index" do
         get certification_batch_uploads_path
         expect(response).to redirect_to("/staff")
       end
@@ -411,7 +598,7 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
         login_as create(:user)
       end
 
-      it "renders a 403 response" do
+      it "redirects from index" do
         get certification_batch_uploads_path
         expect(response).to redirect_to("/dashboard")
       end

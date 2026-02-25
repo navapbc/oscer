@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class StaffController < Strata::StaffController
+  layout "oscer_staff"
+
   class_attribute :authorization_resource, default: :staff
 
   before_action :authenticate_staff!
