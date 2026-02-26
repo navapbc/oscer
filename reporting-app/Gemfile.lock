@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: ff986be8aa4c3bc77367e1ae1474f37d47676ebe
+  revision: 2b24bd8aa47c6822009c848ff8f3a0ff0ead5449
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -634,7 +634,7 @@ GEM
     validates_timeliness (7.1.0)
       activemodel (>= 7.0.0, < 8)
       timeliness (>= 0.3.10, < 1)
-    view_component (4.4.0)
+    view_component (4.5.0)
       actionview (>= 7.1.0)
       activesupport (>= 7.1.0)
       concurrent-ruby (~> 1)
