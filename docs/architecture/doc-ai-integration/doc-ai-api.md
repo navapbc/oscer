@@ -15,7 +15,7 @@ Integrating with the NavaPBC DocAI service enables:
 
 A thin adapter + service + value object pattern integrates DocAI into existing OSCER workflows without coupling business logic to the external API:
 
-- **`DocumentStagingController`** — Accepts one or more file uploads from the browser via a standard HTML form POST, validates content type (PDF or JPG/JPEG) and size (≤30 MB) per file, creates a `StagedDocument` record per file, attaches each uploaded file via ActiveStorage, delegates to `DocAiService` **concurrently** (all files are analyzed in parallel via `Concurrent::Future`, so total wait time ≈ one DocAI call regardless of file count), updates each record's status and extracted fields, and renders a template containing prefilled fields and hidden `staged_document_sgid` fields for each validated document
+- **`DocumentStagingController`** — Accepts one or more file uploads from the browser via a standard HTML form POST, validates content type (PDF or JPG/JPEG) and size (≤30 MB) per file, creates a `StagedDocument` record per file, attaches each uploaded file via ActiveStorage, delegates to `DocAiService` **concurrently** (all files are analyzed in parallel via `Concurrent::Future`, so total wait time ≈ one DocAI call regardless of file count), updates each record's status and extracted fields, and renders a template containing prefilled fields and hidden `staged_document_signed_ids[]` fields for each validated document
 - **`StagedDocument`** — ActiveRecord model that owns the uploaded file (via `has_one_attached :file`) and tracks DocAI validation state, the full raw API response (including confidence scores), and the `job_id`. Retained permanently as an audit record.`belongs_to :stageable, polymorphic: true` links the document to whatever parent model consumes it (e.g., `Activity`, `Exemption`)
 - **`DocAiAdapter`** — Handles the HTTP boundary: POSTs a file to DocAI via multipart upload and returns the raw response body
 - **`DocAiService`** — Orchestrates the call: invokes the adapter, maps the response to a typed value object, logs the DocAI `job_id`, and raises `ProcessingError` for failed jobs
@@ -35,7 +35,7 @@ flowchart LR
     DocAiAdapter -->|response body| DocAiService
     DocAiService -->|DocAiResult| Controller
     Controller -->|"update!(validated, fields, job_id)"| DB
-    Controller -->|"Render HTML template\n(prefilled fields + sgid hidden fields)"| Browser
+    Controller -->|"Render HTML template\n(prefilled fields + signed_id hidden fields)"| Browser
 ```
 
 **Processing model**: The `wait=true` parameter causes DocAI to block until processing completes, returning a single synchronous response within the upload request. No polling or webhook handling is required. If DocAI does not respond within 60 seconds, Faraday raises a `TimeoutError` and the service returns an error to the controller. When multiple files are uploaded, all DocAI calls run concurrently via `Concurrent::Future` — total wall-clock time is approximately equal to one DocAI call (~38 seconds) rather than scaling linearly with file count.
@@ -55,7 +55,7 @@ sequenceDiagram
     participant DocAI as DocAiService
 
     Member->>Browser: Selects one or more files via file input
-    Browser->>Controller: POST /documents/stage (multipart/form-data, files[])
+    Browser->>Controller: POST /document_staging (multipart/form-data, files[])
 
     Controller->>Controller: Validate content type + size for each file (collect errors for invalid files)
 
@@ -73,7 +73,7 @@ sequenceDiagram
     end
 
     Controller->>Controller: Collect all Future results + validation errors
-    Controller->>Browser: Render template (prefilled fields + sgid hidden fields per validated doc, errors for others)
+    Controller->>Browser: Render template (prefilled fields + signed_id hidden fields per validated doc, errors for others)
     Browser->>Member: Shows prefilled form / validation errors
 ```
 
@@ -84,7 +84,7 @@ sequenceDiagram
 | StagedDocument creation | A `StagedDocument` record is created with `status: :pending` before DocAI is called; the file is attached via ActiveStorage (which handles S3 transparently). Each Future checks out its own DB connection via `connection_pool.with_connection` |
 | Income document check | `SUPPORTED_RESULT_CLASSES.any? { \|klass\| result.is_a?(klass) }` — both Payslip and W2 are accepted; any other matched class is rejected at this step |
 | Status update | All outcomes update the `StagedDocument` status (`validated`, `rejected`, or `failed`) — the record is retained permanently as an audit trail |
-| UI prefill | Prefilled fields and `staged_document_sgid` hidden inputs are embedded in the rendered HTML template; the full DocAI response — including per-field confidence scores — is persisted in the `extracted_fields` JSONB column for staff review |
+| UI prefill | Prefilled fields and `staged_document_signed_ids` hidden inputs are embedded in the rendered HTML template; the full DocAI response — including per-field confidence scores — is persisted in the `extracted_fields` JSONB column for staff review |
 
 ---
 
@@ -94,25 +94,26 @@ sequenceDiagram
 
 After `DocumentStagingController` validates each file with DocAI, each `StagedDocument` record holds the file via ActiveStorage and has `status: :validated`. This section describes how the staged documents are connected to an `Activity` record.
 
-### 1. `DocumentStagingController` renders hidden `staged_document_sgids` fields
+### 1. `DocumentStagingController` renders hidden `staged_document_signed_ids` fields
 
-After processing all uploaded files, the controller renders a template. For each validated document, the template embeds a hidden input containing the document's signed global ID (`sgid`) — an HMAC-signed, time-limited token (1 hour expiry) that the browser can pass back without exposing the raw record UUID. Multiple validated documents produce multiple hidden fields:
+After processing all uploaded files, the controller renders a template. For each validated document, the template embeds a hidden input containing the document's signed ID — an HMAC-signed, time-limited token (1 hour expiry) generated by `ActiveRecord::SignedId` that the browser can pass back without exposing the raw record UUID. Multiple validated documents produce multiple hidden fields:
 
 ```html
-<input type="hidden" name="activity[staged_document_sgids][]" value="sgid_1">
-<input type="hidden" name="activity[staged_document_sgids][]" value="sgid_2">
+<input type="hidden" name="activity[staged_document_signed_ids][]" value="signed_id_1">
+<input type="hidden" name="activity[staged_document_signed_ids][]" value="signed_id_2">
 ```
 
-The `sgid` cannot be forged or replayed after expiry. The template also renders prefilled activity form fields extracted from each validated document.
+The signed ID cannot be forged or replayed after expiry. The template also renders prefilled activity form fields extracted from each validated document.
 
 ### 2. `ActivitiesController#create` attaches blobs and skips the upload step
 
-When `params[:activity][:staged_document_sgids]` is present, the controller iterates over the array, resolves each `StagedDocument` via `find_signed`, attaches its blob directly to the activity (no S3 copy is made — the same blob is shared), marks each staged document as consumed, and redirects to the next step, bypassing the `documents` upload page:
+When `params[:activity][:staged_document_signed_ids]` is present, the controller iterates over the array, resolves each `StagedDocument` via `find_signed`, attaches its blob directly to the activity (no S3 copy is made — the same blob is shared), marks each staged document as consumed, and redirects to the next step, bypassing the `documents` upload page. This logic runs **after** the `@activity` has been persisted (via the parent form save):
 
 ```ruby
-if (sgids = activity_params[:staged_document_sgids]).present?
-  sgids.each do |sgid|
-    staged = StagedDocument.find_signed(sgid)
+# After @activity is persisted:
+if (signed_ids = activity_params[:staged_document_signed_ids]).present?
+  signed_ids.each do |sid|
+    staged = StagedDocument.find_signed(sid)
     next unless staged&.validated?
 
     @activity.supporting_documents.attach(staged.file.blob)
@@ -126,9 +127,20 @@ else
 end
 ```
 
-`staged_document_sgids` (array) must be added to the permitted params list in `ActivitiesController`. When an `sgid` is expired or the record is not validated, that entry is skipped gracefully — other valid documents in the same submission are still attached. The polymorphic `stageable` association is set to the `@activity`, linking the `StagedDocument` to whatever parent model consumes it.
+`staged_document_signed_ids` (array) must be added to the permitted params list in `ActivitiesController`:
 
-When no `sgids` are present — because DocAI was unavailable, the member has not yet uploaded files, or all uploads failed — the existing redirect to the `documents` upload page is preserved unchanged. Degradation is graceful; the manual upload path remains fully functional.
+```ruby
+def activity_params
+  params.require(:activity).permit(
+    :month, :name, :hours, :income, :activity_type, :category,
+    staged_document_signed_ids: []
+  )
+end
+```
+
+When a signed ID is expired or the record is not validated, that entry is skipped gracefully — other valid documents in the same submission are still attached. The polymorphic `stageable` association is set to the `@activity`, linking the `StagedDocument` to whatever parent model consumes it.
+
+When no signed IDs are present — because DocAI was unavailable, the member has not yet uploaded files, or all uploads failed — the existing redirect to the `documents` upload page is preserved unchanged. Degradation is graceful; the manual upload path remains fully functional.
 
 ### End-to-End Sequence Diagram
 
@@ -143,18 +155,18 @@ sequenceDiagram
     participant Activities as ActivitiesController
 
     Member->>Browser: Selects files via file input
-    Browser->>Staging: POST /documents/stage (multipart/form-data, files[])
+    Browser->>Staging: POST /document_staging (multipart/form-data, files[])
     Staging->>Staging: Validate PDF/JPG + size (per file)
     par Concurrent Futures (one per valid file)
         Staging->>DB: StagedDocument.create!(pending) + file.attach → DocAI → update!(validated, fields, job_id)
     end
     Staging->>Staging: Collect all Future results
-    Staging->>Browser: Render template (prefilled fields + hidden staged_document_sgids[] inputs)
+    Staging->>Browser: Render template (prefilled fields + hidden staged_document_signed_ids[] inputs)
 
     Member->>Browser: Fills remaining fields, submits activity form
     Browser->>Activities: POST /activity_report_application_forms/:id/activities
-    loop For each sgid
-        Activities->>DB: StagedDocument.find_signed(sgid)
+    loop For each signed_id
+        Activities->>DB: StagedDocument.find_signed(signed_id)
         Activities->>Activities: staged.validated? → true
         Activities->>Activities: @activity.supporting_documents.attach(staged.file.blob)
         Activities->>DB: staged.update!(stageable: @activity)
@@ -174,33 +186,33 @@ sequenceDiagram
     participant Upload as Documents Upload Page
 
     Member->>Browser: Selects files via file input
-    Browser->>Staging: POST /documents/stage (multipart/form-data, files[])
+    Browser->>Staging: POST /document_staging (multipart/form-data, files[])
     Staging->>DB: StagedDocument.create!(pending) + file.attach → update!(failed) [per file]
     Staging->>Browser: Render template with errors (no validated documents)
     Browser->>Member: Error — manual entry fallback
 
     Member->>Browser: Fills fields manually, submits activity form
     Browser->>Activities: POST /activity_report_application_forms/:id/activities
-    Activities->>Activities: No staged_document_sgids in params
+    Activities->>Activities: No staged_document_signed_ids in params
     Activities->>Upload: Redirect to documents_activity_report_application_form_activity_path
     Upload->>Member: Existing manual upload flow (unchanged)
 ```
 
 ### Design Decisions
 
-**`sgid` as the hand-off token** — A signed global ID is tamper-proof and time-limited (1 hour). A raw UUID would require an explicit authorization check to prevent IDOR (member A passing member B's staged_document UUID). The `sgid` approach eliminates this attack surface without a DB membership query. `GlobalID::Locator.locate_signed` resolves directly to the `StagedDocument` record with one method call.
+**`signed_id` as the hand-off token** — A signed ID (`ActiveRecord::SignedId`) is tamper-proof and time-limited (1 hour). A raw UUID would require an explicit authorization check to prevent IDOR (member A passing member B's staged_document UUID). The `signed_id` approach eliminates this attack surface without a DB membership query. `StagedDocument.find_signed` resolves directly to the record with one method call.
 
 **Blob sharing, not blob copying** — `staged.file.blob` returns the existing `ActiveStorage::Blob`. Attaching it to `Activity.supporting_documents` creates a new `active_storage_attachments` row pointing at the same S3 object — no storage copy is made. Both the `StagedDocument` and the `Activity` reference the same physical file.
 
 **`StagedDocument` retained as audit record** — Unlike a staging copy that would be deleted after use, `StagedDocument` rows are retained permanently. The polymorphic `stageable` association is set when the blob is transferred to a parent model, marking the record as consumed. Since `StagedDocument` records are never purged, the blob is safe from premature deletion even after it is attached to the parent.
 
-**Graceful degradation preserved** — When `staged_document_sgids` is absent, the existing `documents` upload page is still reachable, maintaining the current flow as a fallback with no changes to `ActivityReportApplicationFormsController`.
+**Graceful degradation preserved** — When `staged_document_signed_ids` is absent, the existing `documents` upload page is still reachable, maintaining the current flow as a fallback with no changes to `ActivityReportApplicationFormsController`.
 
 **No changes to `ActivityReportApplicationFormsController`** — The flow change lives entirely in `ActivitiesController#create`. The multi-step form orchestration layer is unaffected.
 
-**Server-rendered prefill** — `DocumentStagingController` renders a template rather than returning JSON. Prefilled fields and sgids are embedded in the HTML, eliminating the need for a client-side JS upload controller.
+**Server-rendered prefill** — `DocumentStagingController` renders a template rather than returning JSON. Prefilled fields and signed IDs are embedded in the HTML, eliminating the need for a client-side JS upload controller.
 
-**Multiple sgids as array** — Each validated file produces its own `StagedDocument` and sgid. The activity form accepts `staged_document_sgids[]` (array). `ActivitiesController#create` iterates, skipping expired or non-validated entries.
+**Multiple signed IDs as array** — Each validated file produces its own `StagedDocument` and signed ID. The activity form accepts `staged_document_signed_ids[]` (array). `ActivitiesController#create` iterates, skipping expired or non-validated entries.
 
 ---
 
@@ -293,8 +305,8 @@ flowchart TB
 
 | Component                    | Responsibility                                                                                                              |
 |------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| `DocumentStagingController`  | Validates uploads (PDF or JPG/JPEG, ≤30 MB per file), processes all valid files concurrently via `Concurrent::Future`, creates `StagedDocument` per file, calls `DocAiService`, updates status/fields, renders template with prefilled fields and hidden sgid inputs |
-| File Validator               | Enforces PDF or JPG/JPEG content type and ≤30 MB size limit before any DB or DocAI operations                              |
+| `DocumentStagingController`  | Validates uploads (PDF or JPG/JPEG, ≤30 MB per file), processes all valid files concurrently via `Concurrent::Future`, creates `StagedDocument` per file, calls `DocAiService`, updates status/fields, renders template with prefilled fields and hidden signed_id inputs |
+| File Validator               | Enforces PDF or JPG/JPEG content type, ≤30 MB size limit, and ≤2 file count before any DB or DocAI operations              |
 | `StagedDocument`             | ActiveRecord model: owns uploaded file via `has_one_attached :file`; tracks DocAI validation status, full raw API response (with confidence scores) in `extracted_fields` JSONB, `job_id`, `user_id`, and polymorphic `stageable` parent |
 | `DocAiAdapter`               | POSTs file via Faraday multipart; maps HTTP errors to typed exceptions                                                      |
 | `DocAiService`               | Invokes adapter; builds result value object; logs `job_id`; raises `ProcessingError` on failure                            |
@@ -572,13 +584,14 @@ end
 
 ### DocumentStagingController
 
-Entry point for all document uploads. Accepts multiple files via a standard HTML form POST, validates content type (PDF or JPG/JPEG) and size per file, then processes all valid files **concurrently** — each file gets its own `Concurrent::Future` that creates a `StagedDocument` (associated with `current_user`), delegates to `DocAiService`, and stores the full raw API response (including confidence scores) in `extracted_fields`. After all futures resolve, renders a template with prefilled fields and hidden sgid inputs for each validated document. Total wall-clock time ≈ one DocAI call regardless of file count.
+Entry point for all document uploads. Accepts multiple files via a standard HTML form POST, validates content type (PDF or JPG/JPEG) and size per file, then processes all valid files **concurrently** — each file gets its own `Concurrent::Future` that creates a `StagedDocument` (associated with `current_user`), delegates to `DocAiService`, and stores the full raw API response (including confidence scores) in `extracted_fields`. After all futures resolve, renders a template with prefilled fields and hidden signed_id inputs for each validated document. Total wall-clock time ≈ one DocAI call regardless of file count.
 
 ```ruby
 # app/controllers/document_staging_controller.rb
 class DocumentStagingController < ApplicationController
   ALLOWED_CONTENT_TYPES    = %w[application/pdf image/jpeg].freeze
   MAX_FILE_SIZE_BYTES       = 30.megabytes
+  MAX_FILE_COUNT            = 2
   SUPPORTED_RESULT_CLASSES = [DocAiResult::Payslip, DocAiResult::W2].freeze
 
   def create
@@ -587,6 +600,10 @@ class DocumentStagingController < ApplicationController
     files = Array(params[:files])
     if files.empty?
       flash.now[:alert] = t(".no_files")
+      return render :create, status: :unprocessable_entity
+    end
+    if files.size > MAX_FILE_COUNT
+      flash.now[:alert] = t(".too_many_files", max: MAX_FILE_COUNT)
       return render :create, status: :unprocessable_entity
     end
 
@@ -651,8 +668,8 @@ class DocumentStagingController < ApplicationController
       validated_at:         Time.current
     )
 
-    sgid = staged_document.to_sgid(expires_in: 1.hour).to_s
-    { file: file, staged_document: staged_document, sgid: sgid, result: result }
+    sid = staged_document.signed_id(expires_in: 1.hour)
+    { file: file, staged_document: staged_document, signed_id: sid, result: result }
   end
 
   def valid_content_type?(file) = file.content_type.in?(ALLOWED_CONTENT_TYPES)
@@ -665,7 +682,7 @@ Field serialisation is no longer performed in the controller. The raw DocAI `fie
 **Concurrency model**: `process_files_concurrently` dispatches each file to a `Concurrent::Future` (from the `concurrent-ruby` gem, which ships with Rails). `current_user` is captured before threading because ActionController helpers are not thread-safe. Each Future checks out its own database connection via `ActiveRecord::Base.connection_pool.with_connection` to avoid contention on the request thread's connection. If any individual Future raises an unexpected exception, it is caught and returned as a generic error result — other files in the batch are not affected.
 
 The template (`create.html.erb`) iterates over `@results`:
-- For validated docs: renders prefilled fields (via `result.to_prefill_fields`) and a hidden `staged_document_sgids[]` input per doc
+- For validated docs: renders prefilled fields (via `result.to_prefill_fields`) and a hidden `staged_document_signed_ids[]` input per doc
 - For rejected/failed docs: renders an inline error message
 
 > **Double-submit prevention**: The file upload form uses `data: { turbo_submits_with: t(".submitting") }` on the submit button (or equivalent `data-disable-with` attribute for non-Turbo forms) to disable the button after first click. Because DocAI processing takes ~38 seconds per file, the member must select all files at once before submitting — the button remains disabled until the response is rendered, preventing duplicate submissions.
@@ -813,8 +830,9 @@ class DocAiResult < Strata::ValueObject
   strata_attribute :error, :string           # present when status == "failed"
   strata_attribute :additional_info, :string # present when status == "failed"
 
-  # Raw fields hash — preserves all confidence + value pairs from the API
-  strata_attribute :fields, :immutable_value_object
+  # Raw fields hash — preserves all confidence + value pairs from the API.
+  # Stored as a plain Hash; frozen in build to prevent mutation.
+  attr_reader :fields
 
   # Factory: dispatches to the registered subclass for the given matchedDocumentClass.
   # Falls back to base DocAiResult for unregistered document types.
@@ -824,7 +842,7 @@ class DocAiResult < Strata::ValueObject
   end
 
   def self.build(response)
-    new(
+    instance = new(
       job_id:                        response["job_id"],
       status:                        response["status"],
       matched_document_class:        response["matchedDocumentClass"],
@@ -833,9 +851,10 @@ class DocAiResult < Strata::ValueObject
       completed_at:                  response["completedAt"],
       total_processing_time_seconds: response["totalProcessingTimeSeconds"],
       error:                         response["error"],
-      additional_info:               response["additionalInfo"],
-      fields:                        response["fields"] || {}
+      additional_info:               response["additionalInfo"]
     )
+    instance.instance_variable_set(:@fields, (response["fields"] || {}).freeze)
+    instance
   end
 
   def completed? = status == "completed"
@@ -861,8 +880,6 @@ class DocAiResult < Strata::ValueObject
   # Freeze the registry after all subclasses have loaded to prevent accidental
   # post-load mutation. Any require_relative for new document types must appear above.
   REGISTRY.freeze
-
-  private_class_method :build
 end
 ```
 
@@ -1055,8 +1072,8 @@ Add `require_relative "doc_ai_result/bank_statement"` inside the `DocAiResult` c
 |------|---------|
 | `app/models/staged_document.rb` | `StagedDocument` model — status enum, `has_one_attached :file`, `extracted_fields` JSONB |
 | `db/migrate/<timestamp>_create_staged_documents.rb` | Migration for `staged_documents` table (uuid pk, status, doc_ai_job_id, extracted_fields, activity_id) |
-| `app/controllers/document_staging_controller.rb` | Validates uploads (PDF or JPG/JPEG, ≤30 MB per file); processes files concurrently via `Concurrent::Future`; creates `StagedDocument` per file; attaches files; orchestrates DocAI; renders template with prefilled fields and sgids |
-| `app/views/document_staging/create.html.erb` | Template rendered after multi-file upload; prefilled fields and hidden `staged_document_sgids[]` inputs per validated doc; inline errors for rejected/failed docs |
+| `app/controllers/document_staging_controller.rb` | Validates uploads (PDF or JPG/JPEG, ≤30 MB per file); processes files concurrently via `Concurrent::Future`; creates `StagedDocument` per file; attaches files; orchestrates DocAI; renders template with prefilled fields and signed IDs |
+| `app/views/document_staging/create.html.erb` | Template rendered after multi-file upload; prefilled fields and hidden `staged_document_signed_ids[]` inputs per validated doc; inline errors for rejected/failed docs |
 | `app/adapters/doc_ai_adapter.rb` | Extends `DataIntegration::BaseAdapter`; POSTs file via Faraday multipart |
 | `app/services/doc_ai_service.rb` | Extends `DataIntegration::BaseService`; accepts ActiveStorage attachment, returns `DocAiResult` |
 | `app/models/doc_ai_result.rb` | Base `Strata::ValueObject`; envelope fields, generic accessors, subclass factory |
@@ -1095,8 +1112,8 @@ spec/models/
 |------|--------|
 | `Gemfile` | Add `faraday-multipart` if not already present |
 | `local.env.example` | Add `DOC_AI_API_HOST`, `DOC_AI_TIMEOUT_SECONDS`, `DOC_AI_LOW_CONFIDENCE_THRESHOLD` |
-| `config/routes.rb` | Add `POST /documents/stage` route for `DocumentStagingController#create` |
-| `app/controllers/activities_controller.rb` | Accept `staged_document_sgids` (array) in permitted params; iterate via `find_signed`, attach blobs, set polymorphic `stageable`, and skip upload redirect when any are present |
+| `config/routes.rb` | Add `POST /document_staging` route for `DocumentStagingController#create` |
+| `app/controllers/activities_controller.rb` | Accept `staged_document_signed_ids: []` (array) in permitted params; iterate via `find_signed`, attach blobs, set polymorphic `stageable`, and skip upload redirect when any are present |
 
 ---
 
@@ -1137,7 +1154,7 @@ DOC_AI_LOW_CONFIDENCE_THRESHOLD=0.7
 
 > **Web server timeout**: Because DocAI validation runs concurrently on background threads but the web request thread blocks until all futures resolve (up to 60 seconds), Puma and any rack-timeout middleware (e.g., `Rack::Timeout`) must be configured to allow requests longer than 60 seconds for the upload endpoint. A recommended minimum is 75 seconds to provide headroom above the Faraday timeout. Note: concurrent processing means total time is ~60 seconds regardless of file count.
 >
-> **Database connection pool**: Each concurrent file occupies one ActiveRecord connection for the duration of its processing (~38–60 seconds). Ensure `database.yml` `pool` size accommodates the maximum expected concurrent files per request (typically 2–4) on top of Puma worker connections.
+> **Database connection pool**: Each concurrent file occupies one ActiveRecord connection for the duration of its processing (~38–60 seconds). With `MAX_FILE_COUNT = 2`, each upload request uses up to 2 additional connections. Ensure `database.yml` `pool` size accommodates this on top of Puma worker connections.
 
 ---
 
@@ -1157,7 +1174,7 @@ DOC_AI_LOW_CONFIDENCE_THRESHOLD=0.7
 
 **Rationale**: DocAI processing takes ~38 seconds per file. Sequential processing of 3 files would block the response for ~114 seconds — beyond any reasonable request timeout and a poor user experience. Concurrent processing keeps total wall-clock time at ~38 seconds regardless of file count. `Concurrent::Future` (from `concurrent-ruby`, which ships with Rails as a dependency) uses a managed thread pool, avoiding unbounded thread creation. Each Future checks out its own database connection via `ActiveRecord::Base.connection_pool.with_connection`, ensuring clean connection lifecycle and no contention with the request thread. `current_user` is captured before threading because ActionController helpers are not thread-safe.
 
-**Tradeoff**: Each concurrent file consumes one thread from the `concurrent-ruby` global IO thread pool and one connection from the ActiveRecord connection pool. The database pool size (`pool` in `database.yml`) must be large enough to accommodate the maximum expected concurrent files per request (typically 2–4) in addition to Puma worker connections. If the pool is undersized, a Future will block waiting for a connection, degrading to sequential behavior rather than failing. Error isolation is per-Future: if one file's processing raises an exception, the others are unaffected and the failed file returns a generic error result.
+**Tradeoff**: Each concurrent file consumes one thread from the `concurrent-ruby` global IO thread pool and one connection from the ActiveRecord connection pool. `MAX_FILE_COUNT` (2) caps the maximum concurrent futures per request, bounding resource consumption. The database pool size (`pool` in `database.yml`) must be large enough to accommodate 2 additional connections per concurrent upload request on top of Puma worker connections. If the pool is undersized, a Future will block waiting for a connection, degrading to sequential behavior rather than failing. Error isolation is per-Future: if one file's processing raises an exception, the others are unaffected and the failed file returns a generic error result.
 
 ### Subclass-per-document-class value objects with self-registration
 
@@ -1191,13 +1208,13 @@ DOC_AI_LOW_CONFIDENCE_THRESHOLD=0.7
 
 **Tradeoff**: The `StagedDocument.file` attachment and the parent's attachment reference the same S3 object. Purging one attachment would affect the other. The retention policy (never purge `StagedDocument`) prevents this; any future purge logic must be aware of the sharing.
 
-### `sgid` over raw UUID for the hand-off token
+### `signed_id` over raw UUID for the hand-off token
 
-**Decision**: `DocumentStagingController` returns `staged_document.to_sgid(expires_in: 1.hour).to_s` as the hand-off token. Consuming controllers resolve it with `StagedDocument.find_signed(sgid)` and set the polymorphic `stageable` association to their parent model.
+**Decision**: `DocumentStagingController` returns `staged_document.signed_id(expires_in: 1.hour)` as the hand-off token. Consuming controllers resolve it with `StagedDocument.find_signed(sid)` and set the polymorphic `stageable` association to their parent model.
 
-**Rationale**: A raw UUID would allow IDOR — a member could substitute another member's `staged_document_id` in the form params and attach a document they did not upload. The `sgid` is HMAC-signed, so it cannot be forged or tampered with. The 1-hour expiry prevents stale hidden fields from attaching old documents. `GlobalID::Locator.locate_signed` resolves the token in one call with no manual authorization check needed. Because `StagedDocument` uses a polymorphic `stageable` association rather than a fixed `activity_id`, the same SGID mechanism works for any consuming model — no purpose scope is needed.
+**Rationale**: A raw UUID would allow IDOR — a member could substitute another member's `staged_document_id` in the form params and attach a document they did not upload. The signed ID is HMAC-signed via `ActiveRecord::SignedId`, so it cannot be forged or tampered with. The 1-hour expiry prevents stale hidden fields from attaching old documents. `StagedDocument.find_signed` resolves the token in one call with no manual authorization check needed. Because `StagedDocument` uses a polymorphic `stageable` association rather than a fixed `activity_id`, the same signed ID mechanism works for any consuming model — no purpose scope is needed.
 
-**Tradeoff**: If the member's session takes longer than 1 hour between file selection and form submission, the `sgid` will have expired. `find_signed` returns `nil`, and the consuming controller falls back to the existing documents upload page — consistent with the graceful degradation behavior for DocAI unavailability.
+**Tradeoff**: If the member's session takes longer than 1 hour between file selection and form submission, the signed ID will have expired. `find_signed` returns `nil`, and the consuming controller falls back to the existing documents upload page — consistent with the graceful degradation behavior for DocAI unavailability.
 
 ### `DocAiService` receives an ActiveStorage attachment, not a raw file
 
