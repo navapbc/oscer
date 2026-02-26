@@ -60,13 +60,7 @@ variable "extra_identity_provider_logout_urls" {
   default     = []
 }
 
-# Staff SSO Configuration
-variable "enable_sso" {
-  type        = bool
-  description = "Enables Staff Single Sign-On via OIDC (uses Cognito as identity provider)"
-  default     = false
-}
-
+# Staff SSO Configuration (optional overrides)
 variable "sso_callback_urls" {
   type        = list(string)
   description = "List of additional SSO callback URLs. Used for local development with ngrok."

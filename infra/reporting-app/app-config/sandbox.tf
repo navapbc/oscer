@@ -14,9 +14,6 @@ module "sandbox_config" {
   # Enable and configure identity provider.
   enable_identity_provider = local.enable_identity_provider
 
-  # Enable Staff SSO authentication via Cognito OIDC
-  enable_sso = true
-
   # Enables ECS Exec access for debugging or jump access.
   # See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html
   # Defaults to `false`. Uncomment the next line to enable.
@@ -24,5 +21,6 @@ module "sandbox_config" {
 
   service_override_extra_environment_variables = {
     ENABLE_LOOKBOOK = "true"
+    SSO_ENABLED     = "true"
   }
 }

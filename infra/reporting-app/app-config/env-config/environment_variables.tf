@@ -19,9 +19,9 @@ locals {
       GOOD_JOB_MAX_THREADS    = "2"
       DATABASE_POOL           = "8"
     },
-    # SSO environment variables (when SSO is enabled)
-    var.enable_sso && var.enable_identity_provider ? {
-      SSO_ENABLED     = "true"
+    # SSO configuration: always set so any environment can enable SSO by overriding SSO_ENABLED to "true"
+    var.enable_identity_provider ? {
+      SSO_ENABLED     = "false"
       SSO_SCOPES      = "openid profile email"
       SSO_CLAIM_EMAIL = "email"
       SSO_CLAIM_NAME  = "name"

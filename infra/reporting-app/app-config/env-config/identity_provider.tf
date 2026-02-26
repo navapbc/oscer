@@ -39,11 +39,9 @@ locals {
 
     verification_email = local.verification_email
 
-    # Staff SSO enabled flag (for service layer to conditionally add SSO env vars)
-    enable_sso = var.enable_sso
-
-    # Client configuration for Cognito app client
-    # When SSO is enabled, includes the /auth/sso/callback URL
+    # Client configuration for Cognito app client.
+    # SSO callback URL is always included when identity provider + domain exist, so any
+    # environment can enable SSO by setting SSO_ENABLED=true in service_override_extra_environment_variables.
     #
     # Do not hardcode URLs here. Instead use:
     #   - callback_url_path / logout_url_path locals for main app paths
@@ -52,8 +50,7 @@ locals {
     client = {
       callback_urls = concat(
         var.domain_name != null ? ["https://${var.domain_name}/${local.callback_url_path}"] : [],
-        # Add SSO callback URL when SSO is enabled
-        var.enable_sso && var.domain_name != null ? ["https://${var.domain_name}/${local.sso_callback_url_path}"] : [],
+        var.domain_name != null ? ["https://${var.domain_name}/${local.sso_callback_url_path}"] : [],
         var.extra_identity_provider_callback_urls,
         var.sso_callback_urls
       )
