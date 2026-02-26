@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'rails_helper'
+require 'aws-sdk-s3'
 
 RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
   include ActiveJob::TestHelper
@@ -36,18 +37,28 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
       "certification_type" => "new_application"
     }
   end
+  let(:headers) { %w[member_id case_number member_email first_name last_name certification_date certification_type] }
+  let(:start_byte) { 0 }
+  let(:end_byte) { 999 }
+  let(:csv_reader) { instance_double(CsvStreamReader) }
 
   before do
     allow(Strata::EventManager).to receive(:publish)
+    allow(CsvStreamReader).to receive(:new).and_return(csv_reader)
   end
 
   describe '#perform' do
     context 'with all valid records' do
       let(:records) { [ valid_record ] }
 
+      before do
+        allow(csv_reader).to receive(:read_chunk).and_return(records)
+      end
+
       it 'processes records and updates batch' do
-        described_class.perform_now(batch_upload.id, 1, records)
-        batch_upload.reload
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte)
+        batch_id = batch_upload.id
+        batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
 
         expect(batch_upload.num_rows_processed).to eq(1)
         expect(batch_upload.num_rows_succeeded).to eq(1)
@@ -56,13 +67,13 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
 
       it 'creates certifications' do
         expect {
-          described_class.perform_now(batch_upload.id, 1, records)
+          described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte)
         }.to change(Certification, :count).by(1)
       end
 
       it 'creates certification origins' do
         expect {
-          described_class.perform_now(batch_upload.id, 1, records)
+          described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte)
         }.to change(CertificationOrigin, :count).by(1)
 
         origin = CertificationOrigin.last
@@ -71,7 +82,7 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
       end
 
       it 'creates audit log entry' do
-        described_class.perform_now(batch_upload.id, 1, records)
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte)
 
         logs = CertificationBatchUploadAuditLog
           .where(certification_batch_upload_id: batch_upload.id)
@@ -82,7 +93,7 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
 
       it 'does not create error entries' do
         expect {
-          described_class.perform_now(batch_upload.id, 1, records)
+          described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte)
         }.not_to change(CertificationBatchUploadError, :count)
       end
     end
@@ -91,6 +102,7 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
       let(:records) { [ valid_record, invalid_record, duplicate_record ] }
 
       before do
+        allow(csv_reader).to receive(:read_chunk).and_return(records)
         # Create existing certification for duplicate check
         create(:certification,
           member_id: duplicate_record["member_id"],
@@ -102,8 +114,9 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
       end
 
       it 'processes all records and tracks results' do
-        described_class.perform_now(batch_upload.id, 1, records)
-        batch_upload.reload
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte)
+        batch_id = batch_upload.id
+        batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
 
         expect(batch_upload.num_rows_processed).to eq(3)
         expect(batch_upload.num_rows_succeeded).to eq(1) # Only valid_record
@@ -111,7 +124,7 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
       end
 
       it 'creates audit log with correct counts' do
-        described_class.perform_now(batch_upload.id, 1, records)
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte)
 
         logs = CertificationBatchUploadAuditLog
           .where(certification_batch_upload_id: batch_upload.id)
@@ -121,7 +134,7 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
       end
 
       it 'stores error details for failed records' do
-        described_class.perform_now(batch_upload.id, 1, records)
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte)
 
         errors = CertificationBatchUploadError
           .where(certification_batch_upload_id: batch_upload.id)
@@ -131,15 +144,17 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
         # Invalid record error (row 3) and duplicate record error (row 4)
         expect(errors).to match([
           [ 3, a_string_starting_with("VAL_"), a_string_including("Missing required fields") ],
-          [ 4, "DUP_001", a_string_including("Duplicate certification") ]
+          [ 4, BatchUploadErrors::Duplicate::EXISTING_CERTIFICATION, a_string_including("Duplicate certification") ]
         ])
       end
 
       it 'continues processing after validation errors' do
         # All three records should be attempted, not stopped at first error
-        described_class.perform_now(batch_upload.id, 1, records)
+        batch_id = batch_upload.id
+        described_class.perform_now(batch_id, 1, headers, start_byte, end_byte)
 
-        expect(batch_upload.reload.num_rows_processed).to eq(3)
+        batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
+        expect(batch_upload.num_rows_processed).to eq(3)
       end
     end
 
@@ -163,28 +178,38 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
       let(:chunk_3_records) { [ chunk_3_record ] }
 
       it 'marks batch as complete when all chunks finish' do
+        allow(csv_reader).to receive(:read_chunk)
+          .and_return(chunk_1_records, chunk_2_records, chunk_3_records)
+
         # Process chunks 1 and 2
-        described_class.perform_now(batch_upload.id, 1, chunk_1_records)
-        described_class.perform_now(batch_upload.id, 2, chunk_2_records)
-        batch_upload.reload
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte)
+        described_class.perform_now(batch_upload.id, 2, headers, start_byte, end_byte)
+        batch_id = batch_upload.id
+        batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
         expect(batch_upload.status).to eq("processing")
 
         # Process final chunk
-        described_class.perform_now(batch_upload.id, 3, chunk_3_records)
-        batch_upload.reload
+        described_class.perform_now(batch_upload.id, 3, headers, start_byte, end_byte)
+        batch_id = batch_upload.id
+        batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
         expect(batch_upload.status).to eq("completed")
       end
 
       it 'handles concurrent chunk completion safely' do
+        allow(csv_reader).to receive(:read_chunk)
+          .and_return(chunk_1_records, chunk_2_records, chunk_3_records)
+
         # Process all 3 chunks concurrently to test race condition handling
         threads = [
-          Thread.new { described_class.perform_now(batch_upload.id, 1, chunk_1_records) },
-          Thread.new { described_class.perform_now(batch_upload.id, 2, chunk_2_records) },
-          Thread.new { described_class.perform_now(batch_upload.id, 3, chunk_3_records) }
+          Thread.new { described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte) },
+          Thread.new { described_class.perform_now(batch_upload.id, 2, headers, start_byte, end_byte) },
+          Thread.new { described_class.perform_now(batch_upload.id, 3, headers, start_byte, end_byte) }
         ]
         threads.each(&:join)
 
-        batch_upload.reload
+        batch_id = batch_upload.id
+
+        batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
         expect(batch_upload.status).to eq("completed")
         expect(batch_upload.num_rows_processed).to eq(3)
         expect(batch_upload.num_rows_succeeded).to eq(3)
@@ -200,7 +225,9 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
     context 'with row number calculation' do
       it 'calculates correct row numbers for first chunk' do
         records = [ valid_record, invalid_record ]
-        described_class.perform_now(batch_upload.id, 1, records)
+        allow(csv_reader).to receive(:read_chunk).and_return(records)
+
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte)
 
         # Chunk 1, index 0 → row 2 (first data row after header)
         # Chunk 1, index 1 → row 3 (invalid record)
@@ -214,8 +241,9 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
       it 'calculates correct row numbers for second chunk' do
         records = [ invalid_record ]
         chunk_size = CsvStreamReader::DEFAULT_CHUNK_SIZE
+        allow(csv_reader).to receive(:read_chunk).and_return(records)
 
-        described_class.perform_now(batch_upload.id, 2, records)
+        described_class.perform_now(batch_upload.id, 2, headers, start_byte, end_byte)
 
         # Chunk 2, index 0 → row (1000 + 2)
         error_row_numbers = CertificationBatchUploadError
@@ -223,6 +251,36 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
           .pluck(:row_number)
 
         expect(error_row_numbers).to eq([ chunk_size + 2 ])
+      end
+    end
+
+    context 'when S3 read fails' do
+      it 'marks audit log as failed and re-raises' do
+        allow(csv_reader).to receive(:read_chunk)
+          .and_raise(Aws::S3::Errors::ServiceError.new(nil, "S3 unavailable"))
+        allow(Rails.logger).to receive(:error)
+
+        expect {
+          described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte)
+        }.to raise_error(Aws::S3::Errors::ServiceError)
+
+        audit_log = CertificationBatchUploadAuditLog
+          .find_by(certification_batch_upload_id: batch_upload.id)
+        expect(audit_log.status).to eq("failed")
+      end
+
+      it 'does not increment batch counters' do
+        allow(csv_reader).to receive(:read_chunk)
+          .and_raise(Aws::S3::Errors::ServiceError.new(nil, "S3 unavailable"))
+        allow(Rails.logger).to receive(:error)
+
+        expect {
+          described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte)
+        }.to raise_error(Aws::S3::Errors::ServiceError)
+
+        batch_id = batch_upload.id
+        batch_upload = CertificationBatchUpload.find(batch_id)
+        expect(batch_upload.num_rows_processed).to eq(0)
       end
     end
 
@@ -242,10 +300,14 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
       let(:records) { [ valid_record ] }
       let(:mock_certification) { instance_double(Certification, id: 1) }
 
+      before do
+        allow(csv_reader).to receive(:read_chunk).and_return(records)
+      end
+
       it 'calls processor with record and context' do
         allow(processor).to receive(:process).and_return(mock_certification)
 
-        described_class.perform_now(batch_upload.id, 1, records, processor: processor)
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte, processor: processor)
 
         expect(processor).to have_received(:process)
           .with(valid_record, context: { batch_upload_id: batch_upload.id })
@@ -255,7 +317,7 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
         allow(processor).to receive(:process).and_return(mock_certification)
         allow(UnifiedRecordProcessor).to receive(:new).and_call_original
 
-        described_class.perform_now(batch_upload.id, 1, records, processor: processor)
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte, processor: processor)
 
         # Should use injected processor, not create a new one
         expect(UnifiedRecordProcessor).not_to have_received(:new)
@@ -263,13 +325,29 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
       end
     end
 
+    context 'when delegating to reader' do
+      before do
+        allow(csv_reader).to receive(:read_chunk).and_return([ valid_record ])
+      end
+
+      it 'calls read_chunk with correct arguments' do
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte)
+
+        expect(csv_reader).to have_received(:read_chunk).with(
+          batch_upload.storage_key,
+          headers: headers,
+          start_byte: start_byte,
+          end_byte: end_byte
+        )
+      end
+    end
+
     context 'when batch upload is deleted' do
       it 'returns early without processing when batch not found' do
         non_existent_id = "00000000-0000-0000-0000-000000000000"
-        records = [ valid_record ]
 
         expect {
-          described_class.perform_now(non_existent_id, 1, records)
+          described_class.perform_now(non_existent_id, 1, headers, start_byte, end_byte)
         }.not_to change(Certification, :count)
 
         # Should not create audit logs or errors
@@ -277,15 +355,62 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
         expect(CertificationBatchUploadError.count).to eq(0)
       end
     end
+
+    context 'with unexpected errors' do
+      let(:processor) { instance_double(UnifiedRecordProcessor) }
+      let(:records) { [ valid_record ] }
+
+      before do
+        allow(csv_reader).to receive(:read_chunk).and_return(records)
+      end
+
+      it 'catches unexpected StandardError and logs with backtrace' do
+        error = StandardError.new("Something went wrong")
+        allow(processor).to receive(:process).and_raise(error)
+        allow(Rails.logger).to receive(:error)
+
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte, processor: processor)
+
+        expect(Rails.logger).to have_received(:error).with(/Unexpected error processing row 2: StandardError - Something went wrong/)
+        expect(Rails.logger).to have_received(:error).with(/Backtrace:/)
+      end
+
+      it 'stores error with UNK_001 code and exception class' do
+        error = RuntimeError.new("Unexpected failure")
+        allow(processor).to receive(:process).and_raise(error)
+        allow(Rails.logger).to receive(:error)
+
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte, processor: processor)
+
+        errors = CertificationBatchUploadError
+          .where(certification_batch_upload_id: batch_upload.id)
+          .pluck(:error_code, :error_message)
+
+        expect(errors).to eq([
+          [ BatchUploadErrors::Unknown::UNEXPECTED, "Unexpected error: RuntimeError - Unexpected failure" ]
+        ])
+      end
+
+      it 'increments error counter for unexpected errors' do
+        error = StandardError.new("Something went wrong")
+        allow(processor).to receive(:process).and_raise(error)
+        allow(Rails.logger).to receive(:error)
+
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte, processor: processor)
+        batch_id = batch_upload.id
+        batch_upload = CertificationBatchUpload.find(batch_id)
+
+        expect(batch_upload.num_rows_errored).to eq(1)
+        expect(batch_upload.num_rows_succeeded).to eq(0)
+      end
+    end
   end
 
   describe 'job queuing' do
     it 'enqueues the job with correct parameters' do
-      records = [ valid_record ]
-
       expect {
-        described_class.perform_later(batch_upload.id, 1, records)
-      }.to have_enqueued_job(described_class).with(batch_upload.id, 1, records)
+        described_class.perform_later(batch_upload.id, 1, headers, start_byte, end_byte)
+      }.to have_enqueued_job(described_class).with(batch_upload.id, 1, headers, start_byte, end_byte)
     end
   end
 end

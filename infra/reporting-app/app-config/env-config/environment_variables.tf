@@ -8,6 +8,16 @@ locals {
       VA_API_HOST       = "https://sandbox-api.va.gov"
       VA_TOKEN_AUDIENCE = "https://deptva-eval.okta.com/oauth2/ausi3u00gw66b9Ojk2p7/v1/token"
       VA_TOKEN_HOST     = "https://sandbox-api.va.gov/oauth2/veteran-verification/system/v1/token"
+
+      # Cloud provider for storage adapter selection
+      # BUCKET_NAME is set in service/main.tf
+      CLOUD_PROVIDER = "aws"
+
+      # GoodJob background job processing (async mode)
+      # Pool size accommodates Puma (5) + GoodJob (2) + buffer (1) = 8
+      GOOD_JOB_EXECUTION_MODE = "async"
+      GOOD_JOB_MAX_THREADS    = "2"
+      DATABASE_POOL           = "8"
     },
     # SSO environment variables (when SSO is enabled)
     var.enable_sso && var.enable_identity_provider ? {

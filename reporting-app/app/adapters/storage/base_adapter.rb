@@ -1,30 +1,17 @@
 # frozen_string_literal: true
 
 module Storage
-  # Base adapter defining the interface for cloud storage implementations.
+  # Base adapter defining the streaming interface for cloud storage.
+  # Active Storage handles uploads/deletes; this adapter handles efficient streaming.
   # All storage adapters must implement these methods.
   class BaseAdapter
     def initialize(**options)
       # Subclasses define their own initialization parameters
     end
 
-    # Delete an object from storage
-    # @param key [String] The object key (path) in the bucket
-    def delete_object(key:)
-      raise NotImplementedError
-    end
-
-    # Check if an object exists in storage
+    # Check if an object exists in storage (used for validation)
     # @param key [String] The object key (path) in the bucket
     def object_exists?(key:)
-      raise NotImplementedError
-    end
-
-    # Generate a presigned URL for uploading an object
-    # @param key [String] The object key (path) in the bucket
-    # @param content_type [String] MIME type of the object
-    # @param expires_in [Integer] URL expiration time in seconds
-    def generate_signed_upload_url(key:, content_type:, expires_in:)
       raise NotImplementedError
     end
 
@@ -36,14 +23,13 @@ module Storage
       raise NotImplementedError
     end
 
-    # Download an object from storage to a file
-    # Note: Prefer stream_object for large files when possible.
-    # This method is provided for scenarios where you need the complete
-    # file available (e.g., passing to libraries that expect file paths).
+    # Stream a byte range from an object in storage, line by line
+    # Used by chunk jobs to re-read their slice of a CSV file from S3
     # @param key [String] The object key (path) in the bucket
-    # @param file [File, Tempfile] The file object to write to
-    def download_to_file(key:, file:)
-      stream_object(key: key) { |line| file.write(line) }
+    # @param start_byte [Integer] Start of byte range (inclusive, must be >= 0)
+    # @param end_byte [Integer] End of byte range (inclusive, must be >= start_byte)
+    def stream_object_range(key:, start_byte:, end_byte:, &block)
+      raise NotImplementedError
     end
   end
 end

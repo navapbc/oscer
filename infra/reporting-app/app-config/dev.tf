@@ -29,6 +29,7 @@ module "dev_config" {
   # }
 
   service_override_extra_environment_variables = {
-    ENABLE_LOOKBOOK = "true"
+    ENABLE_LOOKBOOK         = "true"
+    FEATURE_BATCH_UPLOAD_V2 = "false"
   }
 }
