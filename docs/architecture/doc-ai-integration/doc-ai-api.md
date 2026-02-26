@@ -540,42 +540,7 @@ A job may complete with HTTP 200 but indicate a processing failure via `status: 
 
 Intermediate ActiveRecord model that owns an uploaded file and tracks its DocAI validation lifecycle. Retained permanently as an audit record. `belongs_to :user` records who uploaded the file; `belongs_to :stageable, polymorphic: true` links the document to whatever parent model consumes it (e.g., `Activity`, `Exemption`). The `extracted_fields` JSONB column stores the full raw DocAI `fields` response — including per-field confidence scores — so no data is lost at persistence time.
 
-```ruby
-# db/migrate/<timestamp>_create_staged_documents.rb
-create_table :staged_documents, id: :uuid do |t|
-  t.references :user,              type: :uuid, null: false, foreign_key: true
-  t.references :stageable,         polymorphic: true, type: :uuid  # set when consumed by a parent model
-  t.string     :status,            null: false, default: "pending"
-  t.string     :doc_ai_job_id
-  t.string     :doc_ai_matched_class
-  t.jsonb      :extracted_fields,  null: false, default: {}
-  t.datetime   :validated_at
-  t.timestamps
-end
-
-add_index :staged_documents, :status
-add_index :staged_documents, :doc_ai_job_id
-```
-
-```ruby
-# app/models/staged_document.rb
-class StagedDocument < ApplicationRecord
-  belongs_to :user
-  belongs_to :stageable, polymorphic: true, optional: true
-
-  has_one_attached :file
-
-  enum :status, {
-    pending:   "pending",    # file received, DocAI not yet called
-    validated: "validated",  # DocAI returned a recognised income document (Payslip or W2)
-    rejected:  "rejected",   # DocAI returned unrecognised document type or validation failure
-    failed:    "failed"      # DocAI service error (graceful degradation)
-  }
-
-  validates :status, presence: true
-  validates :file, attached: true
-end
-```
+See [`examples/staged_document_migration.rb`](examples/staged_document_migration.rb) for the migration and [`examples/staged_document.rb`](examples/staged_document.rb) for the model.
 
 **Blob sharing:** When a consuming controller calls `@parent.supporting_documents.attach(staged.file.blob)`, it creates a new `active_storage_attachments` row pointing at the same `ActiveStorage::Blob` — no S3 copy is made. Both the `StagedDocument` and the parent model reference the same physical file. Since `StagedDocument` records are never purged, there is no risk of the blob being deleted out from under the parent.
 
@@ -585,114 +550,7 @@ end
 
 Entry point for all document uploads. Accepts multiple files via a standard HTML form POST, validates content type via server-side magic-byte detection (Marcel) and size per file, then processes all valid files **concurrently** on a dedicated `Concurrent::FixedThreadPool` — each file gets its own `Concurrent::Future` that builds a `StagedDocument` (associated with `current_user`), attaches the file, and saves atomically before delegating to `DocAiService`. The full raw API response (including confidence scores) is stored in `extracted_fields`. After all futures resolve, renders a template with prefilled fields and hidden signed_id inputs for each validated document. Total wall-clock time ≈ one DocAI call regardless of file count.
 
-```ruby
-# app/controllers/document_staging_controller.rb
-class DocumentStagingController < ApplicationController
-  ALLOWED_CONTENT_TYPES    = %w[application/pdf image/jpeg].freeze
-  MAX_FILE_SIZE_BYTES       = 30.megabytes
-  MAX_FILE_COUNT            = 2
-  SUPPORTED_RESULT_CLASSES = [DocAiResult::Payslip, DocAiResult::W2].freeze
-
-  # Dedicated thread pool for DocAI processing — isolates upload concurrency from
-  # the concurrent-ruby global IO pool so burst upload traffic cannot starve other
-  # consumers (e.g., ActiveStorage callbacks). Pool size = MAX_FILE_COUNT × 2
-  # concurrent requests, tunable via configuration if needed.
-  DOC_AI_THREAD_POOL = Concurrent::FixedThreadPool.new(
-    Rails.application.config.doc_ai.fetch(:thread_pool_size, MAX_FILE_COUNT * 2)
-  )
-
-  def create
-    authorize :document, :create?
-
-    files = Array(params[:files])
-    if files.empty?
-      flash.now[:alert] = t(".no_files")
-      return render :create, status: :unprocessable_entity
-    end
-    if files.size > MAX_FILE_COUNT
-      flash.now[:alert] = t(".too_many_files", max: MAX_FILE_COUNT)
-      return render :create, status: :unprocessable_entity
-    end
-
-    @results = process_files_concurrently(files)
-    render :create  # renders create.html.erb with @results
-  end
-
-  private
-
-  # Dispatches each file to a Concurrent::Future so all DocAI calls run in parallel.
-  # Total wall-clock time ≈ one DocAI call (~38s) regardless of file count.
-  #
-  # Futures execute on DOC_AI_THREAD_POOL (a dedicated FixedThreadPool) rather than
-  # the concurrent-ruby global IO pool, isolating DocAI concurrency from the rest of
-  # the application. current_user is captured before threading because controller
-  # helpers are not thread-safe. Each Future checks out its own DB connection via
-  # with_connection to avoid contention on the request thread's connection.
-  def process_files_concurrently(files)
-    user = current_user  # capture — controller helpers are not thread-safe
-
-    futures = files.map do |file|
-      Concurrent::Future.execute(executor: DOC_AI_THREAD_POOL) do
-        ActiveRecord::Base.connection_pool.with_connection do
-          process_file(file, user: user)
-        end
-      end
-    end
-
-    futures.map do |future|
-      future.value!  # re-raises any exception from the thread
-    rescue StandardError => e
-      Rails.logger.error("[DocumentStagingController] concurrent processing error: #{e.message}")
-      { file: nil, error: t(".analysis_unavailable"), staged_document: nil }
-    end
-  end
-
-  def process_file(file, user:)
-    unless valid_content_type?(file)
-      return { file: file, error: t(".invalid_content_type"), staged_document: nil }
-    end
-    unless valid_file_size?(file)
-      return { file: file, error: t(".file_too_large"), staged_document: nil }
-    end
-
-    staged_document = StagedDocument.new(user: user, status: :pending)
-    staged_document.file.attach(file)
-    staged_document.save!  # validates :file, attached: true before committing — no orphaned records
-    result = DocAiService.new.analyze(file: staged_document.file)
-
-    if result.nil?
-      staged_document.update!(status: :failed)
-      return { file: file, error: t(".analysis_unavailable"), staged_document: staged_document }
-    end
-
-    unless SUPPORTED_RESULT_CLASSES.any? { |klass| result.is_a?(klass) }
-      staged_document.update!(status: :rejected)
-      return { file: file, error: t(".unrecognised_document"), staged_document: staged_document }
-    end
-
-    staged_document.update!(
-      status:               :validated,
-      doc_ai_job_id:        result.job_id,
-      doc_ai_matched_class: result.matched_document_class,
-      extracted_fields:     result.fields,
-      validated_at:         Time.current
-    )
-
-    sid = staged_document.signed_id(expires_in: 1.hour)
-    { file: file, staged_document: staged_document, signed_id: sid, result: result }
-  end
-
-  # Server-side content-type validation using Marcel (magic-byte detection).
-  # Does not trust the browser-reported Content-Type header, which can be spoofed.
-  # Marcel is already a Rails dependency via ActiveStorage.
-  def valid_content_type?(file)
-    detected = Marcel::MimeType.for(file.tempfile, name: file.original_filename)
-    detected.in?(ALLOWED_CONTENT_TYPES)
-  end
-
-  def valid_file_size?(file) = file.size <= MAX_FILE_SIZE_BYTES
-end
-```
+See [`examples/document_staging_controller.rb`](examples/document_staging_controller.rb) for the full implementation.
 
 Field serialisation is no longer performed in the controller. The raw DocAI `fields` hash — containing `{ "value": ..., "confidence": ... }` pairs per field — is stored directly in the `extracted_fields` JSONB column. For form prefill, the `DocAiResult` subclasses provide a `to_prefill_fields` method that extracts just the values (see [DocAiResult subclasses](#docairesultpayslip-subclass-value-object)).
 
@@ -714,85 +572,19 @@ Extends `DataIntegration::BaseAdapter`. No auth headers — endpoint is currentl
 
 The `analyze_document` method accepts an `ActiveStorage::Attached::One` object. Since `Faraday::UploadIO` requires a file path or IO object (not an ActiveStorage attachment), the adapter opens the blob as a `Tempfile` via `file.blob.open`, which streams the file from S3 to a local tempfile for the duration of the block.
 
-```ruby
-# app/adapters/doc_ai_adapter.rb
-class DocAiAdapter < DataIntegration::BaseAdapter
-  def analyze_document(file:)
-    file.blob.open do |tempfile|
-      with_error_handling do
-        @connection.post("v1/documents") do |req|
-          req.params["wait"] = true
-          req.body = { file: Faraday::Multipart::FilePart.new(tempfile, file.content_type, file.filename.to_s) }
-        end
-      end
-    end
-  end
-
-  def handle_error(response)
-    detail = response.body.is_a?(Hash) ? response.body["detail"] : nil
-    raise ApiError, detail || "DocAI error: #{response.status}"
-  end
-
-  private
-
-  def default_connection
-    Faraday.new(url: Rails.application.config.doc_ai[:api_host]) do |f|
-      f.request :multipart
-      f.request :url_encoded
-      f.response :json
-      f.adapter Faraday.default_adapter
-      f.options.open_timeout = 10
-      f.options.timeout      = Rails.application.config.doc_ai[:timeout_seconds]
-    end
-  end
-end
-```
+See [`examples/doc_ai_adapter.rb`](examples/doc_ai_adapter.rb) for the full implementation.
 
 ### DocAiService
 
 Extends `DataIntegration::BaseService`.
 
-```ruby
-# app/services/doc_ai_service.rb
-class DocAiService < DataIntegration::BaseService
-  class ProcessingError < StandardError; end
-
-  def initialize(adapter: DocAiAdapter.new)
-    super(adapter: adapter)
-  end
-
-  def analyze(file:)
-    response = @adapter.analyze_document(file: file)
-    result   = DocAiResult.from_response(response)
-    raise ProcessingError, result.error if result.failed?
-
-    Rails.logger.info(
-      "[DocAiService] job_id=#{result.job_id} status=#{result.status} " \
-      "matched_class=#{result.matched_document_class} " \
-      "processing_seconds=#{result.total_processing_time_seconds}"
-    )
-    result
-  rescue DocAiAdapter::ApiError, ProcessingError => e
-    handle_integration_error(e)
-  end
-end
-```
+See [`examples/doc_ai_service.rb`](examples/doc_ai_service.rb) for the full implementation.
 
 ### DocAiResult::FieldValue
 
 A lightweight struct wrapping the `value` and `confidence` score for a single extracted field. All subclass field accessors return a `FieldValue` (or `nil` if the field was absent from the response).
 
-```ruby
-# Defined inside doc_ai_result.rb — no separate file needed
-FieldValue = Data.define(:value, :confidence) do
-  # true when the model is uncertain; callers may surface these to staff for manual review
-  def low_confidence?
-    confidence.nil? || confidence < Rails.application.config.doc_ai[:low_confidence_threshold]
-  end
-
-  def to_s = value.to_s
-end
-```
+The `FieldValue` struct is defined inside `doc_ai_result.rb` (see [`examples/doc_ai_result.rb`](examples/doc_ai_result.rb)).
 
 **Usage example:**
 
@@ -813,180 +605,13 @@ result.pay_date.low_confidence?  # => true  (confidence: 0.23 — flag for staff
 
 Holds the response envelope, the `FieldValue` accessor, and the self-registration factory. Extends `Strata::ValueObject`.
 
-```ruby
-# app/models/doc_ai_result.rb
-class DocAiResult < Strata::ValueObject
-  include Strata::Attributes
-
-  # Wraps a single extracted field's value and confidence score.
-  FieldValue = Data.define(:value, :confidence) do
-    def low_confidence?
-      confidence.nil? || confidence < Rails.application.config.doc_ai[:low_confidence_threshold]
-    end
-    def to_s = value.to_s
-  end
-
-  # Subclass registry — populated at load time by each subclass calling .register.
-  REGISTRY = {}
-
-  # Called by each subclass to associate its DocAI document class name with the Ruby class.
-  # Subclass files must be required below the class definition so they register before
-  # from_response is called (Rails eager loading handles this in production automatically).
-  def self.register(document_class)
-    REGISTRY[document_class] = self
-  end
-
-  # Response envelope
-  strata_attribute :job_id, :string
-  strata_attribute :status, :string
-  strata_attribute :matched_document_class, :string
-  strata_attribute :message, :string
-  strata_attribute :created_at, :datetime
-  strata_attribute :completed_at, :datetime
-  strata_attribute :total_processing_time_seconds, :float
-  strata_attribute :error, :string           # present when status == "failed"
-  strata_attribute :additional_info, :string # present when status == "failed"
-
-  # Raw fields hash — preserves all confidence + value pairs from the API.
-  # Stored as a plain Hash; frozen in build to prevent mutation.
-  attr_reader :fields
-
-  # Factory: dispatches to the registered subclass for the given matchedDocumentClass.
-  # Falls back to base DocAiResult for unregistered document types.
-  def self.from_response(response)
-    klass = REGISTRY.fetch(response["matchedDocumentClass"], DocAiResult)
-    klass.build(response)
-  end
-
-  def self.build(response)
-    instance = new(
-      job_id:                        response["job_id"],
-      status:                        response["status"],
-      matched_document_class:        response["matchedDocumentClass"],
-      message:                       response["message"],
-      created_at:                    response["createdAt"],
-      completed_at:                  response["completedAt"],
-      total_processing_time_seconds: response["totalProcessingTimeSeconds"],
-      error:                         response["error"],
-      additional_info:               response["additionalInfo"]
-    )
-    instance.instance_variable_set(:@fields, (response["fields"] || {}).freeze)
-    instance
-  end
-
-  def completed? = status == "completed"
-  def failed?    = status == "failed"
-
-  # Returns a FieldValue containing both the extracted value and its confidence score.
-  # Returns nil if the field was not present in the API response.
-  def field_for(api_key)
-    raw = fields.dig(api_key.to_s)
-    return nil unless raw
-    FieldValue.new(value: raw["value"], confidence: raw["confidence"])
-  end
-
-  # Subclasses override to return a hash of { field_name: value } for form prefill.
-  # Base implementation returns an empty hash.
-  def to_prefill_fields = {}
-
-  # Subclass files are required explicitly so their .register calls populate REGISTRY
-  # before any call to DocAiResult.from_response.
-  require_relative "doc_ai_result/payslip"
-  require_relative "doc_ai_result/w2"
-
-  # Freeze the registry after all subclasses have loaded to prevent accidental
-  # post-load mutation. Any require_relative for new document types must appear above.
-  REGISTRY.freeze
-end
-```
+See [`examples/doc_ai_result.rb`](examples/doc_ai_result.rb) for the full implementation.
 
 ### DocAiResult::Payslip (Subclass Value Object)
 
 Registers itself with the base class factory and exposes every Payslip schema field as an idiomatic Ruby snake_case method. Each accessor returns a `FieldValue` (or `nil` if the field was absent). Boolean validation flags are predicates that unwrap the value directly. `to_prefill_fields` returns a flat hash of values for form prefill — this is the only place field-to-form mapping is defined.
 
-```ruby
-# app/models/doc_ai_result/payslip.rb
-class DocAiResult::Payslip < DocAiResult
-  register "Payslip"
-
-  # --- Pay period ---
-  def pay_period_start_date    = field_for("payperiodstartdate")
-  def pay_period_end_date      = field_for("payperiodenddate")
-  def pay_date                 = field_for("paydate")
-
-  # --- Current period pay ---
-  def current_gross_pay        = field_for("currentgrosspay")
-  def current_net_pay          = field_for("currentnetpay")
-  def current_total_deductions = field_for("currenttotaldeductions")
-
-  # --- Year-to-date ---
-  def ytd_gross_pay            = field_for("ytdgrosspay")
-  def ytd_net_pay              = field_for("ytdnetpay")
-  def ytd_federal_tax          = field_for("ytdfederaltax")
-  def ytd_state_tax            = field_for("ytdstatetax")
-  def ytd_city_tax             = field_for("ytdcitytax")
-  def ytd_total_deductions     = field_for("ytdtotaldeductions")
-
-  # --- Rates ---
-  def regular_hourly_rate      = field_for("regularhourlyrate")
-  def holiday_hourly_rate      = field_for("holidayhourlyrate")
-
-  # --- Filing status ---
-  def federal_filing_status    = field_for("federalfilingstatus")
-  def state_filing_status      = field_for("statefilingstatus")
-
-  # --- Identifiers ---
-  def employee_number          = field_for("employeenumber")
-  def payroll_number           = field_for("payrollnumber")
-  def currency                 = field_for("currency")
-
-  # --- Employee name ---
-  def employee_first_name      = field_for("employeename.firstname")
-  def employee_middle_name     = field_for("employeename.middlename")
-  def employee_last_name       = field_for("employeename.lastname")
-  def employee_suffix_name     = field_for("employeename.suffixname")
-
-  # --- Employee address ---
-  def employee_address_line1   = field_for("employeeaddress.line1")
-  def employee_address_line2   = field_for("employeeaddress.line2")
-  def employee_address_city    = field_for("employeeaddress.city")
-  def employee_address_state   = field_for("employeeaddress.state")
-  def employee_address_zipcode = field_for("employeeaddress.zipcode")
-
-  # --- Company address ---
-  def company_address_line1    = field_for("companyaddress.line1")
-  def company_address_line2    = field_for("companyaddress.line2")
-  def company_address_city     = field_for("companyaddress.city")
-  def company_address_state    = field_for("companyaddress.state")
-  def company_address_zipcode  = field_for("companyaddress.zipcode")
-
-  # --- Validation flags (boolean predicates — unwrap value directly) ---
-  def gross_pay_valid?        = field_for("isgrosspayvali")&.value == true
-  def ytd_gross_pay_highest?  = field_for("isytdgrosspayhighest")&.value == true
-  def field_names_sufficient? = field_for("arefieldnamessufficient")&.value == true
-
-  # Returns a flat hash of { field_name: value } for form prefill.
-  # Confidence scores are not included — they are available in the persisted extracted_fields JSONB.
-  def to_prefill_fields
-    {
-      pay_period_start_date:    pay_period_start_date&.value,
-      pay_period_end_date:      pay_period_end_date&.value,
-      pay_date:                 pay_date&.value,
-      current_gross_pay:        current_gross_pay&.value,
-      current_net_pay:          current_net_pay&.value,
-      current_total_deductions: current_total_deductions&.value,
-      ytd_gross_pay:            ytd_gross_pay&.value,
-      ytd_net_pay:              ytd_net_pay&.value,
-      employee_first_name:      employee_first_name&.value,
-      employee_last_name:       employee_last_name&.value,
-      employee_address_line1:   employee_address_line1&.value,
-      employee_address_city:    employee_address_city&.value,
-      employee_address_state:   employee_address_state&.value,
-      employee_address_zipcode: employee_address_zipcode&.value
-    }
-  end
-end
-```
+See [`examples/doc_ai_result/payslip.rb`](examples/doc_ai_result/payslip.rb) for the full implementation.
 
 ### DocAiResult::W2 (Subclass Value Object)
 
@@ -994,92 +619,13 @@ Registers itself with the base class factory and exposes all W2 schema fields as
 
 > `nonqualifiedPlansIncom` is a DocAI typo (truncated key). The Ruby accessor uses the correct spelling; `field_for` is called with the literal API key.
 
-```ruby
-# app/models/doc_ai_result/w2.rb
-class DocAiResult::W2 < DocAiResult
-  register "W2"
-
-  # --- Employer Info ---
-  def employer_address        = field_for("employerInfo.employerAddress")
-  def employer_control_number = field_for("employerInfo.controlNumber")
-  def employer_name           = field_for("employerInfo.employerName")
-  def employer_ein            = field_for("employerInfo.ein")
-  def employer_zip_code       = field_for("employerInfo.employerZipCode")
-
-  # --- Filing Info ---
-  def omb_number              = field_for("filingInfo.ombNumber")
-  def verification_code       = field_for("filingInfo.verificationCode")
-
-  # --- Employee Info ---
-  def employee_name_suffix    = field_for("employeeGeneralInfo.employeeNameSuffix")
-  def employee_address        = field_for("employeeGeneralInfo.employeeAddress")
-  def employee_last_name      = field_for("employeeGeneralInfo.employeeLastName")
-  def employee_zip_code       = field_for("employeeGeneralInfo.employeeZipCode")
-  def employee_first_name     = field_for("employeeGeneralInfo.firstName")
-  def employee_ssn            = field_for("employeeGeneralInfo.ssn")
-
-  # --- Federal Tax ---
-  def federal_income_tax      = field_for("federalTaxInfo.federalIncomeTax")
-  def allocated_tips          = field_for("federalTaxInfo.allocatedTips")
-  def social_security_tax     = field_for("federalTaxInfo.socialSecurityTax")
-  def medicare_tax            = field_for("federalTaxInfo.medicareTax")
-
-  # --- Federal Wages ---
-  def social_security_tips          = field_for("federalWageInfo.socialSecurityTips")
-  def wages_tips_other_compensation = field_for("federalWageInfo.wagesTipsOtherCompensation")
-  def medicare_wages_tips           = field_for("federalWageInfo.medicareWagesTips")
-  def social_security_wages         = field_for("federalWageInfo.socialSecurityWages")
-
-  # --- Other ---
-  def other                         = field_for("other")
-  def nonqualified_plans_income     = field_for("nonqualifiedPlansIncom")  # DocAI typo — literal key
-
-  # Returns a flat hash of { field_name: value } for form prefill.
-  def to_prefill_fields
-    {
-      employer_name:                 employer_name&.value,
-      employer_ein:                  employer_ein&.value,
-      employer_address:              employer_address&.value,
-      employee_first_name:           employee_first_name&.value,
-      employee_last_name:            employee_last_name&.value,
-      employee_address:              employee_address&.value,
-      wages_tips_other_compensation: wages_tips_other_compensation&.value,
-      federal_income_tax:            federal_income_tax&.value,
-      social_security_wages:         social_security_wages&.value,
-      social_security_tax:           social_security_tax&.value,
-      medicare_wages_tips:           medicare_wages_tips&.value,
-      medicare_tax:                  medicare_tax&.value
-    }
-  end
-end
-```
+See [`examples/doc_ai_result/w2.rb`](examples/doc_ai_result/w2.rb) for the full implementation.
 
 ### Extending for New Document Types
 
 Adding support for a new document type (1099, bank statement, etc.) requires creating the subclass, calling `register`, and implementing `to_prefill_fields`. No changes to `DocAiResult` or `DocumentStagingController` are needed.
 
-```ruby
-# app/models/doc_ai_result/bank_statement.rb
-class DocAiResult::BankStatement < DocAiResult
-  register "BankStatement"
-
-  def account_holder_name = field_for("accountHolderName")
-  def account_number      = field_for("accountNumber")
-  def statement_date      = field_for("statementDate")
-  def closing_balance     = field_for("closingBalance")
-  # ...
-
-  def to_prefill_fields
-    {
-      account_holder_name: account_holder_name&.value,
-      statement_date:      statement_date&.value,
-      closing_balance:     closing_balance&.value
-    }
-  end
-end
-```
-
-Add `require_relative "doc_ai_result/bank_statement"` inside the `DocAiResult` class body (before `REGISTRY.freeze`) alongside the existing requires.
+See [`examples/doc_ai_result/bank_statement.rb`](examples/doc_ai_result/bank_statement.rb) for an annotated example. After creating the file, add `require_relative "doc_ai_result/bank_statement"` inside the `DocAiResult` class body (before `REGISTRY.freeze`) alongside the existing requires.
 
 ---
 
