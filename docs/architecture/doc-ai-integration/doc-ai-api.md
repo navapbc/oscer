@@ -15,7 +15,7 @@ Integrating with the NavaPBC DocAI service enables:
 
 A thin adapter + service + value object pattern integrates DocAI into existing OSCER workflows without coupling business logic to the external API:
 
-- **`DocumentStagingController`** — Accepts one or more file uploads from the browser via a standard HTML form POST, validates content type (PDF or JPG/JPEG) and size (≤30 MB) per file, creates a `StagedDocument` record per file, attaches each uploaded file via ActiveStorage, delegates to `DocAiService` **concurrently** (all files are analyzed in parallel via `Concurrent::Future`, so total wait time ≈ one DocAI call regardless of file count), updates each record's status and extracted fields, and renders a template containing prefilled fields and hidden `staged_document_signed_ids[]` fields for each validated document
+- **`DocumentStagingController`** — Accepts one or more file uploads from the browser via a standard HTML form POST, validates content type via server-side magic-byte detection (Marcel — PDF or JPG/JPEG) and size (≤30 MB) per file, builds a `StagedDocument` per file with its attachment and saves atomically, delegates to `DocAiService` **concurrently** on a dedicated `Concurrent::FixedThreadPool` (all files are analyzed in parallel via `Concurrent::Future`, so total wait time ≈ one DocAI call regardless of file count), updates each record's status and extracted fields, and renders a template containing prefilled fields and hidden `staged_document_signed_ids[]` fields for each validated document
 - **`StagedDocument`** — ActiveRecord model that owns the uploaded file (via `has_one_attached :file`) and tracks DocAI validation state, the full raw API response (including confidence scores), and the `job_id`. Retained permanently as an audit record.`belongs_to :stageable, polymorphic: true` links the document to whatever parent model consumes it (e.g., `Activity`, `Exemption`)
 - **`DocAiAdapter`** — Handles the HTTP boundary: POSTs a file to DocAI via multipart upload and returns the raw response body
 - **`DocAiService`** — Orchestrates the call: invokes the adapter, maps the response to a typed value object, logs the DocAI `job_id`, and raises `ProcessingError` for failed jobs
@@ -24,9 +24,9 @@ A thin adapter + service + value object pattern integrates DocAI into existing O
 ```mermaid
 flowchart LR
     Browser -->|"HTML form POST\n(multipart/form-data, files[])"| Controller[DocumentStagingController]
-    Controller -->|"validate PDF or JPG/JPEG ≤30 MB\n(per file)"| Controller
-    Controller -->|"Concurrent::Future per file"| Controller
-    Controller -->|"StagedDocument.create!(pending)"| DB[(PostgreSQL)]
+    Controller -->|"Marcel magic-byte validation\nPDF or JPG/JPEG ≤30 MB (per file)"| Controller
+    Controller -->|"Concurrent::Future per file\n(dedicated FixedThreadPool)"| Controller
+    Controller -->|"StagedDocument.new(pending)\n+ file.attach + save!"| DB[(PostgreSQL)]
     Controller -->|"file.attach"| AS[ActiveStorage / S3]
     Controller -->|"staged_document.file"| DocAiService
     DocAiService -->|file| DocAiAdapter
@@ -38,7 +38,7 @@ flowchart LR
     Controller -->|"Render HTML template\n(prefilled fields + signed_id hidden fields)"| Browser
 ```
 
-**Processing model**: The `wait=true` parameter causes DocAI to block until processing completes, returning a single synchronous response within the upload request. No polling or webhook handling is required. If DocAI does not respond within 60 seconds, Faraday raises a `TimeoutError` and the service returns an error to the controller. When multiple files are uploaded, all DocAI calls run concurrently via `Concurrent::Future` — total wall-clock time is approximately equal to one DocAI call (~38 seconds) rather than scaling linearly with file count.
+**Processing model**: The `wait=true` parameter causes DocAI to block until processing completes, returning a single synchronous response within the upload request. No polling or webhook handling is required. If DocAI does not respond within 60 seconds, Faraday raises a `TimeoutError` and the service returns an error to the controller. When multiple files are uploaded, all DocAI calls run concurrently via `Concurrent::Future` on a dedicated `FixedThreadPool` — total wall-clock time is approximately equal to one DocAI call (~38 seconds) rather than scaling linearly with file count.
 
 ---
 
@@ -57,11 +57,10 @@ sequenceDiagram
     Member->>Browser: Selects one or more files via file input
     Browser->>Controller: POST /document_staging (multipart/form-data, files[])
 
-    Controller->>Controller: Validate content type + size for each file (collect errors for invalid files)
+    Controller->>Controller: Validate content type (Marcel magic-byte) + size for each file (collect errors for invalid files)
 
-    par Concurrent — one Future per valid file
-        Controller->>DB: StagedDocument.create!(status: :pending)
-        Controller->>DB: staged_document.file.attach(file)
+    par Concurrent — one Future per valid file (dedicated FixedThreadPool)
+        Controller->>DB: StagedDocument.new(pending) + file.attach + save!
         Controller->>DocAI: analyze(file: staged_document.file)
         alt DocAI returns recognised income document (Payslip or W2)
             Controller->>DB: update!(status: :validated, extracted_fields, job_id)
@@ -81,7 +80,7 @@ sequenceDiagram
 |------|-------|
 | File selection | The file input includes the `multiple` attribute; the member may select one or more files at once |
 | Concurrent processing | Each valid file is dispatched to its own `Concurrent::Future`; all DocAI calls run in parallel so total wall-clock time ≈ one call (~38s) regardless of file count |
-| StagedDocument creation | A `StagedDocument` record is created with `status: :pending` before DocAI is called; the file is attached via ActiveStorage (which handles S3 transparently). Each Future checks out its own DB connection via `connection_pool.with_connection` |
+| StagedDocument creation | A `StagedDocument` is built with `status: :pending`, the file is attached, and `save!` commits both atomically — if the attach fails (e.g., S3 error), no orphaned record is persisted. Each Future checks out its own DB connection via `connection_pool.with_connection` |
 | Income document check | `SUPPORTED_RESULT_CLASSES.any? { \|klass\| result.is_a?(klass) }` — both Payslip and W2 are accepted; any other matched class is rejected at this step |
 | Status update | All outcomes update the `StagedDocument` status (`validated`, `rejected`, or `failed`) — the record is retained permanently as an audit trail |
 | UI prefill | Prefilled fields and `staged_document_signed_ids` hidden inputs are embedded in the rendered HTML template; the full DocAI response — including per-field confidence scores — is persisted in the `extracted_fields` JSONB column for staff review |
@@ -156,9 +155,9 @@ sequenceDiagram
 
     Member->>Browser: Selects files via file input
     Browser->>Staging: POST /document_staging (multipart/form-data, files[])
-    Staging->>Staging: Validate PDF/JPG + size (per file)
-    par Concurrent Futures (one per valid file)
-        Staging->>DB: StagedDocument.create!(pending) + file.attach → DocAI → update!(validated, fields, job_id)
+    Staging->>Staging: Validate PDF/JPG via Marcel magic-byte + size (per file)
+    par Concurrent Futures on dedicated FixedThreadPool (one per valid file)
+        Staging->>DB: StagedDocument.new(pending) + file.attach + save! → DocAI → update!(validated, fields, job_id)
     end
     Staging->>Staging: Collect all Future results
     Staging->>Browser: Render template (prefilled fields + hidden staged_document_signed_ids[] inputs)
@@ -187,7 +186,7 @@ sequenceDiagram
 
     Member->>Browser: Selects files via file input
     Browser->>Staging: POST /document_staging (multipart/form-data, files[])
-    Staging->>DB: StagedDocument.create!(pending) + file.attach → update!(failed) [per file]
+    Staging->>DB: StagedDocument.new(pending) + file.attach + save! → update!(failed) [per file]
     Staging->>Browser: Render template with errors (no validated documents)
     Browser->>Member: Error — manual entry fallback
 
@@ -267,7 +266,7 @@ flowchart TB
 flowchart TB
     subgraph web [Web Application]
         Controller[DocumentStagingController]
-        Validator[File Validator\nPDF/JPG · ≤30 MB]
+        Validator[File Validator\nMarcel magic-byte · PDF/JPG · ≤30 MB]
     end
 
     subgraph domain [Domain Layer]
@@ -287,7 +286,7 @@ flowchart TB
     end
 
     Controller --> Validator
-    Controller -->|"create! + file.attach"| StagedDoc
+    Controller -->|"new + file.attach + save!"| StagedDoc
     StagedDoc --> AS
     Controller -->|"analyze(file: staged_document.file)"| Service
     Service -->|"analyze_document(file:)"| Adapter
@@ -305,8 +304,8 @@ flowchart TB
 
 | Component                    | Responsibility                                                                                                              |
 |------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| `DocumentStagingController`  | Validates uploads (PDF or JPG/JPEG, ≤30 MB per file), processes all valid files concurrently via `Concurrent::Future`, creates `StagedDocument` per file, calls `DocAiService`, updates status/fields, renders template with prefilled fields and hidden signed_id inputs |
-| File Validator               | Enforces PDF or JPG/JPEG content type, ≤30 MB size limit, and ≤2 file count before any DB or DocAI operations              |
+| `DocumentStagingController`  | Validates uploads via Marcel magic-byte detection (PDF or JPG/JPEG, ≤30 MB per file), processes all valid files concurrently on a dedicated `FixedThreadPool` via `Concurrent::Future`, builds + attaches + saves `StagedDocument` atomically per file, calls `DocAiService`, updates status/fields, renders template with prefilled fields and hidden signed_id inputs |
+| File Validator               | Enforces PDF or JPG/JPEG content type via server-side magic-byte detection (Marcel), ≤30 MB size limit, and ≤2 file count before any DB or DocAI operations |
 | `StagedDocument`             | ActiveRecord model: owns uploaded file via `has_one_attached :file`; tracks DocAI validation status, full raw API response (with confidence scores) in `extracted_fields` JSONB, `job_id`, `user_id`, and polymorphic `stageable` parent |
 | `DocAiAdapter`               | POSTs file via Faraday multipart; maps HTTP errors to typed exceptions                                                      |
 | `DocAiService`               | Invokes adapter; builds result value object; logs `job_id`; raises `ProcessingError` on failure                            |
@@ -584,7 +583,7 @@ end
 
 ### DocumentStagingController
 
-Entry point for all document uploads. Accepts multiple files via a standard HTML form POST, validates content type (PDF or JPG/JPEG) and size per file, then processes all valid files **concurrently** — each file gets its own `Concurrent::Future` that creates a `StagedDocument` (associated with `current_user`), delegates to `DocAiService`, and stores the full raw API response (including confidence scores) in `extracted_fields`. After all futures resolve, renders a template with prefilled fields and hidden signed_id inputs for each validated document. Total wall-clock time ≈ one DocAI call regardless of file count.
+Entry point for all document uploads. Accepts multiple files via a standard HTML form POST, validates content type via server-side magic-byte detection (Marcel) and size per file, then processes all valid files **concurrently** on a dedicated `Concurrent::FixedThreadPool` — each file gets its own `Concurrent::Future` that builds a `StagedDocument` (associated with `current_user`), attaches the file, and saves atomically before delegating to `DocAiService`. The full raw API response (including confidence scores) is stored in `extracted_fields`. After all futures resolve, renders a template with prefilled fields and hidden signed_id inputs for each validated document. Total wall-clock time ≈ one DocAI call regardless of file count.
 
 ```ruby
 # app/controllers/document_staging_controller.rb
@@ -593,6 +592,14 @@ class DocumentStagingController < ApplicationController
   MAX_FILE_SIZE_BYTES       = 30.megabytes
   MAX_FILE_COUNT            = 2
   SUPPORTED_RESULT_CLASSES = [DocAiResult::Payslip, DocAiResult::W2].freeze
+
+  # Dedicated thread pool for DocAI processing — isolates upload concurrency from
+  # the concurrent-ruby global IO pool so burst upload traffic cannot starve other
+  # consumers (e.g., ActiveStorage callbacks). Pool size = MAX_FILE_COUNT × 2
+  # concurrent requests, tunable via configuration if needed.
+  DOC_AI_THREAD_POOL = Concurrent::FixedThreadPool.new(
+    Rails.application.config.doc_ai.fetch(:thread_pool_size, MAX_FILE_COUNT * 2)
+  )
 
   def create
     authorize :document, :create?
@@ -616,14 +623,16 @@ class DocumentStagingController < ApplicationController
   # Dispatches each file to a Concurrent::Future so all DocAI calls run in parallel.
   # Total wall-clock time ≈ one DocAI call (~38s) regardless of file count.
   #
-  # current_user is captured before threading because controller helpers are not
-  # thread-safe. Each Future checks out its own DB connection via with_connection
-  # to avoid contention on the request thread's connection.
+  # Futures execute on DOC_AI_THREAD_POOL (a dedicated FixedThreadPool) rather than
+  # the concurrent-ruby global IO pool, isolating DocAI concurrency from the rest of
+  # the application. current_user is captured before threading because controller
+  # helpers are not thread-safe. Each Future checks out its own DB connection via
+  # with_connection to avoid contention on the request thread's connection.
   def process_files_concurrently(files)
     user = current_user  # capture — controller helpers are not thread-safe
 
     futures = files.map do |file|
-      Concurrent::Future.execute do
+      Concurrent::Future.execute(executor: DOC_AI_THREAD_POOL) do
         ActiveRecord::Base.connection_pool.with_connection do
           process_file(file, user: user)
         end
@@ -646,8 +655,9 @@ class DocumentStagingController < ApplicationController
       return { file: file, error: t(".file_too_large"), staged_document: nil }
     end
 
-    staged_document = StagedDocument.create!(user: user, status: :pending)
+    staged_document = StagedDocument.new(user: user, status: :pending)
     staged_document.file.attach(file)
+    staged_document.save!  # validates :file, attached: true before committing — no orphaned records
     result = DocAiService.new.analyze(file: staged_document.file)
 
     if result.nil?
@@ -672,14 +682,21 @@ class DocumentStagingController < ApplicationController
     { file: file, staged_document: staged_document, signed_id: sid, result: result }
   end
 
-  def valid_content_type?(file) = file.content_type.in?(ALLOWED_CONTENT_TYPES)
-  def valid_file_size?(file)    = file.size <= MAX_FILE_SIZE_BYTES
+  # Server-side content-type validation using Marcel (magic-byte detection).
+  # Does not trust the browser-reported Content-Type header, which can be spoofed.
+  # Marcel is already a Rails dependency via ActiveStorage.
+  def valid_content_type?(file)
+    detected = Marcel::MimeType.for(file.tempfile, name: file.original_filename)
+    detected.in?(ALLOWED_CONTENT_TYPES)
+  end
+
+  def valid_file_size?(file) = file.size <= MAX_FILE_SIZE_BYTES
 end
 ```
 
 Field serialisation is no longer performed in the controller. The raw DocAI `fields` hash — containing `{ "value": ..., "confidence": ... }` pairs per field — is stored directly in the `extracted_fields` JSONB column. For form prefill, the `DocAiResult` subclasses provide a `to_prefill_fields` method that extracts just the values (see [DocAiResult subclasses](#docairesultpayslip-subclass-value-object)).
 
-**Concurrency model**: `process_files_concurrently` dispatches each file to a `Concurrent::Future` (from the `concurrent-ruby` gem, which ships with Rails). `current_user` is captured before threading because ActionController helpers are not thread-safe. Each Future checks out its own database connection via `ActiveRecord::Base.connection_pool.with_connection` to avoid contention on the request thread's connection. If any individual Future raises an unexpected exception, it is caught and returned as a generic error result — other files in the batch are not affected.
+**Concurrency model**: `process_files_concurrently` dispatches each file to a `Concurrent::Future` executing on `DOC_AI_THREAD_POOL` — a dedicated `Concurrent::FixedThreadPool` that isolates DocAI concurrency from the `concurrent-ruby` global IO pool. This prevents burst upload traffic from starving other concurrent-ruby consumers in the process (e.g., ActiveStorage callbacks). The pool size defaults to `MAX_FILE_COUNT * 2` (4 threads) and is configurable via `doc_ai[:thread_pool_size]`. `current_user` is captured before threading because ActionController helpers are not thread-safe. Each Future checks out its own database connection via `ActiveRecord::Base.connection_pool.with_connection` to avoid contention on the request thread's connection. If any individual Future raises an unexpected exception, it is caught and returned as a generic error result — other files in the batch are not affected.
 
 The template (`create.html.erb`) iterates over `@results`:
 - For validated docs: renders prefilled fields (via `result.to_prefill_fields`) and a hidden `staged_document_signed_ids[]` input per doc
@@ -1072,7 +1089,7 @@ Add `require_relative "doc_ai_result/bank_statement"` inside the `DocAiResult` c
 |------|---------|
 | `app/models/staged_document.rb` | `StagedDocument` model — status enum, `has_one_attached :file`, `extracted_fields` JSONB |
 | `db/migrate/<timestamp>_create_staged_documents.rb` | Migration for `staged_documents` table (uuid pk, status, doc_ai_job_id, extracted_fields, activity_id) |
-| `app/controllers/document_staging_controller.rb` | Validates uploads (PDF or JPG/JPEG, ≤30 MB per file); processes files concurrently via `Concurrent::Future`; creates `StagedDocument` per file; attaches files; orchestrates DocAI; renders template with prefilled fields and signed IDs |
+| `app/controllers/document_staging_controller.rb` | Validates uploads via Marcel magic-byte detection (PDF or JPG/JPEG, ≤30 MB per file); processes files concurrently on a dedicated `FixedThreadPool` via `Concurrent::Future`; builds + attaches + saves `StagedDocument` atomically per file; orchestrates DocAI; renders template with prefilled fields and signed IDs |
 | `app/views/document_staging/create.html.erb` | Template rendered after multi-file upload; prefilled fields and hidden `staged_document_signed_ids[]` inputs per validated doc; inline errors for rejected/failed docs |
 | `app/adapters/doc_ai_adapter.rb` | Extends `DataIntegration::BaseAdapter`; POSTs file via Faraday multipart |
 | `app/services/doc_ai_service.rb` | Extends `DataIntegration::BaseService`; accepts ActiveStorage attachment, returns `DocAiResult` |
@@ -1135,7 +1152,8 @@ This generates `POST /document_staging` → `DocumentStagingController#create`. 
 Rails.application.config.doc_ai = {
   api_host:                 ENV.fetch("DOC_AI_API_HOST"),
   timeout_seconds:          ENV.fetch("DOC_AI_TIMEOUT_SECONDS", "60").to_i,
-  low_confidence_threshold: ENV.fetch("DOC_AI_LOW_CONFIDENCE_THRESHOLD", "0.7").to_f
+  low_confidence_threshold: ENV.fetch("DOC_AI_LOW_CONFIDENCE_THRESHOLD", "0.7").to_f,
+  thread_pool_size:         ENV.fetch("DOC_AI_THREAD_POOL_SIZE", "4").to_i
 }
 ```
 
@@ -1144,6 +1162,7 @@ Rails.application.config.doc_ai = {
 DOC_AI_API_HOST=https://app-docai.platform-test-dev.navateam.com
 DOC_AI_TIMEOUT_SECONDS=60
 DOC_AI_LOW_CONFIDENCE_THRESHOLD=0.7
+DOC_AI_THREAD_POOL_SIZE=4
 ```
 
 | Variable                          | Purpose                                                      | Required |
@@ -1151,6 +1170,7 @@ DOC_AI_LOW_CONFIDENCE_THRESHOLD=0.7
 | `DOC_AI_API_HOST`                 | DocAI base URL (per environment)                             | Yes      |
 | `DOC_AI_TIMEOUT_SECONDS`          | Max seconds to wait for a DocAI response (default: 60)       | No       |
 | `DOC_AI_LOW_CONFIDENCE_THRESHOLD` | Minimum confidence score before `low_confidence?` returns `true` (default: 0.7) | No |
+| `DOC_AI_THREAD_POOL_SIZE`         | Number of threads in the dedicated DocAI `FixedThreadPool` (default: 4)         | No |
 
 > **Web server timeout**: Because DocAI validation runs concurrently on background threads but the web request thread blocks until all futures resolve (up to 60 seconds), Puma and any rack-timeout middleware (e.g., `Rack::Timeout`) must be configured to allow requests longer than 60 seconds for the upload endpoint. A recommended minimum is 75 seconds to provide headroom above the Faraday timeout. Note: concurrent processing means total time is ~60 seconds regardless of file count.
 >
@@ -1168,13 +1188,13 @@ DOC_AI_LOW_CONFIDENCE_THRESHOLD=0.7
 
 **Tradeoff**: A web request thread is held for up to 60 seconds per upload (regardless of file count, since files are processed concurrently — see below). Puma and any rack-timeout middleware must be configured with a limit above 60 seconds (see Configuration). Under high concurrent upload load, this may exhaust Puma threads; consider a dedicated thread pool or route-level concurrency controls for the upload endpoint if this becomes a bottleneck.
 
-### Concurrent multi-file processing via `Concurrent::Future`
+### Concurrent multi-file processing via `Concurrent::Future` on a dedicated thread pool
 
-**Decision**: When multiple files are uploaded, each file is dispatched to its own `Concurrent::Future`. All DocAI calls execute in parallel. The controller waits for all futures to resolve before rendering the response.
+**Decision**: When multiple files are uploaded, each file is dispatched to its own `Concurrent::Future` executing on `DOC_AI_THREAD_POOL` — a dedicated `Concurrent::FixedThreadPool`. All DocAI calls execute in parallel. The controller waits for all futures to resolve before rendering the response.
 
-**Rationale**: DocAI processing takes ~38 seconds per file. Sequential processing of 3 files would block the response for ~114 seconds — beyond any reasonable request timeout and a poor user experience. Concurrent processing keeps total wall-clock time at ~38 seconds regardless of file count. `Concurrent::Future` (from `concurrent-ruby`, which ships with Rails as a dependency) uses a managed thread pool, avoiding unbounded thread creation. Each Future checks out its own database connection via `ActiveRecord::Base.connection_pool.with_connection`, ensuring clean connection lifecycle and no contention with the request thread. `current_user` is captured before threading because ActionController helpers are not thread-safe.
+**Rationale**: DocAI processing takes ~38 seconds per file. Sequential processing of 3 files would block the response for ~114 seconds — beyond any reasonable request timeout and a poor user experience. Concurrent processing keeps total wall-clock time at ~38 seconds regardless of file count. `Concurrent::Future` (from `concurrent-ruby`, which ships with Rails as a dependency) provides managed thread pooling. A dedicated `FixedThreadPool` is used instead of the global IO pool to isolate DocAI concurrency from the rest of the application — burst upload traffic cannot starve other concurrent-ruby consumers (e.g., ActiveStorage callbacks). The pool size defaults to `MAX_FILE_COUNT * 2` (4 threads) and is configurable via `doc_ai[:thread_pool_size]`. Each Future checks out its own database connection via `ActiveRecord::Base.connection_pool.with_connection`, ensuring clean connection lifecycle and no contention with the request thread. `current_user` is captured before threading because ActionController helpers are not thread-safe.
 
-**Tradeoff**: Each concurrent file consumes one thread from the `concurrent-ruby` global IO thread pool and one connection from the ActiveRecord connection pool. `MAX_FILE_COUNT` (2) caps the maximum concurrent futures per request, bounding resource consumption. The database pool size (`pool` in `database.yml`) must be large enough to accommodate 2 additional connections per concurrent upload request on top of Puma worker connections. If the pool is undersized, a Future will block waiting for a connection, degrading to sequential behavior rather than failing. Error isolation is per-Future: if one file's processing raises an exception, the others are unaffected and the failed file returns a generic error result.
+**Tradeoff**: Each concurrent file consumes one thread from the dedicated pool and one connection from the ActiveRecord connection pool. `MAX_FILE_COUNT` (2) caps the maximum concurrent futures per request, bounding resource consumption. The database pool size (`pool` in `database.yml`) must be large enough to accommodate 2 additional connections per concurrent upload request on top of Puma worker connections. If the pool is undersized, a Future will block waiting for a connection, degrading to sequential behavior rather than failing. If the dedicated thread pool is exhausted (all threads occupied by concurrent uploads from other requests), new futures will queue until a thread becomes available — this degrades latency gracefully rather than failing. Error isolation is per-Future: if one file's processing raises an exception, the others are unaffected and the failed file returns a generic error result.
 
 ### Subclass-per-document-class value objects with self-registration
 
