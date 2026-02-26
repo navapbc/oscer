@@ -15,16 +15,16 @@ Integrating with the NavaPBC DocAI service enables:
 
 A thin adapter + service + value object pattern integrates DocAI into existing OSCER workflows without coupling business logic to the external API:
 
-- **`DocumentStagingController`** — Accepts a file upload from the browser (triggered automatically on file selection), validates content type (PDF) and size (≤30 MB), creates a `StagedDocument` record, attaches the uploaded file via ActiveStorage, delegates to `DocAiService`, updates the record's status and extracted fields, and returns a signed global ID (`sgid`) and extracted fields as JSON for UI prefill
+- **`DocumentStagingController`** — Accepts one or more file uploads from the browser via a standard HTML form POST, validates content type (PDF or JPG/JPEG) and size (≤30 MB) per file, creates a `StagedDocument` record per file, attaches each uploaded file via ActiveStorage, delegates to `DocAiService`, updates each record's status and extracted fields, and renders a template containing prefilled fields and hidden `staged_document_sgid` fields for each validated document
 - **`StagedDocument`** — ActiveRecord model that owns the uploaded file (via `has_one_attached :file`) and tracks DocAI validation state, extracted fields, and the `job_id`. Retained permanently as an audit record; `activity_id` is set when the blob is transferred to an `Activity`
 - **`DocAiAdapter`** — Handles the HTTP boundary: POSTs a file to DocAI via multipart upload and returns the raw response body
 - **`DocAiService`** — Orchestrates the call: invokes the adapter, maps the response to a typed value object, logs the DocAI `job_id`, and raises `ProcessingError` for failed jobs
-- **`DocAiResult` / `DocAiResult::Payslip`** — Immutable value objects representing the API response; the base class holds the response envelope and a factory method; subclasses expose typed, snake_case accessors per document class
+- **`DocAiResult` / `DocAiResult::Payslip` / `DocAiResult::W2`** — Immutable value objects representing the API response; the base class holds the response envelope and a factory method; subclasses expose typed, snake_case accessors per document class
 
 ```mermaid
 flowchart LR
-    Browser -->|"file input change\n(Stimulus auto-upload)"| Controller[DocumentStagingController]
-    Controller -->|"validate PDF ≤30 MB"| Controller
+    Browser -->|"HTML form POST\n(multipart/form-data, files[])"| Controller[DocumentStagingController]
+    Controller -->|"validate PDF or JPG/JPEG ≤30 MB\n(per file)"| Controller
     Controller -->|"StagedDocument.create!(pending)"| DB[(PostgreSQL)]
     Controller -->|"file.attach"| AS[ActiveStorage / S3]
     Controller -->|"staged_document.file"| DocAiService
@@ -32,9 +32,9 @@ flowchart LR
     DocAiAdapter -->|"POST /v1/documents?wait=true\n(60s timeout)"| DocAI[DocAI API]
     DocAI -->|JSON response| DocAiAdapter
     DocAiAdapter -->|response body| DocAiService
-    DocAiService -->|DocAiResult::Payslip| Controller
+    DocAiService -->|DocAiResult| Controller
     Controller -->|"update!(validated, fields, job_id)"| DB
-    Controller -->|"JSON { staged_document_sgid, fields }"| Browser
+    Controller -->|"Render HTML template\n(prefilled fields + sgid hidden fields)"| Browser
 ```
 
 **Processing model**: The `wait=true` parameter causes DocAI to block until processing completes, returning a single synchronous response within the upload request. No polling or webhook handling is required. If DocAI does not respond within 60 seconds, Faraday raises a `TimeoutError` and the service returns an error to the controller.
@@ -48,131 +48,114 @@ flowchart LR
 ```mermaid
 sequenceDiagram
     actor Member
-    participant UI as Browser (Stimulus)
+    participant Browser
     participant Controller as DocumentStagingController
     participant DB as StagedDocument (DB)
     participant DocAI as DocAiService
 
-    Member->>UI: Selects file via file input
-    UI->>Controller: POST /documents/stage (multipart/form-data)
-    Controller->>Controller: Validate content type (PDF) + size (≤30 MB)
+    Member->>Browser: Selects one or more files via file input
+    Browser->>Controller: POST /documents/stage (multipart/form-data, files[])
 
-    alt Validation fails
-        Controller->>UI: 422 { error: "File must be a PDF" }
-        UI->>Member: Inline validation error
+    loop For each uploaded file
+        Controller->>Controller: Validate content type (PDF or JPG/JPEG) + size (≤30 MB)
+        alt Validation fails
+            note right of Controller: Record skipped; error collected
+        end
+        Controller->>DB: StagedDocument.create!(status: :pending)
+        Controller->>DB: staged_document.file.attach(file)
+        Controller->>DocAI: analyze(file: staged_document.file)
+        alt DocAI returns recognised income document (Payslip or W2)
+            Controller->>DB: update!(status: :validated, extracted_fields, job_id)
+        else Unrecognised document type
+            Controller->>DB: update!(status: :rejected)
+        else DocAI unavailable
+            Controller->>DB: update!(status: :failed)
+        end
     end
 
-    Controller->>DB: StagedDocument.create!(status: :pending)
-    Controller->>DB: staged_document.file.attach(file)
-    Controller->>DocAI: analyze(file: staged_document.file)
-    DocAI->>DocAI: POST DocAI API (≤60s)
-
-    alt DocAI returns DocAiResult::Payslip
-        Controller->>DB: update!(status: :validated, extracted_fields, job_id, validated_at)
-        Controller->>UI: 200 { staged_document_sgid: "...", fields: { current_gross_pay: ..., ... } }
-        UI->>Member: Prefill application form fields
-    else Not a Payslip
-        Controller->>DB: update!(status: :rejected)
-        Controller->>UI: 422 { error: "Document is not a recognised pay stub" }
-        UI->>Member: Inline error — re-upload prompt
-    else DocAI unavailable (nil result)
-        Controller->>DB: update!(status: :failed)
-        Controller->>UI: 503 { error: "Document analysis temporarily unavailable" }
-        UI->>Member: Error — manual entry fallback
-    end
+    Controller->>Browser: Render template (prefilled fields + sgid hidden fields per validated doc, errors for others)
+    Browser->>Member: Shows prefilled form / validation errors
 ```
 
 | Step | Notes |
 |------|-------|
-| File selection | A Stimulus controller listens on the `change` event of the file input and auto-submits via `fetch`; no submit button required |
+| File selection | The file input includes the `multiple` attribute; the member may select one or more files at once |
 | StagedDocument creation | A `StagedDocument` record is created with `status: :pending` before DocAI is called; the file is attached via ActiveStorage (which handles S3 transparently) |
-| Payslip check | `result.is_a?(DocAiResult::Payslip)` — documents matched to any other class (W-2, 1099) are rejected at this step |
+| Income document check | `SUPPORTED_RESULT_CLASSES.any? { \|klass\| result.is_a?(klass) }` — both Payslip and W2 are accepted; any other matched class is rejected at this step |
 | Status update | All outcomes update the `StagedDocument` status (`validated`, `rejected`, or `failed`) — the record is retained permanently as an audit trail |
-| UI prefill | Only extracted `.value` fields are returned to the browser; confidence scores are retained server-side for staff review |
+| UI prefill | Prefilled fields and `staged_document_sgid` hidden inputs are embedded in the rendered HTML template; confidence scores are retained server-side for staff review |
 
 ---
 
 ## Activity Attachment Flow
 
-> How a validated `StagedDocument` gets attached to an `Activity` record and how the manual upload step is bypassed
+> How validated `StagedDocument`(s) get attached to an `Activity` record and how the manual upload step is bypassed
 
-After `DocumentStagingController` validates the file with DocAI, the `StagedDocument` record holds the file via ActiveStorage and has `status: :validated`. This section describes the three-part handoff that connects the staged document to an `Activity` record.
+After `DocumentStagingController` validates each file with DocAI, each `StagedDocument` record holds the file via ActiveStorage and has `status: :validated`. This section describes how the staged documents are connected to an `Activity` record.
 
-### 1. `DocumentStagingController` returns a `staged_document_sgid`
+### 1. `DocumentStagingController` renders hidden `staged_document_sgids` fields
 
-After updating the `StagedDocument` to `validated`, the controller returns a signed global ID (`sgid`) and the extracted fields in the JSON response. The `sgid` is an HMAC-signed, time-limited token (1 hour expiry) that the browser can pass back without exposing the raw record UUID. It cannot be forged or replayed after expiry, and a purpose scope (`'activity_attachment'`) prevents token reuse across different operations.
+After processing all uploaded files, the controller renders a template. For each validated document, the template embeds a hidden input containing the document's signed global ID (`sgid`) — an HMAC-signed, time-limited token (1 hour expiry) that the browser can pass back without exposing the raw record UUID. Multiple validated documents produce multiple hidden fields:
 
-```ruby
-render json: {
-  staged_document_sgid: staged_document.to_sgid(expires_in: 1.hour).to_s,
-  fields:               staged_document.extracted_fields
-}, status: :ok
+```html
+<input type="hidden" name="activity[staged_document_sgids][]" value="sgid_1">
+<input type="hidden" name="activity[staged_document_sgids][]" value="sgid_2">
 ```
 
-### 2. Stimulus controller stores `staged_document_sgid` in a hidden field
+The `sgid` cannot be forged or replayed after expiry, and a purpose scope (`'activity_attachment'`) prevents token reuse across different operations. The template also renders prefilled activity form fields extracted from each validated document.
 
-The existing Stimulus auto-upload controller (which already handles the `change` event and prefills form fields from the `fields` payload) is also responsible for the `sgid` handoff:
+### 2. `ActivitiesController#create` attaches blobs and skips the upload step
 
-- **On success (200)**: populate a hidden `<input name="activity[staged_document_sgid]">` alongside the existing activity form fields with the returned `staged_document_sgid`
-- **On any error (422 / 503)**: clear the hidden field so no stale `sgid` is submitted with the form
-
-No change to the form builder or the existing `Activity` form structure is needed — the hidden field lives alongside the other form fields and is ignored if empty.
-
-### 3. `ActivitiesController#create` attaches the blob and skips the upload step
-
-When `params[:activity][:staged_document_sgid]` is present, the controller resolves the `StagedDocument` via `find_signed`, attaches its blob directly to the activity (no S3 copy is made — the same blob is shared), marks the staged document as consumed, and redirects to the next step, bypassing the `documents` upload page:
+When `params[:activity][:staged_document_sgids]` is present, the controller iterates over the array, resolves each `StagedDocument` via `find_signed`, attaches its blob directly to the activity (no S3 copy is made — the same blob is shared), marks each staged document as consumed, and redirects to the next step, bypassing the `documents` upload page:
 
 ```ruby
-if (sgid = activity_params[:staged_document_sgid]).present?
-  staged = StagedDocument.find_signed(sgid, purpose: 'activity_attachment')
+if (sgids = activity_params[:staged_document_sgids]).present?
+  sgids.each do |sgid|
+    staged = StagedDocument.find_signed(sgid, purpose: 'activity_attachment')
+    next unless staged&.validated?
 
-  if staged&.validated?
     @activity.supporting_documents.attach(staged.file.blob)
     staged.update!(activity_id: @activity.id)
-    redirect_to activity_report_application_form_path(@activity_report_application_form),
-                notice: t(".created_with_document")
-  else
-    # sgid expired or record not validated — fall through to upload page
-    redirect_to documents_activity_report_application_form_activity_path(
-                  @activity_report_application_form, @activity)
   end
+  redirect_to activity_report_application_form_path(@activity_report_application_form),
+              notice: t(".created_with_document")
 else
   redirect_to documents_activity_report_application_form_activity_path(
                 @activity_report_application_form, @activity)
 end
 ```
 
-`staged_document_sgid` must be added to the permitted params list in `ActivitiesController`.
+`staged_document_sgids` (array) must be added to the permitted params list in `ActivitiesController`. When a `sgid` is expired or the record is not validated, that entry is skipped gracefully — other valid documents in the same submission are still attached.
 
-When no `sgid` is present — because DocAI was unavailable, the member has not yet uploaded a file, or the upload was skipped — the existing redirect to the `documents` upload page is preserved unchanged. Degradation is graceful; the manual upload path remains fully functional.
+When no `sgids` are present — because DocAI was unavailable, the member has not yet uploaded files, or all uploads failed — the existing redirect to the `documents` upload page is preserved unchanged. Degradation is graceful; the manual upload path remains fully functional.
 
 ### End-to-End Sequence Diagram
 
-#### Happy path (DocAI available, file is a valid Payslip)
+#### Happy path (DocAI available, files are valid income documents)
 
 ```mermaid
 sequenceDiagram
     actor Member
-    participant UI as Browser (Stimulus)
+    participant Browser
     participant Staging as DocumentStagingController
     participant DB as StagedDocument (DB)
     participant Activities as ActivitiesController
 
-    Member->>UI: Selects file via file input
-    UI->>Staging: POST /documents/stage (multipart/form-data)
-    Staging->>Staging: Validate PDF + size
-    Staging->>DB: StagedDocument.create!(pending) + file.attach → DocAI → update!(validated, fields, job_id)
-    Staging->>UI: 200 { staged_document_sgid: "...", fields: { current_gross_pay: ..., ... } }
-    UI->>UI: Prefill form fields from fields payload
-    UI->>UI: Store sgid in hidden input[name="activity[staged_document_sgid]"]
+    Member->>Browser: Selects files via file input
+    Browser->>Staging: POST /documents/stage (multipart/form-data, files[])
+    Staging->>Staging: Validate PDF/JPG + size (per file)
+    Staging->>DB: StagedDocument.create!(pending) + file.attach → DocAI → update!(validated, fields, job_id) [per file]
+    Staging->>Browser: Render template (prefilled fields + hidden staged_document_sgids[] inputs)
 
-    Member->>UI: Fills remaining fields, submits activity form
-    UI->>Activities: POST /activity_report_application_forms/:id/activities
-    Activities->>DB: StagedDocument.find_signed(sgid, purpose: 'activity_attachment')
-    Activities->>Activities: staged.validated? → true
-    Activities->>Activities: @activity.supporting_documents.attach(staged.file.blob)
-    Activities->>DB: staged.update!(activity_id: @activity.id)
-    Activities->>UI: Redirect to next step (skip documents upload page)
+    Member->>Browser: Fills remaining fields, submits activity form
+    Browser->>Activities: POST /activity_report_application_forms/:id/activities
+    loop For each sgid
+        Activities->>DB: StagedDocument.find_signed(sgid, purpose: 'activity_attachment')
+        Activities->>Activities: staged.validated? → true
+        Activities->>Activities: @activity.supporting_documents.attach(staged.file.blob)
+        Activities->>DB: staged.update!(activity_id: @activity.id)
+    end
+    Activities->>Browser: Redirect to next step (skip documents upload page)
 ```
 
 #### Fallback path (DocAI unavailable)
@@ -180,22 +163,21 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     actor Member
-    participant UI as Browser (Stimulus)
+    participant Browser
     participant Staging as DocumentStagingController
     participant DB as StagedDocument (DB)
     participant Activities as ActivitiesController
     participant Upload as Documents Upload Page
 
-    Member->>UI: Selects file via file input
-    UI->>Staging: POST /documents/stage (multipart/form-data)
-    Staging->>DB: StagedDocument.create!(pending) + file.attach → update!(failed)
-    Staging->>UI: 503 { error: "Document analysis temporarily unavailable" }
-    UI->>UI: Show inline error; clear staged_document_sgid hidden field
-    UI->>Member: Error — manual entry fallback
+    Member->>Browser: Selects files via file input
+    Browser->>Staging: POST /documents/stage (multipart/form-data, files[])
+    Staging->>DB: StagedDocument.create!(pending) + file.attach → update!(failed) [per file]
+    Staging->>Browser: Render template with errors (no validated documents)
+    Browser->>Member: Error — manual entry fallback
 
-    Member->>UI: Fills fields manually, submits activity form
-    UI->>Activities: POST /activity_report_application_forms/:id/activities
-    Activities->>Activities: No staged_document_sgid in params
+    Member->>Browser: Fills fields manually, submits activity form
+    Browser->>Activities: POST /activity_report_application_forms/:id/activities
+    Activities->>Activities: No staged_document_sgids in params
     Activities->>Upload: Redirect to documents_activity_report_application_form_activity_path
     Upload->>Member: Existing manual upload flow (unchanged)
 ```
@@ -208,9 +190,13 @@ sequenceDiagram
 
 **`StagedDocument` retained as audit record** — Unlike a staging copy that would be deleted after use, `StagedDocument` rows are retained permanently. `activity_id` is set when the blob is transferred, marking the record as consumed. Since `StagedDocument` records are never purged, the blob is safe from premature deletion even after it is attached to an Activity.
 
-**Graceful degradation preserved** — When `staged_document_sgid` is absent, the existing `documents` upload page is still reachable, maintaining the current flow as a fallback with no changes to `ActivityReportApplicationFormsController`.
+**Graceful degradation preserved** — When `staged_document_sgids` is absent, the existing `documents` upload page is still reachable, maintaining the current flow as a fallback with no changes to `ActivityReportApplicationFormsController`.
 
-**No changes to `ActivityReportApplicationFormsController`** — The flow change lives entirely in `ActivitiesController#create` and the Stimulus controller. The multi-step form orchestration layer is unaffected.
+**No changes to `ActivityReportApplicationFormsController`** — The flow change lives entirely in `ActivitiesController#create`. The multi-step form orchestration layer is unaffected.
+
+**Server-rendered prefill** — `DocumentStagingController` renders a template rather than returning JSON. Prefilled fields and sgids are embedded in the HTML, eliminating the need for a client-side JS upload controller.
+
+**Multiple sgids as array** — Each validated file produces its own `StagedDocument` and sgid. The activity form accepts `staged_document_sgids[]` (array). `ActivitiesController#create` iterates, skipping expired or non-validated entries.
 
 ---
 
@@ -265,7 +251,7 @@ flowchart TB
 flowchart TB
     subgraph web [Web Application]
         Controller[DocumentStagingController]
-        Validator[File Validator\nPDF · ≤30 MB]
+        Validator[File Validator\nPDF/JPG · ≤30 MB]
     end
 
     subgraph domain [Domain Layer]
@@ -281,6 +267,7 @@ flowchart TB
     subgraph results [Value Objects]
         Result[DocAiResult\nbase value object]
         Payslip[DocAiResult::Payslip\nsubclass]
+        W2[DocAiResult::W2\nsubclass]
     end
 
     Controller --> Validator
@@ -293,7 +280,8 @@ flowchart TB
     Adapter -->|"response body hash"| Service
     Service -->|"DocAiResult.from_response"| Result
     Result -->|"DocAiResult::Payslip"| Payslip
-    Service -->|"DocAiResult::Payslip"| Controller
+    Result -->|"DocAiResult::W2"| W2
+    Service -->|"DocAiResult"| Controller
     Controller -->|"update!(validated, fields, job_id)"| StagedDoc
 ```
 
@@ -301,14 +289,15 @@ flowchart TB
 
 | Component                    | Responsibility                                                                                                              |
 |------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| `DocumentStagingController`  | Validates upload, creates `StagedDocument`, attaches file, calls `DocAiService`, updates status/fields, returns `sgid` + JSON fields for UI prefill |
-| File Validator               | Enforces PDF content type and ≤30 MB size limit before any DB or DocAI operations                                          |
+| `DocumentStagingController`  | Validates uploads (PDF or JPG/JPEG, ≤30 MB per file), creates `StagedDocument` per file, calls `DocAiService`, updates status/fields, renders template with prefilled fields and hidden sgid inputs |
+| File Validator               | Enforces PDF or JPG/JPEG content type and ≤30 MB size limit before any DB or DocAI operations                              |
 | `StagedDocument`             | ActiveRecord model: owns uploaded file via `has_one_attached :file`; tracks DocAI validation status, extracted fields, `job_id`, and `activity_id` |
 | `DocAiAdapter`               | POSTs file via Faraday multipart; maps HTTP errors to typed exceptions                                                      |
 | `DocAiService`               | Invokes adapter; builds result value object; logs `job_id`; raises `ProcessingError` on failure                            |
 | `DocAiResult`                | Base value object: response envelope, `FieldValue` accessor, self-registration factory                                      |
 | `DocAiResult::FieldValue`    | Immutable struct wrapping `value` + `confidence`; exposes `low_confidence?` predicate                                       |
 | `DocAiResult::Payslip`       | Payslip subclass; self-registers via `register "Payslip"`; typed `field_for` accessors per field                           |
+| `DocAiResult::W2`            | W2 subclass; self-registers via `register "W2"`; typed `field_for` accessors for all W2 fields                             |
 
 ---
 
@@ -373,6 +362,45 @@ file=<binary file contents>
     "companyaddress.state":    { "confidence": 0.93, "value": "NC" },
     "companyaddress.zipcode":  { "confidence": 0.93, "value": "27599-9100" },
     "isgrosspayvali":          { "confidence": 0.87, "value": true }
+  }
+}
+```
+
+### Success Response (HTTP 200 — W2)
+
+```json
+{
+  "job_id": "e8b21c94-5d4f-48a9-bc91-37d6f4a09c11",
+  "status": "completed",
+  "createdAt": "2026-02-23T20:14:12.105843+00:00",
+  "completedAt": "2026-02-23T20:14:51.882017+00:00",
+  "totalProcessingTimeSeconds": 39.8,
+  "matchedDocumentClass": "W2",
+  "message": "Document processed successfully",
+  "fields": {
+    "employerInfo.employerAddress":               { "confidence": 0.89, "value": "103 South Building, Chapel Hill, NC 27599" },
+    "employerInfo.controlNumber":                 { "confidence": 0.85, "value": "000042" },
+    "employerInfo.employerName":                  { "confidence": 0.92, "value": "University of North Carolina" },
+    "employerInfo.ein":                           { "confidence": 0.94, "value": "56-6001393" },
+    "employerInfo.employerZipCode":               { "confidence": 0.91, "value": "27599" },
+    "filingInfo.ombNumber":                       { "confidence": 0.88, "value": "1545-0008" },
+    "filingInfo.verificationCode":                { "confidence": 0.76, "value": "A1B2C3" },
+    "other":                                      { "confidence": 0.70, "value": null },
+    "federalTaxInfo.federalIncomeTax":            { "confidence": 0.93, "value": 3319.78 },
+    "federalTaxInfo.allocatedTips":               { "confidence": 0.81, "value": 0 },
+    "federalTaxInfo.socialSecurityTax":           { "confidence": 0.92, "value": 1982.44 },
+    "federalTaxInfo.medicareTax":                 { "confidence": 0.91, "value": 463.61 },
+    "employeeGeneralInfo.employeeNameSuffix":     { "confidence": 0.72, "value": null },
+    "employeeGeneralInfo.employeeAddress":        { "confidence": 0.90, "value": "123 Franklin St, Chapel Hill, NC 27517" },
+    "employeeGeneralInfo.employeeLastName":       { "confidence": 0.93, "value": "Doe" },
+    "employeeGeneralInfo.employeeZipCode":        { "confidence": 0.91, "value": "27517" },
+    "employeeGeneralInfo.firstName":              { "confidence": 0.93, "value": "Jane" },
+    "employeeGeneralInfo.ssn":                    { "confidence": 0.88, "value": "***-**-1234" },
+    "federalWageInfo.socialSecurityTips":         { "confidence": 0.83, "value": 0 },
+    "federalWageInfo.wagesTipsOtherCompensation": { "confidence": 0.94, "value": 31964.00 },
+    "federalWageInfo.medicareWagesTips":          { "confidence": 0.93, "value": 31964.00 },
+    "federalWageInfo.socialSecurityWages":        { "confidence": 0.93, "value": 31964.00 },
+    "nonqualifiedPlansIncom":                     { "confidence": 0.79, "value": 0 }
   }
 }
 ```
@@ -443,6 +471,40 @@ A job may complete with HTTP 200 but indicate a processing failure via `status: 
 
 ---
 
+### Field Reference (W2)
+
+> **Note**: W2 response field names use dot-notation groups (e.g., `employerInfo.employerName`). All accessors return a `DocAiResult::FieldValue`.
+>
+> `nonqualifiedPlansIncom` is a DocAI typo (truncated key). The Ruby accessor uses the correct spelling; `field_for` is called with the literal API key.
+
+| API Field Key                                | Ruby Accessor                   | Group         | Value type inside `FieldValue` |
+|----------------------------------------------|---------------------------------|---------------|--------------------------------|
+| `employerInfo.employerAddress`               | `employer_address`              | Employer Info | String  |
+| `employerInfo.controlNumber`                 | `employer_control_number`       | Employer Info | String  |
+| `employerInfo.employerName`                  | `employer_name`                 | Employer Info | String  |
+| `employerInfo.ein`                           | `employer_ein`                  | Employer Info | String  |
+| `employerInfo.employerZipCode`               | `employer_zip_code`             | Employer Info | String  |
+| `filingInfo.ombNumber`                       | `omb_number`                    | Filing Info   | String  |
+| `filingInfo.verificationCode`                | `verification_code`             | Filing Info   | String  |
+| `other`                                      | `other`                         | Other         | String  |
+| `federalTaxInfo.federalIncomeTax`            | `federal_income_tax`            | Federal Tax   | Numeric |
+| `federalTaxInfo.allocatedTips`               | `allocated_tips`                | Federal Tax   | Numeric |
+| `federalTaxInfo.socialSecurityTax`           | `social_security_tax`           | Federal Tax   | Numeric |
+| `federalTaxInfo.medicareTax`                 | `medicare_tax`                  | Federal Tax   | Numeric |
+| `employeeGeneralInfo.employeeNameSuffix`     | `employee_name_suffix`          | Employee Info | String  |
+| `employeeGeneralInfo.employeeAddress`        | `employee_address`              | Employee Info | String  |
+| `employeeGeneralInfo.employeeLastName`       | `employee_last_name`            | Employee Info | String  |
+| `employeeGeneralInfo.employeeZipCode`        | `employee_zip_code`             | Employee Info | String  |
+| `employeeGeneralInfo.firstName`              | `employee_first_name`           | Employee Info | String  |
+| `employeeGeneralInfo.ssn`                    | `employee_ssn`                  | Employee Info | String  |
+| `federalWageInfo.socialSecurityTips`         | `social_security_tips`          | Federal Wages | Numeric |
+| `federalWageInfo.wagesTipsOtherCompensation` | `wages_tips_other_compensation` | Federal Wages | Numeric |
+| `federalWageInfo.medicareWagesTips`          | `medicare_wages_tips`           | Federal Wages | Numeric |
+| `federalWageInfo.socialSecurityWages`        | `social_security_wages`         | Federal Wages | Numeric |
+| `nonqualifiedPlansIncom`                     | `nonqualified_plans_income`     | Other         | Numeric |
+
+---
+
 ## Error Handling
 
 | Scenario                   | HTTP Status | Body                         | Handling                                                                                                             |
@@ -453,7 +515,7 @@ A job may complete with HTTP 200 but indicate a processing failure via `status: 
 | Request timeout (> 60s)    | —           | —                            | Faraday raises `TimeoutError` → caught as `ApiError` → `handle_integration_error` returns `nil`                      |
 | DocAI processing failed    | 200         | `{"status":"failed",...}`    | `DocAiService` checks `result.failed?` → raises `ProcessingError`                                                    |
 | Graceful degradation       | any         | —                            | `handle_integration_error` logs warning and returns `nil`; controller updates `StagedDocument` to `status: :failed`  |
-| Document not a Payslip     | 200         | `{"matchedDocumentClass":"..."}` | Controller checks `result.is_a?(DocAiResult::Payslip)`; updates `StagedDocument` to `status: :rejected`; returns 422 |
+| Document not a recognised income type | 200 | `{"matchedDocumentClass":"..."}` | Controller checks `SUPPORTED_RESULT_CLASSES.any?`; updates `StagedDocument` to `status: :rejected`; returns error in rendered template |
 
 ---
 
@@ -483,8 +545,8 @@ class StagedDocument < ApplicationRecord
 
   enum :status, {
     pending:   "pending",    # file received, DocAI not yet called
-    validated: "validated",  # DocAI returned a recognised Payslip
-    rejected:  "rejected",   # DocAI returned non-Payslip or validation failure
+    validated: "validated",  # DocAI returned a recognised income document (Payslip or W2)
+    rejected:  "rejected",   # DocAI returned unrecognised document type or validation failure
     failed:    "failed"      # DocAI service error (graceful degradation)
   }
 
@@ -499,32 +561,45 @@ end
 
 ### DocumentStagingController
 
-Entry point for all document uploads. Validates the file before any DB or DocAI operations, creates a `StagedDocument` record with `has_one_attached :file`, delegates to `DocAiService`, updates the record's status and extracted fields, and returns a JSON payload consumed by the Stimulus controller to prefill the active application form.
+Entry point for all document uploads. Accepts multiple files via a standard HTML form POST, validates content type (PDF or JPG/JPEG) and size per file, creates a `StagedDocument` per file, delegates to `DocAiService`, updates each record's status and extracted fields, and renders a template with prefilled fields and hidden sgid inputs for each validated document.
 
 ```ruby
 # app/controllers/document_staging_controller.rb
 class DocumentStagingController < ApplicationController
-  ALLOWED_CONTENT_TYPES = %w[application/pdf].freeze
-  MAX_FILE_SIZE_BYTES    = 30.megabytes
+  ALLOWED_CONTENT_TYPES    = %w[application/pdf image/jpeg].freeze
+  MAX_FILE_SIZE_BYTES       = 30.megabytes
+  SUPPORTED_RESULT_CLASSES = [DocAiResult::Payslip, DocAiResult::W2].freeze
 
   def create
-    file = params.require(:file)
-    return render_error("must be a PDF", :unprocessable_entity)      unless valid_content_type?(file)
-    return render_error("must be under 30 MB", :unprocessable_entity) unless valid_file_size?(file)
+    files = Array(params[:files])
+    return render_error("No files provided", :unprocessable_entity) if files.empty?
+
+    @results = files.map { |file| process_file(file) }
+    render :create  # renders create.html.erb with @results
+  end
+
+  private
+
+  def process_file(file)
+    unless valid_content_type?(file)
+      return { file: file, error: "must be a PDF or JPG/JPEG", staged_document: nil }
+    end
+    unless valid_file_size?(file)
+      return { file: file, error: "must be under 30 MB", staged_document: nil }
+    end
 
     staged_document = StagedDocument.create!(status: :pending)
     staged_document.file.attach(file)
-
     result = DocAiService.new.analyze(file: staged_document.file)
 
     if result.nil?
       staged_document.update!(status: :failed)
-      return render_error("Document analysis temporarily unavailable — please try again", :service_unavailable)
+      return { file: file, error: "Document analysis temporarily unavailable", staged_document: staged_document }
     end
 
-    unless result.is_a?(DocAiResult::Payslip)
+    unless SUPPORTED_RESULT_CLASSES.any? { |klass| result.is_a?(klass) }
       staged_document.update!(status: :rejected)
-      return render_error("Document is not a recognised pay stub — please upload a pay stub", :unprocessable_entity)
+      return { file: file, error: "Not a recognised income document — please upload a pay stub or W-2", staged_document: staged_document }
     end
 
     staged_document.update!(
@@ -535,13 +610,9 @@ class DocumentStagingController < ApplicationController
       validated_at:         Time.current
     )
 
-    render json: {
-      staged_document_sgid: staged_document.to_sgid(expires_in: 1.hour).to_s,
-      fields:               staged_document.extracted_fields
-    }, status: :ok
+    sgid = staged_document.to_sgid(expires_in: 1.hour).to_s
+    { file: file, staged_document: staged_document, sgid: sgid, fields: staged_document.extracted_fields }
   end
-
-  private
 
   def valid_content_type?(file) = file.content_type.in?(ALLOWED_CONTENT_TYPES)
   def valid_file_size?(file)    = file.size <= MAX_FILE_SIZE_BYTES
@@ -551,6 +622,14 @@ class DocumentStagingController < ApplicationController
   end
 
   def serialise_fields(result)
+    case result
+    when DocAiResult::Payslip then serialise_payslip_fields(result)
+    when DocAiResult::W2      then serialise_w2_fields(result)
+    else {}
+    end
+  end
+
+  def serialise_payslip_fields(result)
     {
       pay_period_start_date:    result.pay_period_start_date&.value,
       pay_period_end_date:      result.pay_period_end_date&.value,
@@ -568,11 +647,30 @@ class DocumentStagingController < ApplicationController
       employee_address_zipcode: result.employee_address_zipcode&.value
     }
   end
+
+  def serialise_w2_fields(result)
+    {
+      employer_name:                 result.employer_name&.value,
+      employer_ein:                  result.employer_ein&.value,
+      employer_address:              result.employer_address&.value,
+      employee_first_name:           result.employee_first_name&.value,
+      employee_last_name:            result.employee_last_name&.value,
+      employee_address:              result.employee_address&.value,
+      wages_tips_other_compensation: result.wages_tips_other_compensation&.value,
+      federal_income_tax:            result.federal_income_tax&.value,
+      social_security_wages:         result.social_security_wages&.value,
+      social_security_tax:           result.social_security_tax&.value,
+      medicare_wages_tips:           result.medicare_wages_tips&.value,
+      medicare_tax:                  result.medicare_tax&.value
+    }
+  end
 end
 ```
 
-> **CSRF**: Include the Rails CSRF token in every Stimulus fetch request (`headers: { "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content }`). Do not disable forgery protection on this endpoint.
->
+The template (`create.html.erb`) iterates over `@results`:
+- For validated docs: renders prefilled fields and a hidden `staged_document_sgids[]` input per doc
+- For rejected/failed docs: renders an inline error message
+
 > **Authorization**: Call `authorize :document, :create?` (or the appropriate Pundit policy) at the top of `#create` to enforce member authentication before any file processing.
 
 ---
@@ -650,10 +748,10 @@ A lightweight struct wrapping the `value` and `confidence` score for a single ex
 ```ruby
 # Defined inside doc_ai_result.rb — no separate file needed
 FieldValue = Data.define(:value, :confidence) do
-  LOW_CONFIDENCE_THRESHOLD = 0.7
-
   # true when the model is uncertain; callers may surface these to staff for manual review
-  def low_confidence? = confidence.nil? || confidence < LOW_CONFIDENCE_THRESHOLD
+  def low_confidence?
+    confidence.nil? || confidence < Rails.application.config.doc_ai[:low_confidence_threshold]
+  end
 
   def to_s = value.to_s
 end
@@ -685,10 +783,10 @@ class DocAiResult < Strata::ValueObject
 
   # Wraps a single extracted field's value and confidence score.
   FieldValue = Data.define(:value, :confidence) do
-    LOW_CONFIDENCE_THRESHOLD = 0.7
-
-    def low_confidence? = confidence.nil? || confidence < LOW_CONFIDENCE_THRESHOLD
-    def to_s            = value.to_s
+    def low_confidence?
+      confidence.nil? || confidence < Rails.application.config.doc_ai[:low_confidence_threshold]
+    end
+    def to_s = value.to_s
   end
 
   # Subclass registry — populated at load time by each subclass calling .register.
@@ -752,6 +850,7 @@ end
 # Subclass files are required explicitly so their .register calls populate REGISTRY
 # before any call to DocAiResult.from_response.
 require_relative "doc_ai_result/payslip"
+require_relative "doc_ai_result/w2"
 
 # Freeze the registry after all subclasses have loaded to prevent accidental
 # post-load mutation. Any require_relative for new document types must appear above.
@@ -827,22 +926,72 @@ class DocAiResult::Payslip < DocAiResult
 end
 ```
 
-### Extending for New Document Types
+### DocAiResult::W2 (Subclass Value Object)
 
-Adding support for a new document type (W-2, 1099, etc.) requires one step: create the subclass and call `register`. No changes to `DocAiResult` are needed.
+Registers itself with the base class factory and exposes all W2 schema fields as idiomatic Ruby snake_case methods grouped by document section. Each accessor returns a `FieldValue` (or `nil` if the field was absent).
+
+> `nonqualifiedPlansIncom` is a DocAI typo (truncated key). The Ruby accessor uses the correct spelling; `field_for` is called with the literal API key.
 
 ```ruby
 # app/models/doc_ai_result/w2.rb
 class DocAiResult::W2 < DocAiResult
   register "W2"
 
-  def employer_name = field_for("employername")
-  def wages         = field_for("wages")
+  # --- Employer Info ---
+  def employer_address        = field_for("employerInfo.employerAddress")
+  def employer_control_number = field_for("employerInfo.controlNumber")
+  def employer_name           = field_for("employerInfo.employerName")
+  def employer_ein            = field_for("employerInfo.ein")
+  def employer_zip_code       = field_for("employerInfo.employerZipCode")
+
+  # --- Filing Info ---
+  def omb_number              = field_for("filingInfo.ombNumber")
+  def verification_code       = field_for("filingInfo.verificationCode")
+
+  # --- Employee Info ---
+  def employee_name_suffix    = field_for("employeeGeneralInfo.employeeNameSuffix")
+  def employee_address        = field_for("employeeGeneralInfo.employeeAddress")
+  def employee_last_name      = field_for("employeeGeneralInfo.employeeLastName")
+  def employee_zip_code       = field_for("employeeGeneralInfo.employeeZipCode")
+  def employee_first_name     = field_for("employeeGeneralInfo.firstName")
+  def employee_ssn            = field_for("employeeGeneralInfo.ssn")
+
+  # --- Federal Tax ---
+  def federal_income_tax      = field_for("federalTaxInfo.federalIncomeTax")
+  def allocated_tips          = field_for("federalTaxInfo.allocatedTips")
+  def social_security_tax     = field_for("federalTaxInfo.socialSecurityTax")
+  def medicare_tax            = field_for("federalTaxInfo.medicareTax")
+
+  # --- Federal Wages ---
+  def social_security_tips          = field_for("federalWageInfo.socialSecurityTips")
+  def wages_tips_other_compensation = field_for("federalWageInfo.wagesTipsOtherCompensation")
+  def medicare_wages_tips           = field_for("federalWageInfo.medicareWagesTips")
+  def social_security_wages         = field_for("federalWageInfo.socialSecurityWages")
+
+  # --- Other ---
+  def other                         = field_for("other")
+  def nonqualified_plans_income     = field_for("nonqualifiedPlansIncom")  # DocAI typo — literal key
+end
+```
+
+### Extending for New Document Types
+
+Adding support for a new document type (1099, bank statement, etc.) requires one step: create the subclass and call `register`. No changes to `DocAiResult` are needed.
+
+```ruby
+# app/models/doc_ai_result/bank_statement.rb
+class DocAiResult::BankStatement < DocAiResult
+  register "BankStatement"
+
+  def account_holder_name = field_for("accountHolderName")
+  def account_number      = field_for("accountNumber")
+  def statement_date      = field_for("statementDate")
+  def closing_balance     = field_for("closingBalance")
   # ...
 end
 ```
 
-Add `require_relative "doc_ai_result/w2"` to the bottom of `doc_ai_result.rb` alongside the existing `payslip` require.
+Add `require_relative "doc_ai_result/bank_statement"` to the bottom of `doc_ai_result.rb` alongside the existing requires.
 
 ---
 
@@ -852,18 +1001,21 @@ Add `require_relative "doc_ai_result/w2"` to the bottom of `doc_ai_result.rb` al
 |------|---------|
 | `app/models/staged_document.rb` | `StagedDocument` model — status enum, `has_one_attached :file`, `extracted_fields` JSONB |
 | `db/migrate/<timestamp>_create_staged_documents.rb` | Migration for `staged_documents` table (uuid pk, status, doc_ai_job_id, extracted_fields, activity_id) |
-| `app/controllers/document_staging_controller.rb` | Validates upload (PDF, ≤30 MB); creates `StagedDocument`; attaches file; orchestrates DocAI; returns `sgid` + fields |
+| `app/controllers/document_staging_controller.rb` | Validates uploads (PDF or JPG/JPEG, ≤30 MB per file); creates `StagedDocument` per file; attaches files; orchestrates DocAI; renders template with prefilled fields and sgids |
+| `app/views/document_staging/create.html.erb` | Template rendered after multi-file upload; prefilled fields and hidden `staged_document_sgids[]` inputs per validated doc; inline errors for rejected/failed docs |
 | `app/adapters/doc_ai_adapter.rb` | Extends `DataIntegration::BaseAdapter`; POSTs file via Faraday multipart |
 | `app/services/doc_ai_service.rb` | Extends `DataIntegration::BaseService`; accepts ActiveStorage attachment, returns `DocAiResult` |
 | `app/models/doc_ai_result.rb` | Base `Strata::ValueObject`; envelope fields, generic accessors, subclass factory |
 | `app/models/doc_ai_result/payslip.rb` | `DocAiResult::Payslip` subclass; all Payslip snake_case field accessors |
-| `config/initializers/doc_ai.rb` | App config for env vars |
+| `app/models/doc_ai_result/w2.rb` | `DocAiResult::W2` subclass; all W2 snake_case field accessors grouped by section |
+| `config/initializers/doc_ai.rb` | App config for env vars including `low_confidence_threshold` |
 | `spec/models/staged_document_spec.rb` | Model validations and enum tests |
-| `spec/controllers/document_staging_controller_spec.rb` | Controller tests: file validation, `StagedDocument` lifecycle, DocAI delegation |
+| `spec/controllers/document_staging_controller_spec.rb` | Controller tests: file validation, multi-file `StagedDocument` lifecycle, DocAI delegation, template rendering |
 | `spec/adapters/doc_ai_adapter_spec.rb` | Adapter tests (WebMock stubs) |
 | `spec/services/doc_ai_service_spec.rb` | Service tests |
 | `spec/models/doc_ai_result_spec.rb` | Base value object tests |
 | `spec/models/doc_ai_result/payslip_spec.rb` | Payslip accessor tests |
+| `spec/models/doc_ai_result/w2_spec.rb` | W2 accessor tests |
 
 ```
 app/models/
@@ -871,11 +1023,15 @@ app/models/
   doc_ai_result.rb
   doc_ai_result/
     payslip.rb
+    w2.rb
+app/views/document_staging/
+  create.html.erb
 spec/models/
   staged_document_spec.rb
   doc_ai_result_spec.rb
   doc_ai_result/
     payslip_spec.rb
+    w2_spec.rb
 ```
 
 ## Files to Modify
@@ -883,8 +1039,8 @@ spec/models/
 | File | Change |
 |------|--------|
 | `Gemfile` | Add `faraday-multipart` if not already present |
-| `local.env.example` | Add `DOC_AI_API_HOST` |
-| `app/controllers/activities_controller.rb` | Accept `staged_document_sgid` in permitted params; resolve `StagedDocument` via `find_signed`, attach blob, and skip upload redirect when present |
+| `local.env.example` | Add `DOC_AI_API_HOST`, `DOC_AI_TIMEOUT_SECONDS`, `DOC_AI_LOW_CONFIDENCE_THRESHOLD` |
+| `app/controllers/activities_controller.rb` | Accept `staged_document_sgids` (array) in permitted params; iterate via `find_signed`, attach blobs, and skip upload redirect when any are present |
 
 ---
 
@@ -893,8 +1049,9 @@ spec/models/
 ```ruby
 # config/initializers/doc_ai.rb
 Rails.application.config.doc_ai = {
-  api_host:        ENV.fetch("DOC_AI_API_HOST"),
-  timeout_seconds: ENV.fetch("DOC_AI_TIMEOUT_SECONDS", "60").to_i
+  api_host:                 ENV.fetch("DOC_AI_API_HOST"),
+  timeout_seconds:          ENV.fetch("DOC_AI_TIMEOUT_SECONDS", "60").to_i,
+  low_confidence_threshold: ENV.fetch("DOC_AI_LOW_CONFIDENCE_THRESHOLD", "0.7").to_f
 }
 ```
 
@@ -902,12 +1059,14 @@ Rails.application.config.doc_ai = {
 # local.env.example
 DOC_AI_API_HOST=https://app-docai.platform-test-dev.navateam.com
 DOC_AI_TIMEOUT_SECONDS=60
+DOC_AI_LOW_CONFIDENCE_THRESHOLD=0.7
 ```
 
-| Variable                  | Purpose                                              | Required |
-|---------------------------|------------------------------------------------------|----------|
-| `DOC_AI_API_HOST`         | DocAI base URL (per environment)                     | Yes      |
-| `DOC_AI_TIMEOUT_SECONDS`  | Max seconds to wait for a DocAI response (default: 60) | No     |
+| Variable                          | Purpose                                                      | Required |
+|-----------------------------------|--------------------------------------------------------------|----------|
+| `DOC_AI_API_HOST`                 | DocAI base URL (per environment)                             | Yes      |
+| `DOC_AI_TIMEOUT_SECONDS`          | Max seconds to wait for a DocAI response (default: 60)       | No       |
+| `DOC_AI_LOW_CONFIDENCE_THRESHOLD` | Minimum confidence score before `low_confidence?` returns `true` (default: 0.7) | No |
 
 > **Web server timeout**: Because DocAI validation runs on the web request thread and may take up to 60 seconds, Puma and any rack-timeout middleware (e.g., `Rack::Timeout`) must be configured to allow requests longer than 60 seconds for the upload endpoint. A recommended minimum is 75 seconds to provide headroom above the Faraday timeout.
 
@@ -935,7 +1094,7 @@ DOC_AI_TIMEOUT_SECONDS=60
 
 **Decision**: All field accessors on `DocAiResult` subclasses return a `DocAiResult::FieldValue` struct — a `Data.define` value object wrapping `value` and `confidence` together — rather than raw values. A `low_confidence?` predicate (threshold: 0.7) is built into the struct.
 
-**Rationale**: Confidence scores are part of every field the API returns. Exposing them as a paired struct rather than a separate accessor call makes it impossible for callers to accidentally use an extracted value without having access to its reliability signal. Callers that only need the value call `.value`; callers that need to gate on confidence call `.low_confidence?`. The threshold constant lives on `FieldValue`, not in application config or controller code, giving a single place to adjust it.
+**Rationale**: Confidence scores are part of every field the API returns. Exposing them as a paired struct rather than a separate accessor call makes it impossible for callers to accidentally use an extracted value without having access to its reliability signal. Callers that only need the value call `.value`; callers that need to gate on confidence call `.low_confidence?`. The threshold is read from `Rails.application.config.doc_ai[:low_confidence_threshold]`, configurable via `DOC_AI_LOW_CONFIDENCE_THRESHOLD` (default: 0.7), allowing per-environment tuning without a code deploy.
 
 **Tradeoff**: Callers that previously compared `result.current_gross_pay == 1627.74` now compare `result.current_gross_pay.value == 1627.74`. Boolean validation flag accessors (`gross_pay_valid?` etc.) remain plain predicates by unwrapping the value directly, since confidence on a flag is not semantically meaningful to callers.
 
@@ -1006,15 +1165,12 @@ Possible approaches (to be confirmed with the DocAI team):
 
 ### Additional Document Classes
 
-Only `Payslip` is supported in the initial implementation. Future document types (W-2, 1099, bank statements) follow the same pattern:
+`Payslip` and `W2` are supported in the initial implementation. Future document types (1099, bank statements) follow the same pattern:
 
 1. Create `DocAiResult::<ClassName> < DocAiResult` with `register "<ClassName>"` and typed `field_for` accessors
 2. Add `require_relative "doc_ai_result/<class_name>"` to the bottom of `doc_ai_result.rb`
-3. Add accessor specs to `spec/models/doc_ai_result/<class_name>_spec.rb`
-
-### Configurable confidence thresholds
-
-`FieldValue::LOW_CONFIDENCE_THRESHOLD` is currently a constant (0.7). A future enhancement could make this configurable per-field or per-document-class — for example, requiring higher confidence on `current_gross_pay` than on `employee_address_line2`. This would live on the value object or subclass layer, not in the adapter or service.
+3. Add the class to `SUPPORTED_RESULT_CLASSES` in `DocumentStagingController` and a corresponding `serialise_<type>_fields` private method
+4. Add accessor specs to `spec/models/doc_ai_result/<class_name>_spec.rb`
 
 ### Asynchronous Processing
 
