@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_17_190932) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_27_170552) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -269,6 +269,23 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_17_190932) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "staged_documents", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "user_id", null: false
+    t.string "stageable_type"
+    t.uuid "stageable_id"
+    t.string "status", default: "pending", null: false
+    t.string "doc_ai_job_id"
+    t.string "doc_ai_matched_class"
+    t.jsonb "extracted_fields", default: {}, null: false
+    t.datetime "validated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["doc_ai_job_id"], name: "index_staged_documents_on_doc_ai_job_id"
+    t.index ["stageable_type", "stageable_id"], name: "index_staged_documents_on_stageable"
+    t.index ["status"], name: "index_staged_documents_on_status"
+    t.index ["user_id"], name: "index_staged_documents_on_user_id"
+  end
+
   create_table "strata_determinations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "subject_id", null: false
     t.string "subject_type", null: false
@@ -322,4 +339,5 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_17_190932) do
   add_foreign_key "certification_batch_upload_errors", "certification_batch_uploads"
   add_foreign_key "certification_cases", "certifications"
   add_foreign_key "exemption_application_forms", "certification_cases"
+  add_foreign_key "staged_documents", "users"
 end
