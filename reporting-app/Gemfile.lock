@@ -206,6 +206,8 @@ GEM
       logger
     faraday-follow_redirects (0.5.0)
       faraday (>= 1, < 3)
+    faraday-multipart (1.2.0)
+      multipart-post (~> 2.0)
     faraday-net_http (3.4.2)
       net-http (~> 0.5)
     ffi (1.17.2-aarch64-linux-gnu)
@@ -325,6 +327,7 @@ GEM
       drb (~> 2.0)
       prism (~> 1.5)
     msgpack (1.8.0)
+    multipart-post (2.4.1)
     nenv (0.3.0)
     net-http (0.8.0)
       uri (>= 0.11.1)
@@ -693,6 +696,7 @@ DEPENDENCIES
   factory_bot_rails
   faker (~> 3.2)
   faraday
+  faraday-multipart
   good_job (~> 4.0)
   guard-rspec
   importmap-rails
