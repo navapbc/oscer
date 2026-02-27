@@ -12,45 +12,6 @@ Key settings:
 - **Max threads**: 2 (configurable via `GOOD_JOB_MAX_THREADS`) — kept lower than Puma to avoid DB connection exhaustion
 - **Job preservation**: Finished jobs are kept for 1 week for debugging and metrics
 
-## Creating a background job
-
-Background jobs live in `app/jobs/` and inherit from `ApplicationJob`:
-
-```ruby
-# app/jobs/my_job.rb
-class MyJob < ApplicationJob
-  def perform(some_id)
-    record = SomeModel.find(some_id)
-    # Business logic here
-  end
-end
-```
-
-Enqueue from controllers or services:
-
-```ruby
-MyJob.perform_later(record.id)
-```
-
-### Testing jobs
-
-Job specs live in `spec/jobs/` and use `ActiveJob::TestHelper`:
-
-```ruby
-RSpec.describe MyJob, type: :job do
-  include ActiveJob::TestHelper
-
-  it "does the thing" do
-    described_class.perform_now(record.id)
-    expect(record.reload).to be_processed
-  end
-end
-```
-
-### Strict loading
-
-This app has `config.active_record.strict_loading_by_default = true`. If your job loads ActiveRecord objects and accesses associations, you'll need `.includes(...)` to eager-load them. Without this, you'll get `ActiveRecord::StrictLoadingViolationError`.
-
 ## Adding a scheduled (cron) job
 
 Scheduled jobs are configured in `config/initializers/good_job.rb` under `config.good_job.cron`. Each entry specifies a cron expression, job class, and description:
@@ -72,15 +33,9 @@ config.good_job.cron = {
 
 Cron syntax uses five fields: `minute hour day-of-month month day-of-week`. See [crontab.guru](https://crontab.guru) for help building expressions.
 
-### Steps to add a scheduled job
-
-1. Create the job class in `app/jobs/`
-2. Add the cron entry to `config/initializers/good_job.rb`
-3. Add specs in `spec/jobs/`
-
 ### Monitoring scheduled jobs
 
-GoodJob provides a web dashboard (mounted in routes) where you can view job history, cron schedules, and failures.
+GoodJob provides a web dashboard at `/good_job` where you can view job history, cron schedules, and failures. Access requires authentication and is gated by the `GoodJobPolicy#dashboard?` Pundit policy.
 
 ## Infrastructure
 
