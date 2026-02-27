@@ -60,6 +60,19 @@ variable "extra_identity_provider_logout_urls" {
   default     = []
 }
 
+# Staff SSO Configuration (optional overrides)
+variable "sso_callback_urls" {
+  type        = list(string)
+  description = "List of additional SSO callback URLs. Used for local development with ngrok."
+  default     = []
+}
+
+variable "sso_logout_urls" {
+  type        = list(string)
+  description = "List of additional SSO logout URLs. Used for local development with ngrok."
+  default     = []
+}
+
 variable "feature_flag_overrides" {
   type        = map(string)
   description = "Map of overrides for feature flags"
