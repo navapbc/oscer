@@ -8,8 +8,17 @@ Rails.application.configure do
   # Pool size: Puma (5) + GoodJob (2) + buffer (1) = 8
   config.good_job.max_threads = ENV.fetch("GOOD_JOB_MAX_THREADS", 2).to_i
 
-  # Process all queues
-  config.good_job.queues = "*"
+  # Scope jobs to this environment to prevent cross-environment execution
+  # when multiple environments share the same database (e.g., dev + preview).
+  # GOOD_JOB_QUEUE_PREFIX is set per ECS task by terraform (local.service_name).
+  queue_prefix = ENV["GOOD_JOB_QUEUE_PREFIX"]
+  if queue_prefix.present?
+    config.active_job.queue_name_prefix = queue_prefix
+    config.active_job.queue_name_delimiter = ":"
+    config.good_job.queues = "#{queue_prefix}:*"
+  else
+    config.good_job.queues = "*"
+  end
 
   # Enable cron for scheduled jobs
   config.good_job.enable_cron = true
