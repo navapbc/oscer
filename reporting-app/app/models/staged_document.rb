@@ -15,4 +15,6 @@ class StagedDocument < ApplicationRecord
   validates :status, presence: true
   validates :file, attached: true
   validates :user_id, presence: true
+
+  default_scope { with_attached_file }
 end
