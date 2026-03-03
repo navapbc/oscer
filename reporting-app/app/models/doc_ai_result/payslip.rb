@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# app/models/doc_ai_result/payslip.rb
 class DocAiResult::Payslip < DocAiResult
   register "Payslip"
 

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# app/models/doc_ai_result/w2.rb
 class DocAiResult::W2 < DocAiResult
   register "W2"
 

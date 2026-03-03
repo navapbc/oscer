@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# app/models/doc_ai_result.rb
 class DocAiResult < Strata::ValueObject
   include Strata::Attributes
 
