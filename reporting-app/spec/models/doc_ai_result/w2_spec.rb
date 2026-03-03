@@ -11,37 +11,37 @@ RSpec.describe DocAiResult::W2 do
       "status"               => "completed",
       "matchedDocumentClass" => "W2",
       "fields" => {
-        "employerInfo.employerName"                    => { "confidence" => 0.92, "value" => "University of North Carolina" },
-        "employerInfo.ein"                             => { "confidence" => 0.95, "value" => "56-6001393" },
-        "employerInfo.employerAddress"                 => { "confidence" => 0.88, "value" => "123 College Ave" },
-        "employerInfo.controlNumber"                   => { "confidence" => 0.80, "value" => "CTL001" },
-        "employerInfo.employerZipCode"                 => { "confidence" => 0.90, "value" => "27599" },
-        "filingInfo.ombNumber"                         => { "confidence" => 0.99, "value" => "1545-0008" },
-        "filingInfo.verificationCode"                  => { "confidence" => 0.75, "value" => "VER001" },
-        "employeeGeneralInfo.firstName"                => { "confidence" => 0.96, "value" => "Jane" },
-        "employeeGeneralInfo.employeeLastName"         => { "confidence" => 0.96, "value" => "Smith" },
-        "employeeGeneralInfo.employeeAddress"          => { "confidence" => 0.88, "value" => "456 Oak St" },
-        "employeeGeneralInfo.employeeZipCode"          => { "confidence" => 0.90, "value" => "27514" },
-        "employeeGeneralInfo.ssn"                      => { "confidence" => 0.97, "value" => "XXX-XX-1234" },
-        "federalTaxInfo.federalIncomeTax"              => { "confidence" => 0.94, "value" => 4500.00 },
-        "federalTaxInfo.socialSecurityTax"             => { "confidence" => 0.93, "value" => 1981.77 },
-        "federalTaxInfo.medicareTax"                   => { "confidence" => 0.93, "value" => 463.48 },
-        "federalTaxInfo.allocatedTips"                 => { "confidence" => 0.80, "value" => 0.00 },
-        "federalWageInfo.wagesTipsOtherCompensation"   => { "confidence" => 0.94, "value" => 31964.00 },
-        "federalWageInfo.socialSecurityWages"          => { "confidence" => 0.93, "value" => 31964.00 },
-        "federalWageInfo.medicareWagesTips"            => { "confidence" => 0.93, "value" => 31964.00 },
-        "federalWageInfo.socialSecurityTips"           => { "confidence" => 0.85, "value" => 0.00 },
-        "stateTaxesTable.stateName"                    => { "confidence" => 0.90, "value" => "NC" },
-        "stateTaxesTable.employerStateIdNumber"        => { "confidence" => 0.85, "value" => 1234567 },
-        "stateTaxesTable.stateWagesAndTips"            => { "confidence" => 0.90, "value" => 31964.00 },
-        "stateTaxesTable.stateIncomeTax"                => { "confidence" => 0.90, "value" => 1500.00 },
-        "stateTaxesTable.localWagesTips"                => { "confidence" => 0.80, "value" => 0.00 },
-        "stateTaxesTable.localIncomeTax"                => { "confidence" => 0.80, "value" => 0.00 },
-        "stateTaxesTable.localityName"                  => { "confidence" => 0.80, "value" => "" },
-        "codes.code"                                   => { "confidence" => 0.80, "value" => "D" },
-        "codes.amount"                                 => { "confidence" => 0.80, "value" => 1000.00 },
-        "nonqualifiedPlansIncom"                       => { "confidence" => 0.75, "value" => 0.00 },
-        "other"                                        => { "confidence" => 0.70, "value" => "N/A" }
+        "employer_info.employer_name"                  => { "confidence" => 0.92, "value" => "University of North Carolina" },
+        "employer_info.ein"                            => { "confidence" => 0.95, "value" => "56-6001393" },
+        "employer_info.employer_address"               => { "confidence" => 0.88, "value" => "123 College Ave" },
+        "employer_info.control_number"                 => { "confidence" => 0.80, "value" => "CTL001" },
+        "employer_info.employer_zip_code"              => { "confidence" => 0.90, "value" => "27599" },
+        "filing_info.omb_number"                       => { "confidence" => 0.99, "value" => "1545-0008" },
+        "filing_info.verification_code"                => { "confidence" => 0.75, "value" => "VER001" },
+        "employee_general_info.first_name"             => { "confidence" => 0.96, "value" => "Jane" },
+        "employee_general_info.employee_last_name"      => { "confidence" => 0.96, "value" => "Smith" },
+        "employee_general_info.employee_address"       => { "confidence" => 0.88, "value" => "456 Oak St" },
+        "employee_general_info.employee_zip_code"      => { "confidence" => 0.90, "value" => "27514" },
+        "employee_general_info.ssn"                    => { "confidence" => 0.97, "value" => "XXX-XX-1234" },
+        "federal_tax_info.federal_income_tax"          => { "confidence" => 0.94, "value" => 4500.00 },
+        "federal_tax_info.social_security_tax"         => { "confidence" => 0.93, "value" => 1981.77 },
+        "federal_tax_info.medicare_tax"                => { "confidence" => 0.93, "value" => 463.48 },
+        "federal_tax_info.allocated_tips"              => { "confidence" => 0.80, "value" => 0.00 },
+        "federal_wage_info.wages_tips_other_compensation" => { "confidence" => 0.94, "value" => 31964.00 },
+        "federal_wage_info.social_security_wages"      => { "confidence" => 0.93, "value" => 31964.00 },
+        "federal_wage_info.medicare_wages_tips"        => { "confidence" => 0.93, "value" => 31964.00 },
+        "federal_wage_info.social_security_tips"       => { "confidence" => 0.85, "value" => 0.00 },
+        "state_taxes_table.state_name"                 => { "confidence" => 0.90, "value" => "NC" },
+        "state_taxes_table.employer_state_id_number"   => { "confidence" => 0.85, "value" => 1234567 },
+        "state_taxes_table.state_wages_and_tips"       => { "confidence" => 0.90, "value" => 31964.00 },
+        "state_taxes_table.state_income_tax"           => { "confidence" => 0.90, "value" => 1500.00 },
+        "state_taxes_table.local_wages_tips"           => { "confidence" => 0.80, "value" => 0.00 },
+        "state_taxes_table.local_income_tax"           => { "confidence" => 0.80, "value" => 0.00 },
+        "state_taxes_table.locality_name"              => { "confidence" => 0.80, "value" => "" },
+        "codes.code"                                  => { "confidence" => 0.80, "value" => "D" },
+        "codes.amount"                                => { "confidence" => 0.80, "value" => 1000.00 },
+        "nonqualified_plans_incom"                    => { "confidence" => 0.75, "value" => 0.00 },
+        "other"                                       => { "confidence" => 0.70, "value" => "N/A" }
       }
     }
   end
@@ -86,7 +86,7 @@ RSpec.describe DocAiResult::W2 do
     end
 
     it "handles DocAI typo for nonqualified_plans_income" do
-      # Uses literal key "nonqualifiedPlansIncom" (DocAI typo)
+      # Uses literal key "nonqualified_plans_incom" (DocAI typo)
       expect(w2.nonqualified_plans_income).to be_a(DocAiResult::FieldValue)
       expect(w2.nonqualified_plans_income.value).to eq(0.00)
     end
@@ -99,16 +99,40 @@ RSpec.describe DocAiResult::W2 do
   describe "#to_prefill_fields" do
     subject(:prefill) { w2.to_prefill_fields }
 
-    it "returns key income fields" do
-      expect(prefill).to include(
+    it "returns all fields" do
+      expect(prefill).to eq(
         employer_name:                 "University of North Carolina",
         employer_ein:                  "56-6001393",
+        employer_address:              "123 College Ave",
+        employer_zip_code:             "27599",
+        employer_control_number:       "CTL001",
+        omb_number:                    "1545-0008",
+        verification_code:             "VER001",
         employee_first_name:           "Jane",
         employee_last_name:            "Smith",
+        employee_name_suffix:          nil,
+        employee_address:              "456 Oak St",
+        employee_zip_code:             "27514",
+        employee_ssn:                  "XXX-XX-1234",
         wages_tips_other_compensation: 31964.00,
         federal_income_tax:            4500.00,
+        social_security_wages:         31964.00,
+        social_security_tax:           1981.77,
+        medicare_wages_tips:           31964.00,
+        medicare_tax:                  463.48,
+        social_security_tips:          0.00,
+        allocated_tips:                0.00,
         state_name:                    "NC",
-        state_income_tax:              1500.00
+        employer_state_id_number:      1234567,
+        state_wages_and_tips:          31964.00,
+        state_income_tax:              1500.00,
+        local_wages_tips:              0.00,
+        local_income_tax:              0.00,
+        locality_name:                 "",
+        codes_code:                    "D",
+        codes_amount:                  1000.00,
+        nonqualified_plans_income:     0.00,
+        other:                         "N/A"
       )
     end
 
