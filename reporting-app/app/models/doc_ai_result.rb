@@ -83,13 +83,4 @@ class DocAiResult < Strata::ValueObject
   def to_prefill_fields
     {}
   end
-
-  # Subclass files are required explicitly so their .register calls populate REGISTRY
-  # before any call to DocAiResult.from_response.
-  require_relative "doc_ai_result/payslip"
-  require_relative "doc_ai_result/w2"
-
-  # Freeze the registry after all subclasses have loaded to prevent accidental
-  # post-load mutation. Any require_relative for new document types must appear above.
-  REGISTRY.freeze
 end

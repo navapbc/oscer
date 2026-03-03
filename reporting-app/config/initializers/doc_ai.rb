@@ -16,3 +16,10 @@ Rails.application.config.doc_ai = {
   low_confidence_threshold: ENV.fetch("DOC_AI_LOW_CONFIDENCE_THRESHOLD", "0.7").to_f,
   thread_pool_size:         ENV.fetch("DOC_AI_THREAD_POOL_SIZE", "4").to_i
 }.freeze
+
+Rails.application.config.to_prepare do
+  # Eager load DocAiResult subclasses to populate the registry
+  Dir[Rails.root.join("app/models/doc_ai_result/*.rb")].each do |file|
+    "DocAiResult::#{File.basename(file, ".rb").camelize}".constantize
+  end
+end
