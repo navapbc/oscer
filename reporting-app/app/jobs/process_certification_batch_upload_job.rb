@@ -3,6 +3,7 @@
 # Background job to process uploaded certification CSV files
 class ProcessCertificationBatchUploadJob < ApplicationJob
   queue_as :default
+  discard_on StandardError
 
   # Process a certification batch upload
   # @param batch_upload_id [String] The UUID of the CertificationBatchUpload record
@@ -38,7 +39,13 @@ class ProcessCertificationBatchUploadJob < ApplicationJob
     # Single pass: count records and collect byte-range coordinates
     reader.each_chunk_with_offsets(batch_upload.storage_key) do |records, headers, start_byte, end_byte|
       total_records += records.size
-      chunks << { chunk_number: chunks.size + 1, headers: headers, start_byte: start_byte, end_byte: end_byte }
+      chunks << {
+        chunk_number: chunks.size + 1,
+        headers: headers,
+        start_byte: start_byte,
+        end_byte: end_byte,
+        record_count: records.size
+      }
     end
 
     # Set num_rows before enqueueing any jobs (prevents race condition)
@@ -61,7 +68,8 @@ class ProcessCertificationBatchUploadJob < ApplicationJob
         chunk[:chunk_number],
         chunk[:headers],
         chunk[:start_byte],
-        chunk[:end_byte]
+        chunk[:end_byte],
+        chunk[:record_count]
       )
     end
   end

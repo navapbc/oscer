@@ -151,7 +151,8 @@ class UnifiedRecordProcessor
       "certification_type" => record["certification_type"],
       "lookback_period" => record["lookback_period"]&.to_i,
       "number_of_months_to_certify" => record["number_of_months_to_certify"]&.to_i,
-      "due_period_days" => record["due_period_days"]&.to_i
+      "due_period_days" => record["due_period_days"]&.to_i,
+      "region" => record["region"]
     }.compact_blank
 
     @certification_service.certification_requirements_from_input(requirement_input)

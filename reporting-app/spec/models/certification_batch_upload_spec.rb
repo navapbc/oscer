@@ -98,6 +98,87 @@ RSpec.describe CertificationBatchUpload, type: :model do
     end
   end
 
+  describe '#check_completion!' do
+    let(:batch_upload) do
+      create(:certification_batch_upload, uploader: user, status: :processing, num_rows: 2,
+        num_rows_processed: 2, num_rows_succeeded: 1, num_rows_errored: 1)
+    end
+
+    # Use find instead of reload to avoid strict_loading violations on ActiveStorage
+    def reload_batch(id)
+      CertificationBatchUpload.find(id)
+    end
+
+    context 'when not all rows are processed' do
+      let(:batch_upload) do
+        create(:certification_batch_upload, uploader: user, status: :processing, num_rows: 3,
+          num_rows_processed: 2, num_rows_succeeded: 1, num_rows_errored: 1)
+      end
+
+      it 'does not transition status' do
+        batch_upload.check_completion!
+        expect(reload_batch(batch_upload.id).status).to eq("processing")
+      end
+    end
+
+    context 'when already completed' do
+      let(:batch_upload) do
+        create(:certification_batch_upload, uploader: user, status: :completed, num_rows: 2,
+          num_rows_processed: 2, num_rows_succeeded: 2, num_rows_errored: 0)
+      end
+
+      it 'does not overwrite status' do
+        batch_upload.check_completion!
+        expect(reload_batch(batch_upload.id).status).to eq("completed")
+      end
+    end
+
+    context 'when already failed' do
+      let(:batch_upload) do
+        create(:certification_batch_upload, uploader: user, status: :failed, num_rows: 2,
+          num_rows_processed: 2)
+      end
+
+      it 'does not overwrite status' do
+        batch_upload.check_completion!
+        expect(reload_batch(batch_upload.id).status).to eq("failed")
+      end
+    end
+
+    context 'when any chunk completed successfully' do
+      before do
+        create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 1, status: :completed)
+        create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 2, status: :failed)
+      end
+
+      it 'marks batch as completed' do
+        batch_upload.check_completion!
+
+        batch = reload_batch(batch_upload.id)
+        expect(batch.status).to eq("completed")
+        expect(batch.num_rows_succeeded).to eq(1)
+        expect(batch.num_rows_errored).to eq(1)
+        expect(batch.processed_at).to be_present
+      end
+    end
+
+    context 'when all chunks failed' do
+      before do
+        create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 1, status: :failed)
+        create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 2, status: :failed)
+      end
+
+      it 'marks batch as failed' do
+        batch_upload.check_completion!
+
+        batch = reload_batch(batch_upload.id)
+        expect(batch.status).to eq("failed")
+        expect(batch.results["error"]).to eq("All chunks failed to process")
+        expect(batch.processed_at).to be_present
+      end
+    end
+  end
+
   describe '#processable?' do
     it 'returns true when pending' do
       batch_upload = create(:certification_batch_upload, uploader: user, status: :pending)
