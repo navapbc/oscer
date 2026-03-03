@@ -1,0 +1,22 @@
+<% content_for(:title) { t("auth.sso.redirecting_title") } %>
+
+<div class="sso-redirect-container">
+  <div class="sso-redirect-spinner"></div>
+  <p><%= t("auth.sso.redirecting_message") %></p>
+
+  <%# Auto-submit form to OmniAuth via POST (more secure than GET redirect) %>
+  <%# Stimulus controller handles auto-submit after page load %>
+  <%= form_with url: "/auth/sso",
+                method: :post,
+                local: true,
+                authenticity_token: true,
+                data: { turbo: false, controller: "sso-redirect" } do %>
+    <% if @origin.present? %>
+      <%= hidden_field_tag :origin, @origin %>
+    <% end %>
+    <noscript>
+      <p><%= t("auth.sso.javascript_required") %></p>
+      <%= submit_tag t("auth.sso.continue_button"), class: "usa-button" %>
+    </noscript>
+  <% end %>
+</div>

@@ -5,6 +5,8 @@ require "active_support/core_ext/integer/time"
 # Custom setting: set the default url.
 Rails.application.default_url_options = { host: ENV["APP_HOST"], port: ENV["APP_PORT"] }
 
+Rails.application.config.api_secret_key = ENV["API_SECRET_KEY"]
+
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
@@ -77,6 +79,9 @@ Rails.application.configure do
 
   # Highlight code that enqueued background job in logs.
   config.active_job.verbose_enqueue_logs = true
+
+  # Use GoodJob for persistent background job processing
+  config.active_job.queue_adapter = :good_job
 
   # Suppress logger output for asset requests.
   config.assets.quiet = true

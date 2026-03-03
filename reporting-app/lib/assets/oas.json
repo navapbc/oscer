@@ -1,5 +1,13 @@
 {
   "components": {
+    "securitySchemes": {
+      "hmac": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header",
+        "description": "HMAC-SHA256 signature. Format: HMAC sig={base64_encoded_signature}. The signature is computed from the request body using the shared secret key."
+      }
+    },
     "schemas": {
       "CertificationCreateRequestBody": {
         "type": "object",

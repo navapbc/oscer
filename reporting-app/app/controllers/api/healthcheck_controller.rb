@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Api::HealthcheckController < ApiController
+  skip_before_action :authenticate_api_request!
+
   # @summary Check service health
   # @tags healthcheck
   #

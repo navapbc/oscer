@@ -10,6 +10,9 @@ gem "strata", git: "https://github.com/navapbc/strata-sdk-rails.git"
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 7.2.0", ">= 7.2.2.1"
 
+# Ensure rack 3.x for Rails 7.2 compatibility (rack-oauth2 allows >= 2.1.0)
+gem "rack", ">= 3.0"
+
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem "sprockets-rails"
 
@@ -43,6 +46,9 @@ gem "csv"
 # Use Kredis to get higher-level data types in Redis [https://github.com/rails/kredis]
 # gem "kredis"
 
+# PostgreSQL-backed job queue for ActiveJob
+gem "good_job", "~> 4.0"
+
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
 
@@ -65,6 +71,10 @@ gem "jwt"
 gem "pundit"
 gem "pundit-matchers"
 gem "rqrcode"
+
+# Staff SSO via OIDC
+gem "omniauth_openid_connect"
+gem "omniauth-rails_csrf_protection"
 
 # Notifications: AWS SES
 gem "aws-sdk-rails"

@@ -34,6 +34,9 @@ en:
         submit: "Log in"
         no_account: "Don't have an account?"
         create_account: "Create your account now"
+        sso_button: "Sign in with State Account"
+        sso_description: "Use your state employee credentials"
+        or_divider: "or"
       challenge:
         title: "Enter your authentication app code"
         code: "6-digit code"

@@ -17,9 +17,17 @@ class ActivitiesController < ApplicationController
 
   # GET /activities/new/new_activity
   def new_activity
-    @activity = activity_type_map(params[:activity_type] || activity_params[:activity_type])
-    @activity.category = params[:category] if params[:category].present?
     authorize @activity_report_application_form, :edit?
+
+    # Require activity_type param - redirect to selection if missing
+    if params[:activity_type].blank?
+      redirect_to new_activity_report_application_form_activity_path(@activity_report_application_form),
+        alert: "You must select a reporting method (hours or income) before continuing."
+      return
+    end
+
+    @activity = activity_type_map(params[:activity_type])
+    @activity.category = params[:category] if params[:category].present?
   end
 
   # GET /activities/1/edit

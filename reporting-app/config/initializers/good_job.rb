@@ -1,0 +1,44 @@
+# frozen_string_literal: true
+
+Rails.application.configure do
+  # Run jobs in web process (no separate worker containers)
+  config.good_job.execution_mode = :async
+
+  # Use fewer threads than Puma to avoid DB connection exhaustion
+  # Pool size: Puma (5) + GoodJob (2) + buffer (1) = 8
+  config.good_job.max_threads = ENV.fetch("GOOD_JOB_MAX_THREADS", 2).to_i
+
+  # Scope jobs to this environment to prevent cross-environment execution
+  # when multiple environments share the same database (e.g., dev + preview).
+  # GOOD_JOB_QUEUE_PREFIX is set per ECS task by terraform (local.service_name).
+  queue_prefix = ENV["GOOD_JOB_QUEUE_PREFIX"]
+  if queue_prefix.present?
+    config.active_job.queue_name_prefix = queue_prefix
+    config.active_job.queue_name_delimiter = ":"
+    config.good_job.queues = "#{queue_prefix}:*"
+  else
+    config.good_job.queues = "*"
+  end
+
+  # Enable cron for scheduled jobs
+  config.good_job.enable_cron = true
+  config.good_job.cron = {
+    purge_unattached_blobs: {
+      cron: "0 3 * * *",
+      class: "PurgeUnattachedBlobsJob",
+      description: "Clean up orphaned Active Storage blobs from abandoned uploads"
+    }
+  }
+
+  # Retry failed jobs automatically
+  config.good_job.retry_on_unhandled_error = true
+
+  # Poll interval for new jobs (1 second)
+  config.good_job.poll_interval = 1
+
+  # Shutdown timeout (30 seconds to finish in-flight jobs)
+  config.good_job.shutdown_timeout = 30
+
+  # Preserve finished jobs for 1 week (for debugging/metrics)
+  config.good_job.cleanup_preserved_jobs_before_seconds_ago = 7.days.to_i
+end

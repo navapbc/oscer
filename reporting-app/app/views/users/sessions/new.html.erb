@@ -5,6 +5,21 @@
     <%= t(".title") %>
   </h1>
 
+  <% if sso_enabled? %>
+    <div class="margin-bottom-4">
+      <%= link_to t(".sso_button"), sso_login_path, class: "usa-button usa-button--outline width-full", data: { turbo: false } %>
+      <p class="text-center margin-top-2 text-base">
+        <%= t(".sso_description") %>
+      </p>
+    </div>
+
+    <div class="border-top border-base-lighter margin-y-4 position-relative">
+      <span class="bg-white padding-x-2 position-absolute top-neg-1 left-50 translate-x-neg-50 text-base">
+        <%= t(".or_divider") %>
+      </span>
+    </div>
+  <% end %>
+
   <%= us_form_with model: @form, url: new_user_session_path, local: true do |f| %>
     <%= f.honeypot_field %>
     <%= f.email_field :email, { autocomplete: "username" } %>

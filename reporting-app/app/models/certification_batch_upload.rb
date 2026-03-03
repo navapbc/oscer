@@ -5,6 +5,9 @@ class CertificationBatchUpload < ApplicationRecord
   attribute :status, :string, default: :pending
   enum :status, { pending: "pending", processing: "processing", completed: "completed", failed: "failed" }
 
+  # Source type indicates how the file was uploaded
+  enum :source_type, { ui: "ui", api: "api", storage_event: "storage_event" }
+
   attribute :num_rows, :integer, default: 0
   attribute :num_rows_processed, :integer, default: 0
   attribute :num_rows_succeeded, :integer, default: 0
@@ -13,9 +16,26 @@ class CertificationBatchUpload < ApplicationRecord
 
   belongs_to :uploader, class_name: "User"
   has_one_attached :file
+  has_many :audit_logs,
+           class_name: "CertificationBatchUploadAuditLog",
+           strict_loading: true,
+           dependent: :destroy
+  has_many :upload_errors,
+           class_name: "CertificationBatchUploadError",
+           strict_loading: true,
+           dependent: :destroy
 
   validates :filename, presence: true
-  validates :file, presence: true, on: :create
+  validates :file, attached: true, on: :create
+  validates :file,
+            content_type: [
+              "text/csv",
+              "text/plain",
+              "application/vnd.ms-excel",
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            ],
+            size: { less_than: 100.megabytes, message: "must be less than 100MB" },
+            on: :create
 
   default_scope { with_attached_file }
   scope :recent, -> { order(created_at: :desc) }
@@ -66,5 +86,11 @@ class CertificationBatchUpload < ApplicationRecord
   # @return [Integer] Number of certifications
   def certifications_count
     CertificationOrigin.from_batch_upload(id).count
+  end
+
+  # Get the storage key for streaming the CSV file
+  # @return [String, nil] S3 key for the uploaded file, or nil if no file attached
+  def storage_key
+    file.blob.key if file.attached?
   end
 end

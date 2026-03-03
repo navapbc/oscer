@@ -5,6 +5,8 @@ require "active_support/core_ext/integer/time"
 # Custom setting: set the default url.
 Rails.application.default_url_options = { host: ENV["APP_HOST"], port: ENV["APP_PORT"] }
 
+Rails.application.config.api_secret_key = ENV["API_SECRET_KEY"]
+
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
@@ -79,9 +81,8 @@ Rails.application.configure do
   # Use a different cache store in production.
   # config.cache_store = :mem_cache_store
 
-  # Use a real queuing backend for Active Job (and separate queues per environment).
-  # config.active_job.queue_adapter = :resque
-  # config.active_job.queue_name_prefix = "reporting-app:production"
+  # Use GoodJob for persistent background job processing
+  config.active_job.queue_adapter = :good_job
 
   # Disable caching for Action Mailer templates even if Action Controller
   # caching is enabled.

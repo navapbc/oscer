@@ -13,10 +13,21 @@ RSpec.describe CertificationBatchUpload, type: :model do
       expect(batch_upload.errors[:filename]).to be_present
     end
 
-    it 'requires file on create' do
+    it 'requires file attachment on create' do
       batch_upload = described_class.new(filename: "test.csv", uploader: user)
       expect(batch_upload).not_to be_valid
       expect(batch_upload.errors[:file]).to be_present
+    end
+
+    it 'accepts modern xlsx MIME type' do
+      batch_upload = described_class.new(filename: "test.xlsx", uploader: user)
+      batch_upload.file.attach(
+        io: StringIO.new("PK\x03\x04"),
+        filename: "test.xlsx",
+        content_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      )
+      batch_upload.valid?
+      expect(batch_upload.errors[:file]).not_to include(a_string_matching(/content type/i))
     end
   end
 
@@ -148,6 +159,84 @@ RSpec.describe CertificationBatchUpload, type: :model do
       end
 
       expect(batch_upload.certifications_count).to eq(2)
+    end
+  end
+
+  describe 'source_type enum' do
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
+
+    it 'defaults to ui' do
+      expect(batch_upload.source_type).to eq("ui")
+      expect(batch_upload).to be_ui
+    end
+
+    it 'can be set to api' do
+      batch_upload.api!
+      expect(batch_upload).to be_api
+    end
+
+    it 'can be set to storage_event' do
+      batch_upload.storage_event!
+      expect(batch_upload).to be_storage_event
+    end
+  end
+
+  describe '#storage_key' do
+    it 'returns blob key when file is attached' do
+      batch_upload = create(:certification_batch_upload, uploader: user)
+      expect(batch_upload.storage_key).to eq(batch_upload.file.blob.key)
+    end
+
+    it 'returns nil when no file is attached' do
+      batch_upload = build(:certification_batch_upload, uploader: user)
+      batch_upload.file.purge if batch_upload.file.attached?
+      expect(batch_upload.storage_key).to be_nil
+    end
+  end
+
+  describe 'audit_logs association' do
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
+
+    it 'has many audit_logs' do
+      log1 = create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 1)
+      log2 = create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 2)
+
+      # Eager load to satisfy strict_loading requirement
+      batch_upload_with_logs = described_class.includes(:audit_logs).find(batch_upload.id)
+      expect(batch_upload_with_logs.audit_logs).to include(log1, log2)
+      expect(batch_upload_with_logs.audit_logs.count).to eq(2)
+    end
+
+    it 'destroys audit_logs when batch_upload is destroyed' do
+      create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 1)
+      create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 2)
+
+      # Eager load associations to avoid strict_loading violations
+      batch_upload_with_associations = described_class.includes(:audit_logs, :upload_errors).find(batch_upload.id)
+      expect { batch_upload_with_associations.destroy }.to change(CertificationBatchUploadAuditLog, :count).by(-2)
+    end
+  end
+
+  describe 'upload_errors association' do
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
+
+    it 'has many upload_errors' do
+      error1 = create(:upload_error, certification_batch_upload: batch_upload, row_number: 1)
+      error2 = create(:upload_error, certification_batch_upload: batch_upload, row_number: 2)
+
+      # Eager load to satisfy strict_loading requirement
+      batch_upload_with_errors = described_class.includes(:upload_errors).find(batch_upload.id)
+      expect(batch_upload_with_errors.upload_errors).to include(error1, error2)
+      expect(batch_upload_with_errors.upload_errors.count).to eq(2)
+    end
+
+    it 'destroys upload_errors when batch_upload is destroyed' do
+      create(:upload_error, certification_batch_upload: batch_upload, row_number: 1)
+      create(:upload_error, certification_batch_upload: batch_upload, row_number: 2)
+
+      # Eager load associations to avoid strict_loading violations
+      batch_upload_with_associations = described_class.includes(:audit_logs, :upload_errors).find(batch_upload.id)
+      expect { batch_upload_with_associations.destroy }.to change(CertificationBatchUploadError, :count).by(-2)
     end
   end
 end

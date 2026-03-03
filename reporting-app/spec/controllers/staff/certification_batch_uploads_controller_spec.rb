@@ -56,6 +56,61 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
       end
     end
 
+    context "when a signed blob ID is submitted (v2 direct upload)" do
+      let(:blob) do
+        ActiveStorage::Blob.create_and_upload!(
+          io: File.open(Rails.root.join("spec/fixtures/files/certification_batch_upload_test_file.csv")),
+          filename: "direct_upload_test.csv",
+          content_type: "text/csv"
+        )
+      end
+
+      it "creates a new CertificationBatchUpload" do
+        with_batch_upload_v2_enabled do
+          expect {
+            post :create, params: { csv_file: blob.signed_id, locale: "en" }
+          }.to change(CertificationBatchUpload, :count).by(1)
+        end
+      end
+
+      it "sets the filename from the blob" do
+        with_batch_upload_v2_enabled do
+          post :create, params: { csv_file: blob.signed_id, locale: "en" }
+
+          batch_upload = CertificationBatchUpload.last
+          expect(batch_upload.filename).to eq("direct_upload_test.csv")
+        end
+      end
+
+      it "attaches the file from the blob" do
+        with_batch_upload_v2_enabled do
+          post :create, params: { csv_file: blob.signed_id, locale: "en" }
+
+          batch_upload = CertificationBatchUpload.last
+          expect(batch_upload.file).to be_attached
+        end
+      end
+
+      it "enqueues processing job automatically" do
+        with_batch_upload_v2_enabled do
+          allow(ProcessCertificationBatchUploadJob).to receive(:perform_later)
+
+          post :create, params: { csv_file: blob.signed_id, locale: "en" }
+
+          expect(ProcessCertificationBatchUploadJob).to have_received(:perform_later)
+        end
+      end
+
+      it "handles invalid signed blob IDs gracefully" do
+        with_batch_upload_v2_enabled do
+          post :create, params: { csv_file: "invalid-signed-id", locale: "en" }
+
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(flash.now[:alert]).to eq("Upload failed. Please try again.")
+        end
+      end
+    end
+
     context "when no file is uploaded" do
       it "does not create a CertificationBatchUpload" do
         expect {
