@@ -3,9 +3,11 @@ locals {
   bucket_name    = "${local.prefix}${local.storage_config.bucket_name}"
 
   # CORS origins for browser-based direct uploads
-  # Use custom domain if available, otherwise use load balancer endpoint
-  # This ensures preview environments (which use ALB DNS) also get CORS configured
-  cors_allowed_origins = module.domain.domain_name != "" ? [
+  # Temporary environments (PR previews) use the ALB endpoint directly since
+  # they don't have a custom domain. Non-temporary environments use the custom domain.
+  cors_allowed_origins = local.is_temporary ? [
+    module.service.public_endpoint
+    ] : module.domain.domain_name != "" ? [
     "https://${module.domain.domain_name}"
     ] : [
     module.service.public_endpoint

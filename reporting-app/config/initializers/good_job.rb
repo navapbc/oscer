@@ -11,11 +11,17 @@ Rails.application.configure do
   # Scope jobs to this environment to prevent cross-environment execution
   # when multiple environments share the same database (e.g., dev + preview).
   # GOOD_JOB_QUEUE_PREFIX is set per ECS task by terraform (local.service_name).
+  #
+  # Note: We use "_" as the delimiter (not ":") because GoodJob's queues config
+  # format uses ":" as a thread-count delimiter (e.g., "queue_name:2"). Using ":"
+  # in queue names causes GoodJob to misparse them (e.g., "prefix:default" becomes
+  # queue "prefix" with 0 threads).
   queue_prefix = ENV["GOOD_JOB_QUEUE_PREFIX"]
   if queue_prefix.present?
     config.active_job.queue_name_prefix = queue_prefix
-    config.active_job.queue_name_delimiter = ":"
-    config.good_job.queues = "#{queue_prefix}:*"
+    config.active_job.queue_name_delimiter = "_"
+    prefixed_queues = %w[default].map { |q| "#{queue_prefix}_#{q}" }.join(",")
+    config.good_job.queues = prefixed_queues
   else
     config.good_job.queues = "*"
   end
@@ -30,8 +36,10 @@ Rails.application.configure do
     }
   }
 
-  # Retry failed jobs automatically
-  config.good_job.retry_on_unhandled_error = true
+  # Don't retry unhandled errors automatically. Jobs that need retries should
+  # declare specific retry_on handlers with bounded attempts and backoff.
+  # Global retry with zero delay caused an OOM retry storm in production.
+  config.good_job.retry_on_unhandled_error = false
 
   # Poll interval for new jobs (1 second)
   config.good_job.poll_interval = 1

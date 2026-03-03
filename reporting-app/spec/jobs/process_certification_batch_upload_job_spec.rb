@@ -115,7 +115,8 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
                 1,
                 expected_headers,
                 0,
-                100
+                100,
+                1
               ]
             )
             expect(enqueued[1]["arguments"]).to eq(
@@ -124,7 +125,8 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
                 2,
                 expected_headers,
                 101,
-                200
+                200,
+                1
               ]
             )
           end
@@ -153,9 +155,8 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
             .and_raise(StandardError, "S3 connection lost")
 
           with_batch_upload_v2_enabled do
-            expect {
-              described_class.perform_now(batch_upload.id)
-            }.to raise_error(StandardError, "S3 connection lost")
+            # discard_on StandardError swallows the error; rescue block still calls fail_processing!
+            described_class.perform_now(batch_upload.id)
 
             batch_id = batch_upload.id
             batch_upload = CertificationBatchUpload.includes(file_attachment: :blob).find(batch_id)
@@ -212,9 +213,8 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
         end
 
         it 'marks batch as failed' do
-          expect {
-            described_class.perform_now(batch_upload.id)
-          }.to raise_error(StandardError)
+          # discard_on StandardError swallows the error; rescue block still calls fail_processing!
+          described_class.perform_now(batch_upload.id)
 
           batch_id = batch_upload.id
 
