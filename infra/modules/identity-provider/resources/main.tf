@@ -71,6 +71,20 @@ resource "aws_cognito_user_pool" "main" {
     }
   }
 
+  # Custom attribute for user's region (accessed as custom:region in tokens)
+  schema {
+    name                     = "region"
+    attribute_data_type      = "String"
+    developer_only_attribute = false
+    mutable                  = true
+    required                 = false
+
+    string_attribute_constraints {
+      max_length = 50
+      min_length = 0
+    }
+  }
+
   # Optionally configures email template for resetting a password
   verification_message_template {
     default_email_option = "CONFIRM_WITH_CODE"

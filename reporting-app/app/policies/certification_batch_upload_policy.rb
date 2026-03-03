@@ -8,4 +8,8 @@ class CertificationBatchUploadPolicy < AdminPolicy
   def results?
     show?
   end
+
+  def download_errors?
+    show?
+  end
 end

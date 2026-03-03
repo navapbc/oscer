@@ -33,10 +33,12 @@ class ProcessCertificationBatchUploadJob < ApplicationJob
 
     reader = CsvStreamReader.new
     total_records = 0
+    chunks = []
 
-    # First pass: Count total rows
-    reader.each_chunk(batch_upload.storage_key) do |records|
+    # Single pass: count records and collect byte-range coordinates
+    reader.each_chunk_with_offsets(batch_upload.storage_key) do |records, headers, start_byte, end_byte|
       total_records += records.size
+      chunks << { chunk_number: chunks.size + 1, headers: headers, start_byte: start_byte, end_byte: end_byte }
     end
 
     # Set num_rows before enqueueing any jobs (prevents race condition)
@@ -52,14 +54,14 @@ class ProcessCertificationBatchUploadJob < ApplicationJob
       return
     end
 
-    # Second pass: Enqueue chunk jobs for parallel processing
-    chunk_number = 0
-    reader.each_chunk(batch_upload.storage_key) do |records|
-      chunk_number += 1
+    # Enqueue chunk jobs with byte coordinates (not data)
+    chunks.each do |chunk|
       ProcessCertificationBatchChunkJob.perform_later(
         batch_upload.id,
-        chunk_number,
-        records
+        chunk[:chunk_number],
+        chunk[:headers],
+        chunk[:start_byte],
+        chunk[:end_byte]
       )
     end
   end

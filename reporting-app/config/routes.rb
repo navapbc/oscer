@@ -62,6 +62,7 @@ Rails.application.routes.draw do
       member do
         post :process_batch
         get :results
+        get :download_errors
       end
     end
 
@@ -107,6 +108,11 @@ Rails.application.routes.draw do
   end
 
   get "/staff", to: "staff/dashboard#index"
+
+  # GoodJob dashboard (admin-only)
+  authenticate :user, ->(user) { Pundit.policy(user, :good_job).dashboard? } do
+    mount GoodJob::Engine => "good_job"
+  end
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

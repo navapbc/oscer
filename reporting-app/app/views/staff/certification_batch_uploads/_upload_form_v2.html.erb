@@ -1,0 +1,8 @@
+<%= form_with(url: certification_batch_uploads_path, multipart: true, class: "margin-top-4") do |f| %>
+  <div class="usa-form-group">
+    <%= f.label :csv_file, t(".csv_file_label"), class: "usa-label" %>
+    <%= f.file_field :csv_file, direct_upload: true, accept: ".csv", required: true, class: "usa-file-input" %>
+  </div>
+  <%= f.submit t(".upload_button"), class: "usa-button" %>
+  <%= link_to t(".cancel"), staff_path, class: "usa-button usa-button--unstyled" %>
+<% end %>
