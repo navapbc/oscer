@@ -9,6 +9,12 @@ locals {
     COGNITO_USER_POOL_ID = local.identity_provider_user_pool_id,
     COGNITO_CLIENT_ID    = module.identity_provider_client[0].client_id
   } : {}
+
+  # SSO env vars are always set when identity provider is enabled. App turns SSO on when SSO_ENABLED=true.
+  sso_environment_variables = module.app_config.enable_identity_provider ? {
+    SSO_ISSUER_URL = "https://cognito-idp.${local.service_config.region}.amazonaws.com/${local.identity_provider_user_pool_id}"
+    SSO_CLIENT_ID  = module.identity_provider_client[0].client_id
+  } : {}
 }
 
 # If the app has `enable_identity_provider` set to true AND this is not a temporary
@@ -42,6 +48,7 @@ module "existing_identity_provider" {
 # If the app has `enable_identity_provider` set to true, create a new identity provider
 # client for the service. A new client is created for all environments, including
 # temporary environments.
+# When SSO is used, callback URLs include /auth/sso/callback (always set in identity_provider_config)
 module "identity_provider_client" {
   count  = module.app_config.enable_identity_provider ? 1 : 0
   source = "../../modules/identity-provider-client/resources"
@@ -51,4 +58,8 @@ module "identity_provider_client" {
   name          = "${local.prefix}${local.identity_provider_config.identity_provider_name}"
 
   user_pool_id = local.identity_provider_user_pool_id
+
+  # Explicit dependency to ensure the User Pool schema (including custom:region)
+  # is fully created before the client tries to reference it in read/write attributes
+  depends_on = [module.identity_provider]
 }

@@ -95,7 +95,8 @@ class Auth::SsoController < ApplicationController
       uid: auth.uid,
       email: raw_info[claim_config[:email]],
       name: raw_info[claim_config[:name]],
-      groups: Array(raw_info[claim_config[:groups]])
+      groups: Array(raw_info[claim_config[:groups]]),
+      region: raw_info[claim_config[:region]]
     }
   end
 end

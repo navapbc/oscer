@@ -96,4 +96,56 @@ RSpec.describe Storage::S3Adapter do
       expect(lines).to eq([ "start\n", "end\n" ])
     end
   end
+
+  describe "#stream_object_range" do
+    it "yields lines from the byte range" do
+      # stub_responses ignores the range param, so body should contain only the expected range content
+      csv_content = "header1,header2\nvalue1,value2\nvalue3,value4\n"
+      s3_client.stub_responses(:get_object, { body: csv_content })
+
+      lines = []
+      adapter.stream_object_range(key: test_key, start_byte: 0, end_byte: 100) { |line| lines << line }
+
+      expect(lines.size).to eq(3)
+      expect(lines[0]).to eq("header1,header2\n")
+      expect(lines[1]).to eq("value1,value2\n")
+      expect(lines[2]).to eq("value3,value4\n")
+    end
+
+    it "handles lines split across chunks" do
+      # Simulate AWS SDK streaming chunks that split lines mid-content
+      allow(s3_client).to receive(:get_object)
+        .with(bucket: "test-bucket", key: test_key, range: "bytes=0-100")
+        .and_yield("header1,he", nil)
+        .and_yield("ader2\nval", nil)
+        .and_yield("ue1,value2\n", nil)
+
+      lines = []
+      adapter.stream_object_range(key: test_key, start_byte: 0, end_byte: 100) { |line| lines << line }
+
+      expect(lines).to eq([ "header1,header2\n", "value1,value2\n" ])
+    end
+
+    it "handles file without trailing newline" do
+      # Last line doesn't end with newline - should still yield it
+      allow(s3_client).to receive(:get_object)
+        .with(bucket: "test-bucket", key: test_key, range: "bytes=500-999")
+        .and_yield("header\n", nil)
+        .and_yield("last_line_no_newline", nil)
+
+      lines = []
+      adapter.stream_object_range(key: test_key, start_byte: 500, end_byte: 999) { |line| lines << line }
+
+      expect(lines).to eq([ "header\n", "last_line_no_newline" ])
+    end
+
+    it "handles empty range content" do
+      s3_client.stub_responses(:get_object, { body: "" })
+
+      lines = []
+      adapter.stream_object_range(key: test_key, start_byte: 0, end_byte: 0) { |line| lines << line }
+
+      expect(lines).to be_empty
+    end
+  end
 end

@@ -11,7 +11,8 @@ module SsoHelpers
       uid: "staff-user-123",
       email: "jane.doe@example.gov",
       name: "Jane Doe",
-      groups: [ "OSCER-Caseworker" ]
+      groups: [ "OSCER-Caseworker" ],
+      region: nil
     }.merge(overrides)
   end
 
@@ -39,7 +40,8 @@ module SsoHelpers
         email: "email",
         name: "name",
         groups: "groups",
-        unique_id: "sub"
+        unique_id: "sub",
+        region: "custom:region"
       }
     }.deep_merge(overrides)
   end
@@ -60,7 +62,8 @@ module SsoHelpers
           "sub" => "user-123",
           "email" => "staff@example.gov",
           "name" => "Jane Doe",
-          "groups" => [ "OSCER-Caseworker" ]
+          "groups" => [ "OSCER-Caseworker" ],
+          "custom:region" => nil
         }
       }
     }
