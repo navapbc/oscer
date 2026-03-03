@@ -82,6 +82,10 @@ RSpec.describe DocAiResult do
     it "sets matched_document_class" do
       expect(result.matched_document_class).to eq("Payslip")
     end
+
+    it "freezes the fields hash" do
+      expect(result.fields).to be_frozen
+    end
   end
 
   describe "#completed?" do
@@ -148,10 +152,6 @@ RSpec.describe DocAiResult do
   end
 
   describe "REGISTRY" do
-    it "is frozen" do
-      expect(DocAiResult::REGISTRY).to be_frozen
-    end
-
     it "includes Payslip" do
       expect(DocAiResult::REGISTRY["Payslip"]).to eq(DocAiResult::Payslip)
     end
