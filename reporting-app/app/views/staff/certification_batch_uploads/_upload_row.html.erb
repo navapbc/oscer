@@ -30,10 +30,14 @@
   </td>
   <td>
     <% if batch_upload.pending? %>
-      <%= button_to t(".process"), process_batch_certification_batch_upload_path(batch_upload),
-            method: :post,
-            class: "usa-button usa-button--outline",
-            data: { confirm: t(".confirm_process", filename: batch_upload.filename) } %>
+      <% if feature_enabled?(:batch_upload_v2) %>
+        <span class="text-base-dark"><%= t(".queued") %></span>
+      <% else %>
+        <%= button_to t(".process"), process_batch_certification_batch_upload_path(batch_upload),
+              method: :post,
+              class: "usa-button usa-button--outline",
+              data: { confirm: t(".confirm_process", filename: batch_upload.filename) } %>
+      <% end %>
     <% elsif batch_upload.processing? %>
       <span class="text-base-dark"><%= t(".processing") %>...</span>
     <% elsif batch_upload.completed? %>

@@ -227,6 +227,137 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
       expect(response).to be_successful
       expect(response.body).to include(batch_upload.filename)
     end
+
+    context "with v2 completed upload and no errors" do
+      let(:batch_upload) do
+        create(:certification_batch_upload, :completed_v2,
+               uploader: user, num_rows_succeeded: 10, num_rows_errored: 0, num_rows: 10)
+      end
+
+      it "shows v2 success summary" do
+        get certification_batch_upload_path(batch_upload)
+
+        expect(response).to be_successful
+        expect(response.body).to include("All 10 records processed successfully")
+        expect(response.body).not_to include("v2-error-table")
+      end
+    end
+
+    context "with v2 completed upload and errors" do
+      let(:batch_upload) do
+        create(:certification_batch_upload, :completed_v2,
+               uploader: user, num_rows_succeeded: 8, num_rows_errored: 2, num_rows: 10)
+      end
+
+      it "shows error table from upload_errors association" do
+        create(
+          :certification_batch_upload_error,
+          certification_batch_upload: batch_upload,
+          row_number: 2,
+          error_code: "VAL_001",
+          error_message: "Missing required field",
+          row_data: { "member_id" => "M001" }
+        )
+        create(
+          :certification_batch_upload_error,
+          certification_batch_upload: batch_upload,
+          row_number: 5,
+          error_code: "VAL_002",
+          error_message: "Invalid date format",
+          row_data: { "member_id" => "M002" }
+        )
+
+        get certification_batch_upload_path(batch_upload)
+
+        expect(response).to be_successful
+        expect(response.body).to include("v2-error-table")
+        expect(response.body).to include("VAL_001")
+        expect(response.body).to include("Missing required field")
+        expect(response.body).to include("VAL_002")
+        expect(response.body).to include("Invalid date format")
+        expect(response.body).to include("Download Errors CSV")
+      end
+    end
+
+    context "with v2 completed upload and more than 100 errors" do
+      let(:batch_upload) do
+        create(:certification_batch_upload, :completed_v2,
+               uploader: user, num_rows_succeeded: 0, num_rows_errored: 150, num_rows: 150)
+      end
+
+      it "shows truncation message" do
+        create_list(:certification_batch_upload_error, 101, certification_batch_upload: batch_upload)
+
+        get certification_batch_upload_path(batch_upload)
+
+        expect(response).to be_successful
+        expect(response.body).to include("Showing first 100 of 150 errors")
+      end
+    end
+
+    context "with v1 completed upload (no regression)" do
+      let(:batch_upload) do
+        create(:certification_batch_upload, :completed, uploader: user,
+               results: {
+                 "successes" => [
+                   { "row" => 1, "case_number" => "C-001", "member_id" => "M001" }
+                 ],
+                 "errors" => [
+                   { "row" => 2, "message" => "Invalid data", "data" => { "member_id" => "M002" } }
+                 ]
+               })
+      end
+
+      it "renders v1 success and error tables from results JSONB" do
+        with_batch_upload_v2_disabled do
+          get certification_batch_upload_path(batch_upload)
+
+          expect(response).to be_successful
+          expect(response.body).to include("C-001")
+          expect(response.body).to include("M001")
+          expect(response.body).to include("Invalid data")
+          expect(response.body).not_to include("v2-error-table")
+        end
+      end
+    end
+
+    context "with failed upload (no regression)" do
+      let(:batch_upload) do
+        create(:certification_batch_upload, :failed, uploader: user,
+               results: { "error" => "CSV parsing failed: invalid encoding" })
+      end
+
+      it "renders error message from results" do
+        get certification_batch_upload_path(batch_upload)
+
+        expect(response).to be_successful
+        expect(response.body).to include("CSV parsing failed: invalid encoding")
+      end
+    end
+
+    context "with v2 pending upload" do
+      let(:batch_upload) { create(:certification_batch_upload, uploader: user, status: :pending) }
+
+      it "shows queued message and hides Process button when v2 enabled" do
+        with_batch_upload_v2_enabled do
+          get certification_batch_upload_path(batch_upload)
+
+          expect(response).to be_successful
+          expect(response.body).to include("queued for processing")
+          expect(response.body).not_to include("Process This File")
+        end
+      end
+
+      it "shows Process button when v2 disabled" do
+        with_batch_upload_v2_disabled do
+          get certification_batch_upload_path(batch_upload)
+
+          expect(response).to be_successful
+          expect(response.body).to include("Process This File")
+          expect(response.body).not_to include("queued for processing")
+        end
+      end
+    end
   end
 
   describe "POST /staff/staff/certification_batch_uploads/:id/process_batch" do
@@ -257,6 +388,19 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
 
         expect(response).to redirect_to(certification_batch_upload_path(batch_upload))
         expect(flash[:alert]).to include("cannot be processed")
+      end
+    end
+
+    context "with batch_upload_v2 enabled" do
+      let(:batch_upload) { create(:certification_batch_upload, uploader: user, status: :pending) }
+
+      it "rejects process_batch and redirects with alert" do
+        with_batch_upload_v2_enabled do
+          post process_batch_certification_batch_upload_path(batch_upload)
+
+          expect(response).to redirect_to(certification_batch_upload_path(batch_upload))
+          expect(flash[:alert]).to include("processed automatically")
+        end
       end
     end
   end
@@ -466,6 +610,34 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
             expect(response.body).to include("No errors")
             expect(response.body).not_to include("Download Errors")
           end
+        end
+      end
+    end
+
+    context "with batch_upload_v2 enabled pending upload" do
+      it "shows Queued text instead of Process button" do
+        with_batch_upload_v2_enabled do
+          create(:certification_batch_upload, uploader: user, status: :pending)
+
+          get certification_batch_uploads_path
+
+          expect(response).to be_successful
+          expect(response.body).to include("Queued")
+          expect(response.body).not_to include('value="Process"')
+        end
+      end
+    end
+
+    context "with batch_upload_v2 disabled pending upload" do
+      it "shows Process button" do
+        with_batch_upload_v2_disabled do
+          create(:certification_batch_upload, uploader: user, status: :pending)
+
+          get certification_batch_uploads_path
+
+          expect(response).to be_successful
+          expect(response.body).to include("Process")
+          expect(response.body).not_to include(">Queued<")
         end
       end
     end

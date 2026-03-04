@@ -5,6 +5,7 @@ require "csv"
 module Staff
   class CertificationBatchUploadsController < AdminController
     self.authorization_resource = CertificationBatchUpload
+    MAX_DISPLAYED_ERRORS = 100
 
     before_action :set_batch_upload, only: [ :show, :process_batch, :results, :download_errors ]
 
@@ -29,6 +30,11 @@ module Staff
 
     # GET /staff/certification_batch_uploads/:id
     def show
+      @upload_errors = if @batch_upload.v2_upload?
+        @batch_upload.upload_errors.order(:row_number).limit(MAX_DISPLAYED_ERRORS)
+      else
+        []
+      end
     end
 
     # GET /staff/certification_batch_uploads/:id/results
@@ -54,6 +60,12 @@ module Staff
 
     # POST /staff/certification_batch_uploads/:id/process_batch
     def process_batch
+      if Features.batch_upload_v2_enabled?
+        redirect_to certification_batch_upload_path(@batch_upload),
+                    alert: "V2 uploads are processed automatically."
+        return
+      end
+
       respond_to do |format|
         if @batch_upload.processable? == false
           message = "This batch cannot be processed. Current status: #{@batch_upload.status}."
