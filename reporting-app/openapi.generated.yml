@@ -440,43 +440,43 @@ components:
       required:
       - status
   responses:
-    fce2c5f59cd97181b0cb69aafab2022a:
+    4b6831c29339b7554496297ad925a8f5:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    0ea4ab356e2a8b5ccab72cf7a3ce02e1:
+    12dc15e1bad7a054ce75fe5a74d1bbda:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    f1ce98ed91709726d022bca82c6ade1a:
+    540486926bbe713e558412e4aab65792:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    3b0ea479d309b77a0516d51bce083571:
+    7b3083892336e7a9c3f8f186f430c19c:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    dfa2e176967676c731ccb4a96d74f8f6:
+    59e11d3fb13f83a125387114599daf1e:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    d5f88820bbb77585eef9547c048da107:
+    7b97cf0dd0874975e3185b2abc0a2de2:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    8d921f7b0646bf9b04d277eae3a87fe1:
+    ad6e359815fd944914df3153cbdc1cf0:
       description: Response
       content:
         application/json:
@@ -491,8 +491,16 @@ components:
       schema:
         type: string
       style: simple
+    8973e06a33e4a0e5595d813ac576e9d9:
+      name: id
+      in: path
+      description: Id of existing certification_batch_upload.
+      required: true
+      schema:
+        type: string
+      style: simple
   requestBodies:
-    6937948de9fee00ae4778aea1159f62d:
+    f48afd90ef67b56113431041f9b78880:
       description: The Certification data.
       content:
         application/json:
@@ -582,14 +590,14 @@ paths:
       description: "#"
       operationId: POST__api_certifications
       requestBody:
-        "$ref": "#/components/requestBodies/6937948de9fee00ae4778aea1159f62d"
+        "$ref": "#/components/requestBodies/f48afd90ef67b56113431041f9b78880"
       responses:
         '201':
-          "$ref": "#/components/responses/fce2c5f59cd97181b0cb69aafab2022a"
+          "$ref": "#/components/responses/4b6831c29339b7554496297ad925a8f5"
         '400':
-          "$ref": "#/components/responses/0ea4ab356e2a8b5ccab72cf7a3ce02e1"
+          "$ref": "#/components/responses/12dc15e1bad7a054ce75fe5a74d1bbda"
         '422':
-          "$ref": "#/components/responses/f1ce98ed91709726d022bca82c6ade1a"
+          "$ref": "#/components/responses/540486926bbe713e558412e4aab65792"
       security:
       - hmac: []
   "/api/certifications/{id}":
@@ -603,9 +611,29 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/3b0ea479d309b77a0516d51bce083571"
+          "$ref": "#/components/responses/7b3083892336e7a9c3f8f186f430c19c"
         '404':
-          "$ref": "#/components/responses/dfa2e176967676c731ccb4a96d74f8f6"
+          "$ref": "#/components/responses/59e11d3fb13f83a125387114599daf1e"
+      security:
+      - hmac: []
+  "/api/certification_batch_uploads":
+    post:
+      tags:
+      - Api
+      summary: Create
+      description: ''
+      operationId: POST__api_certification_batch_uploads
+      security:
+      - hmac: []
+  "/api/certification_batch_uploads/{id}":
+    get:
+      tags:
+      - Api
+      summary: View
+      description: ''
+      operationId: GET__api_certification_batch_uploads_{id}
+      parameters:
+      - "$ref": "#/components/parameters/8973e06a33e4a0e5595d813ac576e9d9"
       security:
       - hmac: []
   "/api/health":
@@ -617,9 +645,18 @@ paths:
       operationId: GET__api_health
       responses:
         '200':
-          "$ref": "#/components/responses/d5f88820bbb77585eef9547c048da107"
+          "$ref": "#/components/responses/7b97cf0dd0874975e3185b2abc0a2de2"
         '503':
-          "$ref": "#/components/responses/8d921f7b0646bf9b04d277eae3a87fe1"
+          "$ref": "#/components/responses/ad6e359815fd944914df3153cbdc1cf0"
+      security:
+      - hmac: []
+  "/api/direct_uploads":
+    post:
+      tags:
+      - Api
+      summary: Create
+      description: ''
+      operationId: POST__api_direct_uploads
       security:
       - hmac: []
 security:
