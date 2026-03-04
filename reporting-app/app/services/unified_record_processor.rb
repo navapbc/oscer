@@ -45,6 +45,88 @@ class UnifiedRecordProcessor
     persist!(record, context)
   end
 
+  # Validate a record without persisting or raising
+  # @param record [Hash] Record data with string keys
+  # @return [Hash] { valid: true } or { valid: false, error_code:, error_message: }
+  def validate_record(record)
+    validate_with_validator!(record)
+    validate_schema!(record)
+    { valid: true }
+  rescue ValidationError => e
+    { valid: false, error_code: e.code, error_message: e.message }
+  end
+
+  # Batch duplicate check against existing database records (1 query)
+  # @param records [Array<Hash>] Records with string keys
+  # @return [Set<String>] Set of compound keys that already exist in the database
+  def find_existing_duplicates(records)
+    unique_member_ids = records.filter_map { |r| r["member_id"].presence }.uniq
+    return Set.new if unique_member_ids.empty?
+
+    existing_keys = Certification
+      .where(member_id: unique_member_ids)
+      .pluck(:member_id, :case_number, Arel.sql("certification_requirements->>'certification_date'"))
+      .map { |mid, cn, cd| compound_key(mid, cn, cd) }
+
+    existing_keys.to_set
+  end
+
+  # Generate a compound key for duplicate detection
+  # @return [String] "member_id|case_number|certification_date"
+  def compound_key(member_id, case_number, certification_date)
+    "#{member_id}|#{case_number}|#{certification_date}"
+  end
+
+  # Bulk insert certifications and publish events
+  # @param records [Array<Hash>] Validated, non-duplicate records with string keys
+  # @param context [Hash] Context (e.g., batch_upload_id)
+  # @return [Array<String>] IDs of created certifications
+  def bulk_persist!(records, context)
+    return [] if records.empty?
+
+    now = Time.current
+
+    cert_attrs = records.map do |record|
+      cert = build_certification(record)
+      {
+        member_id: cert.member_id,
+        case_number: cert.case_number,
+        certification_requirements: cert.certification_requirements.as_json,
+        member_data: cert.member_data&.as_json,
+        created_at: now,
+        updated_at: now
+      }
+    end
+
+    certification_ids = nil
+    Certification.transaction do
+      result = Certification.insert_all!(cert_attrs, returning: %w[id])
+      certification_ids = result.rows.flatten
+
+      if context[:batch_upload_id]
+        origin_attrs = certification_ids.map do |cert_id|
+          {
+            certification_id: cert_id,
+            source_type: CertificationOrigin::SOURCE_TYPE_BATCH_UPLOAD,
+            source_id: context[:batch_upload_id],
+            created_at: now,
+            updated_at: now
+          }
+        end
+        CertificationOrigin.insert_all!(origin_attrs)
+      end
+    end
+
+    # Publish events AFTER commit (matching after_create_commit semantics)
+    certification_ids.each do |cert_id|
+      Certification.publish_created_event(cert_id)
+    rescue StandardError => e
+      Rails.logger.error("Failed to publish CertificationCreated for cert #{cert_id}: #{e.message}")
+    end
+
+    certification_ids
+  end
+
   private
 
   # Validate record with comprehensive validator (collect-all errors)
