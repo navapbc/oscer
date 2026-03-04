@@ -22,6 +22,7 @@ en:
       upload_row:
         process: "Process"
         processing: "Processing"
+        queued: "Queued"
         view_results: "View Results"
         view_error: "View Error"
         confirm_process: "Are you sure you want to process %{filename}? This will create certifications for all valid rows."
@@ -84,12 +85,18 @@ en:
         partial_success_message: "%{num_rows_succeeded} succeeded, %{num_rows_errored} failed out of %{total} total rows"
         successful_uploads: "Successful Uploads"
         failed_uploads: "Failed Uploads"
+        queued_message: "This file has been queued for processing and will begin shortly."
+        v2_success_summary: "All %{count} records processed successfully."
+        v2_errors_truncated: "Showing first %{limit} of %{total} errors. Download CSV for full report."
+        download_errors_csv: "Download Errors CSV"
         columns:
           row: "Row"
           case_number: "Case Number"
           member_id: "Member ID"
           status: "Status"
           error: "Error"
+          error_code: "Error Code"
+          error_message: "Error Message"
           data: "Row Data"
         status:
           success: "Success"

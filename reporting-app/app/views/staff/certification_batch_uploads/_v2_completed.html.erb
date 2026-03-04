@@ -1,0 +1,45 @@
+<%# V2: errors stored in normalized CertificationBatchUploadError records %>
+<%# Locals: batch_upload, upload_errors %>
+<% scope = "staff.certification_batch_uploads.show" %>
+<% max_displayed = Staff::CertificationBatchUploadsController::MAX_DISPLAYED_ERRORS %>
+<%= render "staff/certification_batch_uploads/completion_alert",
+           batch_upload: batch_upload,
+           success_message: t("v2_success_summary", scope: scope, count: batch_upload.num_rows_succeeded) %>
+<% if upload_errors.any? %>
+  <div class="margin-top-4">
+    <h2><%= t("failed_uploads", scope: scope) %> (<%= batch_upload.num_rows_errored %>)</h2>
+    <% if batch_upload.num_rows_errored > max_displayed %>
+      <p class="text-base-dark">
+        <%= t("v2_errors_truncated", scope: scope, limit: max_displayed, total: batch_upload.num_rows_errored) %>
+      </p>
+    <% end %>
+    <table class="usa-table usa-table--borderless width-full" data-testid="v2-error-table">
+      <thead>
+        <tr>
+          <th scope="col"><%= t("columns.row", scope: scope) %></th>
+          <th scope="col"><%= t("columns.error_code", scope: scope) %></th>
+          <th scope="col"><%= t("columns.error_message", scope: scope) %></th>
+          <th scope="col"><%= t("columns.data", scope: scope) %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% upload_errors.each do |error| %>
+          <tr>
+            <td><%= error.row_number %></td>
+            <td><%= error.error_code %></td>
+            <td class="text-error"><%= error.error_message %></td>
+            <td>
+              <pre class="font-mono-2xs"><code><%= error.row_data&.to_json %></code></pre>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <div class="margin-top-2">
+      <%= link_to t("download_errors_csv", scope: scope),
+            download_errors_certification_batch_upload_path(batch_upload),
+            class: "usa-button usa-button--outline",
+            data: { turbo: false } %>
+    </div>
+  </div>
+<% end %>

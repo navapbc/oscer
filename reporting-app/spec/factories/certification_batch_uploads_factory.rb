@@ -33,6 +33,11 @@ FactoryBot.define do
       results { { successes: [], errors: [] } }
     end
 
+    trait :completed_v2 do
+      completed
+      results { {} }
+    end
+
     trait :failed do
       status { :failed }
       processed_at { Time.current }
