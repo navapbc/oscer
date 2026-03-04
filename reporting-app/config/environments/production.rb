@@ -90,6 +90,12 @@ Rails.application.configure do
 
   config.action_mailer.delivery_method = :ses_v2
 
+  # Control whether emails are actually sent via SES. Emails are still
+  # generated (templates rendered) regardless of this setting.
+  if ENV["PERFORM_EMAIL_DELIVERY"] == "false"
+    config.action_mailer.perform_deliveries = false
+  end
+
   # Ignore bad email addresses and do not raise email delivery errors.
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.
   # config.action_mailer.raise_delivery_errors = false

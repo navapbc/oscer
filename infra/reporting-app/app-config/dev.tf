@@ -23,6 +23,9 @@ module "dev_config" {
   # Defaults to `false`. Uncomment the next line to enable.
   # enable_command_execution = true
 
+  # Increase memory from default 512 MiB to give headroom for Puma + GoodJob async workers
+  service_memory = 1024
+
   # Uncomment to override default feature flag values
   # feature_flag_overrides = {
   #   BAR = true
@@ -30,6 +33,7 @@ module "dev_config" {
 
   service_override_extra_environment_variables = {
     ENABLE_LOOKBOOK         = "true"
-    FEATURE_BATCH_UPLOAD_V2 = "false"
+    FEATURE_BATCH_UPLOAD_V2 = "true"
+    PERFORM_EMAIL_DELIVERY  = "false"
   }
 }

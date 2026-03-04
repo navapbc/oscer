@@ -71,6 +71,57 @@ class CertificationBatchUpload < ApplicationRecord
     update!(num_rows_processed: num_rows_processed)
   end
 
+  # Check if all chunks have reported in and transition to a terminal state.
+  # Called by both successful chunks and the discard_on block for failed chunks.
+  #
+  # Uses SQL-level locking and update_columns to avoid strict_loading violations
+  # that occur when with_lock reloads the record without eager-loaded ActiveStorage.
+  #
+  # Status determination uses audit log status (not just row counts):
+  # - Any chunk completed (ran successfully) → completed (with errors if applicable)
+  # - All chunks failed (system errors) → failed
+  def check_completion!
+    # NOTE: Avoid `return` inside transaction blocks — Rails 7.2 treats non-local
+    # returns as rollbacks and raises ActiveRecord::Rollback in the ensure block.
+    # Use if/else flow control instead.
+    self.class.transaction do
+      # Lock the row and read attributes without loading a full AR object
+      row = self.class.unscoped.where(id: id).lock(true).pick(
+        :num_rows_processed, :num_rows, :status,
+        :num_rows_succeeded, :num_rows_errored
+      )
+
+      if row
+        num_processed, total, current_status, succeeded, errored = row
+
+        if num_processed >= total && !current_status.in?(%w[completed failed])
+          any_chunk_completed = CertificationBatchUploadAuditLog.where(
+            certification_batch_upload_id: id,
+            status: :completed
+          ).exists?
+
+          if any_chunk_completed
+            update_columns(
+              status: :completed,
+              num_rows_succeeded: succeeded,
+              num_rows_errored: errored,
+              results: {},
+              processed_at: Time.current,
+              updated_at: Time.current
+            )
+          else
+            update_columns(
+              status: :failed,
+              results: { error: "All chunks failed to process" },
+              processed_at: Time.current,
+              updated_at: Time.current
+            )
+          end
+        end
+      end
+    end
+  end
+
   # Check if can be processed
   def processable?
     pending?
