@@ -34,16 +34,16 @@ flowchart LR
 
 | Component | Responsibility |
 |-----------|---------------|
-| `DocumentStagingController` | Feature flag guard — returns 404 when `Features.doc_ai_enabled?` is false. Auth (`authorize :document, :create?`), param handling, delegates to `DocumentStagingService#process`. Renders template with prefilled fields and hidden `signed_id` inputs. Controller is responsible only for: auth, param handling, rendering. See [`examples/document_staging_controller.rb`](examples/document_staging_controller.rb). |
+| `DocumentStagingController` | Feature flag guard — returns 404 when `Features.doc_ai_enabled?` is false. Auth (`authorize :document, :create?`), param handling, delegates to `DocumentStagingService#process`. Renders template with prefilled fields and hidden `signed_id` inputs. Controller is responsible only for: auth, param handling, rendering. |
 | `DocumentStagingService` | Owns extracted constants: `ALLOWED_CONTENT_TYPES` (`application/pdf`, `image/jpeg`, `image/png`, `image/tiff`), `MAX_FILE_SIZE_BYTES` (30 MB), `MAX_FILE_COUNT` (2), `DOC_AI_THREAD_POOL`, `SUPPORTED_RESULT_CLASSES`. `#process(files:, user:)` validates, dispatches concurrent processing, returns results array. Contains: `process_files_concurrently`, `process_file`, `valid_content_type?`, `valid_file_size?`. Calls `ImageToPdfConversionService` when image file >5MB before DocAI submission. Thread pool creation and lifecycle managed here. Constructor-injected `DocAiService` dependency (testable). `current_user` captured before threading (ActionController helpers not thread-safe). Each Future uses `connection_pool.with_connection`. |
 | `ImageToPdfConversionService` | Uses `image_processing` gem (vips backend). `#convert(file)` converts JPEG/PNG/TIFF >5MB to PDF tempfile. Returns original file unchanged if PDF or if image ≤5MB. `IMAGE_SIZE_THRESHOLD = 5.megabytes`. Isolated responsibility: one service, one job. |
-| `StagedDocument` | ActiveRecord: `has_one_attached :file`, `belongs_to :user`, `belongs_to :stageable, polymorphic: true`. Status enum: `pending`, `validated`, `rejected`, `failed`. `extracted_fields` JSONB stores full raw DocAI fields response (including confidence scores). `job_id` column. `#average_confidence` returns Float (0.0–1.0) computed as mean of all field confidence values from `extracted_fields`. Retained permanently as audit record. Never purged. See [`examples/staged_document.rb`](examples/staged_document.rb) and [`examples/staged_document_migration.rb`](examples/staged_document_migration.rb). |
-| `DocAiAdapter` | Extends `DataIntegration::BaseAdapter`. No auth headers (currently unauthenticated). `analyze_document` opens blob as `Tempfile` via `file.blob.open` → passes IO to `Faraday::Multipart::FilePart`. See [`examples/doc_ai_adapter.rb`](examples/doc_ai_adapter.rb). |
-| `DocAiService` | Extends `DataIntegration::BaseService`. Invokes adapter; builds `DocAiResult` via factory; logs `job_id`; raises `ProcessingError` on `status: "failed"`; `handle_integration_error` logs warning and returns `nil` (graceful degradation). See [`examples/doc_ai_service.rb`](examples/doc_ai_service.rb). |
-| `DocAiResult` | Base `Strata::ValueObject`. Response envelope, `FieldValue` accessor, self-registration factory (`REGISTRY` hash). Subclass files must be `require_relative`'d before `REGISTRY.freeze`. See [`examples/doc_ai_result.rb`](examples/doc_ai_result.rb). |
-| `DocAiResult::FieldValue` | `Data.define` struct: `value`, `confidence`. `low_confidence?` predicate (threshold: 0.7). All field accessors return `FieldValue` or `nil`. Defined in [`examples/doc_ai_result.rb`](examples/doc_ai_result.rb). |
-| `DocAiResult::Payslip` | Self-registers via `register "Payslip"`. Typed snake_case accessors. Boolean flag accessors unwrap value directly. `to_prefill_fields` returns values-only hash for form rendering. See [`examples/doc_ai_result/payslip.rb`](examples/doc_ai_result/payslip.rb). |
-| `DocAiResult::W2` | Self-registers via `register "W2"`. Typed snake_case accessors grouped by document section. `nonqualifiedPlansIncom` is a DocAI typo — Ruby accessor uses correct spelling. See [`examples/doc_ai_result/w2.rb`](examples/doc_ai_result/w2.rb). |
+| `StagedDocument` | ActiveRecord: `has_one_attached :file`, `belongs_to :user`, `belongs_to :stageable, polymorphic: true`. Status enum: `pending`, `validated`, `rejected`, `failed`. `extracted_fields` JSONB stores full raw DocAI fields response (including confidence scores). `job_id` column. `#average_confidence` returns Float (0.0–1.0) computed as mean of all field confidence values from `extracted_fields`. Retained permanently as audit record. Never purged. |
+| `DocAiAdapter` | Extends `DataIntegration::BaseAdapter`. No auth headers (currently unauthenticated). `analyze_document` opens blob as `Tempfile` via `file.blob.open` → passes IO to `Faraday::Multipart::FilePart`. |
+| `DocAiService` | Extends `DataIntegration::BaseService`. Invokes adapter; builds `DocAiResult` via factory; logs `job_id`; raises `ProcessingError` on `status: "failed"`; `handle_integration_error` logs warning and returns `nil` (graceful degradation). |
+| `DocAiResult` | Base `Strata::ValueObject`. Response envelope, `FieldValue` accessor, self-registration factory (`REGISTRY` hash). Subclass files must be `require_relative`'d before `REGISTRY.freeze`. |
+| `DocAiResult::FieldValue` | `Data.define` struct: `value`, `confidence`. `low_confidence?` predicate (threshold: 0.7). All field accessors return `FieldValue` or `nil`. |
+| `DocAiResult::Payslip` | Self-registers via `register "Payslip"`. Typed snake_case accessors. Boolean flag accessors unwrap value directly. `to_prefill_fields` returns values-only hash for form rendering. |
+| `DocAiResult::W2` | Self-registers via `register "W2"`. Typed snake_case accessors grouped by document section. `nonqualifiedPlansIncom` is a DocAI typo — Ruby accessor uses correct spelling. |
 | File Validator | Marcel magic-byte detection; `application/pdf`, `image/jpeg`, `image/png`, `image/tiff`; ≤30 MB per file; ≤2 files total. Runs before any DB or DocAI operations. Now lives in `DocumentStagingService`. |
 
 ## Feature Flag
@@ -424,8 +424,6 @@ FEATURE_DOC_AI=false
 ## Extending for New Document Types
 
 Create subclass, call `register "ClassName"`, implement `to_prefill_fields`. Add `require_relative "doc_ai_result/new_type"` inside `DocAiResult` class body before `REGISTRY.freeze`. No other files change.
-
-See [`examples/doc_ai_result/bank_statement.rb`](examples/doc_ai_result/bank_statement.rb) for annotated example.
 
 ## Future Considerations
 
