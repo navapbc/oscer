@@ -2,7 +2,7 @@
 
 ## Problem
 
-OSCER members submit income verification documents (pay stubs, W-2s) for certification/exemption workflows. Manual staff review is slow and error-prone. DocAI integration enables: realtime document validation, automated field extraction, form prefill, and consistent parsing across PDF, JPEG, PNG, and TIFF files. Confidence-based queue prioritization lets caseworkers focus on submissions that need the most attention. Attribution labels on every activity provide a CMS-auditable trail of how each data point was sourced.
+OSCER members submit income verification documents (pay stubs) for certification/exemption workflows. Manual staff review is slow and error-prone. DocAI integration enables: realtime document validation, automated field extraction, form prefill, and consistent parsing across PDF, JPEG, PNG, and TIFF files. Confidence-based queue prioritization lets caseworkers focus on submissions that need the most attention. Attribution labels on every activity provide a CMS-auditable trail of how each data point was sourced.
 
 ## Architecture
 
@@ -43,7 +43,6 @@ flowchart LR
 | `DocAiResult` | Base `Strata::ValueObject`. Response envelope, `FieldValue` accessor, self-registration factory (`REGISTRY` hash). Subclass files must be `require_relative`'d before `REGISTRY.freeze`. |
 | `DocAiResult::FieldValue` | `Data.define` struct: `value`, `confidence`. `low_confidence?` predicate (threshold: 0.7). All field accessors return `FieldValue` or `nil`. |
 | `DocAiResult::Payslip` | Self-registers via `register "Payslip"`. Typed snake_case accessors. Boolean flag accessors unwrap value directly. `to_prefill_fields` returns values-only hash for form rendering. |
-| `DocAiResult::W2` | Self-registers via `register "W2"`. Typed snake_case accessors grouped by document section. `nonqualifiedPlansIncom` is a DocAI typo — Ruby accessor uses correct spelling. |
 | File Validator | Marcel magic-byte detection; `application/pdf`, `image/jpeg`, `image/png`, `image/tiff`; ≤30 MB per file; ≤2 files total. Runs before any DB or DocAI operations. Now lives in `DocumentStagingService`. |
 
 ## Feature Flag
@@ -191,21 +190,7 @@ Expired/non-validated signed IDs are skipped gracefully. Fallback to manual uplo
   "fields": {
     "payperiodstartdate":      { "confidence": 0.91, "value": "2017-07-10" },
     "currentgrosspay":         { "confidence": 0.93, "value": 1627.74 },
-    "isgrosspayvali":          { "confidence": 0.87, "value": true }
-  }
-}
-```
-
-### Success Response (HTTP 200 — W2)
-
-```json
-{
-  "job_id": "e8b21c94-5d4f-48a9-bc91-37d6f4a09c11",
-  "status": "completed",
-  "matchedDocumentClass": "W2",
-  "fields": {
-    "employerInfo.employerName": { "confidence": 0.92, "value": "University of North Carolina" },
-    "federalWageInfo.wagesTipsOtherCompensation": { "confidence": 0.94, "value": 31964.00 }
+    "isGrossPayValid":         { "confidence": 0.87, "value": true }
   }
 }
 ```
@@ -242,6 +227,7 @@ Expired/non-validated signed IDs are skipped gracefully. Fallback to manual uplo
 | `ytdnetpay` | `ytd_net_pay` | Numeric |
 | `ytdfederaltax` | `ytd_federal_tax` | Numeric |
 | `ytdstatetax` | `ytd_state_tax` | Numeric |
+| `ytdcitytax` | `ytd_city_tax` | Numeric |
 | `ytdtotaldeductions` | `ytd_total_deductions` | Numeric |
 | `regularhourlyrate` | `regular_hourly_rate` | Numeric |
 | `holidayhourlyrate` | `holiday_hourly_rate` | Numeric |
@@ -264,39 +250,18 @@ Expired/non-validated signed IDs are skipped gracefully. Fallback to manual uplo
 | `companyaddress.city` | `company_address_city` | String |
 | `companyaddress.state` | `company_address_state` | String |
 | `companyaddress.zipcode` | `company_address_zipcode` | String |
-| `isgrosspayvali` | `gross_pay_valid?` | Boolean |
-| `isytdgrosspayhighest` | `ytd_gross_pay_highest?` | Boolean |
-| `arefieldnamessufficient` | `field_names_sufficient?` | Boolean |
-
-## Field Reference — W2
-
-> `nonqualifiedPlansIncom` is a DocAI typo. Ruby accessor uses correct spelling; `field_for` called with the literal API key.
-
-| API Field Key | Ruby Accessor | Group | Type |
-|---|---|---|---|
-| `employerInfo.employerAddress` | `employer_address` | Employer | String |
-| `employerInfo.controlNumber` | `employer_control_number` | Employer | String |
-| `employerInfo.employerName` | `employer_name` | Employer | String |
-| `employerInfo.ein` | `employer_ein` | Employer | String |
-| `employerInfo.employerZipCode` | `employer_zip_code` | Employer | String |
-| `filingInfo.ombNumber` | `omb_number` | Filing | String |
-| `filingInfo.verificationCode` | `verification_code` | Filing | String |
-| `other` | `other` | Other | String |
-| `federalTaxInfo.federalIncomeTax` | `federal_income_tax` | Federal Tax | Numeric |
-| `federalTaxInfo.allocatedTips` | `allocated_tips` | Federal Tax | Numeric |
-| `federalTaxInfo.socialSecurityTax` | `social_security_tax` | Federal Tax | Numeric |
-| `federalTaxInfo.medicareTax` | `medicare_tax` | Federal Tax | Numeric |
-| `employeeGeneralInfo.employeeNameSuffix` | `employee_name_suffix` | Employee | String |
-| `employeeGeneralInfo.employeeAddress` | `employee_address` | Employee | String |
-| `employeeGeneralInfo.employeeLastName` | `employee_last_name` | Employee | String |
-| `employeeGeneralInfo.employeeZipCode` | `employee_zip_code` | Employee | String |
-| `employeeGeneralInfo.firstName` | `employee_first_name` | Employee | String |
-| `employeeGeneralInfo.ssn` | `employee_ssn` | Employee | String |
-| `federalWageInfo.socialSecurityTips` | `social_security_tips` | Federal Wages | Numeric |
-| `federalWageInfo.wagesTipsOtherCompensation` | `wages_tips_other_compensation` | Federal Wages | Numeric |
-| `federalWageInfo.medicareWagesTips` | `medicare_wages_tips` | Federal Wages | Numeric |
-| `federalWageInfo.socialSecurityWages` | `social_security_wages` | Federal Wages | Numeric |
-| `nonqualifiedPlansIncom` | `nonqualified_plans_income` | Other | Numeric |
+| `federaltaxes.itemdescription` | `federal_taxes_description` | String |
+| `federaltaxes.ytd` | `federal_taxes_ytd` | Numeric |
+| `federaltaxes.period` | `federal_taxes_period` | Numeric |
+| `statetaxes.itemdescription` | `state_taxes_description` | String |
+| `statetaxes.ytd` | `state_taxes_ytd` | Numeric |
+| `statetaxes.period` | `state_taxes_period` | Numeric |
+| `citytaxes.itemdescription` | `city_taxes_description` | String |
+| `citytaxes.ytd` | `city_taxes_ytd` | Numeric |
+| `citytaxes.period` | `city_taxes_period` | Numeric |
+| `isGrossPayValid` | `gross_pay_valid?` | Boolean |
+| `isYtdGrossPayHighest` | `ytd_gross_pay_highest?` | Boolean |
+| `areFieldNamesSufficient` | `field_names_sufficient?` | Boolean |
 
 ## Error Handling
 
@@ -312,7 +277,7 @@ Expired/non-validated signed IDs are skipped gracefully. Fallback to manual uplo
 | Graceful degradation | any | `handle_integration_error` logs warning, returns `nil`; service sets `StagedDocument` to `status: :failed` |
 | Unrecognised document type | 200 | Service checks `SUPPORTED_RESULT_CLASSES.any?`; sets `status: :rejected`; returns error |
 
-`SUPPORTED_RESULT_CLASSES`: `[DocAiResult::Payslip, DocAiResult::W2]`
+`SUPPORTED_RESULT_CLASSES`: `[DocAiResult::Payslip]`
 
 ## Route
 
@@ -370,7 +335,6 @@ FEATURE_DOC_AI=false
 | `app/services/doc_ai_service.rb` | Extends `DataIntegration::BaseService` |
 | `app/models/doc_ai_result.rb` | Base value object + `FieldValue` struct + factory |
 | `app/models/doc_ai_result/payslip.rb` | Payslip subclass |
-| `app/models/doc_ai_result/w2.rb` | W2 subclass |
 | `config/initializers/doc_ai.rb` | App config |
 | `app/policies/document_policy.rb` | Pundit: `authorize :document, :create?` |
 | `db/migrate/<ts>_add_evidence_source_to_activities.rb` | Adds `evidence_source` string column to activities |
@@ -382,7 +346,6 @@ FEATURE_DOC_AI=false
 | `spec/services/doc_ai_service_spec.rb` | Service tests |
 | `spec/models/doc_ai_result_spec.rb` | Base value object |
 | `spec/models/doc_ai_result/payslip_spec.rb` | Payslip accessors |
-| `spec/models/doc_ai_result/w2_spec.rb` | W2 accessors |
 
 ## Files to Modify
 
