@@ -68,9 +68,9 @@ class DocAiResult::Payslip < DocAiResult
   def city_taxes_period         = field_for("citytaxes.period")
 
   # --- Validation flags (boolean predicates — unwrap value directly) ---
-  def gross_pay_valid?        = field_for("is_gross_pay_valid")&.value == true
-  def ytd_gross_pay_highest?  = field_for("is_ytd_gross_pay_highest")&.value == true
-  def field_names_sufficient? = field_for("are_field_names_sufficient")&.value == true
+  def gross_pay_valid?        = field_for("isGrossPayValid")&.value == true
+  def ytd_gross_pay_highest?  = field_for("isYtdGrossPayHighest")&.value == true
+  def field_names_sufficient? = field_for("areFieldNamesSufficient")&.value == true
 
   # Returns a flat hash of { field_name: value } for form prefill.
   # Confidence scores are not included — they are available in the persisted extracted_fields JSONB.

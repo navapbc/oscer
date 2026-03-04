@@ -39,9 +39,9 @@ RSpec.describe DocAiResult::Payslip do
         "federaltaxes.itemdescription" => { "confidence" => 0.90, "value" => "Federal Income Tax" },
         "federaltaxes.ytd"             => { "confidence" => 0.90, "value" => 980.50 },
         "federaltaxes.period"          => { "confidence" => 0.90, "value" => 150.00 },
-        "is_gross_pay_valid"           => { "confidence" => 0.87, "value" => true },
-        "is_ytd_gross_pay_highest"     => { "confidence" => 0.85, "value" => false },
-        "are_field_names_sufficient"   => { "confidence" => 0.88, "value" => true }
+        "isGrossPayValid"              => { "confidence" => 0.87, "value" => true },
+        "isYtdGrossPayHighest"         => { "confidence" => 0.85, "value" => false },
+        "areFieldNamesSufficient"      => { "confidence" => 0.88, "value" => true }
       }
     }
   end
