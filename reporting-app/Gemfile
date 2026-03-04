@@ -82,6 +82,8 @@ gem "aws-actionmailer-ses"
 
 # File uploads: AWS S3
 gem "aws-sdk-s3", require: false
+# File uploads: Azure Blob Storage
+gem "azure-blob", require: false
 gem "active_storage_validations"
 
 # HTTP client for external API calls

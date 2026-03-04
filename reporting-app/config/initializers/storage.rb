@@ -42,15 +42,17 @@ Rails.application.config.to_prepare do
   next if Rails.env.test?
 
   # Skip if required environment variables aren't present (e.g., during asset precompilation)
-  next unless ENV["BUCKET_NAME"].present?
-
   adapter_type = ENV.fetch("STORAGE_ADAPTER", StorageConfig::DEFAULT_ADAPTER).downcase
+  next unless case adapter_type
+              when StorageConfig::S3 then ENV["BUCKET_NAME"].present?
+              when StorageConfig::AZURE then ENV["AZURE_STORAGE_ACCOUNT"].present?
+              end
 
   Rails.application.config.storage_adapter = case adapter_type
   when StorageConfig::S3
     Storage::S3Adapter.new
   when StorageConfig::AZURE
-    raise NotImplementedError, "Azure adapter not yet implemented (see issue #212)"
+    Storage::AzureBlobAdapter.new
   when StorageConfig::GCP
     raise NotImplementedError, "GCP adapter not yet implemented"
   else
