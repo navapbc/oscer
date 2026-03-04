@@ -45,8 +45,11 @@ Rails.application.routes.draw do
   end
   namespace :api do
     resources :certifications, only: [ :create, :show ]
+    resources :certification_batch_uploads, only: [ :create, :show ]
     get "health" => "healthcheck#index"
   end
+
+  post "/api/direct_uploads", to: "api/direct_uploads#create", as: :api_direct_uploads, defaults: { format: :json }
 
   scope path: "/staff" do
     resources :members, only: [ :index, :show ] do

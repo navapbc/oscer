@@ -38,5 +38,10 @@ FactoryBot.define do
       processed_at { Time.current }
       results { { error: "Processing failed" } }
     end
+
+    trait :api_sourced do
+      source_type { :api }
+      uploader { nil }
+    end
   end
 end

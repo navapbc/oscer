@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_27_170552) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_04_200924) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -95,7 +95,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_27_170552) do
   create_table "certification_batch_uploads", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "filename", null: false
     t.string "status", default: "pending", null: false
-    t.uuid "uploader_id", null: false
+    t.uuid "uploader_id"
     t.integer "num_rows", default: 0, null: false
     t.integer "num_rows_processed", default: 0, null: false
     t.integer "num_rows_succeeded", default: 0, null: false

@@ -22,6 +22,14 @@ RSpec.describe CertificationBatchUploadPolicy, type: :policy do
     it "includes all records in the resolved scope" do
       expect(resolved_scope).to include(record)
     end
+
+    it "includes both staff and API records in scope" do
+      staff_upload = create(:certification_batch_upload, uploader: admin_user)
+      api_upload = create(:certification_batch_upload, :api_sourced)
+
+      expect(resolved_scope).to include(staff_upload)
+      expect(resolved_scope).to include(api_upload)
+    end
   end
 
   describe "when user is not an admin" do
@@ -31,6 +39,21 @@ RSpec.describe CertificationBatchUploadPolicy, type: :policy do
 
     it "includes no records in the resolved scope" do
       expect(resolved_scope).to be_empty
+    end
+  end
+
+  describe "when user is an Api::Client" do
+    let(:user) { Api::Client.new }
+
+    it { is_expected.to permit_actions(:create, :show) }
+    it { is_expected.to forbid_actions(:index, :new, :edit, :update, :destroy, :results, :download_errors) }
+
+    it "includes only API-sourced records in scope" do
+      staff_upload = create(:certification_batch_upload, uploader: admin_user)
+      api_upload = create(:certification_batch_upload, :api_sourced)
+
+      expect(resolved_scope).to include(api_upload)
+      expect(resolved_scope).not_to include(staff_upload)
     end
   end
 end

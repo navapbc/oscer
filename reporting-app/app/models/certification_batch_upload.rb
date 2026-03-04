@@ -14,7 +14,7 @@ class CertificationBatchUpload < ApplicationRecord
   attribute :num_rows_errored, :integer, default: 0
   attribute :results, :jsonb, default: {}
 
-  belongs_to :uploader, class_name: "User"
+  belongs_to :uploader, class_name: "User", optional: true
   has_one_attached :file
   has_many :audit_logs,
            class_name: "CertificationBatchUploadAuditLog",

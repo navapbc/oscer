@@ -3,7 +3,7 @@
 <h1><%= @batch_upload.filename %></h1>
 <dl class="grid-row margin-bottom-2">
   <dt class="grid-col-3 text-bold"><%= t(".uploader") %>:</dt>
-  <dd class="grid-col-9"><%= @batch_upload.uploader.email %></dd>
+  <dd class="grid-col-9"><%= @batch_upload.uploader&.email || "API" %></dd>
   <dt class="grid-col-3 text-bold"><%= t(".uploaded_at") %>:</dt>
   <dd class="grid-col-9"><%= @batch_upload.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
   <dt class="grid-col-3 text-bold"><%= t(".upload_status") %>:</dt>
