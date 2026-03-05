@@ -6,7 +6,6 @@ class Users::SessionsController < Devise::SessionsController
 
   def new
     @form = Users::NewSessionForm.new
-    @sso_enabled = sso_enabled?
   end
 
   def create
