@@ -95,7 +95,7 @@ RSpec.describe "/api/certification_batch_uploads", type: :request do
         end
       end
 
-      it "sanitizes the filename" do
+      it "sanitizes path traversal from the filename" do
         with_batch_upload_v2_enabled do
           blob = create_blob(filename: "../../../etc/passwd.csv")
           params = { signed_blob_id: blob.signed_id }
@@ -111,6 +111,22 @@ RSpec.describe "/api/certification_batch_uploads", type: :request do
           # then our sanitizer replaces non-word chars with underscores
           expect(batch_upload.filename).not_to include("/")
           expect(batch_upload.filename).to match(/\A[\w\-.]+\z/)
+        end
+      end
+
+      it "replaces spaces and special characters in the filename with underscores" do
+        with_batch_upload_v2_enabled do
+          blob = create_blob(filename: "my report (final).csv")
+          params = { signed_blob_id: blob.signed_id }
+
+          post api_certification_batch_uploads_url,
+               params: params,
+               headers: auth_headers(params),
+               as: :json
+
+          expect(response).to have_http_status(:created)
+          batch_upload = CertificationBatchUpload.last
+          expect(batch_upload.filename).to eq("my_report__final_.csv")
         end
       end
     end
