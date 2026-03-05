@@ -1,0 +1,58 @@
+<%# V1: errors/successes stored in results JSONB %>
+<%# Locals: batch_upload %>
+<% scope = "staff.certification_batch_uploads.show" %>
+<% successes = batch_upload.results.dig("successes") || [] %>
+<% errors = batch_upload.results.dig("errors") || [] %>
+<%= render "staff/certification_batch_uploads/completion_alert",
+           batch_upload: batch_upload,
+           success_message: t("success_message", scope: scope, count: batch_upload.num_rows_succeeded) %>
+<% if successes.any? %>
+  <div class="margin-top-4">
+    <h2><%= t("successful_uploads", scope: scope) %> (<%= successes.count %>)</h2>
+    <table class="usa-table usa-table--borderless width-full">
+      <thead>
+        <tr>
+          <th scope="col"><%= t("columns.row", scope: scope) %></th>
+          <th scope="col"><%= t("columns.case_number", scope: scope) %></th>
+          <th scope="col"><%= t("columns.member_id", scope: scope) %></th>
+          <th scope="col"><%= t("columns.status", scope: scope) %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% successes.each do |success| %>
+          <tr>
+            <td><%= success["row"] || success[:row] %></td>
+            <td><%= success["case_number"] || success[:case_number] %></td>
+            <td><%= success["member_id"] || success[:member_id] %></td>
+            <td><span class="usa-tag usa-tag--success"><%= t("status.success", scope: scope) %></span></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>
+<% if errors.any? %>
+  <div class="margin-top-4">
+    <h2><%= t("failed_uploads", scope: scope) %> (<%= errors.count %>)</h2>
+    <table class="usa-table usa-table--borderless width-full">
+      <thead>
+        <tr>
+          <th scope="col"><%= t("columns.row", scope: scope) %></th>
+          <th scope="col"><%= t("columns.error", scope: scope) %></th>
+          <th scope="col"><%= t("columns.data", scope: scope) %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% errors.each do |error| %>
+          <tr>
+            <td><%= error["row"] || error[:row] %></td>
+            <td class="text-error"><%= error["message"] || error[:message] %></td>
+            <td>
+              <pre class="font-mono-2xs"><code><%= JSON.pretty_generate(error["data"] || error[:data]) %></code></pre>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

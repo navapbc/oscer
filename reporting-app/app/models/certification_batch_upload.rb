@@ -124,6 +124,20 @@ class CertificationBatchUpload < ApplicationRecord
     end
   end
 
+  # Returns true for v2 uploads, which store errors in normalized records
+  # rather than the results JSONB column.
+  #
+  # Heuristic: V2 uploads always have results: {} (set by check_completion!),
+  # while v1 uploads populate results with { successes: [...], errors: [...] }
+  # via complete_processing!.
+  #
+  # Note: Pending/processing uploads also have results: {} (the DB default),
+  # so this returns true for them as well. Callers in the view gate on
+  # completed? before branching on v2_upload?, so this is safe.
+  def v2_upload?
+    results.blank?
+  end
+
   # Check if can be processed
   def processable?
     pending?
