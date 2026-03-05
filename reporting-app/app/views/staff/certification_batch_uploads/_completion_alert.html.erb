@@ -1,0 +1,23 @@
+<%# Shared alert banner for completed batch uploads (both v1 and v2) %>
+<%# Locals: batch_upload, success_message %>
+<% scope = "staff.certification_batch_uploads.show" %>
+<% if batch_upload.num_rows_errored.zero? %>
+  <div class="usa-alert usa-alert--success" role="alert">
+    <div class="usa-alert__body">
+      <h4 class="usa-alert__heading"><%= t("success_heading", scope: scope) %></h4>
+      <p class="usa-alert__text"><%= success_message %></p>
+    </div>
+  </div>
+<% else %>
+  <div class="usa-alert usa-alert--warning" role="alert">
+    <div class="usa-alert__body">
+      <h4 class="usa-alert__heading"><%= t("partial_success_heading", scope: scope) %></h4>
+      <p class="usa-alert__text">
+        <%= t("partial_success_message", scope: scope,
+              num_rows_succeeded: batch_upload.num_rows_succeeded,
+              num_rows_errored: batch_upload.num_rows_errored,
+              total: batch_upload.num_rows) %>
+      </p>
+    </div>
+  </div>
+<% end %>
