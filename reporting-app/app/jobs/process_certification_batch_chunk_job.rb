@@ -4,17 +4,59 @@
 # Part of batch upload v2 streaming architecture - processes chunks in parallel
 class ProcessCertificationBatchChunkJob < ApplicationJob
   queue_as :default
-  retry_on ActiveRecord::Deadlocked, wait: :exponentially_longer, attempts: 3
 
-  # Process a chunk of certification records
+  # When a chunk is discarded (any unhandled error), report in as failed so the
+  # batch can reach a terminal state. All rows are counted as errored.
+  # The @counters_updated flag prevents double-counting if the error happened
+  # after update_counters! already ran in perform.
+  discard_on StandardError do |job, error|
+    batch_upload_id, chunk_number, _headers, _start_byte, _end_byte, record_count = job.arguments
+    batch_upload = CertificationBatchUpload.find_by(id: batch_upload_id)
+    next unless batch_upload && record_count
+
+    Rails.logger.error(
+      "Chunk #{chunk_number} for batch #{batch_upload_id} discarded: #{error.class} - #{error.message}"
+    )
+
+    unless job.counters_updated
+      CertificationBatchUpload.update_counters(
+        batch_upload.id,
+        num_rows_processed: record_count,
+        num_rows_errored: record_count
+      )
+    end
+
+    batch_upload.check_completion!
+  end
+
+  attr_reader :counters_updated
+
+  # Process a chunk of certification records by reading from S3
   # @param batch_upload_id [String] The UUID of the CertificationBatchUpload record
   # @param chunk_number [Integer] The sequential chunk number (1-indexed)
-  # @param records [Array<Hash>] Array of record hashes to process
+  # @param headers [Array<String>] CSV column headers
+  # @param start_byte [Integer] Start of byte range in S3 object (inclusive)
+  # @param end_byte [Integer] End of byte range in S3 object (inclusive)
+  # @param record_count [Integer] Number of records in this chunk (for failure reporting)
   # @param processor [UnifiedRecordProcessor] The processor to use (injectable for testing)
-  def perform(batch_upload_id, chunk_number, records, processor: UnifiedRecordProcessor.new)
+  def perform(batch_upload_id, chunk_number, headers, start_byte, end_byte, record_count, processor: UnifiedRecordProcessor.new)
+    @counters_updated = false
+
     batch_upload = CertificationBatchUpload.find_by(id: batch_upload_id)
     return if batch_upload.nil?  # Batch was deleted, nothing to do
     audit_log = create_audit_log(batch_upload, chunk_number)
+
+    storage_key = batch_upload.storage_key
+    Rails.logger.info("Chunk #{chunk_number} for batch #{batch_upload_id}: reading key=#{storage_key} bytes=#{start_byte}-#{end_byte}")
+
+    # Read records from S3 using byte-range coordinates
+    reader = CsvStreamReader.new
+    records = reader.read_chunk(
+      storage_key,
+      headers: headers,
+      start_byte: start_byte,
+      end_byte: end_byte
+    )
 
     results = { succeeded: 0, failed: 0, errors: [] }
     context = { batch_upload_id: batch_upload.id }
@@ -35,11 +77,13 @@ class ProcessCertificationBatchChunkJob < ApplicationJob
         }
       rescue StandardError => e
         # Catch unexpected errors (shouldn't happen, but safety net)
+        Rails.logger.error("Unexpected error processing row #{row_number}: #{e.class} - #{e.message}")
+        Rails.logger.error("Backtrace: #{e.backtrace.join("\n")}")
         results[:failed] += 1
         results[:errors] << {
           row_number: row_number,
-          error_code: "ERR_UNKNOWN",
-          error_message: e.message,
+          error_code: BatchUploadErrors::Unknown::UNEXPECTED,
+          error_message: "Unexpected error: #{e.class} - #{e.message}",
           row_data: record
         }
       end
@@ -47,8 +91,9 @@ class ProcessCertificationBatchChunkJob < ApplicationJob
 
     complete_audit_log(audit_log, results)
     update_counters!(batch_upload, records.size, results)
+    @counters_updated = true
     store_errors!(batch_upload, results[:errors])
-    check_completion!(batch_upload)
+    batch_upload.check_completion!
 
   rescue StandardError => e
     # Mark audit log as failed if chunk job crashes (system error)
@@ -85,11 +130,12 @@ class ProcessCertificationBatchChunkJob < ApplicationJob
   end
 
   def update_counters!(batch_upload, record_count, results)
-    batch_upload.with_lock do
-      batch_upload.increment!(:num_rows_processed, record_count)
-      batch_upload.increment!(:num_rows_succeeded, results[:succeeded])
-      batch_upload.increment!(:num_rows_errored, results[:failed])
-    end
+    CertificationBatchUpload.update_counters(
+      batch_upload.id,
+      num_rows_processed: record_count,
+      num_rows_succeeded: results[:succeeded],
+      num_rows_errored: results[:failed]
+    )
   end
 
   def store_errors!(batch_upload, errors)
@@ -108,33 +154,5 @@ class ProcessCertificationBatchChunkJob < ApplicationJob
     end
 
     CertificationBatchUploadError.insert_all(error_records)
-  end
-
-  # Check if batch is complete and transition to completed state
-  # Uses pessimistic lock with retry to handle concurrent chunk completion
-  def check_completion!(batch_upload)
-    retries = 0
-    begin
-      batch_upload.with_lock do
-        return unless batch_upload.num_rows_processed >= batch_upload.num_rows
-        return if batch_upload.completed?
-
-        batch_upload.complete_processing!(
-          num_rows_succeeded: batch_upload.num_rows_succeeded,
-          num_rows_errored: batch_upload.num_rows_errored,
-          results: {} # Results now in audit_logs and upload_errors tables
-        )
-      end
-    rescue ActiveRecord::LockWaitTimeout => e
-      retries += 1
-      if retries < 3
-        Rails.logger.info("Lock timeout on completion check (attempt #{retries}/3), retrying after backoff")
-        sleep(2**retries) # Exponential backoff: 2s, 4s, 8s
-        retry
-      else
-        Rails.logger.error("Failed to acquire completion lock after 3 retries: #{e.message}")
-        raise
-      end
-    end
   end
 end

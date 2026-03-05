@@ -81,15 +81,20 @@ Rails.application.configure do
   # Use a different cache store in production.
   # config.cache_store = :mem_cache_store
 
-  # Use a real queuing backend for Active Job (and separate queues per environment).
-  # config.active_job.queue_adapter = :resque
-  # config.active_job.queue_name_prefix = "reporting-app:production"
+  # Use GoodJob for persistent background job processing
+  config.active_job.queue_adapter = :good_job
 
   # Disable caching for Action Mailer templates even if Action Controller
   # caching is enabled.
   config.action_mailer.perform_caching = false
 
   config.action_mailer.delivery_method = :ses_v2
+
+  # Control whether emails are actually sent via SES. Emails are still
+  # generated (templates rendered) regardless of this setting.
+  if ENV["PERFORM_EMAIL_DELIVERY"] == "false"
+    config.action_mailer.perform_deliveries = false
+  end
 
   # Ignore bad email addresses and do not raise email delivery errors.
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.

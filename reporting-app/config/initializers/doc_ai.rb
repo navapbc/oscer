@@ -1,0 +1,23 @@
+# frozen_string_literal: true
+
+# DocAI Integration Configuration
+#
+# Required environment variables:
+#   DOC_AI_API_HOST - DocAI API base endpoint
+#
+# Optional environment variables:
+#   DOC_AI_TIMEOUT_SECONDS          - HTTP timeout in seconds (default: 60)
+#   DOC_AI_LOW_CONFIDENCE_THRESHOLD - Minimum confidence threshold (default: 0.7)
+
+Rails.application.config.doc_ai = {
+  api_host:                 ENV.fetch("DOC_AI_API_HOST", nil),
+  timeout_seconds:          ENV.fetch("DOC_AI_TIMEOUT_SECONDS", "60").to_i,
+  low_confidence_threshold: ENV.fetch("DOC_AI_LOW_CONFIDENCE_THRESHOLD", "0.7").to_f
+}.freeze
+
+Rails.application.config.to_prepare do
+  # Eager load DocAiResult subclasses to populate the registry
+  Dir[Rails.root.join("app/models/doc_ai_result/*.rb")].each do |file|
+    "DocAiResult::#{File.basename(file, ".rb").camelize}".constantize
+  end
+end

@@ -21,5 +21,6 @@ module "sandbox_config" {
 
   service_override_extra_environment_variables = {
     ENABLE_LOOKBOOK = "true"
+    SSO_ENABLED     = "true"
   }
 }

@@ -14,7 +14,9 @@ class CertificationBatchUpload < ApplicationRecord
   attribute :num_rows_errored, :integer, default: 0
   attribute :results, :jsonb, default: {}
 
-  belongs_to :uploader, class_name: "User"
+  belongs_to :uploader, class_name: "User", optional: true
+  validates :uploader_id, presence: true, if: :ui?
+
   has_one_attached :file
   has_many :audit_logs,
            class_name: "CertificationBatchUploadAuditLog",
@@ -26,7 +28,16 @@ class CertificationBatchUpload < ApplicationRecord
            dependent: :destroy
 
   validates :filename, presence: true
-  validate :file_or_storage_key_present, on: :create
+  validates :file, attached: true, on: :create
+  validates :file,
+            content_type: [
+              "text/csv",
+              "text/plain",
+              "application/vnd.ms-excel",
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            ],
+            size: { less_than: 100.megabytes, message: "must be less than 100MB" },
+            on: :create
 
   default_scope { with_attached_file }
   scope :recent, -> { order(created_at: :desc) }
@@ -62,6 +73,71 @@ class CertificationBatchUpload < ApplicationRecord
     update!(num_rows_processed: num_rows_processed)
   end
 
+  # Check if all chunks have reported in and transition to a terminal state.
+  # Called by both successful chunks and the discard_on block for failed chunks.
+  #
+  # Uses SQL-level locking and update_columns to avoid strict_loading violations
+  # that occur when with_lock reloads the record without eager-loaded ActiveStorage.
+  #
+  # Status determination uses audit log status (not just row counts):
+  # - Any chunk completed (ran successfully) → completed (with errors if applicable)
+  # - All chunks failed (system errors) → failed
+  def check_completion!
+    # NOTE: Avoid `return` inside transaction blocks — Rails 7.2 treats non-local
+    # returns as rollbacks and raises ActiveRecord::Rollback in the ensure block.
+    # Use if/else flow control instead.
+    self.class.transaction do
+      # Lock the row and read attributes without loading a full AR object
+      row = self.class.unscoped.where(id: id).lock(true).pick(
+        :num_rows_processed, :num_rows, :status,
+        :num_rows_succeeded, :num_rows_errored
+      )
+
+      if row
+        num_processed, total, current_status, succeeded, errored = row
+
+        if num_processed >= total && !current_status.in?(%w[completed failed])
+          any_chunk_completed = CertificationBatchUploadAuditLog.where(
+            certification_batch_upload_id: id,
+            status: :completed
+          ).exists?
+
+          if any_chunk_completed
+            update_columns(
+              status: :completed,
+              num_rows_succeeded: succeeded,
+              num_rows_errored: errored,
+              results: {},
+              processed_at: Time.current,
+              updated_at: Time.current
+            )
+          else
+            update_columns(
+              status: :failed,
+              results: { error: "All chunks failed to process" },
+              processed_at: Time.current,
+              updated_at: Time.current
+            )
+          end
+        end
+      end
+    end
+  end
+
+  # Returns true for v2 uploads, which store errors in normalized records
+  # rather than the results JSONB column.
+  #
+  # Heuristic: V2 uploads always have results: {} (set by check_completion!),
+  # while v1 uploads populate results with { successes: [...], errors: [...] }
+  # via complete_processing!.
+  #
+  # Note: Pending/processing uploads also have results: {} (the DB default),
+  # so this returns true for them as well. Callers in the view gate on
+  # completed? before branching on v2_upload?, so this is safe.
+  def v2_upload?
+    results.blank?
+  end
+
   # Check if can be processed
   def processable?
     pending?
@@ -79,25 +155,9 @@ class CertificationBatchUpload < ApplicationRecord
     CertificationOrigin.from_batch_upload(id).count
   end
 
-  # Check if this upload uses cloud storage directly (batch upload v2)
-  # @return [Boolean] true if storage_key is present
-  def uses_cloud_storage?
-    storage_key.present?
-  end
-
-  # Check if this upload uses Active Storage (legacy v1 uploads)
-  # @return [Boolean] true if file is attached and storage_key is blank
-  def uses_active_storage?
-    file.attached? && storage_key.blank?
-  end
-
-  private
-
-  # Validation: ensure either file or storage_key is present on create
-  # V1 uploads use file (ActiveStorage), V2 uploads use storage_key (cloud storage)
-  def file_or_storage_key_present
-    return if file.attached? || storage_key.present?
-
-    errors.add(:base, "Must provide either a file upload or storage key")
+  # Get the storage key for streaming the CSV file
+  # @return [String, nil] S3 key for the uploaded file, or nil if no file attached
+  def storage_key
+    file.blob.key if file.attached?
   end
 end

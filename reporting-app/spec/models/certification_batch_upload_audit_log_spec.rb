@@ -4,7 +4,7 @@ require "rails_helper"
 
 RSpec.describe CertificationBatchUploadAuditLog, type: :model do
   let(:user) { create(:user) }
-  let(:batch_upload) { create(:certification_batch_upload, uploader: user, storage_key: "test-key") }
+  let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
 
   describe "validations" do
     it "requires chunk_number" do

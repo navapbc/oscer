@@ -87,12 +87,6 @@ class Users::SessionsController < Devise::SessionsController
 
   private
 
-    def sso_enabled?
-      Rails.application.config.sso[:enabled] == true
-    rescue NoMethodError
-      false
-    end
-
     def auth_service
       AuthService.new
     end

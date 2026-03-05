@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: cbf16e1a7450c9588bfba613941719f553bada29
+  revision: ddbdcc3c7749b033156b266bc6c62fb71897a8d0
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -189,8 +189,10 @@ GEM
       sorbet-runtime (>= 0.5)
     email_validator (2.2.4)
       activemodel
-    erb (6.0.1)
+    erb (6.0.2)
     erubi (1.13.1)
+    et-orbi (1.4.0)
+      tzinfo
     factory_bot (6.5.6)
       activesupport (>= 6.1.0)
     factory_bot_rails (6.5.1)
@@ -204,6 +206,8 @@ GEM
       logger
     faraday-follow_redirects (0.5.0)
       faraday (>= 1, < 3)
+    faraday-multipart (1.2.0)
+      multipart-post (~> 2.0)
     faraday-net_http (3.4.2)
       net-http (~> 0.5)
     ffi (1.17.2-aarch64-linux-gnu)
@@ -216,8 +220,18 @@ GEM
     ffi (1.17.2-x86_64-linux-musl)
     formatador (1.2.0)
       reline
+    fugit (1.12.1)
+      et-orbi (~> 1.4)
+      raabro (~> 1.4)
     globalid (1.3.0)
       activesupport (>= 6.1)
+    good_job (4.13.2)
+      activejob (>= 6.1.0)
+      activerecord (>= 6.1.0)
+      concurrent-ruby (>= 1.3.1)
+      fugit (>= 1.11.0)
+      railties (>= 6.1.0)
+      thor (>= 1.0.0)
     guard (2.19.1)
       formatador (>= 0.2.4)
       listen (>= 2.7, < 4.0)
@@ -247,8 +261,9 @@ GEM
       activesupport (>= 6.0.0)
       railties (>= 6.0.0)
     io-console (0.8.2)
-    irb (1.16.0)
+    irb (1.17.0)
       pp (>= 0.6.0)
+      prism (>= 1.3.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     jbuilder (2.14.1)
@@ -308,13 +323,15 @@ GEM
     matrix (0.4.3)
     method_source (1.1.0)
     mini_mime (1.1.5)
-    minitest (6.0.1)
+    minitest (6.0.2)
+      drb (~> 2.0)
       prism (~> 1.5)
     msgpack (1.8.0)
+    multipart-post (2.4.1)
     nenv (0.3.0)
     net-http (0.8.0)
       uri (>= 0.11.1)
-    net-imap (0.6.2)
+    net-imap (0.6.3)
       date
       net-protocol
     net-pop (0.1.2)
@@ -324,21 +341,21 @@ GEM
     net-smtp (0.5.1)
       net-protocol
     nio4r (2.7.5)
-    nokogiri (1.19.0-aarch64-linux-gnu)
+    nokogiri (1.19.1-aarch64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.19.0-aarch64-linux-musl)
+    nokogiri (1.19.1-aarch64-linux-musl)
       racc (~> 1.4)
-    nokogiri (1.19.0-arm-linux-gnu)
+    nokogiri (1.19.1-arm-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.19.0-arm-linux-musl)
+    nokogiri (1.19.1-arm-linux-musl)
       racc (~> 1.4)
-    nokogiri (1.19.0-arm64-darwin)
+    nokogiri (1.19.1-arm64-darwin)
       racc (~> 1.4)
-    nokogiri (1.19.0-x86_64-darwin)
+    nokogiri (1.19.1-x86_64-darwin)
       racc (~> 1.4)
-    nokogiri (1.19.0-x86_64-linux-gnu)
+    nokogiri (1.19.1-x86_64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.19.0-x86_64-linux-musl)
+    nokogiri (1.19.1-x86_64-linux-musl)
       racc (~> 1.4)
     notiffany (0.1.3)
       nenv (~> 0.1)
@@ -418,8 +435,9 @@ GEM
       rspec-expectations (~> 3.12)
       rspec-mocks (~> 3.12)
       rspec-support (~> 3.12)
+    raabro (1.4.0)
     racc (1.8.1)
-    rack (3.2.4)
+    rack (3.2.5)
     rack-oauth2 (2.3.0)
       activesupport
       attr_required
@@ -461,8 +479,8 @@ GEM
       activesupport (>= 4.2)
       choice (~> 0.2.0)
       ruby-graphviz (~> 1.2)
-    rails-html-sanitizer (1.6.2)
-      loofah (~> 2.21)
+    rails-html-sanitizer (1.7.0)
+      loofah (~> 2.25)
       nokogiri (>= 1.15.7, != 1.16.7, != 1.16.6, != 1.16.5, != 1.16.4, != 1.16.3, != 1.16.2, != 1.16.1, != 1.16.0.rc1, != 1.16.0)
     railties (7.2.3)
       actionpack (= 7.2.3)
@@ -481,7 +499,7 @@ GEM
       ffi (~> 1.0)
     rbs (3.9.5)
       logger
-    rdoc (7.1.0)
+    rdoc (7.2.0)
       erb
       psych (>= 4.0.0)
       tsort
@@ -619,7 +637,7 @@ GEM
     validates_timeliness (7.1.0)
       activemodel (>= 7.0.0, < 8)
       timeliness (>= 0.3.10, < 1)
-    view_component (4.2.0)
+    view_component (4.5.0)
       actionview (>= 7.1.0)
       activesupport (>= 7.1.0)
       concurrent-ruby (~> 1)
@@ -646,7 +664,7 @@ GEM
     xpath (3.2.0)
       nokogiri (~> 1.8)
     yard (0.9.37)
-    zeitwerk (2.7.4)
+    zeitwerk (2.7.5)
 
 PLATFORMS
   aarch64-linux
@@ -678,6 +696,8 @@ DEPENDENCIES
   factory_bot_rails
   faker (~> 3.2)
   faraday
+  faraday-multipart
+  good_job (~> 4.0)
   guard-rspec
   importmap-rails
   jbuilder

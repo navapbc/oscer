@@ -11,6 +11,7 @@ class ApiController < ActionController::Metal
   ActiveSupport.run_load_hooks(:action_controller, self)
 
   include Pundit::Authorization
+  include ApiHmacAuthentication
 
   before_action :authenticate_api_request!
 
@@ -48,18 +49,6 @@ class ApiController < ActionController::Metal
   def format_active_model_errors(errors)
     errors.details.flat_map do |field_name, field_errs|
       field_errs.map { |err| err.merge(field: field_name) }
-    end
-  end
-
-  def authenticate_api_request!
-    strategy = Strata::Auth::Strategies::Hmac.new(secret_key: Rails.configuration.api_secret_key)
-    authenticator = Strata::ApiAuthenticator.new(strategy: strategy)
-
-    begin
-      authenticator.authenticate!(request)
-      @current_api_client = Api::Client.new
-    rescue Strata::Auth::AuthenticationError, Strata::Auth::InvalidSignature, Strata::Auth::MissingCredentials => e
-      render_errors([ e.message ], :unauthorized) && return
     end
   end
 

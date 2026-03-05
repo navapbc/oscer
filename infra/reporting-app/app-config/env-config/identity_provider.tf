@@ -29,6 +29,9 @@ locals {
     verification_email_subject = null
   }
 
+  # SSO callback path for Staff Single Sign-On via OIDC
+  sso_callback_url_path = "auth/sso/callback"
+
   identity_provider_config = var.enable_identity_provider ? {
     identity_provider_name = "${var.app_name}-${var.environment}"
 
@@ -36,15 +39,25 @@ locals {
 
     verification_email = local.verification_email
 
-    # Do not modify this block directly.
+    # Client configuration for Cognito app client.
+    # SSO callback URL is always included when identity provider + domain exist, so any
+    # environment can enable SSO by setting SSO_ENABLED=true in service_override_extra_environment_variables.
+    #
+    # Do not hardcode URLs here. Instead use:
+    #   - callback_url_path / logout_url_path locals for main app paths
+    #   - sso_callback_url_path local for SSO callback path
+    #   - extra_identity_provider_callback_urls variable for additional URLs (e.g., ngrok)
     client = {
       callback_urls = concat(
         var.domain_name != null ? ["https://${var.domain_name}/${local.callback_url_path}"] : [],
-        var.extra_identity_provider_callback_urls
+        var.domain_name != null ? ["https://${var.domain_name}/${local.sso_callback_url_path}"] : [],
+        var.extra_identity_provider_callback_urls,
+        var.sso_callback_urls
       )
       logout_urls = concat(
         var.domain_name != null ? ["https://${var.domain_name}/${local.logout_url_path}"] : [],
-        var.extra_identity_provider_logout_urls
+        var.extra_identity_provider_logout_urls,
+        var.sso_logout_urls
       )
     }
   } : null

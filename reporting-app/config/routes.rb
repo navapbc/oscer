@@ -45,8 +45,11 @@ Rails.application.routes.draw do
   end
   namespace :api do
     resources :certifications, only: [ :create, :show ]
+    resources :certification_batch_uploads, only: [ :create, :show ]
     get "health" => "healthcheck#index"
   end
+
+  post "/api/direct_uploads", to: "api/direct_uploads#create", as: :api_direct_uploads, defaults: { format: :json }
 
   scope path: "/staff" do
     resources :members, only: [ :index, :show ] do
@@ -62,6 +65,7 @@ Rails.application.routes.draw do
       member do
         post :process_batch
         get :results
+        get :download_errors
       end
     end
 
@@ -107,6 +111,11 @@ Rails.application.routes.draw do
   end
 
   get "/staff", to: "staff/dashboard#index"
+
+  # GoodJob dashboard (admin-only)
+  authenticate :user, ->(user) { Pundit.policy(user, :good_job).dashboard? } do
+    mount GoodJob::Engine => "good_job"
+  end
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

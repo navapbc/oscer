@@ -13,10 +13,38 @@ RSpec.describe CertificationBatchUpload, type: :model do
       expect(batch_upload.errors[:filename]).to be_present
     end
 
-    it 'requires file or storage_key on create' do
+    it 'requires file attachment on create' do
       batch_upload = described_class.new(filename: "test.csv", uploader: user)
       expect(batch_upload).not_to be_valid
-      expect(batch_upload.errors[:base]).to include("Must provide either a file upload or storage key")
+      expect(batch_upload.errors[:file]).to be_present
+    end
+
+    it 'accepts modern xlsx MIME type' do
+      batch_upload = described_class.new(filename: "test.xlsx", uploader: user)
+      batch_upload.file.attach(
+        io: StringIO.new("PK\x03\x04"),
+        filename: "test.xlsx",
+        content_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      )
+      batch_upload.valid?
+      expect(batch_upload.errors[:file]).not_to include(a_string_matching(/content type/i))
+    end
+
+    it 'requires uploader_id for ui source_type' do
+      batch_upload = create(:certification_batch_upload, uploader: user)
+      batch_upload.uploader_id = nil
+      expect(batch_upload).not_to be_valid
+      expect(batch_upload.errors[:uploader_id]).to be_present
+    end
+
+    it 'does not require uploader_id for api source_type' do
+      batch_upload = create(:certification_batch_upload, :api_sourced)
+      expect(batch_upload).to be_valid
+    end
+
+    it 'does not require uploader_id for storage_event source_type' do
+      batch_upload = create(:certification_batch_upload, uploader: nil, source_type: :storage_event)
+      expect(batch_upload).to be_valid
     end
   end
 
@@ -84,6 +112,87 @@ RSpec.describe CertificationBatchUpload, type: :model do
       expect(batch_upload).to be_failed
       expect(batch_upload.results["error"]).to eq("Test error")
       expect(batch_upload.processed_at).to be_present
+    end
+  end
+
+  describe '#check_completion!' do
+    let(:batch_upload) do
+      create(:certification_batch_upload, uploader: user, status: :processing, num_rows: 2,
+        num_rows_processed: 2, num_rows_succeeded: 1, num_rows_errored: 1)
+    end
+
+    # Use find instead of reload to avoid strict_loading violations on ActiveStorage
+    def reload_batch(id)
+      CertificationBatchUpload.find(id)
+    end
+
+    context 'when not all rows are processed' do
+      let(:batch_upload) do
+        create(:certification_batch_upload, uploader: user, status: :processing, num_rows: 3,
+          num_rows_processed: 2, num_rows_succeeded: 1, num_rows_errored: 1)
+      end
+
+      it 'does not transition status' do
+        batch_upload.check_completion!
+        expect(reload_batch(batch_upload.id).status).to eq("processing")
+      end
+    end
+
+    context 'when already completed' do
+      let(:batch_upload) do
+        create(:certification_batch_upload, uploader: user, status: :completed, num_rows: 2,
+          num_rows_processed: 2, num_rows_succeeded: 2, num_rows_errored: 0)
+      end
+
+      it 'does not overwrite status' do
+        batch_upload.check_completion!
+        expect(reload_batch(batch_upload.id).status).to eq("completed")
+      end
+    end
+
+    context 'when already failed' do
+      let(:batch_upload) do
+        create(:certification_batch_upload, uploader: user, status: :failed, num_rows: 2,
+          num_rows_processed: 2)
+      end
+
+      it 'does not overwrite status' do
+        batch_upload.check_completion!
+        expect(reload_batch(batch_upload.id).status).to eq("failed")
+      end
+    end
+
+    context 'when any chunk completed successfully' do
+      before do
+        create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 1, status: :completed)
+        create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 2, status: :failed)
+      end
+
+      it 'marks batch as completed' do
+        batch_upload.check_completion!
+
+        batch = reload_batch(batch_upload.id)
+        expect(batch.status).to eq("completed")
+        expect(batch.num_rows_succeeded).to eq(1)
+        expect(batch.num_rows_errored).to eq(1)
+        expect(batch.processed_at).to be_present
+      end
+    end
+
+    context 'when all chunks failed' do
+      before do
+        create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 1, status: :failed)
+        create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 2, status: :failed)
+      end
+
+      it 'marks batch as failed' do
+        batch_upload.check_completion!
+
+        batch = reload_batch(batch_upload.id)
+        expect(batch.status).to eq("failed")
+        expect(batch.results["error"]).to eq("All chunks failed to process")
+        expect(batch.processed_at).to be_present
+      end
     end
   end
 
@@ -170,41 +279,21 @@ RSpec.describe CertificationBatchUpload, type: :model do
     end
   end
 
-  describe '#uses_cloud_storage?' do
-    it 'returns false for legacy uploads without storage_key' do
-      batch_upload = create(:certification_batch_upload, uploader: user, storage_key: nil)
-      expect(batch_upload.uses_cloud_storage?).to be false
+  describe '#storage_key' do
+    it 'returns blob key when file is attached' do
+      batch_upload = create(:certification_batch_upload, uploader: user)
+      expect(batch_upload.storage_key).to eq(batch_upload.file.blob.key)
     end
 
-    it 'returns true when storage_key is present' do
-      batch_upload = create(:certification_batch_upload, uploader: user, storage_key: "batch-uploads/uuid/test.csv")
-      expect(batch_upload.uses_cloud_storage?).to be true
-    end
-  end
-
-  describe '#uses_active_storage?' do
-    it 'returns true for legacy uploads with attached file and no storage_key' do
-      batch_upload = create(:certification_batch_upload, uploader: user, storage_key: nil)
-      expect(batch_upload.uses_active_storage?).to be true
-    end
-
-    it 'returns false when storage_key is present even if file is attached' do
-      batch_upload = create(:certification_batch_upload, uploader: user, storage_key: "batch-uploads/uuid/test.csv")
-      expect(batch_upload.uses_active_storage?).to be false
-    end
-
-    it 'returns false for v2 uploads with storage_key but no file' do
-      batch_upload = create(:certification_batch_upload,
-        uploader: user,
-        storage_key: "batch-uploads/uuid/test.csv"
-      )
-      expect(batch_upload.file.attached?).to be false
-      expect(batch_upload.uses_active_storage?).to be false
+    it 'returns nil when no file is attached' do
+      batch_upload = build(:certification_batch_upload, uploader: user)
+      batch_upload.file.purge if batch_upload.file.attached?
+      expect(batch_upload.storage_key).to be_nil
     end
   end
 
   describe 'audit_logs association' do
-    let(:batch_upload) { create(:certification_batch_upload, uploader: user, storage_key: "test-key") }
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
 
     it 'has many audit_logs' do
       log1 = create(:audit_log, certification_batch_upload: batch_upload, chunk_number: 1)
@@ -227,7 +316,7 @@ RSpec.describe CertificationBatchUpload, type: :model do
   end
 
   describe 'upload_errors association' do
-    let(:batch_upload) { create(:certification_batch_upload, uploader: user, storage_key: "test-key") }
+    let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
 
     it 'has many upload_errors' do
       error1 = create(:upload_error, certification_batch_upload: batch_upload, row_number: 1)
