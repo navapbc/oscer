@@ -19,6 +19,11 @@ module Features
       env_var: "FEATURE_BATCH_UPLOAD_V2",
       default: false,
       description: "Enable batch upload v2 with cloud storage and streaming"
+    },
+    doc_ai: {
+      env_var: "FEATURE_DOC_AI",
+      default: true,
+      description: "Enable DocAI document analysis for income document upload"
     }
     # Example of adding more flags:
     # realtime_progress: {

@@ -33,6 +33,8 @@ class ActivityReportApplicationFormsController < ApplicationController
     @activity_report_application_form = authorize ActivityReportApplicationForm.new(activity_report_application_form_create_params)
     @activity_report_application_form.user_id = current_user.id
 
+    session[:skip_doc_ai] = params[:skip_doc_ai].present? if feature_enabled?(:doc_ai)
+
     respond_to do |format|
       if @activity_report_application_form.save
         format.html { redirect_to edit_activity_report_application_form_path(@activity_report_application_form) }

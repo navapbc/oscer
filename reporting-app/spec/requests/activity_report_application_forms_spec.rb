@@ -187,6 +187,33 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("Select reporting period")
       end
+
+      context "when doc_ai feature is enabled" do
+        before do
+          allow(Features).to receive(:enabled?).with(:doc_ai).and_return(true)
+        end
+
+        it "sets session[:skip_doc_ai] to true if skip_doc_ai param is present" do
+          post activity_report_application_forms_url, params: valid_params.merge(skip_doc_ai: "1")
+          expect(session[:skip_doc_ai]).to be true
+        end
+
+        it "sets session[:skip_doc_ai] to false if skip_doc_ai param is not present" do
+          post activity_report_application_forms_url, params: valid_params
+          expect(session[:skip_doc_ai]).to be false
+        end
+      end
+
+      context "when doc_ai feature is disabled" do
+        before do
+          allow(Features).to receive(:enabled?).with(:doc_ai).and_return(false)
+        end
+
+        it "does not set session[:skip_doc_ai]" do
+          post activity_report_application_forms_url, params: valid_params.merge(skip_doc_ai: "1")
+          expect(session[:skip_doc_ai]).to be_nil
+        end
+      end
     end
   end
 
