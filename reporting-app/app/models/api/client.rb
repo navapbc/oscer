@@ -15,4 +15,8 @@ class Api::Client
   def member?
     false
   end
+
+  def admin?
+    false
+  end
 end

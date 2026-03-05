@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_27_170552) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_05_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -95,7 +95,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_27_170552) do
   create_table "certification_batch_uploads", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "filename", null: false
     t.string "status", default: "pending", null: false
-    t.uuid "uploader_id", null: false
+    t.uuid "uploader_id"
     t.integer "num_rows", default: 0, null: false
     t.integer "num_rows_processed", default: 0, null: false
     t.integer "num_rows_succeeded", default: 0, null: false
@@ -108,6 +108,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_27_170552) do
     t.index ["created_at"], name: "index_certification_batch_uploads_on_created_at"
     t.index ["source_type"], name: "index_certification_batch_uploads_on_source_type"
     t.index ["uploader_id"], name: "index_certification_batch_uploads_on_uploader_id"
+    t.check_constraint "source_type::text <> 'ui'::text OR uploader_id IS NOT NULL", name: "require_uploader_for_ui_uploads"
   end
 
   create_table "certification_cases", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
