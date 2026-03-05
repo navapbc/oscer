@@ -5,8 +5,10 @@
 class ApplicationController < ActionController::Base
   include Pundit::Authorization
   include FeatureFlagHelper
+  include SsoHelper
 
   helper_method :feature_enabled?
+  helper_method :sso_enabled?
 
   around_action :switch_locale
   after_action :verify_authorized, except: :index
