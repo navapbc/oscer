@@ -88,6 +88,9 @@ gem "active_storage_validations"
 gem "faraday"
 gem "faraday-multipart"
 
+# Concurrent processing for document analysis
+gem "concurrent-ruby"
+
 # Create fake data (outside of dev/test block to support seeding lower environments)
 gem "faker", "~> 3.2"
 gem "factory_bot_rails"

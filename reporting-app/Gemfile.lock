@@ -688,6 +688,7 @@ DEPENDENCIES
   aws-sdk-s3
   bootsnap
   capybara
+  concurrent-ruby
   cssbundling-rails (~> 1.4)
   csv
   debug
