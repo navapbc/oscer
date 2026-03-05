@@ -33,6 +33,10 @@ en:
         item_2: "Supporting documentation"
       save_info: "You can save your progress and return anytime"
       start_button: "Start"
+      doc_ai:
+        callout_heading: "Save time with AI"
+        callout_text: "We can help you skip the manual data entry. Our uploader automatically scans your uploaded documents to identify and fill in key details for you."
+        skip_checkbox: "Skip AI, and enter my details manually"
     show:
       title: "Activity Report"
       edit: "Edit activity report"
