@@ -29,6 +29,23 @@ RSpec.describe CertificationBatchUpload, type: :model do
       batch_upload.valid?
       expect(batch_upload.errors[:file]).not_to include(a_string_matching(/content type/i))
     end
+
+    it 'requires uploader_id for ui source_type' do
+      batch_upload = create(:certification_batch_upload, uploader: user)
+      batch_upload.uploader_id = nil
+      expect(batch_upload).not_to be_valid
+      expect(batch_upload.errors[:uploader_id]).to be_present
+    end
+
+    it 'does not require uploader_id for api source_type' do
+      batch_upload = create(:certification_batch_upload, :api_sourced)
+      expect(batch_upload).to be_valid
+    end
+
+    it 'does not require uploader_id for storage_event source_type' do
+      batch_upload = create(:certification_batch_upload, uploader: nil, source_type: :storage_event)
+      expect(batch_upload).to be_valid
+    end
   end
 
   describe 'status enum' do

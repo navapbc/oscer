@@ -2,7 +2,7 @@
   <td>
     <%= link_to batch_upload.filename, certification_batch_upload_path(batch_upload), data: { turbo_frame: "_top" } %>
   </td>
-  <td><%= batch_upload.uploader&.email || "API" %></td>
+  <td><%= uploader_display_name(batch_upload) %></td>
   <td><%= batch_upload.created_at.strftime("%m/%d/%Y %I:%M %p") %></td>
   <td>
     <span class="usa-tag <%= status_tag_class(batch_upload.status) %>">
