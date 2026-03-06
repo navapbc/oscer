@@ -7,7 +7,7 @@ module Staff
     self.authorization_resource = CertificationBatchUpload
     MAX_DISPLAYED_ERRORS = 100
 
-    before_action :set_batch_upload, only: [ :show, :process_batch, :results, :download_errors ]
+    before_action :set_batch_upload, only: [ :show, :results, :download_errors ]
 
     # GET /staff/certification_batch_uploads
     def index
@@ -21,20 +21,12 @@ module Staff
 
     # POST /staff/certification_batch_uploads
     def create
-      if Features.batch_upload_v2_enabled?
-        create_with_direct_upload
-      else
-        create_with_legacy_upload
-      end
+      create_batch_upload(source_type: :ui)
     end
 
     # GET /staff/certification_batch_uploads/:id
     def show
-      @upload_errors = if @batch_upload.v2_upload?
-        @batch_upload.upload_errors.order(:row_number).limit(MAX_DISPLAYED_ERRORS)
-      else
-        []
-      end
+      @upload_errors = @batch_upload.upload_errors.order(:row_number).limit(MAX_DISPLAYED_ERRORS)
     end
 
     # GET /staff/certification_batch_uploads/:id/results
@@ -58,36 +50,8 @@ module Staff
       set_cases_to_show
     end
 
-    # POST /staff/certification_batch_uploads/:id/process_batch
-    def process_batch
-      if Features.batch_upload_v2_enabled?
-        redirect_to certification_batch_upload_path(@batch_upload),
-                    alert: "V2 uploads are processed automatically."
-        return
-      end
-
-      respond_to do |format|
-        if @batch_upload.processable? == false
-          message = "This batch cannot be processed. Current status: #{@batch_upload.status}."
-          format.html { redirect_to certification_batch_upload_path(@batch_upload), alert: message }
-          format.json { render json: { error: message }, status: :unprocessable_content }
-        elsif ProcessCertificationBatchUploadJob.perform_later(@batch_upload.id)
-          format.html { redirect_to certification_batch_uploads_path, notice: "Processing started for #{@batch_upload.filename}. Results will be available shortly." }
-          format.json { head :accepted }
-        else
-          format.html { redirect_to certification_batch_upload_path(@batch_upload), alert: "Failed to start processing job." }
-          format.json { render json: { error: "Failed to start processing job." }, status: :internal_server_error }
-        end
-      end
-    end
-
     # GET /staff/certification_batch_uploads/:id/download_errors
     def download_errors
-      unless Features.batch_upload_v2_enabled?
-        redirect_to certification_batch_upload_path(@batch_upload), alert: "This feature is not available."
-        return
-      end
-
       errors = CertificationBatchUploadError
         .where(certification_batch_upload: @batch_upload)
         .order(:row_number)
@@ -126,17 +90,6 @@ module Staff
       end
     end
 
-    # v2: Direct upload to cloud storage (file already uploaded via Active Storage Direct Upload)
-    def create_with_direct_upload
-      create_batch_upload(source_type: :ui)
-    end
-
-    # v1: Legacy multipart upload (file uploaded through Rails)
-    def create_with_legacy_upload
-      create_batch_upload(source_type: :ui)
-    end
-
-    # Common upload logic for both v2 and v1 paths
     def create_batch_upload(source_type:)
       uploaded_file = params[:csv_file]
 
@@ -147,8 +100,8 @@ module Staff
         return
       end
 
-      # Direct upload (v2) sends a signed blob ID string;
-      # legacy upload (v1) sends an ActionDispatch::Http::UploadedFile
+      # Direct upload sends a signed blob ID string;
+      # no-JS fallback sends an ActionDispatch::Http::UploadedFile
       begin
         filename, attachable = resolve_file_upload(uploaded_file)
       rescue ActiveSupport::MessageVerifier::InvalidSignature, ActiveRecord::RecordNotFound
@@ -171,20 +124,13 @@ module Staff
     end
 
     def handle_upload_success
-      # v2: Automatically start processing ("Upload and Process" UX)
-      # Redirect to index (dashboard) so staff sees live auto-refresh status
-      if Features.batch_upload_v2_enabled?
-        ProcessCertificationBatchUploadJob.perform_later(@batch_upload.id)
-        redirect_path = certification_batch_uploads_path
-        notice_message = "Processing started for #{@batch_upload.filename}. Results will be available shortly."
-      # v1: Redirect to queue for manual processing
-      else
-        redirect_path = certification_batch_uploads_path
-        notice_message = "File uploaded successfully. You can now process it from the queue."
-      end
+      ProcessCertificationBatchUploadJob.perform_later(@batch_upload.id)
 
       respond_to do |format|
-        format.html { redirect_to redirect_path, notice: notice_message }
+        format.html do
+          redirect_to certification_batch_uploads_path,
+                      notice: "Processing started for #{@batch_upload.filename}. Results will be available shortly."
+        end
         format.json { render :show, status: :created, location: @batch_upload }
       end
     end
@@ -198,8 +144,8 @@ module Staff
     end
 
     # Resolves the filename and attachable object from the file param.
-    # Direct upload (v2) submits a signed blob ID string;
-    # legacy upload (v1) submits an ActionDispatch::Http::UploadedFile.
+    # Direct upload submits a signed blob ID string (JavaScript-enabled browsers);
+    # no-JS fallback submits an ActionDispatch::Http::UploadedFile.
     def resolve_file_upload(uploaded_file)
       if uploaded_file.is_a?(String)
         blob = ActiveStorage::Blob.find_signed!(uploaded_file)

@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Api::CertificationBatchUploadsController < ApiController
-  before_action :require_batch_upload_v2!
-
   def create
     create_request = Api::CertificationBatchUploads::CreateRequest.from_request_params(params)
 
@@ -44,12 +42,6 @@ class Api::CertificationBatchUploadsController < ApiController
   end
 
   private
-
-  def require_batch_upload_v2!
-    return if Features.batch_upload_v2_enabled?
-
-    render_errors("Not Found", :not_found)
-  end
 
   def sanitize_filename(filename)
     ActiveStorage::Filename.new(File.basename(filename)).sanitized

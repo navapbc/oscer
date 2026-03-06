@@ -4,18 +4,18 @@
 # These helpers manipulate ENV directly and are ONLY safe in test environment
 #
 # Helpers are automatically generated for each flag in Features::FEATURE_FLAGS
-# For example, batch_upload_v2 flag gets:
-#   - with_batch_upload_v2_enabled { }
-#   - with_batch_upload_v2_disabled { }
+# For example, a flag named :my_feature gets:
+#   - with_my_feature_enabled { }
+#   - with_my_feature_disabled { }
 module FeatureFlagHelpers
   # Dynamically generate with_<feature>_enabled/disabled helpers for each flag
   Features::FEATURE_FLAGS.each do |flag_name, config|
-    # Generate: with_batch_upload_v2_enabled { }
+    # Generate: with_<flag_name>_enabled { }
     define_method("with_#{flag_name}_enabled") do |&block|
       with_env(config[:env_var], "true", &block)
     end
 
-    # Generate: with_batch_upload_v2_disabled { }
+    # Generate: with_<flag_name>_disabled { }
     define_method("with_#{flag_name}_disabled") do |&block|
       with_env(config[:env_var], "false", &block)
     end

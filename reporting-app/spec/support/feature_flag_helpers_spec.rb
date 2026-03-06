@@ -12,52 +12,41 @@ RSpec.describe FeatureFlagHelpers do
 
   let(:test_instance) { test_class.new }
 
-  describe '#with_batch_upload_v2_enabled' do
-    it 'enables the feature for the duration of the block' do
-      test_instance.with_batch_upload_v2_enabled do
-        expect(Features.batch_upload_v2_enabled?).to be true
-      end
-    end
+  describe 'with_env helper' do
+    it 'sets an ENV variable for the duration of a block and restores it' do
+      env_key = "TEST_FEATURE_FLAG_HELPERS_SPEC"
+      original = ENV[env_key]
 
-    it 'restores original value after block' do
-      original = ENV['FEATURE_BATCH_UPLOAD_V2']
-
-      test_instance.with_batch_upload_v2_enabled do
-        expect(Features.batch_upload_v2_enabled?).to be true
+      test_instance.send(:with_env, env_key, "custom_value") do
+        expect(ENV[env_key]).to eq("custom_value")
       end
 
-      expect(ENV['FEATURE_BATCH_UPLOAD_V2']).to eq original
+      expect(ENV[env_key]).to eq(original)
     end
 
-    it 'restores original value even if error occurs' do
-      ENV['FEATURE_BATCH_UPLOAD_V2'] = 'false'
+    it 'restores ENV variable even when block raises' do
+      env_key = "TEST_FEATURE_FLAG_HELPERS_SPEC"
+      ENV[env_key] = "before"
 
       expect do
-        test_instance.with_batch_upload_v2_enabled do
-          expect(Features.batch_upload_v2_enabled?).to be true
-          raise StandardError, 'Test error'
+        test_instance.send(:with_env, env_key, "during") do
+          expect(ENV[env_key]).to eq("during")
+          raise StandardError, "test error"
         end
       end.to raise_error(StandardError)
 
-      expect(Features.batch_upload_v2_enabled?).to be false
+      expect(ENV[env_key]).to eq("before")
+    ensure
+      ENV.delete(env_key)
     end
   end
 
-  describe '#with_batch_upload_v2_disabled' do
-    it 'disables the feature for the duration of the block' do
-      test_instance.with_batch_upload_v2_disabled do
-        expect(Features.batch_upload_v2_enabled?).to be false
+  describe 'dynamic helper generation' do
+    it 'generates enabled/disabled helpers for each registered flag' do
+      Features::FEATURE_FLAGS.each_key do |flag_name|
+        expect(test_instance).to respond_to("with_#{flag_name}_enabled")
+        expect(test_instance).to respond_to("with_#{flag_name}_disabled")
       end
-    end
-
-    it 'restores original value after block' do
-      original = ENV['FEATURE_BATCH_UPLOAD_V2']
-
-      test_instance.with_batch_upload_v2_disabled do
-        expect(Features.batch_upload_v2_enabled?).to be false
-      end
-
-      expect(ENV['FEATURE_BATCH_UPLOAD_V2']).to eq original
     end
   end
 end
