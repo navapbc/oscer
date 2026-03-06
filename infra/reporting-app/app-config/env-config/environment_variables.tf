@@ -18,6 +18,9 @@ locals {
       GOOD_JOB_EXECUTION_MODE = "async"
       GOOD_JOB_MAX_THREADS    = "2"
       DATABASE_POOL           = "8"
+
+      DOC_AI_LOW_CONFIDENCE_THRESHOLD = "0.30"
+      DOC_AI_TIMEOUT_SECONDS = "60"
     },
     # SSO configuration: always set so any environment can enable SSO by overriding SSO_ENABLED to "true"
     var.enable_identity_provider ? {
@@ -60,14 +63,6 @@ locals {
     DOC_AI_API_HOST = {
       manage_method     = "manual"
       secret_store_name = "/${var.app_name}-${var.environment}/service/doc-ai-api-host"
-    }
-    DOC_AI_TIMEOUT_SECONDS = {
-      manage_method     = "manual"
-      secret_store_name = "/${var.app_name}-${var.environment}/service/doc-ai-timeout-seconds"
-    }
-    DOC_AI_LOW_CONFIDENCE_THRESHOLD = {
-      manage_method     = "manual"
-      secret_store_name = "/${var.app_name}-${var.environment}/service/doc-ai-low-confidence-threshold"
     }
   }
 }
