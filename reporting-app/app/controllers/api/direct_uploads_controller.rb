@@ -16,13 +16,4 @@ class Api::DirectUploadsController < ActiveStorage::DirectUploadsController
   protect_from_forgery with: :null_session
 
   before_action :authenticate_api_request!
-  before_action :require_batch_upload_v2!
-
-  private
-
-  def require_batch_upload_v2!
-    return if Features.batch_upload_v2_enabled?
-
-    render json: { errors: [ "Not Found" ] }, status: :not_found
-  end
 end

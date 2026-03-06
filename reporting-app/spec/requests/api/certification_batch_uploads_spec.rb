@@ -17,185 +17,135 @@ RSpec.describe "/api/certification_batch_uploads", type: :request do
   end
 
   describe "POST /api/certification_batch_uploads" do
-    context "when batch_upload_v2 flag is disabled" do
-      it "returns 404" do
-        with_batch_upload_v2_disabled do
-          params = { signed_blob_id: "anything" }
-          post api_certification_batch_uploads_url,
-               params: params,
-               headers: auth_headers(params),
-               as: :json
+    it "returns 401 without HMAC auth" do
+      post api_certification_batch_uploads_url,
+           params: { signed_blob_id: "anything" },
+           as: :json
 
-          expect(response).to have_http_status(:not_found)
-        end
-      end
+      expect(response).to have_http_status(:unauthorized)
     end
 
-    context "when batch_upload_v2 flag is enabled" do
-      it "returns 401 without HMAC auth" do
-        with_batch_upload_v2_enabled do
-          post api_certification_batch_uploads_url,
-               params: { signed_blob_id: "anything" },
-               as: :json
+    it "creates a batch upload and enqueues processing job" do
+      blob = create_blob
+      params = { signed_blob_id: blob.signed_id }
 
-          expect(response).to have_http_status(:unauthorized)
-        end
-      end
+      expect {
+        post api_certification_batch_uploads_url,
+             params: params,
+             headers: auth_headers(params),
+             as: :json
+      }.to change(CertificationBatchUpload, :count).by(1)
 
-      it "creates a batch upload and enqueues processing job" do
-        with_batch_upload_v2_enabled do
-          blob = create_blob
-          params = { signed_blob_id: blob.signed_id }
+      expect(response).to have_http_status(:created)
 
-          expect {
-            post api_certification_batch_uploads_url,
-                 params: params,
-                 headers: auth_headers(params),
-                 as: :json
-          }.to change(CertificationBatchUpload, :count).by(1)
+      body = response.parsed_body
+      expect(body["id"]).to be_present
+      expect(body["status"]).to eq("pending")
+      expect(body["filename"]).to eq("test_upload.csv")
+      expect(body["source_type"]).to eq("api")
 
-          expect(response).to have_http_status(:created)
+      batch_upload = CertificationBatchUpload.find(body["id"])
+      expect(batch_upload.uploader).to be_nil
+      expect(batch_upload.source_type).to eq("api")
+      expect(batch_upload.file).to be_attached
 
-          body = response.parsed_body
-          expect(body["id"]).to be_present
-          expect(body["status"]).to eq("pending")
-          expect(body["filename"]).to eq("test_upload.csv")
-          expect(body["source_type"]).to eq("api")
+      expect(ProcessCertificationBatchUploadJob).to have_been_enqueued.with(batch_upload.id)
+    end
 
-          batch_upload = CertificationBatchUpload.find(body["id"])
-          expect(batch_upload.uploader).to be_nil
-          expect(batch_upload.source_type).to eq("api")
-          expect(batch_upload.file).to be_attached
+    it "returns 422 for invalid signed blob ID" do
+      params = { signed_blob_id: "invalid-blob-id" }
+      post api_certification_batch_uploads_url,
+           params: params,
+           headers: auth_headers(params),
+           as: :json
 
-          expect(ProcessCertificationBatchUploadJob).to have_been_enqueued.with(batch_upload.id)
-        end
-      end
+      expect(response).to have_http_status(:unprocessable_content)
+    end
 
-      it "returns 422 for invalid signed blob ID" do
-        with_batch_upload_v2_enabled do
-          params = { signed_blob_id: "invalid-blob-id" }
-          post api_certification_batch_uploads_url,
-               params: params,
-               headers: auth_headers(params),
-               as: :json
+    it "returns 422 when signed_blob_id is missing" do
+      params = {}
+      post api_certification_batch_uploads_url,
+           params: params,
+           headers: auth_headers(params),
+           as: :json
 
-          expect(response).to have_http_status(:unprocessable_content)
-        end
-      end
+      expect(response).to have_http_status(:unprocessable_content)
+    end
 
-      it "returns 422 when signed_blob_id is missing" do
-        with_batch_upload_v2_enabled do
-          params = {}
-          post api_certification_batch_uploads_url,
-               params: params,
-               headers: auth_headers(params),
-               as: :json
+    it "sanitizes path traversal from the filename" do
+      blob = create_blob(filename: "../../../etc/passwd.csv")
+      params = { signed_blob_id: blob.signed_id }
 
-          expect(response).to have_http_status(:unprocessable_content)
-        end
-      end
+      post api_certification_batch_uploads_url,
+           params: params,
+           headers: auth_headers(params),
+           as: :json
 
-      it "sanitizes path traversal from the filename" do
-        with_batch_upload_v2_enabled do
-          blob = create_blob(filename: "../../../etc/passwd.csv")
-          params = { signed_blob_id: blob.signed_id }
+      expect(response).to have_http_status(:created)
+      batch_upload = CertificationBatchUpload.last
+      # ActiveStorage::Filename replaces path separators with dashes on creation,
+      # then our sanitizer replaces non-word chars with underscores
+      expect(batch_upload.filename).not_to include("/")
+      expect(batch_upload.filename).to match(/\A[\w\-.]+\z/)
+    end
 
-          post api_certification_batch_uploads_url,
-               params: params,
-               headers: auth_headers(params),
-               as: :json
+    it "replaces spaces and special characters in the filename with underscores" do
+      blob = create_blob(filename: "my report (final).csv")
+      params = { signed_blob_id: blob.signed_id }
 
-          expect(response).to have_http_status(:created)
-          batch_upload = CertificationBatchUpload.last
-          # ActiveStorage::Filename replaces path separators with dashes on creation,
-          # then our sanitizer replaces non-word chars with underscores
-          expect(batch_upload.filename).not_to include("/")
-          expect(batch_upload.filename).to match(/\A[\w\-.]+\z/)
-        end
-      end
+      post api_certification_batch_uploads_url,
+           params: params,
+           headers: auth_headers(params),
+           as: :json
 
-      it "replaces spaces and special characters in the filename with underscores" do
-        with_batch_upload_v2_enabled do
-          blob = create_blob(filename: "my report (final).csv")
-          params = { signed_blob_id: blob.signed_id }
-
-          post api_certification_batch_uploads_url,
-               params: params,
-               headers: auth_headers(params),
-               as: :json
-
-          expect(response).to have_http_status(:created)
-          batch_upload = CertificationBatchUpload.last
-          expect(batch_upload.filename).to eq("my_report__final_.csv")
-        end
-      end
+      expect(response).to have_http_status(:created)
+      batch_upload = CertificationBatchUpload.last
+      expect(batch_upload.filename).to eq("my_report__final_.csv")
     end
   end
 
   describe "GET /api/certification_batch_uploads/:id" do
-    context "when batch_upload_v2 flag is disabled" do
-      it "returns 404" do
-        with_batch_upload_v2_disabled do
-          batch_upload = create(:certification_batch_upload, :api_sourced)
-          get api_certification_batch_upload_url(batch_upload),
-              headers: auth_headers
+    it "returns 401 without HMAC auth" do
+      batch_upload = create(:certification_batch_upload, :api_sourced)
+      get api_certification_batch_upload_url(batch_upload)
 
-          expect(response).to have_http_status(:not_found)
-        end
-      end
+      expect(response).to have_http_status(:unauthorized)
     end
 
-    context "when batch_upload_v2 flag is enabled" do
-      it "returns 401 without HMAC auth" do
-        with_batch_upload_v2_enabled do
-          batch_upload = create(:certification_batch_upload, :api_sourced)
-          get api_certification_batch_upload_url(batch_upload)
+    it "returns status for an API-sourced batch upload" do
+      batch_upload = create(:certification_batch_upload, :api_sourced, :completed)
 
-          expect(response).to have_http_status(:unauthorized)
-        end
-      end
+      get api_certification_batch_upload_url(batch_upload),
+          headers: auth_headers
 
-      it "returns status for an API-sourced batch upload" do
-        with_batch_upload_v2_enabled do
-          batch_upload = create(:certification_batch_upload, :api_sourced, :completed)
+      expect(response).to have_http_status(:ok)
 
-          get api_certification_batch_upload_url(batch_upload),
-              headers: auth_headers
+      body = response.parsed_body
+      expect(body["id"]).to eq(batch_upload.id)
+      expect(body["status"]).to eq("completed")
+      expect(body["filename"]).to eq(batch_upload.filename)
+      expect(body["source_type"]).to eq("api")
+      expect(body["num_rows"]).to eq(10)
+      expect(body["num_rows_processed"]).to eq(10)
+      expect(body["num_rows_succeeded"]).to eq(8)
+      expect(body["num_rows_errored"]).to eq(2)
+    end
 
-          expect(response).to have_http_status(:ok)
+    it "cannot view staff-sourced batch uploads" do
+      staff_upload = create(:certification_batch_upload, source_type: :ui)
 
-          body = response.parsed_body
-          expect(body["id"]).to eq(batch_upload.id)
-          expect(body["status"]).to eq("completed")
-          expect(body["filename"]).to eq(batch_upload.filename)
-          expect(body["source_type"]).to eq("api")
-          expect(body["num_rows"]).to eq(10)
-          expect(body["num_rows_processed"]).to eq(10)
-          expect(body["num_rows_succeeded"]).to eq(8)
-          expect(body["num_rows_errored"]).to eq(2)
-        end
-      end
+      get api_certification_batch_upload_url(staff_upload),
+          headers: auth_headers
 
-      it "cannot view staff-sourced batch uploads" do
-        with_batch_upload_v2_enabled do
-          staff_upload = create(:certification_batch_upload, source_type: :ui)
+      expect(response).to have_http_status(:not_found)
+    end
 
-          get api_certification_batch_upload_url(staff_upload),
-              headers: auth_headers
+    it "returns 404 for non-existent ID" do
+      get api_certification_batch_upload_url(id: "00000000-0000-0000-0000-000000000000"),
+          headers: auth_headers
 
-          expect(response).to have_http_status(:not_found)
-        end
-      end
-
-      it "returns 404 for non-existent ID" do
-        with_batch_upload_v2_enabled do
-          get api_certification_batch_upload_url(id: "00000000-0000-0000-0000-000000000000"),
-              headers: auth_headers
-
-          expect(response).to have_http_status(:not_found)
-          expect(response.parsed_body["errors"]).to include("Not Found")
-        end
-      end
+      expect(response).to have_http_status(:not_found)
+      expect(response.parsed_body["errors"]).to include("Not Found")
     end
   end
 end

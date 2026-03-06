@@ -13,10 +13,6 @@ class CertificationBatchUploadPolicy < AdminPolicy
     api_client? || admin?
   end
 
-  def process_batch?
-    update?
-  end
-
   def results?
     admin?
   end

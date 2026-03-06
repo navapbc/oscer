@@ -18,35 +18,12 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
   end
 
   describe "GET /staff/staff/certification_batch_uploads/new" do
-    it "renders the upload form" do
+    it "renders the direct upload form" do
       get new_certification_batch_upload_path
 
       expect(response).to be_successful
       expect(response.body).to include("Upload Certification Roster")
-    end
-
-    context "with batch_upload_v2 feature flag enabled" do
-      it "renders the direct upload form" do
-        with_batch_upload_v2_enabled do
-          get new_certification_batch_upload_path
-
-          expect(response).to be_successful
-          expect(response.body).to include("Upload Certification Roster")
-          expect(response.body).to include('data-direct-upload-url')
-        end
-      end
-    end
-
-    context "with batch_upload_v2 feature flag disabled" do
-      it "renders the legacy upload form" do
-        with_batch_upload_v2_disabled do
-          get new_certification_batch_upload_path
-
-          expect(response).to be_successful
-          expect(response.body).to include("Upload Certification Roster")
-          expect(response.body).not_to include('data-direct-upload-url')
-        end
-      end
+      expect(response.body).to include('data-direct-upload-url')
     end
   end
 
@@ -77,7 +54,7 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
         }.to change(CertificationBatchUpload, :count).by(1)
 
         expect(response).to redirect_to(certification_batch_uploads_path)
-        expect(flash[:notice]).to include("uploaded successfully")
+        expect(flash[:notice]).to include("Processing started")
       end
 
       it "attaches the file" do
@@ -89,58 +66,17 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
         expect(batch_upload.filename).to end_with(".csv")
       end
 
-      it "does not process immediately" do
-        allow(Strata::EventManager).to receive(:publish)
+      it "creates batch upload with source_type ui" do
+        post certification_batch_uploads_path, params: { csv_file: uploaded_file }
 
-        expect {
-          post certification_batch_uploads_path, params: { csv_file: uploaded_file }
-        }.not_to change(Certification, :count)
+        batch_upload = CertificationBatchUpload.last
+        expect(batch_upload.source_type).to eq("ui")
       end
 
-      context "with batch_upload_v2 feature flag enabled" do
-        it "creates batch upload with source_type ui" do
-          with_batch_upload_v2_enabled do
-            post certification_batch_uploads_path, params: { csv_file: uploaded_file }
-
-            batch_upload = CertificationBatchUpload.last
-            expect(batch_upload.source_type).to eq("ui")
-          end
-        end
-
-        it "attaches the file via direct upload" do
-          with_batch_upload_v2_enabled do
-            post certification_batch_uploads_path, params: { csv_file: uploaded_file }
-
-            batch_upload = CertificationBatchUpload.last
-            expect(batch_upload.file).to be_attached
-            expect(batch_upload.filename).to include("test")
-          end
-        end
-
-        it "automatically enqueues processing job" do
-          with_batch_upload_v2_enabled do
-            expect {
-              post certification_batch_uploads_path, params: { csv_file: uploaded_file }
-            }.to have_enqueued_job(ProcessCertificationBatchUploadJob)
-          end
-        end
-
-        it "redirects to index (dashboard) for live status updates" do
-          with_batch_upload_v2_enabled do
-            post certification_batch_uploads_path, params: { csv_file: uploaded_file }
-
-            expect(response).to redirect_to(certification_batch_uploads_path)
-          end
-        end
-
-        it "displays processing started message" do
-          with_batch_upload_v2_enabled do
-            post certification_batch_uploads_path, params: { csv_file: uploaded_file }
-
-            follow_redirect!
-            expect(response.body).to include("Processing started")
-          end
-        end
+      it "automatically enqueues processing job" do
+        expect {
+          post certification_batch_uploads_path, params: { csv_file: uploaded_file }
+        }.to have_enqueued_job(ProcessCertificationBatchUploadJob)
       end
 
       context "with malicious filename" do
@@ -173,26 +109,6 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
           expect(batch_upload.filename).to match(/\A[\w\-\.]+\.csv\z/)
         end
       end
-
-      context "with batch_upload_v2 feature flag disabled" do
-        it "creates batch upload with source_type ui" do
-          with_batch_upload_v2_disabled do
-            post certification_batch_uploads_path, params: { csv_file: uploaded_file }
-
-            batch_upload = CertificationBatchUpload.last
-            expect(batch_upload.source_type).to eq("ui")
-          end
-        end
-
-        it "attaches the file via legacy multipart upload" do
-          with_batch_upload_v2_disabled do
-            post certification_batch_uploads_path, params: { csv_file: uploaded_file }
-
-            batch_upload = CertificationBatchUpload.last
-            expect(batch_upload.file).to be_attached
-          end
-        end
-      end
     end
 
     context "without CSV file" do
@@ -202,18 +118,6 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
         expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include("Upload Certification Roster")
         expect(flash[:alert]).to eq("Please select a CSV file to upload")
-      end
-
-      context "with batch_upload_v2 feature flag enabled" do
-        it "shows error and re-renders form" do
-          with_batch_upload_v2_enabled do
-            post certification_batch_uploads_path, params: { csv_file: nil }
-
-            expect(response).to have_http_status(:unprocessable_content)
-            expect(response.body).to include("Upload Certification Roster")
-            expect(flash[:alert]).to eq("Please select a CSV file to upload")
-          end
-        end
       end
     end
   end
@@ -228,24 +132,24 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
       expect(response.body).to include(batch_upload.filename)
     end
 
-    context "with v2 completed upload and no errors" do
+    context "with completed upload and no errors" do
       let(:batch_upload) do
-        create(:certification_batch_upload, :completed_v2,
+        create(:certification_batch_upload, :completed,
                uploader: user, num_rows_succeeded: 10, num_rows_errored: 0, num_rows: 10)
       end
 
-      it "shows v2 success summary" do
+      it "shows success summary" do
         get certification_batch_upload_path(batch_upload)
 
         expect(response).to be_successful
         expect(response.body).to include("All 10 records processed successfully")
-        expect(response.body).not_to include("v2-error-table")
+        expect(response.body).not_to include("error-table")
       end
     end
 
-    context "with v2 completed upload and errors" do
+    context "with completed upload and errors" do
       let(:batch_upload) do
-        create(:certification_batch_upload, :completed_v2,
+        create(:certification_batch_upload, :completed,
                uploader: user, num_rows_succeeded: 8, num_rows_errored: 2, num_rows: 10)
       end
 
@@ -270,7 +174,7 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
         get certification_batch_upload_path(batch_upload)
 
         expect(response).to be_successful
-        expect(response.body).to include("v2-error-table")
+        expect(response.body).to include("error-table")
         expect(response.body).to include("VAL_001")
         expect(response.body).to include("Missing required field")
         expect(response.body).to include("VAL_002")
@@ -279,9 +183,9 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
       end
     end
 
-    context "with v2 completed upload and more than 100 errors" do
+    context "with completed upload and more than 100 errors" do
       let(:batch_upload) do
-        create(:certification_batch_upload, :completed_v2,
+        create(:certification_batch_upload, :completed,
                uploader: user, num_rows_succeeded: 0, num_rows_errored: 150, num_rows: 150)
       end
 
@@ -292,32 +196,6 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
 
         expect(response).to be_successful
         expect(response.body).to include("Showing first 100 of 150 errors")
-      end
-    end
-
-    context "with v1 completed upload (no regression)" do
-      let(:batch_upload) do
-        create(:certification_batch_upload, :completed, uploader: user,
-               results: {
-                 "successes" => [
-                   { "row" => 1, "case_number" => "C-001", "member_id" => "M001" }
-                 ],
-                 "errors" => [
-                   { "row" => 2, "message" => "Invalid data", "data" => { "member_id" => "M002" } }
-                 ]
-               })
-      end
-
-      it "renders v1 success and error tables from results JSONB" do
-        with_batch_upload_v2_disabled do
-          get certification_batch_upload_path(batch_upload)
-
-          expect(response).to be_successful
-          expect(response.body).to include("C-001")
-          expect(response.body).to include("M001")
-          expect(response.body).to include("Invalid data")
-          expect(response.body).not_to include("v2-error-table")
-        end
       end
     end
 
@@ -335,72 +213,15 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
       end
     end
 
-    context "with v2 pending upload" do
+    context "with pending upload" do
       let(:batch_upload) { create(:certification_batch_upload, uploader: user, status: :pending) }
 
-      it "shows queued message and hides Process button when v2 enabled" do
-        with_batch_upload_v2_enabled do
-          get certification_batch_upload_path(batch_upload)
+      it "shows queued message and hides Process button" do
+        get certification_batch_upload_path(batch_upload)
 
-          expect(response).to be_successful
-          expect(response.body).to include("queued for processing")
-          expect(response.body).not_to include("Process This File")
-        end
-      end
-
-      it "shows Process button when v2 disabled" do
-        with_batch_upload_v2_disabled do
-          get certification_batch_upload_path(batch_upload)
-
-          expect(response).to be_successful
-          expect(response.body).to include("Process This File")
-          expect(response.body).not_to include("queued for processing")
-        end
-      end
-    end
-  end
-
-  describe "POST /staff/staff/certification_batch_uploads/:id/process_batch" do
-    include ActiveJob::TestHelper
-
-    context "when batch is pending" do
-      let(:batch_upload) { create(:certification_batch_upload, uploader: user, status: :pending) }
-
-      it "enqueues processing job" do
-        expect {
-          post process_batch_certification_batch_upload_path(batch_upload)
-        }.to have_enqueued_job(ProcessCertificationBatchUploadJob).with(batch_upload.id)
-      end
-
-      it "redirects to queue with success message" do
-        post process_batch_certification_batch_upload_path(batch_upload)
-
-        expect(response).to redirect_to(certification_batch_uploads_path)
-        expect(flash[:notice]).to include("Processing started")
-      end
-    end
-
-    context "when batch is already processing" do
-      let(:batch_upload) { create(:certification_batch_upload, uploader: user, status: :processing) }
-
-      it "shows error and redirects" do
-        post process_batch_certification_batch_upload_path(batch_upload)
-
-        expect(response).to redirect_to(certification_batch_upload_path(batch_upload))
-        expect(flash[:alert]).to include("cannot be processed")
-      end
-    end
-
-    context "with batch_upload_v2 enabled" do
-      let(:batch_upload) { create(:certification_batch_upload, uploader: user, status: :pending) }
-
-      it "rejects process_batch and redirects with alert" do
-        with_batch_upload_v2_enabled do
-          post process_batch_certification_batch_upload_path(batch_upload)
-
-          expect(response).to redirect_to(certification_batch_upload_path(batch_upload))
-          expect(flash[:alert]).to include("processed automatically")
-        end
+        expect(response).to be_successful
+        expect(response.body).to include("queued for processing")
+        expect(response.body).not_to include("Process This File")
       end
     end
   end
@@ -538,132 +359,77 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
   end
 
   describe "GET /staff/staff/certification_batch_uploads (dashboard)" do
-    context "with batch_upload_v2 enabled" do
-      describe "auto-refresh behavior" do
-        it "renders auto-refresh active when processing uploads exist" do
-          with_batch_upload_v2_enabled do
-            create(:certification_batch_upload, :processing, uploader: user)
+    describe "auto-refresh behavior" do
+      it "renders auto-refresh active when processing uploads exist" do
+        create(:certification_batch_upload, :processing, uploader: user)
 
-            get certification_batch_uploads_path
+        get certification_batch_uploads_path
 
-            expect(response).to be_successful
-            expect(response.body).to include('data-auto-refresh-active-value="true"')
-          end
-        end
-
-        it "renders auto-refresh inactive when only completed uploads exist" do
-          with_batch_upload_v2_enabled do
-            create(:certification_batch_upload, :completed, uploader: user)
-
-            get certification_batch_uploads_path
-
-            expect(response).to be_successful
-            expect(response.body).to include('data-auto-refresh-active-value="false"')
-          end
-        end
-
-        it "responds to Turbo Frame requests" do
-          with_batch_upload_v2_enabled do
-            create(:certification_batch_upload, uploader: user)
-
-            get certification_batch_uploads_path, headers: { "Turbo-Frame" => "uploads_table" }
-
-            expect(response).to be_successful
-            expect(response.body).to include("uploads_table")
-          end
-        end
+        expect(response).to be_successful
+        expect(response.body).to include('data-auto-refresh-active-value="true"')
       end
 
-      describe "error display" do
-        let(:batch_upload) { create(:certification_batch_upload, :completed, uploader: user) }
+      it "renders auto-refresh inactive when only completed uploads exist" do
+        create(:certification_batch_upload, :completed, uploader: user)
 
-        it "shows error count for completed upload with errors" do
-          with_batch_upload_v2_enabled do
-            create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 1)
-            create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 2)
+        get certification_batch_uploads_path
 
-            get certification_batch_uploads_path
+        expect(response).to be_successful
+        expect(response.body).to include('data-auto-refresh-active-value="false"')
+      end
 
-            expect(response).to be_successful
-            expect(response.body).to include("2 errors")
-          end
-        end
+      it "responds to Turbo Frame requests" do
+        create(:certification_batch_upload, uploader: user)
 
-        it "shows download errors link for completed upload with errors" do
-          with_batch_upload_v2_enabled do
-            create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 1)
+        get certification_batch_uploads_path, headers: { "Turbo-Frame" => "uploads_table" }
 
-            get certification_batch_uploads_path
-
-            expect(response).to be_successful
-            expect(response.body).to include("Download Errors")
-          end
-        end
-
-        it "shows 'No errors' for completed upload without errors" do
-          with_batch_upload_v2_enabled do
-            create(:certification_batch_upload, :completed, uploader: user, num_rows_errored: 0)
-
-            get certification_batch_uploads_path
-
-            expect(response).to be_successful
-            expect(response.body).to include("No errors")
-            expect(response.body).not_to include("Download Errors")
-          end
-        end
+        expect(response).to be_successful
+        expect(response.body).to include("uploads_table")
       end
     end
 
-    context "with batch_upload_v2 enabled pending upload" do
+    describe "error display" do
+      let(:batch_upload) { create(:certification_batch_upload, :completed, uploader: user) }
+
+      it "shows error count for completed upload with errors" do
+        create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 1)
+        create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 2)
+
+        get certification_batch_uploads_path
+
+        expect(response).to be_successful
+        expect(response.body).to include("2 errors")
+      end
+
+      it "shows download errors link for completed upload with errors" do
+        create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 1)
+
+        get certification_batch_uploads_path
+
+        expect(response).to be_successful
+        expect(response.body).to include("Download Errors")
+      end
+
+      it "shows 'No errors' for completed upload without errors" do
+        create(:certification_batch_upload, :completed, uploader: user, num_rows_errored: 0)
+
+        get certification_batch_uploads_path
+
+        expect(response).to be_successful
+        expect(response.body).to include("No errors")
+        expect(response.body).not_to include("Download Errors")
+      end
+    end
+
+    context "with pending upload" do
       it "shows Queued text instead of Process button" do
-        with_batch_upload_v2_enabled do
-          create(:certification_batch_upload, uploader: user, status: :pending)
+        create(:certification_batch_upload, uploader: user, status: :pending)
 
-          get certification_batch_uploads_path
+        get certification_batch_uploads_path
 
-          expect(response).to be_successful
-          expect(response.body).to include("Queued")
-          expect(response.body).not_to include('value="Process"')
-        end
-      end
-    end
-
-    context "with batch_upload_v2 disabled pending upload" do
-      it "shows Process button" do
-        with_batch_upload_v2_disabled do
-          create(:certification_batch_upload, uploader: user, status: :pending)
-
-          get certification_batch_uploads_path
-
-          expect(response).to be_successful
-          expect(response.body).to include("Process")
-          expect(response.body).not_to include(">Queued<")
-        end
-      end
-    end
-
-    context "with batch_upload_v2 disabled" do
-      it "renders auto-refresh inactive even with processing uploads" do
-        with_batch_upload_v2_disabled do
-          create(:certification_batch_upload, :processing, uploader: user)
-
-          get certification_batch_uploads_path
-
-          expect(response).to be_successful
-          expect(response.body).to include('data-auto-refresh-active-value="false"')
-        end
-      end
-
-      it "shows legacy progress display for completed uploads" do
-        with_batch_upload_v2_disabled do
-          create(:certification_batch_upload, :completed, uploader: user)
-
-          get certification_batch_uploads_path
-
-          expect(response).to be_successful
-          expect(response.body).to include("8 success")
-          expect(response.body).not_to include("Download Errors")
-        end
+        expect(response).to be_successful
+        expect(response.body).to include("Queued")
+        expect(response.body).not_to include('value="Process"')
       end
     end
   end
@@ -671,63 +437,44 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
   describe "GET /staff/staff/certification_batch_uploads/:id/download_errors" do
     let(:batch_upload) { create(:certification_batch_upload, :completed, uploader: user) }
 
-    context "with batch_upload_v2 enabled" do
-      it "returns CSV with correct headers and data" do
-        with_batch_upload_v2_enabled do
-          create(
-            :certification_batch_upload_error,
-            certification_batch_upload: batch_upload,
-            row_number: 2,
-            error_code: "VAL_001",
-            error_message: "Missing required field",
-            row_data: { "member_id" => "M001", "case_number" => "C-001" }
-          )
+    it "returns CSV with correct headers and data" do
+      create(
+        :certification_batch_upload_error,
+        certification_batch_upload: batch_upload,
+        row_number: 2,
+        error_code: "VAL_001",
+        error_message: "Missing required field",
+        row_data: { "member_id" => "M001", "case_number" => "C-001" }
+      )
 
-          get download_errors_certification_batch_upload_path(batch_upload)
+      get download_errors_certification_batch_upload_path(batch_upload)
 
-          expect(response).to be_successful
-          expect(response.content_type).to include("text/csv")
-          expect(response.headers["Content-Disposition"]).to include("attachment")
-          expect(response.headers["Content-Disposition"]).to include("errors.csv")
-          expect(response.body).to include("Row,Error Code,Error Message,Row Data")
-          expect(response.body).to include("2,VAL_001,Missing required field,")
-        end
-      end
-
-      it "orders errors by row_number" do
-        with_batch_upload_v2_enabled do
-          create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 5, error_message: "Error five")
-          create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 2, error_message: "Error two")
-          create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 10, error_message: "Error ten")
-
-          get download_errors_certification_batch_upload_path(batch_upload)
-
-          lines = response.body.strip.split("\n")
-          data_lines = lines[1..]
-          row_numbers = data_lines.map { |line| line.split(",").first.to_i }
-          expect(row_numbers).to eq([ 2, 5, 10 ])
-        end
-      end
-
-      it "returns header-only CSV when no errors exist" do
-        with_batch_upload_v2_enabled do
-          get download_errors_certification_batch_upload_path(batch_upload)
-
-          expect(response).to be_successful
-          expect(response.body.strip).to eq("Row,Error Code,Error Message,Row Data")
-        end
-      end
+      expect(response).to be_successful
+      expect(response.content_type).to include("text/csv")
+      expect(response.headers["Content-Disposition"]).to include("attachment")
+      expect(response.headers["Content-Disposition"]).to include("errors.csv")
+      expect(response.body).to include("Row,Error Code,Error Message,Row Data")
+      expect(response.body).to include("2,VAL_001,Missing required field,")
     end
 
-    context "with batch_upload_v2 disabled" do
-      it "redirects to show page" do
-        with_batch_upload_v2_disabled do
-          get download_errors_certification_batch_upload_path(batch_upload)
+    it "orders errors by row_number" do
+      create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 5, error_message: "Error five")
+      create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 2, error_message: "Error two")
+      create(:certification_batch_upload_error, certification_batch_upload: batch_upload, row_number: 10, error_message: "Error ten")
 
-          expect(response).to redirect_to(certification_batch_upload_path(batch_upload))
-          expect(flash[:alert]).to include("not available")
-        end
-      end
+      get download_errors_certification_batch_upload_path(batch_upload)
+
+      lines = response.body.strip.split("\n")
+      data_lines = lines[1..]
+      row_numbers = data_lines.map { |line| line.split(",").first.to_i }
+      expect(row_numbers).to eq([ 2, 5, 10 ])
+    end
+
+    it "returns header-only CSV when no errors exist" do
+      get download_errors_certification_batch_upload_path(batch_upload)
+
+      expect(response).to be_successful
+      expect(response.body.strip).to eq("Row,Error Code,Error Message,Row Data")
     end
 
     context "when the user is a caseworker" do

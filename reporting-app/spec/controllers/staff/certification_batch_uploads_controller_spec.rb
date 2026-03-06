@@ -52,11 +52,19 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
       it "sets a success notice" do
         post :create, params: { csv_file: csv_file, locale: "en" }
 
-        expect(flash[:notice]).to eq("File uploaded successfully. You can now process it from the queue.")
+        expect(flash[:notice]).to eq("Processing started for certification_batch_upload_test_file.csv. Results will be available shortly.")
+      end
+
+      it "enqueues processing job" do
+        allow(ProcessCertificationBatchUploadJob).to receive(:perform_later)
+
+        post :create, params: { csv_file: csv_file, locale: "en" }
+
+        expect(ProcessCertificationBatchUploadJob).to have_received(:perform_later)
       end
     end
 
-    context "when a signed blob ID is submitted (v2 direct upload)" do
+    context "when a signed blob ID is submitted (direct upload)" do
       let(:blob) do
         ActiveStorage::Blob.create_and_upload!(
           io: File.open(Rails.root.join("spec/fixtures/files/certification_batch_upload_test_file.csv")),
@@ -66,48 +74,38 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
       end
 
       it "creates a new CertificationBatchUpload" do
-        with_batch_upload_v2_enabled do
-          expect {
-            post :create, params: { csv_file: blob.signed_id, locale: "en" }
-          }.to change(CertificationBatchUpload, :count).by(1)
-        end
+        expect {
+          post :create, params: { csv_file: blob.signed_id, locale: "en" }
+        }.to change(CertificationBatchUpload, :count).by(1)
       end
 
       it "sets the filename from the blob" do
-        with_batch_upload_v2_enabled do
-          post :create, params: { csv_file: blob.signed_id, locale: "en" }
+        post :create, params: { csv_file: blob.signed_id, locale: "en" }
 
-          batch_upload = CertificationBatchUpload.last
-          expect(batch_upload.filename).to eq("direct_upload_test.csv")
-        end
+        batch_upload = CertificationBatchUpload.last
+        expect(batch_upload.filename).to eq("direct_upload_test.csv")
       end
 
       it "attaches the file from the blob" do
-        with_batch_upload_v2_enabled do
-          post :create, params: { csv_file: blob.signed_id, locale: "en" }
+        post :create, params: { csv_file: blob.signed_id, locale: "en" }
 
-          batch_upload = CertificationBatchUpload.last
-          expect(batch_upload.file).to be_attached
-        end
+        batch_upload = CertificationBatchUpload.last
+        expect(batch_upload.file).to be_attached
       end
 
       it "enqueues processing job automatically" do
-        with_batch_upload_v2_enabled do
-          allow(ProcessCertificationBatchUploadJob).to receive(:perform_later)
+        allow(ProcessCertificationBatchUploadJob).to receive(:perform_later)
 
-          post :create, params: { csv_file: blob.signed_id, locale: "en" }
+        post :create, params: { csv_file: blob.signed_id, locale: "en" }
 
-          expect(ProcessCertificationBatchUploadJob).to have_received(:perform_later)
-        end
+        expect(ProcessCertificationBatchUploadJob).to have_received(:perform_later)
       end
 
       it "handles invalid signed blob IDs gracefully" do
-        with_batch_upload_v2_enabled do
-          post :create, params: { csv_file: "invalid-signed-id", locale: "en" }
+        post :create, params: { csv_file: "invalid-signed-id", locale: "en" }
 
-          expect(response).to have_http_status(:unprocessable_content)
-          expect(flash.now[:alert]).to eq("Upload failed. Please try again.")
-        end
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(flash.now[:alert]).to eq("Upload failed. Please try again.")
       end
     end
 
@@ -316,137 +314,6 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
           get :results, params: { id: batch_upload.id, filter: "pending_review", locale: "en" }
 
           expect(controller.instance_variable_get(:@cases_to_show)).to contain_exactly(pending_review_case)
-        end
-      end
-    end
-  end
-
-  describe "POST #process_batch" do
-    let(:batch_upload) { create(:certification_batch_upload, status: batch_status) }
-
-    context "when batch upload is processable" do
-      let(:batch_upload_job) { instance_double(ProcessCertificationBatchUploadJob) }
-      let(:batch_status) { "pending" }
-
-      context "when job is enqueued successfully" do
-        before do
-          allow(ProcessCertificationBatchUploadJob).to receive(:perform_later).and_return(batch_upload_job)
-        end
-
-        it "enqueues ProcessCertificationBatchUploadJob" do
-          post :process_batch, params: { id: batch_upload.id, locale: "en" }
-
-          expect(ProcessCertificationBatchUploadJob).to have_received(:perform_later).with(batch_upload.id)
-        end
-
-        it "redirects to certification_batch_uploads_path" do
-          post :process_batch, params: { id: batch_upload.id, locale: "en" }
-
-          expect(response).to redirect_to(certification_batch_uploads_path)
-        end
-
-        it "sets a success notice" do
-          post :process_batch, params: { id: batch_upload.id, locale: "en" }
-
-          expect(flash[:notice]).to eq("Processing started for #{batch_upload.filename}. Results will be available shortly.")
-        end
-
-        it "returns accepted status for JSON requests" do
-          post :process_batch, params: { id: batch_upload.id, locale: "en", format: :json }
-
-          expect(response).to have_http_status(:accepted)
-        end
-      end
-
-      context "when job fails to enqueue" do
-        before do
-          allow(ProcessCertificationBatchUploadJob).to receive(:perform_later).and_return(false)
-        end
-
-        it "redirects back to the batch upload page" do
-          post :process_batch, params: { id: batch_upload.id, locale: "en" }
-
-          expect(response).to redirect_to(certification_batch_upload_path(batch_upload))
-        end
-
-        it "sets an error alert" do
-          post :process_batch, params: { id: batch_upload.id, locale: "en" }
-
-          expect(flash[:alert]).to eq("Failed to start processing job.")
-        end
-
-        it "returns internal server error status for JSON requests" do
-          post :process_batch, params: { id: batch_upload.id, locale: "en", format: :json }
-
-          expect(response).to have_http_status(:internal_server_error)
-        end
-
-        it "returns error message in JSON for JSON requests" do
-          post :process_batch, params: { id: batch_upload.id, locale: "en", format: :json }
-
-          expect(JSON.parse(response.body)).to eq({ "error" => "Failed to start processing job." })
-        end
-      end
-    end
-
-    context "when batch upload is not processable" do
-      let(:batch_status) { "processing" }
-
-      before do
-        allow(ProcessCertificationBatchUploadJob).to receive(:perform_later).and_return(false)
-      end
-
-      it "does not enqueue ProcessCertificationBatchUploadJob" do
-        post :process_batch, params: { id: batch_upload.id, locale: "en" }
-
-        expect(ProcessCertificationBatchUploadJob).not_to have_received(:perform_later)
-      end
-
-      it "redirects back to the batch upload page" do
-        post :process_batch, params: { id: batch_upload.id, locale: "en" }
-
-        expect(response).to redirect_to(certification_batch_upload_path(batch_upload))
-      end
-
-      it "sets an error alert with current status" do
-        post :process_batch, params: { id: batch_upload.id, locale: "en" }
-
-        expect(flash[:alert]).to eq("This batch cannot be processed. Current status: #{batch_status}.")
-      end
-
-      context "when requesting JSON format" do
-        it "returns unprocessable entity status" do
-          post :process_batch, params: { id: batch_upload.id, locale: "en", format: :json }
-
-          expect(response).to have_http_status(:unprocessable_content)
-        end
-
-        it "returns error message in JSON" do
-          post :process_batch, params: { id: batch_upload.id, locale: "en", format: :json }
-
-          expect(JSON.parse(response.body)).to eq({ "error" => "This batch cannot be processed. Current status: #{batch_status}." })
-        end
-      end
-
-      context "when batch status is completed" do
-        let(:batch_status) { "completed" }
-
-        it "prevents reprocessing" do
-          post :process_batch, params: { id: batch_upload.id, locale: "en" }
-
-          expect(ProcessCertificationBatchUploadJob).not_to have_received(:perform_later)
-          expect(flash[:alert]).to include("Current status: completed")
-        end
-      end
-
-      context "when batch status is failed" do
-        let(:batch_status) { "failed" }
-
-        it "prevents reprocessing" do
-          post :process_batch, params: { id: batch_upload.id, locale: "en" }
-
-          expect(ProcessCertificationBatchUploadJob).not_to have_received(:perform_later)
-          expect(flash[:alert]).to include("Current status: failed")
         end
       end
     end
