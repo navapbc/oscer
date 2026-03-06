@@ -43,10 +43,15 @@ Rails.application.config.to_prepare do
 
   # Skip if required environment variables aren't present (e.g., during asset precompilation)
   adapter_type = ENV.fetch("STORAGE_ADAPTER", StorageConfig::DEFAULT_ADAPTER).downcase
-  next unless case adapter_type
-              when StorageConfig::S3 then ENV["BUCKET_NAME"].present?
-              when StorageConfig::AZURE then ENV["AZURE_STORAGE_ACCOUNT"].present?
-              end
+  required_env_present = case adapter_type
+  when StorageConfig::S3
+    ENV["BUCKET_NAME"].present?
+  when StorageConfig::AZURE
+    ENV["AZURE_STORAGE_ACCOUNT"].present? &&
+      ENV["AZURE_STORAGE_ACCESS_KEY"].present? &&
+      ENV["AZURE_CONTAINER_NAME"].present?
+  end
+  next unless required_env_present
 
   Rails.application.config.storage_adapter = case adapter_type
   when StorageConfig::S3
