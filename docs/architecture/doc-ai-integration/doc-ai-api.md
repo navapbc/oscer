@@ -38,8 +38,8 @@ flowchart LR
 | `DocumentStagingService` | Owns extracted constants: `ALLOWED_CONTENT_TYPES` (`application/pdf`, `image/jpeg`, `image/png`, `image/tiff`), `MAX_FILE_SIZE_BYTES` (30 MB), `MAX_FILE_COUNT` (2), `DOC_AI_THREAD_POOL`, `SUPPORTED_RESULT_CLASSES`. `#process(files:, user:)` validates, dispatches concurrent processing, returns results array. Contains: `process_files_concurrently`, `process_file`, `valid_content_type?`, `valid_file_size?`. Calls `ImageToPdfConversionService` when image file >5MB before DocAI submission. Thread pool creation and lifecycle managed here. Constructor-injected `DocAiService` dependency (testable). `current_user` captured before threading (ActionController helpers not thread-safe). Each Future uses `connection_pool.with_connection`. |
 | `ImageToPdfConversionService` | Uses `image_processing` gem (vips backend). `#convert(file)` converts JPEG/PNG/TIFF >5MB to PDF tempfile. Returns original file unchanged if PDF or if image ≤5MB. `IMAGE_SIZE_THRESHOLD = 5.megabytes`. Isolated responsibility: one service, one job. |
 | `StagedDocument` | ActiveRecord: `has_one_attached :file`, `belongs_to :user`, `belongs_to :stageable, polymorphic: true`. Status enum: `pending`, `validated`, `rejected`, `failed`. `extracted_fields` JSONB stores full raw DocAI fields response (including confidence scores). `job_id` column. `#average_confidence` returns Float (0.0–1.0) computed as mean of all field confidence values from `extracted_fields`. Retained permanently as audit record. Never purged. |
-| `DocAiAdapter` | Extends `DataIntegration::BaseAdapter`. No auth headers (currently unauthenticated). `analyze_document` opens blob as `Tempfile` via `file.blob.open` → passes IO to `Faraday::Multipart::FilePart`. |
-| `DocAiService` | Extends `DataIntegration::BaseService`. Invokes adapter; builds `DocAiResult` via factory; logs `job_id`; raises `ProcessingError` on `status: "failed"`; `handle_integration_error` logs warning and returns `nil` (graceful degradation). |
+| `DocAiAdapter` | Extends `DataIntegration::BaseAdapter`. No auth headers (currently unauthenticated). `analyze_document` (sync, `wait=true`), `submit_document` (async POST, no `wait`), `get_job_status` (GET by job ID). Opens blob as `Tempfile` via `file.blob.open` → passes IO to `Faraday::Multipart::FilePart`. |
+| `DocAiService` | Extends `DataIntegration::BaseService`. `analyze` (sync), `submit` (async submission), `check_status` (poll job). Builds `DocAiResult` via factory on completion; raises `ProcessingError` on `status: "failed"`; `handle_integration_error` logs warning and returns `nil` (graceful degradation). |
 | `DocAiResult` | Base `Strata::ValueObject`. Response envelope, `FieldValue` accessor, self-registration factory (`REGISTRY` hash). Subclass files must be `require_relative`'d before `REGISTRY.freeze`. |
 | `DocAiResult::FieldValue` | `Data.define` struct: `value`, `confidence`. `low_confidence?` predicate (threshold: 0.7). All field accessors return `FieldValue` or `nil`. |
 | `DocAiResult::Payslip` | Self-registers via `register "Payslip"`. Typed snake_case accessors. Boolean flag accessors unwrap value directly. `to_prefill_fields` returns values-only hash for form rendering. |
@@ -167,6 +167,8 @@ Expired/non-validated signed IDs are skipped gracefully. Fallback to manual uplo
 
 ## API Interface
 
+### Synchronous (wait=true)
+
 | Property | Value |
 |----------|-------|
 | URL | `https://app-docai.platform-test-dev.navateam.com/v1/documents` |
@@ -175,6 +177,62 @@ Expired/non-validated signed IDs are skipped gracefully. Fallback to manual uplo
 | Content-Type | `multipart/form-data` |
 | Auth | None (unauthenticated) |
 | Timeout | 60s (open_timeout: 10s) |
+
+### Asynchronous
+
+#### Submit document
+
+| Property | Value |
+|----------|-------|
+| URL | `https://app-docai.platform-test-dev.navateam.com/v1/documents` |
+| Method | `POST` |
+| Query param | _(none)_ |
+| Content-Type | `multipart/form-data` |
+| Auth | None (unauthenticated) |
+| Response | `{ "jobId": "...", "status": "not_started" }` |
+
+#### Poll job status
+
+| Property | Value |
+|----------|-------|
+| URL | `https://app-docai.platform-test-dev.navateam.com/v1/documents/{job_id}` |
+| Method | `GET` |
+| Auth | None (unauthenticated) |
+| Response | Job object with `status`: `processing`, `completed`, or `failed` |
+
+### Async Response Examples
+
+**Not started (POST response)**:
+```json
+{
+  "jobId": "abc-123",
+  "status": "not_started"
+}
+```
+
+**Processing (GET response)**:
+```json
+{
+  "job_id": "abc-123",
+  "status": "processing"
+}
+```
+
+**Completed (GET response)**:
+```json
+{
+  "job_id": "d773fa8f-3cc7-47d8-be78-4125c190c290",
+  "status": "completed",
+  "matchedDocumentClass": "Payslip",
+  "message": "Document processed successfully",
+  "totalProcessingTimeSeconds": 38.6,
+  "fields": {
+    "currentgrosspay": { "confidence": 0.93, "value": 1627.74 }
+  }
+}
+```
+
+> **Note:** The POST response uses `jobId` (camelCase) while the GET response uses `job_id` (snake_case). The adapter returns raw response bodies as-is; the service/result layer handles normalization.
 
 ### Success Response (HTTP 200 — Payslip)
 
