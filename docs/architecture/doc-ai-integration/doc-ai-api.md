@@ -38,7 +38,7 @@ flowchart LR
 | `DocumentStagingService` | Owns extracted constants: `ALLOWED_CONTENT_TYPES` (`application/pdf`, `image/jpeg`, `image/png`, `image/tiff`), `MAX_FILE_SIZE_BYTES` (30 MB), `MAX_FILE_COUNT` (2), `DOC_AI_THREAD_POOL`, `SUPPORTED_RESULT_CLASSES`. `#process(files:, user:)` validates, dispatches concurrent processing, returns results array. Contains: `process_files_concurrently`, `process_file`, `valid_content_type?`, `valid_file_size?`. Calls `ImageToPdfConversionService` when image file >5MB before DocAI submission. Thread pool creation and lifecycle managed here. Constructor-injected `DocAiService` dependency (testable). `current_user` captured before threading (ActionController helpers not thread-safe). Each Future uses `connection_pool.with_connection`. |
 | `ImageToPdfConversionService` | Uses `image_processing` gem (vips backend). `#convert(file)` converts JPEG/PNG/TIFF >5MB to PDF tempfile. Returns original file unchanged if PDF or if image ≤5MB. `IMAGE_SIZE_THRESHOLD = 5.megabytes`. Isolated responsibility: one service, one job. |
 | `StagedDocument` | ActiveRecord: `has_one_attached :file`, `belongs_to :user`, `belongs_to :stageable, polymorphic: true`. Status enum: `pending`, `validated`, `rejected`, `failed`. `extracted_fields` JSONB stores full raw DocAI fields response (including confidence scores). `job_id` column. `#average_confidence` returns Float (0.0–1.0) computed as mean of all field confidence values from `extracted_fields`. Retained permanently as audit record. Never purged. |
-| `DocAiAdapter` | Extends `DataIntegration::BaseAdapter`. No auth headers (currently unauthenticated). `analyze_document` (sync, `wait=true`), `submit_document` (async POST, no `wait`), `get_job_status` (GET by job ID). Opens blob as `Tempfile` via `file.blob.open` → passes IO to `Faraday::Multipart::FilePart`. |
+| `DocAiAdapter` | Extends `DataIntegration::BaseAdapter`. `analyze_document` (sync, `wait=true`), `submit_document` (async POST, no `wait`), `get_job_status` (GET by job ID). Opens blob as `Tempfile` via `file.blob.open` → passes IO to `Faraday::Multipart::FilePart`. |
 | `DocAiService` | Extends `DataIntegration::BaseService`. `analyze` (sync), `submit` (async submission), `check_status` (poll job). Builds `DocAiResult` via factory on completion; raises `ProcessingError` on `status: "failed"`; `handle_integration_error` logs warning and returns `nil` (graceful degradation). |
 | `DocAiResult` | Base `Strata::ValueObject`. Response envelope, `FieldValue` accessor, self-registration factory (`REGISTRY` hash). Subclass files must be `require_relative`'d before `REGISTRY.freeze`. |
 | `DocAiResult::FieldValue` | `Data.define` struct: `value`, `confidence`. `low_confidence?` predicate (threshold: 0.7). All field accessors return `FieldValue` or `nil`. |
@@ -171,11 +171,10 @@ Expired/non-validated signed IDs are skipped gracefully. Fallback to manual uplo
 
 | Property | Value |
 |----------|-------|
-| URL | `https://app-docai.platform-test-dev.navateam.com/v1/documents` |
+| URL | `/v1/documents` |
 | Method | `POST` |
 | Query param | `wait=true` |
 | Content-Type | `multipart/form-data` |
-| Auth | None (unauthenticated) |
 | Timeout | 60s (open_timeout: 10s) |
 
 ### Asynchronous
@@ -184,20 +183,18 @@ Expired/non-validated signed IDs are skipped gracefully. Fallback to manual uplo
 
 | Property | Value |
 |----------|-------|
-| URL | `https://app-docai.platform-test-dev.navateam.com/v1/documents` |
+| URL | `/v1/documents` |
 | Method | `POST` |
 | Query param | _(none)_ |
 | Content-Type | `multipart/form-data` |
-| Auth | None (unauthenticated) |
 | Response | `{ "jobId": "...", "status": "not_started" }` |
 
 #### Poll job status
 
 | Property | Value |
 |----------|-------|
-| URL | `https://app-docai.platform-test-dev.navateam.com/v1/documents/{job_id}` |
+| URL | `/v1/documents/{job_id}` |
 | Method | `GET` |
-| Auth | None (unauthenticated) |
 | Response | Job object with `status`: `processing`, `completed`, or `failed` |
 
 ### Async Response Examples
@@ -368,7 +365,7 @@ doc_ai: {
 
 ```bash
 # local.env.example
-DOC_AI_API_HOST=https://app-docai.platform-test-dev.navateam.com
+DOC_AI_API_HOST=http://localhost:8000
 DOC_AI_TIMEOUT_SECONDS=60
 DOC_AI_LOW_CONFIDENCE_THRESHOLD=0.7
 DOC_AI_THREAD_POOL_SIZE=4   # default: MAX_FILE_COUNT * 2
@@ -448,7 +445,7 @@ Create subclass, call `register "ClassName"`, implement `to_prefill_fields`. Add
 
 ## Future Considerations
 
-**Authentication**: DocAI endpoint is currently unauthenticated. Add auth via `DataIntegration::BaseAdapter`'s `before_request` hook:
+**Authentication**: DocAI endpoint authentication can be added via `DataIntegration::BaseAdapter`'s `before_request` hook:
 
 ```ruby
 before_request :set_auth_header
