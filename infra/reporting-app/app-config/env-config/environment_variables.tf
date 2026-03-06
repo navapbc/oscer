@@ -20,7 +20,7 @@ locals {
       DATABASE_POOL           = "8"
 
       DOC_AI_LOW_CONFIDENCE_THRESHOLD = "0.30"
-      DOC_AI_TIMEOUT_SECONDS = "60"
+      DOC_AI_TIMEOUT_SECONDS          = "60"
     },
     # SSO configuration: always set so any environment can enable SSO by overriding SSO_ENABLED to "true"
     var.enable_identity_provider ? {
