@@ -57,5 +57,17 @@ locals {
       manage_method     = "manual"
       secret_store_name = "/${var.app_name}-${var.environment}/service/va-private-key"
     }
+    DOC_AI_API_HOST = {
+      manage_method     = "manual"
+      secret_store_name = "/${var.app_name}-${var.environment}/service/doc-ai-api-host"
+    }
+    DOC_AI_TIMEOUT_SECONDS = {
+      manage_method     = "manual"
+      secret_store_name = "/${var.app_name}-${var.environment}/service/doc-ai-timeout-seconds"
+    }
+    DOC_AI_LOW_CONFIDENCE_THRESHOLD = {
+      manage_method     = "manual"
+      secret_store_name = "/${var.app_name}-${var.environment}/service/doc-ai-low-confidence-threshold"
+    }
   }
 }
