@@ -12,6 +12,22 @@ class DocAiAdapter < DataIntegration::BaseAdapter
     end
   end
 
+  def analyze_document_async(file:)
+    file.blob.open do |tempfile|
+      with_error_handling do
+        @connection.post("v1/documents") do |req|
+          req.body = { file: Faraday::Multipart::FilePart.new(tempfile, file.content_type, file.filename.to_s) }
+        end
+      end
+    end
+  end
+
+  def get_document_status(job_id:)
+    with_error_handling do
+      @connection.get("v1/documents/#{job_id}")
+    end
+  end
+
   def handle_error(response)
     detail = response.body.is_a?(Hash) ? response.body["detail"] : nil
     raise ApiError, detail || "DocAI error: #{response.status}"
