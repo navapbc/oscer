@@ -5,8 +5,8 @@ class StagedDocumentPolicy < ApplicationPolicy
     user
   end
 
-  def show?
-    owner?
+  def lookup?
+    user
   end
 
   private

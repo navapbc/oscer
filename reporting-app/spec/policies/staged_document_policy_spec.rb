@@ -21,19 +21,10 @@ RSpec.describe StagedDocumentPolicy, type: :policy do
     end
   end
 
-  describe "#show?" do
-    context "when user is the owner" do
+  describe "#lookup?" do
+    context "when user is logged in" do
       it "permits the action" do
-        expect(policy).to permit_action(:show)
-      end
-    end
-
-    context "when user is not the owner" do
-      let(:other_user) { create(:user) }
-      let(:policy) { described_class.new(other_user, staged_document) }
-
-      it "forbids the action" do
-        expect(policy).to forbid_action(:show)
+        expect(policy).to permit_action(:lookup)
       end
     end
   end
