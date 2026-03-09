@@ -6,7 +6,7 @@ class DocumentStagingController < ApplicationController
 
   def create
     authorize StagedDocument
-    @staged_documents = service.submit(files: Array(create_params[:files]), user: current_user)
+    @staged_documents = service.submit(files: Array(create_params), user: current_user)
     @staged_document_ids = @staged_documents.map(&:id)
   rescue DocumentStagingService::ValidationError => e
     @error = e.message
@@ -22,7 +22,7 @@ class DocumentStagingController < ApplicationController
   private
 
   def create_params
-    params.permit(files: [])
+    params.permit(files: [])[:files].reject(&:blank?)
   end
 
   def lookup_params
