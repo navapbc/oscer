@@ -27,11 +27,11 @@ flowchart LR
 
 ## Relation to Staff OIDC and Cognito
 
-| Flow           | Doc / component        | Purpose                                      |
-|----------------|------------------------|----------------------------------------------|
-| **Staff OIDC** | [staff-sso.md](./staff-sso.md) | Staff sign-in via state staff IdP; role from groups |
-| **Member OIDC**| This doc               | Member sign-in via state citizen IdP; no role |
-| **Member Cognito** | AuthService, CognitoAdapter | Member email/password when OIDC not used or as second option |
+| Flow               | Doc / component                | Purpose                                                      |
+| ------------------ | ------------------------------ | ------------------------------------------------------------ |
+| **Staff OIDC**     | [staff-sso.md](./staff-sso.md) | Staff sign-in via state staff IdP; role from groups          |
+| **Member OIDC**    | This doc                       | Member sign-in via state citizen IdP; no role                |
+| **Member Cognito** | AuthService, CognitoAdapter    | Member email/password when OIDC not used or as second option |
 
 Staff and member OIDC share OmniAuth, Devise, and the User model but use separate providers (`:sso` vs `:member_oidc`), config, and provisioners.
 
@@ -137,23 +137,23 @@ Rails.application.config.member_oidc = {
 
 **Environment variables (when MEMBER_OIDC_ENABLED=true):**
 
-| Variable                   | Purpose                          |
-| -------------------------- | -------------------------------- |
-| `MEMBER_OIDC_ISSUER_URL`   | IdP issuer (discovery or base URL) |
-| `MEMBER_OIDC_CLIENT_ID`    | OIDC client ID                   |
-| `MEMBER_OIDC_CLIENT_SECRET`| OIDC client secret               |
-| `MEMBER_OIDC_SCOPES`       | Optional; default `openid profile email` |
-| `MEMBER_OIDC_CLAIM_EMAIL`  | Claim key for email (default `email`) |
-| `MEMBER_OIDC_CLAIM_NAME`   | Claim key for name (default `name`) |
-| `MEMBER_OIDC_CLAIM_UID`   | Claim key for unique id (default `sub`) |
+| Variable                    | Purpose                                                                                                  |
+| --------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `MEMBER_OIDC_ISSUER_URL`    | IdP issuer (discovery or base URL)                                                                       |
+| `MEMBER_OIDC_CLIENT_ID`     | OIDC client ID                                                                                           |
+| `MEMBER_OIDC_CLIENT_SECRET` | OIDC client secret                                                                                       |
+| `MEMBER_OIDC_SCOPES`        | Optional; default `openid profile email`                                                                 |
+| `MEMBER_OIDC_CLAIM_EMAIL`   | Claim key for email (default `email`)                                                                    |
+| `MEMBER_OIDC_CLAIM_NAME`    | Claim key for name (default `name`)                                                                      |
+| `MEMBER_OIDC_CLAIM_UID`     | Claim key for unique id (default `sub`)                                                                  |
 | `MEMBER_OIDC_INTERNAL_HOST` | Optional; override host for server-to-IdP calls (e.g. Docker), same pattern as staff `SSO_INTERNAL_HOST` |
 
 Redirect URI is built from the same host/port/HTTPS logic as staff (e.g. `build_oidc_redirect_uri("/auth/member_oidc/callback")` using `APP_HOST`, `APP_PORT`, `DISABLE_HTTPS`). For local HTTP IdPs (e.g. Keycloak), use the same discovery-off and manual endpoint pattern as staff; optional issuer verification workaround in development applies when issuer URL is `http://`.
 
 ### MemberOidcProvisioner
 
-| Method             | Purpose                                                                 |
-| ------------------ | ----------------------------------------------------------------------- |
+| Method               | Purpose                                                                                                        |
+| -------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `provision!(claims)` | Find or create User by UID (from IdP); set `provider: "member_oidc"`; sync `email`, `full_name`; no staff role |
 
 **Claims input:** `{ uid:, email:, name: }` (from IdP token via configured claim keys).
@@ -266,19 +266,19 @@ MEMBER_OIDC_CLIENT_SECRET=oscer-member-secret
 
 ## Logout Behavior
 
-| Option        | Description                                  | Default |
-| ------------- | -------------------------------------------- | ------- |
-| Local logout  | End OSCER session only; IdP session persists | Yes     |
+| Option        | Description                                  | Default                  |
+| ------------- | -------------------------------------------- | ------------------------ |
+| Local logout  | End OSCER session only; IdP session persists | Yes                      |
 | Single logout | End OSCER session and trigger IdP logout     | Optional, per IdP config |
 
 ---
 
 ## Error Handling
 
-| Error         | Cause                      | User experience |
-| ------------- | -------------------------- | ---------------- |
-| InvalidToken  | Signature invalid/expired  | "Authentication failed. Please try again." |
-| InvalidState  | CSRF                       | "Session expired. Please try again." |
+| Error         | Cause                        | User experience                               |
+| ------------- | ---------------------------- | --------------------------------------------- |
+| InvalidToken  | Signature invalid/expired    | "Authentication failed. Please try again."    |
+| InvalidState  | CSRF                         | "Session expired. Please try again."          |
 | MissingClaims | Required claims not in token | "Login configuration error. Contact support." |
 
 On failure, redirect to the member sign-in path (e.g. `new_user_session_path`) with an alert so the member can retry or use email/password if offered; same pattern as staff SSO redirecting to a sensible landing after failure.
@@ -307,5 +307,4 @@ On failure, redirect to the member sign-in path (e.g. `new_user_session_path`) w
 ## Related Documents
 
 - [OIDC Authentication (Staff and Member)](./staff-sso.md) — Combined view of staff and member OIDC, shared decisions, and C4.
-- [Member SSO Implementation Stories](./member-sso-stories.md) — Implementation stories and reuse checklist.
 - **Infrastructure:** For deployment and citizen IdP setup (redirect URIs, client registration), see `docs/infra/` (e.g. identity-provider.md, environment-variables-and-secrets.md) where applicable.
