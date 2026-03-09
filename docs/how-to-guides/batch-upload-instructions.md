@@ -100,7 +100,7 @@ The Batch Uploads list page auto-refreshes every 5 seconds while any batch is pr
 - **Status**: Pending, Processing, Completed, or Failed
 - **Progress**: Number of rows processed out of total (e.g., "500 / 1,000")
 
-Once processing completes, the status updates to **Completed** and action links become available.
+> **Note:** Progress updates after each chunk of 1,000 records completes. For large files, there may be a brief pause between updates while the current chunk is processing — this is normal.
 
 ### Step 4: View Batch Details
 
