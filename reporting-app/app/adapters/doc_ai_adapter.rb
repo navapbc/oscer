@@ -2,13 +2,16 @@
 
 class DocAiAdapter < DataIntegration::BaseAdapter
   def analyze_document(file:)
-    file.blob.open do |tempfile|
-      with_error_handling do
-        @connection.post("v1/documents") do |req|
-          req.params["wait"] = true
-          req.body = { file: Faraday::Multipart::FilePart.new(tempfile, file.content_type, file.filename.to_s) }
-        end
-      end
+    post_document(file: file, wait: true)
+  end
+
+  def analyze_document_async(file:)
+    post_document(file: file)
+  end
+
+  def get_document_status(job_id:)
+    with_error_handling do
+      @connection.get("v1/documents/#{job_id}")
     end
   end
 
@@ -18,6 +21,17 @@ class DocAiAdapter < DataIntegration::BaseAdapter
   end
 
   private
+
+  def post_document(file:, wait: false)
+    file.blob.open do |tempfile|
+      with_error_handling do
+        @connection.post("v1/documents") do |req|
+          req.params["wait"] = true if wait
+          req.body = { file: Faraday::Multipart::FilePart.new(tempfile, file.content_type, file.filename.to_s) }
+        end
+      end
+    end
+  end
 
   def default_connection
     Faraday.new(url: Rails.application.config.doc_ai[:api_host]) do |f|

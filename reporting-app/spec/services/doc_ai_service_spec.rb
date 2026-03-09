@@ -91,4 +91,105 @@ RSpec.describe DocAiService do
       end
     end
   end
+
+  describe "#analyze_async" do
+    let(:submit_response) { { "jobId" => "abc-123", "status" => "not_started" } }
+
+    context "when the adapter returns a successful response" do
+      before do
+        allow(adapter).to receive(:analyze_document_async).with(file: file_double)
+          .and_return(submit_response)
+      end
+
+      it "returns the raw response hash" do
+        result = service.analyze_async(file: file_double)
+        expect(result).to eq(submit_response)
+      end
+
+      it "logs the submission" do
+        allow(Rails.logger).to receive(:info)
+        service.analyze_async(file: file_double)
+        expect(Rails.logger).to have_received(:info)
+          .with(a_string_including("DocAiService", "abc-123"))
+      end
+    end
+
+    context "when the adapter raises an ApiError" do
+      before do
+        allow(adapter).to receive(:analyze_document_async).with(file: file_double)
+          .and_raise(DocAiAdapter::ApiError, "connection error")
+      end
+
+      it "returns nil" do
+        result = service.analyze_async(file: file_double)
+        expect(result).to be_nil
+      end
+    end
+  end
+
+  describe "#check_status" do
+    let(:job_id) { "d773fa8f-3cc7-47d8-be78-4125c190c290" }
+
+    context "when the job is completed" do
+      before do
+        allow(adapter).to receive(:get_document_status).with(job_id: job_id)
+          .and_return(payslip_response)
+      end
+
+      it "returns a DocAiResult" do
+        result = service.check_status(job_id: job_id)
+        expect(result).to be_a(DocAiResult::Payslip)
+      end
+
+      it "returns the result with the correct job_id" do
+        result = service.check_status(job_id: job_id)
+        expect(result.job_id).to eq(job_id)
+      end
+    end
+
+    context "when the job is still processing" do
+      let(:processing_response) { { "job_id" => job_id, "status" => "processing" } }
+
+      before do
+        allow(adapter).to receive(:get_document_status).with(job_id: job_id)
+          .and_return(processing_response)
+      end
+
+      it "returns the raw response hash" do
+        result = service.check_status(job_id: job_id)
+        expect(result).to eq(processing_response)
+      end
+    end
+
+    context "when the job has failed" do
+      before do
+        allow(adapter).to receive(:get_document_status).with(job_id: job_id)
+          .and_return(failed_response)
+      end
+
+      it "returns nil via error handling" do
+        result = service.check_status(job_id: job_id)
+        expect(result).to be_nil
+      end
+
+      it "logs a warning" do
+        allow(Rails.logger).to receive(:warn)
+        service.check_status(job_id: job_id)
+        expect(Rails.logger).to have_received(:warn)
+          .with(a_string_including("DocAiService"))
+      end
+    end
+
+    context "when the adapter raises an ApiError" do
+      before do
+        allow(adapter).to receive(:get_document_status).with(job_id: job_id)
+          .and_raise(DocAiAdapter::ApiError, "connection error")
+      end
+
+      it "returns nil" do
+        result = service.check_status(job_id: job_id)
+        expect(result).to be_nil
+      end
+    end
+  end
 end
