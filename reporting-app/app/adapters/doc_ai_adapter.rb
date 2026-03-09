@@ -11,7 +11,9 @@ class DocAiAdapter < DataIntegration::BaseAdapter
 
   def get_document_status(job_id:)
     with_error_handling do
-      @connection.get("v1/documents/#{job_id}")
+      @connection.get("v1/documents/#{job_id}") do |req|
+        req.params["include_extracted_data"] = true
+      end
     end
   end
 
