@@ -193,7 +193,66 @@ Rails.application.config.member_oidc = {
 | Method               | Purpose                          |
 | -------------------- | -------------------------------- |
 | `map_groups_to_role(groups)` | OSCER role from IdP groups |
+| `default_role`       | Role for users with no matching groups |
 | `deny_if_no_match?`  | Deny access when no role matches |
+
+### Role mapping configuration (staff)
+
+Role mapping is defined in a config file (e.g. YAML) and loaded by RoleMapper:
+
+```yaml
+# config/sso_role_mapping.yml
+role_mappings:
+  admin:
+    - "OSCER-Admin"
+    - "CE-Administrators"
+  caseworker:
+    - "OSCER-Caseworker"
+    - "OSCER-Staff"
+    - "CE-Staff"
+
+# Users with no matching group
+no_match_behavior: deny  # or: assign_default
+default_role: null       # only used if no_match_behavior: assign_default
+```
+
+### Staff user provisioning flow
+
+```mermaid
+flowchart TB
+    Start([Token validated]) --> Extract[Extract claims]
+    Extract --> FindUser{User exists?}
+
+    FindUser -->|By UID| Found[Found user]
+    FindUser -->|Not found| Create[Create new user]
+
+    Found --> SyncAttrs[Sync attributes]
+    Create --> SyncAttrs
+
+    SyncAttrs --> MapRole[Map IdP groups to role]
+
+    MapRole --> HasRole{Role matched?}
+    HasRole -->|Yes| UpdateRole[Update user role]
+    HasRole -->|No + deny| Deny[Deny access]
+    HasRole -->|No + default| DefaultRole[Assign default role]
+
+    UpdateRole --> CreateSession[Create session]
+    DefaultRole --> CreateSession
+
+    CreateSession --> Done([Login complete])
+    Deny --> Forbidden([403 Forbidden])
+```
+
+### Provisioning rules (staff)
+
+| Scenario | Behavior |
+| -------- | -------- |
+| First login, matching group | Create user with mapped role |
+| First login, no matching group | Deny access (configurable) |
+| Subsequent login, same group | Update attributes, keep role |
+| Subsequent login, different group | Update attributes AND role |
+| Email changed in IdP | Match by UID, update email |
+| User removed from IdP groups | Deny access on next attempt |
 
 ---
 
