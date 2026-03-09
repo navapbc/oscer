@@ -84,7 +84,7 @@ RSpec.describe DocumentStagingService do
 
     context "with too many files" do
       let(:files) do
-        3.times.map do |i|
+        11.times.map do |i|
           tempfile = Tempfile.new([ "doc#{i}", ".pdf" ])
           tempfile.write("%PDF-1.4 test#{i}")
           tempfile.rewind
@@ -94,7 +94,7 @@ RSpec.describe DocumentStagingService do
 
       it "raises a validation error" do
         expect { service.submit(files: files, user: user) }
-          .to raise_error(DocumentStagingService::ValidationError, /maximum of 2 files/i)
+          .to raise_error(DocumentStagingService::ValidationError, /maximum of 10 files/i)
       end
     end
 

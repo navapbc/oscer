@@ -3,7 +3,7 @@
 class DocumentStagingService
   class ValidationError < StandardError; end
 
-  MAX_FILES = 2
+  MAX_FILES = 10
   MAX_FILE_SIZE_BYTES = 30.megabytes
   ALLOWED_CONTENT_TYPES = %w[
     application/pdf

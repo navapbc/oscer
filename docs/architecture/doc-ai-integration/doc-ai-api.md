@@ -20,7 +20,7 @@ flowchart LR
     DSS -->|file.attach| S3[ActiveStorage / S3]
     DSS -->|"Concurrent::Future per file\n(dedicated FixedThreadPool)"| DSS
     DSS -->|staged_document.file| Service[DocAiService]
-    Service -->|file| Adapter[DocAiAdapter]
+    DSS -->|file| Adapter[DocAiAdapter]
     Adapter -->|"POST /v1/documents?wait=true (60s)"| DocAI[DocAI API]
     DocAI -->|JSON| Adapter
     Adapter -->|response body| Service
@@ -35,7 +35,7 @@ flowchart LR
 | Component | Responsibility |
 |-----------|---------------|
 | `DocumentStagingController` | Feature flag guard — returns 404 when `Features.doc_ai_enabled?` is false. Auth (`authorize :document, :create?`), param handling, delegates to `DocumentStagingService#process`. Renders template with prefilled fields and hidden `signed_id` inputs. Controller is responsible only for: auth, param handling, rendering. |
-| `DocumentStagingService` | Owns extracted constants: `ALLOWED_CONTENT_TYPES` (`application/pdf`, `image/jpeg`, `image/png`, `image/tiff`), `MAX_FILE_SIZE_BYTES` (30 MB), `MAX_FILE_COUNT` (2), `DOC_AI_THREAD_POOL`, `SUPPORTED_RESULT_CLASSES`. `#process(files:, user:)` validates, dispatches concurrent processing, returns results array. Contains: `process_files_concurrently`, `process_file`, `valid_content_type?`, `valid_file_size?`. Calls `ImageToPdfConversionService` when image file >5MB before DocAI submission. Thread pool creation and lifecycle managed here. Constructor-injected `DocAiService` dependency (testable). `current_user` captured before threading (ActionController helpers not thread-safe). Each Future uses `connection_pool.with_connection`. |
+| `DocumentStagingService` | Owns extracted constants: `ALLOWED_CONTENT_TYPES` (`application/pdf`, `image/jpeg`, `image/png`, `image/tiff`), `MAX_FILE_SIZE_BYTES` (30 MB), `MAX_FILE_COUNT` (10), `DOC_AI_THREAD_POOL`, `SUPPORTED_RESULT_CLASSES`. `#process(files:, user:)` validates, dispatches concurrent processing, returns results array. Contains: `process_files_concurrently`, `process_file`, `valid_content_type?`, `valid_file_size?`. Calls `ImageToPdfConversionService` when image file >5MB before DocAI submission. Thread pool creation and lifecycle managed here. Constructor-injected `DocAiService` dependency (testable). `current_user` captured before threading (ActionController helpers not thread-safe). Each Future uses `connection_pool.with_connection`. |
 | `ImageToPdfConversionService` | Uses `image_processing` gem (vips backend). `#convert(file)` converts JPEG/PNG/TIFF >5MB to PDF tempfile. Returns original file unchanged if PDF or if image ≤5MB. `IMAGE_SIZE_THRESHOLD = 5.megabytes`. Isolated responsibility: one service, one job. |
 | `StagedDocument` | ActiveRecord: `has_one_attached :file`, `belongs_to :user`, `belongs_to :stageable, polymorphic: true`. Status enum: `pending`, `validated`, `rejected`, `failed`. `extracted_fields` JSONB stores full raw DocAI fields response (including confidence scores). `job_id` column. `#average_confidence` returns Float (0.0–1.0) computed as mean of all field confidence values from `extracted_fields`. Retained permanently as audit record. Never purged. |
 | `DocAiAdapter` | Extends `DataIntegration::BaseAdapter`. `analyze_document` (sync, `wait=true`), `analyze_document_async` (async POST, no `wait`), `get_document_status` (GET by job ID). Opens blob as `Tempfile` via `file.blob.open` → passes IO to `Faraday::Multipart::FilePart`. |
@@ -43,7 +43,7 @@ flowchart LR
 | `DocAiResult` | Base `Strata::ValueObject`. Response envelope, `FieldValue` accessor, self-registration factory (`REGISTRY` hash). Subclass files must be `require_relative`'d before `REGISTRY.freeze`. |
 | `DocAiResult::FieldValue` | `Data.define` struct: `value`, `confidence`. `low_confidence?` predicate (threshold: 0.7). All field accessors return `FieldValue` or `nil`. |
 | `DocAiResult::Payslip` | Self-registers via `register "Payslip"`. Typed snake_case accessors. Boolean flag accessors unwrap value directly. `to_prefill_fields` returns values-only hash for form rendering. |
-| File Validator | Marcel magic-byte detection; `application/pdf`, `image/jpeg`, `image/png`, `image/tiff`; ≤30 MB per file; ≤2 files total. Runs before any DB or DocAI operations. Now lives in `DocumentStagingService`. |
+| File Validator | Marcel magic-byte detection; `application/pdf`, `image/jpeg`, `image/png`, `image/tiff`; ≤30 MB per file; ≤10 files total. Runs before any DB or DocAI operations. Now lives in `DocumentStagingService`. |
 
 ## Feature Flag
 
@@ -309,7 +309,7 @@ Expired/non-validated signed IDs are skipped gracefully. Fallback to manual uplo
 | `federaltaxes.ytd` | `federal_taxes_ytd` | Numeric |
 | `federaltaxes.period` | `federal_taxes_period` | Numeric |
 | `statetaxes.itemdescription` | `state_taxes_description` | String |
-| `statetaxes.ytd` | `state_taxes_ytd` | Numeric |
+| `statetaxes.ytd" | `state_taxes_ytd` | Numeric |
 | `statetaxes.period` | `state_taxes_period` | Numeric |
 | `citytaxes.itemdescription` | `city_taxes_description` | String |
 | `citytaxes.ytd` | `city_taxes_ytd` | Numeric |
@@ -373,7 +373,7 @@ FEATURE_DOC_AI=false
 ```
 
 > **Puma/rack-timeout**: Must allow requests >60s on upload endpoint (recommended: 75s minimum).
-> **DB connection pool**: Each concurrent file holds one connection for ~38–60s. With `MAX_FILE_COUNT=2`, up to 2 additional connections per upload request.
+> **DB connection pool**: Each concurrent file holds one connection for ~38–60s. With `MAX_FILE_COUNT=10`, up to 10 additional connections per upload request.
 > **`image_processing` gem**: Required for `ImageToPdfConversionService`. Uses vips backend (faster than ImageMagick). Already in Gemfile (commented out by default in Rails).
 
 ## Files to Create
