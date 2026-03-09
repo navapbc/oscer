@@ -8,12 +8,10 @@ RSpec.describe DocumentStagingService do
   let(:user) { create(:user) }
 
   let(:file) do
-    blob = ActiveStorage::Blob.create_and_upload!(
-      io: StringIO.new("%PDF-1.4 test"),
-      filename: "payslip.pdf",
-      content_type: "application/pdf"
-    )
-    blob.signed_id
+    tempfile = Tempfile.new([ "payslip", ".pdf" ])
+    tempfile.write("%PDF-1.4 test")
+    tempfile.rewind
+    Rack::Test::UploadedFile.new(tempfile.path, "application/pdf", true, original_filename: "payslip.pdf")
   end
 
   let(:submit_response) { { "jobId" => "abc-123", "status" => "not_started" } }
@@ -26,7 +24,7 @@ RSpec.describe DocumentStagingService do
     end
 
     it "creates StagedDocument records for each file" do
-      result = service.submit(signed_ids: [ file ], user: user)
+      result = service.submit(files: [ file ], user: user)
       expect(result.size).to eq(1)
       expect(result.first).to be_a(StagedDocument)
       expect(result.first).to be_persisted
@@ -34,22 +32,22 @@ RSpec.describe DocumentStagingService do
     end
 
     it "sets status to pending" do
-      result = service.submit(signed_ids: [ file ], user: user)
+      result = service.submit(files: [ file ], user: user)
       expect(result.first.status).to eq("pending")
     end
 
     it "stores the doc_ai_job_id from the async response" do
-      result = service.submit(signed_ids: [ file ], user: user)
+      result = service.submit(files: [ file ], user: user)
       expect(result.first.doc_ai_job_id).to eq("abc-123")
     end
 
     it "calls analyze_async on the doc_ai_service for each file" do
-      service.submit(signed_ids: [ file ], user: user)
+      service.submit(files: [ file ], user: user)
       expect(doc_ai_service).to have_received(:analyze_async).once
     end
 
     it "enqueues FetchDocAiResultsJob" do
-      result = service.submit(signed_ids: [ file ], user: user)
+      result = service.submit(files: [ file ], user: user)
       expect(FetchDocAiResultsJob).to have_received(:set).with(wait: 1.minute)
       expect(FetchDocAiResultsJob).to have_received(:perform_later).with([ result.first.id ])
     end
@@ -60,53 +58,80 @@ RSpec.describe DocumentStagingService do
       end
 
       it "marks the staged document as failed" do
-        result = service.submit(signed_ids: [ file ], user: user)
+        result = service.submit(files: [ file ], user: user)
         expect(result.first.status).to eq("failed")
       end
 
       it "still enqueues the job for non-failed documents" do
-        service.submit(signed_ids: [ file ], user: user)
+        service.submit(files: [ file ], user: user)
         expect(FetchDocAiResultsJob).not_to have_received(:set)
       end
     end
 
     context "with multiple files" do
       let(:file2) do
-        blob = ActiveStorage::Blob.create_and_upload!(
-          io: StringIO.new("%PDF-1.4 test2"),
-          filename: "w2.pdf",
-          content_type: "application/pdf"
-        )
-        blob.signed_id
+        tempfile = Tempfile.new([ "w2", ".pdf" ])
+        tempfile.write("%PDF-1.4 test2")
+        tempfile.rewind
+        Rack::Test::UploadedFile.new(tempfile.path, "application/pdf", true, original_filename: "w2.pdf")
       end
 
       it "creates a staged document for each file" do
-        result = service.submit(signed_ids: [ file, file2 ], user: user)
+        result = service.submit(files: [ file, file2 ], user: user)
         expect(result.size).to eq(2)
       end
     end
 
     context "with too many files" do
       let(:files) do
-        11.times.map do |i|
-          blob = ActiveStorage::Blob.create_and_upload!(
-            io: StringIO.new("%PDF-1.4 test#{i}"),
-            filename: "doc#{i}.pdf",
-            content_type: "application/pdf"
-          )
-          blob.signed_id
+        3.times.map do |i|
+          tempfile = Tempfile.new([ "doc#{i}", ".pdf" ])
+          tempfile.write("%PDF-1.4 test#{i}")
+          tempfile.rewind
+          Rack::Test::UploadedFile.new(tempfile.path, "application/pdf", true, original_filename: "doc#{i}.pdf")
         end
       end
 
       it "raises a validation error" do
-        expect { service.submit(signed_ids: files, user: user) }
-          .to raise_error(DocumentStagingService::ValidationError, /maximum of 10 files/i)
+        expect { service.submit(files: files, user: user) }
+          .to raise_error(DocumentStagingService::ValidationError, /maximum of 2 files/i)
+      end
+    end
+
+    context "with invalid file type" do
+      let(:invalid_file) do
+        tempfile = Tempfile.new([ "test", ".txt" ])
+        tempfile.write("hello world")
+        tempfile.rewind
+        Rack::Test::UploadedFile.new(tempfile.path, "application/pdf", true, original_filename: "test.txt")
+      end
+
+      it "raises a validation error even if browser claims it is PDF" do
+        expect { service.submit(files: [ invalid_file ], user: user) }
+          .to raise_error(DocumentStagingService::ValidationError, /file type text\/plain is not allowed/i)
+      end
+    end
+
+    context "with file too large" do
+      let(:large_file) do
+        tempfile = Tempfile.new([ "large", ".pdf" ])
+        # Write some data to make it actually have a size
+        tempfile.write("a" * 100)
+        tempfile.rewind
+        uploaded_file = Rack::Test::UploadedFile.new(tempfile.path, "application/pdf", true, original_filename: "large.pdf")
+        allow(uploaded_file).to receive(:size).and_return(31.megabytes)
+        uploaded_file
+      end
+
+      it "raises a validation error" do
+        expect { service.submit(files: [ large_file ], user: user) }
+          .to raise_error(DocumentStagingService::ValidationError, /exceeds the maximum allowed size/i)
       end
     end
 
     context "with no files" do
       it "raises a validation error" do
-        expect { service.submit(signed_ids: [], user: user) }
+        expect { service.submit(files: [], user: user) }
           .to raise_error(DocumentStagingService::ValidationError, /at least one file/i)
       end
     end

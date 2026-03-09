@@ -3,17 +3,28 @@
 class DocumentStagingService
   class ValidationError < StandardError; end
 
-  MAX_FILES = 10
+  MAX_FILES = 2
+  MAX_FILE_SIZE_BYTES = 30.megabytes
+  ALLOWED_CONTENT_TYPES = %w[
+    application/pdf
+    image/jpeg
+    image/png
+    image/tiff
+  ].freeze
 
   def initialize(doc_ai_service: DocAiService.new)
     @doc_ai_service = doc_ai_service
   end
 
-  def submit(signed_ids:, user:)
-    validate_file_count!(signed_ids)
+  def submit(files:, user:)
+    validate_files!(files)
 
-    staged_documents = signed_ids.map do |signed_id|
-      blob = ActiveStorage::Blob.find_signed!(signed_id)
+    staged_documents = files.map do |file|
+      blob = ActiveStorage::Blob.create_and_upload!(
+        io: file,
+        filename: file.original_filename,
+        content_type: file.content_type
+      )
       staged = StagedDocument.create!(user_id: user.id, status: :pending, file: blob)
       submit_to_doc_ai(staged)
       staged
@@ -46,9 +57,30 @@ class DocumentStagingService
     DocAiResult::REGISTRY.keys
   end
 
-  def validate_file_count!(signed_ids)
-    raise ValidationError, "At least one file is required" if signed_ids.blank?
-    raise ValidationError, "A maximum of #{MAX_FILES} files is allowed" if signed_ids.size > MAX_FILES
+  def validate_files!(files)
+    raise ValidationError, "At least one file is required" if files.blank?
+    raise ValidationError, "A maximum of #{MAX_FILES} files is allowed" if files.size > MAX_FILES
+
+    files.each do |file|
+      validate_file_type!(file)
+      validate_file_size!(file)
+    end
+  end
+
+  def validate_file_type!(file)
+    content_type = Marcel::MimeType.for(file.tempfile, name: file.original_filename)
+    # Fallback to browser content_type if Marcel returns generic octet-stream
+    content_type = file.content_type if content_type == "application/octet-stream"
+
+    unless ALLOWED_CONTENT_TYPES.include?(content_type)
+      raise ValidationError, "File type #{content_type} is not allowed. Allowed types: #{ALLOWED_CONTENT_TYPES.join(', ')}"
+    end
+  end
+
+  def validate_file_size!(file)
+    if file.size > MAX_FILE_SIZE_BYTES
+      raise ValidationError, "File size #{file.size} bytes exceeds the maximum allowed size of #{MAX_FILE_SIZE_BYTES} bytes"
+    end
   end
 
   def submit_to_doc_ai(staged)
