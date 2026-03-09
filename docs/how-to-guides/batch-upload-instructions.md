@@ -89,8 +89,6 @@ To test different exemption scenarios, use the following fields:
 5. Click **"Upload"**
 6. You'll be redirected to the Batch Uploads list with a success message
 
-<!-- TODO: Update screenshots to reflect the v2 UI -->
-
 Processing begins automatically in the background. There is no separate "process" step.
 
 ### Step 3: Monitor Progress
