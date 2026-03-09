@@ -16,12 +16,11 @@ RSpec.describe "/document_staging", type: :request do
   end
 
   describe "POST /document_staging" do
-    let(:blob) do
-      ActiveStorage::Blob.create_and_upload!(
-        io: StringIO.new("%PDF-1.4 test payslip"),
-        filename: "payslip.pdf",
-        content_type: "application/pdf"
-      )
+    let(:uploaded_file) do
+      tempfile = Tempfile.new([ "payslip", ".pdf" ])
+      tempfile.write("%PDF-1.4 test payslip")
+      tempfile.rewind
+      Rack::Test::UploadedFile.new(tempfile.path, "application/pdf", true, original_filename: "payslip.pdf")
     end
 
     let(:service) { instance_double(DocumentStagingService) }
@@ -33,12 +32,14 @@ RSpec.describe "/document_staging", type: :request do
     end
 
     it "calls the service and renders a successful response" do
-      post document_staging_path, params: { signed_ids: [ blob.signed_id ] }
+      post document_staging_path, params: { files: [ uploaded_file ] }
       expect(response).to be_successful
-      expect(service).to have_received(:submit).with(
-        signed_ids: [ blob.signed_id ],
-        user: user
-      )
+      expect(service).to have_received(:submit) do |args|
+        expect(args[:files]).to be_an(Array)
+        expect(args[:files].size).to eq(1)
+        expect(args[:files].first.original_filename).to eq("payslip.pdf")
+        expect(args[:user]).to eq(user)
+      end
     end
 
     context "when service raises a validation error" do
@@ -48,7 +49,7 @@ RSpec.describe "/document_staging", type: :request do
       end
 
       it "renders an error response" do
-        post document_staging_path, params: { signed_ids: [] }
+        post document_staging_path, params: { files: [] }
         expect(response).to have_http_status(:unprocessable_content)
       end
     end
