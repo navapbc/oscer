@@ -19,16 +19,19 @@ class DocumentStagingService
   def submit(files:, user:)
     validate_files!(files)
 
-    staged_documents = files.map do |file|
-      content_type = determine_content_type(file)
-      blob = ActiveStorage::Blob.create_and_upload!(
-        io: file,
-        filename: file.original_filename,
-        content_type: content_type
-      )
-      staged = StagedDocument.create!(user_id: user.id, status: :pending, file: blob)
-      submit_to_doc_ai(staged)
-      staged
+    staged_documents = []
+    StagedDocument.transaction do
+      staged_documents = files.map do |file|
+        content_type = determine_content_type(file)
+        blob = ActiveStorage::Blob.create_and_upload!(
+          io: file,
+          filename: file.original_filename,
+          content_type: content_type
+        )
+        staged = StagedDocument.create!(user_id: user.id, status: :pending, file: blob)
+        submit_to_doc_ai(staged)
+        staged
+      end
     end
 
     pending_ids = staged_documents.select(&:pending?).map(&:id)
