@@ -2,7 +2,6 @@
 
 class DocumentStagingController < ApplicationController
   before_action :authenticate_user!
-  skip_after_action :verify_policy_scoped
 
   def create
     authorize StagedDocument
@@ -17,7 +16,7 @@ class DocumentStagingController < ApplicationController
 
   def lookup
     authorize StagedDocument
-    @staged_documents = StagedDocument.where(id: lookup_params[:ids], user_id: current_user.id)
+    @staged_documents = policy_scope(StagedDocument).where(id: lookup_params[:ids])
     @all_complete = @staged_documents.any? && @staged_documents.none?(&:pending?)
   end
 
