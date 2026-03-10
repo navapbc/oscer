@@ -246,7 +246,7 @@ Members who sign in via OIDC do not use the app’s MFA (e.g. Cognito TOTP). The
 
 ### Member auth: Cognito and/or Member OIDC
 
-Member authentication can be Cognito-only, Member OIDC-only, or both. When both are enabled, the login page offers both options. Tradeoff: two code paths and two configs when both are used.
+Member authentication can be Cognito-only, Member OIDC-only, or both. When both are enabled, the login page offers both options. Tradeoff: two code paths and two configs when both are used. Note: Cognito is the current default for app-managed credentials but is not a hard dependency. Any email/password or managed auth system can fill that role
 
 ---
 
