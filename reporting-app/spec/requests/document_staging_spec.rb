@@ -42,6 +42,17 @@ RSpec.describe "/document_staging", type: :request do
       end
     end
 
+    context "when no files are provided" do
+      before do
+        allow(service).to receive(:submit).and_return([])
+      end
+
+      it "sets a flash notice" do
+        post document_staging_path, params: { files: [] }
+        expect(flash[:notice]).to eq("TODO: Try upload again")
+      end
+    end
+
     context "when service raises a validation error" do
       before do
         allow(service).to receive(:submit)
