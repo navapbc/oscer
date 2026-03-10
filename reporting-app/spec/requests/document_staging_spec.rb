@@ -56,7 +56,7 @@ RSpec.describe "/document_staging", type: :request do
   end
 
   describe "GET /document_staging/lookup", skip: "Pending until lookup page is built" do
-    let!(:staged_doc) do
+    let(:staged_doc) do
       create(:staged_document, user_id: user.id, doc_ai_job_id: "abc-123", status: "pending")
     end
 
@@ -75,7 +75,7 @@ RSpec.describe "/document_staging", type: :request do
     end
 
     context "when all documents are complete" do
-      let!(:staged_doc) do
+      let(:staged_doc) do
         create(:staged_document, :validated, user_id: user.id, doc_ai_job_id: "abc-123")
       end
 
