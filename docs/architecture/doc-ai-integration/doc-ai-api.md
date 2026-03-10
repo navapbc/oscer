@@ -167,6 +167,10 @@ Expired/non-validated signed IDs are skipped gracefully. Fallback to manual uplo
 
 ## API Interface
 
+### Turbo Frames Polling Reference
+
+For implementation details on how to use Turbo Frames to auto-refresh a page that polls for document upload status, see the [Turbo Frames Polling Reference](./references/turbo-frames-polling.md).
+
 ### Synchronous (wait=true)
 
 | Property | Value |
