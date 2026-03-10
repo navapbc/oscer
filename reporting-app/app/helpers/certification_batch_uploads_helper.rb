@@ -24,4 +24,34 @@ module CertificationBatchUploadsHelper
       UPLOADER_LABEL_SYSTEM
     end
   end
+
+  # Returns alert options (type, heading, message) for the batch upload's current status,
+  # or nil if the status has no alert (e.g. completed, which renders its own partial).
+  def status_alert_options(batch_upload)
+    scope = "staff.certification_batch_uploads.show"
+
+    case batch_upload.status
+    when "pending"
+      {
+        type: "info",
+        message: t("queued_message", scope: scope)
+      }
+    when "processing"
+      {
+        type: "info",
+        message: t(
+          "processing_message",
+          scope: scope,
+          processed: batch_upload.num_rows_processed,
+          total: batch_upload.num_rows
+        )
+      }
+    when "failed"
+      {
+        type: "error",
+        heading: t("failed_heading", scope: scope),
+        message: batch_upload.results&.dig("error") || t("failed_message", scope: scope)
+      }
+    end
+  end
 end
