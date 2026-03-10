@@ -2,7 +2,7 @@
 
 ## Problem
 
-Members (citizens) need to sign in to OSCER to access their certifications and report activities. Some states provide a citizen identity provider (IdP)—e.g. a state portal or federated identity—that members already use for other government services. OSCER should allow members to sign in via that IdP when the state configures it, without state-specific names in code or config. When no citizen IdP is configured, members continue using app-managed credentials (e.g. Cognito email/password).
+Members (residents or beneficiaries) need to sign in to OSCER to access their certifications and report activities. Some states provide a member identity provider (IdP)—e.g. a state portal or federated identity—that members already use for other government services. OSCER should allow members to sign in via that IdP when the state configures it, without state-specific names in code or config. When no member IdP is configured, members continue using app-managed credentials (e.g. Cognito email/password).
 
 ## Approach
 
