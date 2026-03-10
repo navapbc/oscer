@@ -9,9 +9,9 @@ class StagedDocumentPolicy < ApplicationPolicy
     user
   end
 
-  private
-
-  def owner?
-    record.user_id == user.id
+  class Scope < ApplicationPolicy::Scope
+    def resolve
+      scope.where(user_id: user.id)
+    end
   end
 end

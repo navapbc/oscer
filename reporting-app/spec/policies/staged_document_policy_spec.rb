@@ -28,4 +28,21 @@ RSpec.describe StagedDocumentPolicy, type: :policy do
       end
     end
   end
+
+  describe "Scope" do
+    subject(:resolved_scope) { described_class::Scope.new(user, StagedDocument.all).resolve }
+
+    let(:other_user) { create(:user) }
+    let!(:user_staged_document) { create(:staged_document, user_id: user.id) }
+    let!(:other_staged_document) { create(:staged_document, user_id: other_user.id) }
+
+
+    it "includes staged documents belonging to the user" do
+      expect(resolved_scope).to include(user_staged_document)
+    end
+
+    it "excludes staged documents belonging to other users" do
+      expect(resolved_scope).not_to include(other_staged_document)
+    end
+  end
 end
