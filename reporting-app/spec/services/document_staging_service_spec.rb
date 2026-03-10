@@ -29,6 +29,15 @@ RSpec.describe DocumentStagingService do
       expect(result.first).to be_a(StagedDocument)
       expect(result.first).to be_persisted
       expect(result.first.user_id).to eq(user.id)
+      expect(result.first.file.content_type).to eq("application/pdf")
+    end
+
+    it "uses Marcel to determine content_type and ignores browser fallback" do
+      # Mock Marcel to return something different than file.content_type
+      allow(Marcel::MimeType).to receive(:for).and_return("image/png")
+
+      result = service.submit(files: [ file ], user: user)
+      expect(result.first.file.content_type).to eq("image/png")
     end
 
     it "sets status to pending" do
@@ -109,6 +118,12 @@ RSpec.describe DocumentStagingService do
       it "raises a validation error even if browser claims it is PDF" do
         expect { service.submit(files: [ invalid_file ], user: user) }
           .to raise_error(DocumentStagingService::ValidationError, /file type text\/plain is not allowed/i)
+      end
+
+      it "does not fall back to browser content_type if Marcel returns octet-stream" do
+        allow(Marcel::MimeType).to receive(:for).and_return("application/octet-stream")
+        expect { service.submit(files: [ file ], user: user) }
+          .to raise_error(DocumentStagingService::ValidationError, /file type application\/octet-stream is not allowed/i)
       end
     end
 

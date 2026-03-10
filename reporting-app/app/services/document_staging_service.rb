@@ -20,10 +20,11 @@ class DocumentStagingService
     validate_files!(files)
 
     staged_documents = files.map do |file|
+      content_type = determine_content_type(file)
       blob = ActiveStorage::Blob.create_and_upload!(
         io: file,
         filename: file.original_filename,
-        content_type: file.content_type
+        content_type: content_type
       )
       staged = StagedDocument.create!(user_id: user.id, status: :pending, file: blob)
       submit_to_doc_ai(staged)
@@ -68,13 +69,15 @@ class DocumentStagingService
   end
 
   def validate_file_type!(file)
-    content_type = Marcel::MimeType.for(file.tempfile, name: file.original_filename)
-    # Fallback to browser content_type if Marcel returns generic octet-stream
-    content_type = file.content_type if content_type == "application/octet-stream"
+    content_type = determine_content_type(file)
 
     unless ALLOWED_CONTENT_TYPES.include?(content_type)
       raise ValidationError, "File type #{content_type} is not allowed. Allowed types: #{ALLOWED_CONTENT_TYPES.join(', ')}"
     end
+  end
+
+  def determine_content_type(file)
+    Marcel::MimeType.for(file.tempfile, name: file.original_filename)
   end
 
   def validate_file_size!(file)
