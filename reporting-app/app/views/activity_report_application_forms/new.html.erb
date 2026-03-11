@@ -13,7 +13,24 @@
   <li><%= t(".what_you_need.item_2") %></li>
 </ul>
 <p><%= t(".save_info") %></p>
+<% if feature_enabled?(:doc_ai) %>
+  <div class="usa-summary-box margin-bottom-3" role="region" aria-labelledby="doc-ai-callout">
+    <div class="usa-summary-box__body">
+      <h3 class="usa-summary-box__heading display-flex flex-align-center" id="doc-ai-callout">
+        <%= t(".doc_ai.callout_heading") %>
+      </h3>
+      <div class="usa-summary-box__text">
+        <p><%= t(".doc_ai.callout_body") %></p>
+      </div>
+    </div>
+  </div>
+<% end %>
 <%= strata_form_with(model: ActivityReportApplicationForm.new) do |f| %>
   <%= f.hidden_field :certification_case_id, value: @certification_case.id %>
+  <% if feature_enabled?(:doc_ai) %>
+    <div class="doc-ai-skip-checkbox">
+      <%= f.check_box :skip_ai, { label: t(".doc_ai.skip_ai_label") } %>
+    </div>
+  <% end %>
   <%= f.submit t(".start_button") %>
 <% end %>
