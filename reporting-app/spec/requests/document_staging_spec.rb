@@ -31,9 +31,9 @@ RSpec.describe "/document_staging", type: :request do
       allow(service).to receive(:submit).and_return([ staged_doc ])
     end
 
-    it "calls the service and renders a successful response" do
+    it "calls the service and redirects to the status page" do
       post document_staging_path, params: { files: [ uploaded_file ] }
-      expect(response).to be_successful
+      expect(response).to redirect_to(doc_ai_upload_status_document_staging_path(ids: [ staged_doc.id ]))
       expect(service).to have_received(:submit) do |args|
         expect(args[:files]).to be_an(Array)
         expect(args[:files].size).to eq(1)
@@ -47,9 +47,13 @@ RSpec.describe "/document_staging", type: :request do
         allow(service).to receive(:submit).and_return([])
       end
 
-      it "sets a flash notice" do
-        post document_staging_path, params: { files: [] }
-        expect(flash[:notice]).to eq("TODO: Try upload again")
+      it "redirects back to the upload page with a notice" do
+        activity_report = create(:activity_report_application_form)
+        post document_staging_path, params: { files: [], activity_report_application_form_id: activity_report.id }
+        expect(response).to redirect_to(
+          doc_ai_upload_activity_report_application_form_path(activity_report)
+        )
+        expect(flash[:notice]).to be_present
       end
     end
 
@@ -59,14 +63,34 @@ RSpec.describe "/document_staging", type: :request do
           .and_raise(DocumentStagingService::ValidationError, "At least one file required")
       end
 
-      it "renders an error response", skip: "Pending until redirect page is built" do
+      it "renders an error response" do
         post document_staging_path, params: { files: [] }
         expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end
 
-  describe "GET /document_staging/lookup", skip: "Pending until lookup page is built" do
+  describe "GET /document_staging/doc_ai_upload_status" do
+    let(:staged_doc) do
+      create(:staged_document, user_id: user.id, doc_ai_job_id: "abc-123", status: "pending")
+    end
+
+    it "renders a successful response with valid staged document IDs" do
+      get doc_ai_upload_status_document_staging_path, params: { ids: [ staged_doc.id ] }
+      expect(response).to be_successful
+    end
+
+    it "does not include documents belonging to another user" do
+      other_user = create(:user)
+      other_doc = create(:staged_document, user_id: other_user.id, doc_ai_job_id: "xyz-789")
+
+      get doc_ai_upload_status_document_staging_path, params: { ids: [ other_doc.id ] }
+      expect(response).to be_successful
+      expect(response.body).not_to include(other_doc.file.filename.to_s)
+    end
+  end
+
+  describe "GET /document_staging/lookup" do
     let(:staged_doc) do
       create(:staged_document, user_id: user.id, doc_ai_job_id: "abc-123", status: "pending")
     end
