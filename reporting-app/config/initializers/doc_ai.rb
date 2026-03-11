@@ -2,10 +2,8 @@
 
 # DocAI Integration Configuration
 #
-# Required environment variables:
-#   DOC_AI_API_HOST - DocAI API base endpoint
-#
-# Optional environment variables:
+# Environment variables:
+#   DOC_AI_API_HOST                 - DocAI API base endpoint (default: platform-test-dev endpoint)
 #   DOC_AI_TIMEOUT_SECONDS          - HTTP timeout in seconds (default: 60)
 #   DOC_AI_LOW_CONFIDENCE_THRESHOLD - Minimum confidence threshold (default: 0.7)
 

@@ -52,13 +52,12 @@ RSpec.describe DocAiAdapter do
 
   describe "#analyze_document" do
     context "when the request is successful (200)" do
-      before do
-        stubs.post("/v1/documents") do
+      it "sends wait=true query param and returns the parsed response body" do
+        stubs.post("/v1/documents") do |env|
+          expect(env.params["wait"]).to eq("true")
           [ 200, { "Content-Type" => "application/json" }, success_response_body.to_json ]
         end
-      end
 
-      it "sends wait=true query param and returns the parsed response body" do
         result = adapter.analyze_document(file: file_double)
         expect(result["job_id"]).to eq("d773fa8f-3cc7-47d8-be78-4125c190c290")
         expect(result["matchedDocumentClass"]).to eq("Payslip")
@@ -127,13 +126,12 @@ RSpec.describe DocAiAdapter do
     end
 
     context "when the request is successful (200)" do
-      before do
-        stubs.post("/v1/documents") do
+      it "returns the parsed response body without wait=true" do
+        stubs.post("/v1/documents") do |env|
+          expect(env.params["wait"]).to be_nil
           [ 200, { "Content-Type" => "application/json" }, submit_response_body.to_json ]
         end
-      end
 
-      it "returns the parsed response body without wait=true" do
         result = adapter.analyze_document_async(file: file_double)
         expect(result["jobId"]).to eq("abc-123")
         expect(result["status"]).to eq("not_started")
@@ -182,14 +180,14 @@ RSpec.describe DocAiAdapter do
     let(:job_id) { "d773fa8f-3cc7-47d8-be78-4125c190c290" }
 
     context "when the job is completed" do
-      before do
-        stubs.get("/v1/documents/#{job_id}") do
+      it "returns the parsed response body with include_extracted_data=true" do
+        stubs.get("/v1/documents/#{job_id}") do |env|
+          expect(env.params["include_extracted_data"]).to eq("true")
           [ 200, { "Content-Type" => "application/json" }, success_response_body.to_json ]
         end
-      end
 
-      it "returns the parsed response body" do
         result = adapter.get_document_status(job_id: job_id)
+
         expect(result["status"]).to eq("completed")
         expect(result["job_id"]).to eq(job_id)
       end
