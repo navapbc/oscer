@@ -30,6 +30,7 @@ Rails.application.routes.draw do
 
   resource :document_staging, only: [ :create ], controller: "document_staging" do
     get :lookup, on: :collection
+    get :doc_ai_upload_status, on: :collection
   end
 
   get "/dashboard", to: "dashboard#index"
