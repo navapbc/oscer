@@ -1,0 +1,32 @@
+<%= content_for :title, t(".title") %>
+
+<%= render "strata/shared/step_indicator",
+     steps: %i[start select_periods add_activities review submitted],
+     current_step: :add_activities,
+     translation_scope: "activity_report_application_forms.steps" %>
+
+<p>
+  <svg class="usa-icon usa-icon--size-3 text-primary margin-right-05" aria-hidden="true" focusable="false" role="img" style="vertical-align: middle;">
+    <use xlink:href="<%= asset_path('@uswds/uswds/dist/img/sprite.svg') %>#arrow_back"></use>
+  </svg>
+  <%= link_to t(".back_link"), dashboard_path, class: "usa-link" %>
+</p>
+
+<h1><%= t(".title") %></h1>
+<p><%= t(".instructions") %></p>
+<ul class="usa-list">
+  <li><%= t(".document_types.pay_stubs") %></li>
+  <li><%= t(".document_types.payslips") %></li>
+</ul>
+<p class="text-base"><%= t(".file_format_note") %></p>
+
+<%= strata_form_with(
+      url: document_staging_path,
+      method: :post) do |f| %>
+  <%= f.hidden_field :activity_report_application_form_id,
+        value: @activity_report_application_form.id %>
+  <%= f.file_field :files, label: t(".choose_file_label"), multiple: true,
+        accept: ".tiff,.tif,.pdf,.jpg,.jpeg,.png" %>
+  <%= f.submit t(".save_and_continue"),
+        data: { turbo_submits_with: t(".uploading") } %>
+<% end %>
