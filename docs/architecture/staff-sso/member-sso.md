@@ -6,7 +6,7 @@ Members (residents or beneficiaries) need to sign in to OSCER to access their ce
 
 ## Approach
 
-1. **OIDC redirect flow** — OSCER acts as an OIDC Relying Party. Member clicks "Sign in with your account"; app redirects to the configured citizen IdP; IdP authenticates and redirects back with an authorization code; app exchanges code for tokens and provisions the user.
+1. **OIDC redirect flow** — OSCER acts as an OIDC Relying Party. Member clicks "Sign in with your account"; app redirects to the configured public member IdP; IdP authenticates and redirects back with an authorization code; app exchanges code for tokens and provisions the user.
 2. **Configuration-driven** — All IdP-specific values (issuer URL, client id/secret, claim names) come from `MEMBER_OIDC_*` environment variables. No state or IdP names in the repo.
 3. **Just-In-Time provisioning** — Member user records are created on first successful OIDC login. Find by IdP UID; sync email and name from claims. No role mapping (members are non-staff).
 4. **Optional alongside Cognito** — Member OIDC can be the only member auth, or offered alongside email/password (Cognito). Login page shows both options when both are enabled.
@@ -14,8 +14,8 @@ Members (residents or beneficiaries) need to sign in to OSCER to access their ce
 ```mermaid
 flowchart LR
     Member[Member] --> OSCER[OSCER]
-    OSCER -->|Redirect| CitizenIdP[Citizen IdP]
-    CitizenIdP -->|Token| OSCER
+    OSCER -->|Redirect| MemberIdP[Public member IdP]
+    MemberIdP -->|Token| OSCER
     OSCER -->|JIT Provision| DB[(User)]
 
     Member -.->|Or| OSCER
@@ -30,7 +30,7 @@ flowchart LR
 | Flow               | Doc / component                | Purpose                                                      |
 | ------------------ | ------------------------------ | ------------------------------------------------------------ |
 | **Staff OIDC**     | [staff-sso.md](./staff-sso.md) | Staff sign-in via state staff IdP; role from groups          |
-| **Member OIDC**    | This doc                       | Member sign-in via state citizen IdP; no role                |
+| **Member OIDC**    | This doc                       | Member sign-in via state public member IdP; no role                |
 | **Member Cognito** | AuthService, CognitoAdapter    | Member email/password when OIDC not used or as second option |
 
 Staff and member OIDC share OmniAuth, Devise, and the User model but use separate providers (`:sso` vs `:member_oidc`), config, and provisioners.
@@ -44,14 +44,14 @@ Staff and member OIDC share OmniAuth, Devise, and the User model but use separat
 ### When to show the member login screen vs redirect to IdP
 
 - **Member OIDC and Cognito both available:** Show the member login page with both "Sign in with your account" (OIDC) and email/password (Cognito). User chooses one.
-- **Member OIDC only (Cognito not offered for members):** Bypass the email/password form. When an unauthenticated member visits the member sign-in URL, redirect directly to the member OIDC flow (e.g. `/member_oidc/login`, which POSTs to OmniAuth and then redirects to the citizen IdP). Optionally show a minimal "Redirecting to sign in..." page that auto-submits the form. Result: member never sees the standard email/password login screen.
+- **Member OIDC only (Cognito not offered for members):** Bypass the email/password form. When an unauthenticated member visits the member sign-in URL, redirect directly to the member OIDC flow (e.g. `/member_oidc/login`, which POSTs to OmniAuth and then redirects to the public member IdP). Optionally show a minimal "Redirecting to sign in..." page that auto-submits the form. Result: member never sees the standard email/password login screen.
 - **Cognito only:** Show the standard member login page (email/password only).
 
 So when `MEMBER_OIDC_ENABLED` is true and member OIDC is the only configured member auth, the app should redirect to the OIDC flow and bypass the member login screen. When both OIDC and Cognito are offered, show the login screen with both options.
 
 ### MFA bypass for member OIDC users
 
-Members who sign in via the citizen IdP (OIDC) do not use the app’s own multi-factor auth (e.g. Cognito software token). The IdP is responsible for MFA. To avoid forcing them through the app’s MFA preference page or a Cognito MFA challenge:
+Members who sign in via the public member IdP (OIDC) do not use the app’s own multi-factor auth (e.g. Cognito software token). The IdP is responsible for MFA. To avoid forcing them through the app’s MFA preference page or a Cognito MFA challenge:
 
 - **On provisioning:** When creating or updating a user from member OIDC callback, set `user.mfa_preference = "opt_out"` (or leave it set if already present). Same pattern as staff SSO (`StaffUserProvisioner` sets `mfa_preference ||= "opt_out"` for SSO users).
 - **After sign-in:** `after_sign_in_path_for(user)` will not redirect to `users_mfa_preference_path` when `mfa_preference` is already set (e.g. `opt_out`), so member OIDC users go straight to their return path or dashboard.
@@ -68,7 +68,7 @@ Implement this in `MemberOidcProvisioner` so every member OIDC user has `mfa_pre
 flowchart TB
     subgraph External["External"]
         Member[Member]
-        CitizenIdP[Citizen IdP]
+        MemberIdP[Public member IdP]
     end
 
     subgraph OSCER["OSCER"]
@@ -77,9 +77,9 @@ flowchart TB
     end
 
     Member -->|Access member area| App
-    App -->|Redirect to login| CitizenIdP
-    CitizenIdP -->|Authenticate| Member
-    CitizenIdP -->|ID token + claims| App
+    App -->|Redirect to login| MemberIdP
+    MemberIdP -->|Authenticate| Member
+    MemberIdP -->|ID token + claims| App
     App -->|Provision/update user| DB
     App -->|Session| Member
 ```
@@ -173,7 +173,7 @@ Redirect URI is built from the same host/port/HTTPS logic as staff (e.g. `build_
 sequenceDiagram
     participant Member
     participant OSCER
-    participant IdP as Citizen IdP
+    participant IdP as Public member IdP
 
     Member->>OSCER: Visit member login
     OSCER->>Member: Show "Sign in with your account" (and optionally email/password)
@@ -218,15 +218,15 @@ flowchart TB
 
 ### OIDC over SAML
 
-Use OpenID Connect for member IdP integration. OIDC is the standard for citizen and state portals. Tradeoff: SAML-only IdPs are out of scope for initial rollout.
+Use OpenID Connect for member IdP integration. OIDC is the standard for public member and state portals. Tradeoff: SAML-only IdPs are out of scope for initial rollout.
 
 ### Generic naming only
 
-All code and config use generic names: `MEMBER_OIDC_*`, `member_oidc`, `Auth::MemberOidcController`, `MemberOidcProvisioner`. No state or citizen IdP names in the repo. Tradeoff: deployment documentation specifies which env values to set for each state's citizen IdP.
+All code and config use generic names: `MEMBER_OIDC_*`, `member_oidc`, `Auth::MemberOidcController`, `MemberOidcProvisioner`. No state or public member IdP names in the repo. Tradeoff: deployment documentation specifies which env values to set for each state's public member IdP.
 
 ### Configuration-driven IdP settings
 
-Issuer, client credentials, and claim names come from environment variables. Same codebase works for any OIDC-compliant citizen IdP. Tradeoff: per-deployment configuration and documentation.
+Issuer, client credentials, and claim names come from environment variables. Same codebase works for any OIDC-compliant public member IdP. Tradeoff: per-deployment configuration and documentation.
 
 ### Just-In-Time provisioning
 
@@ -238,11 +238,11 @@ Use the IdP's unique identifier (`sub` or configured claim) as the stable key. E
 
 ### No role mapping for members
 
-Members do not receive staff roles from the citizen IdP. Provisioner only sets identity attributes (uid, email, name) and `provider: "member_oidc"`. Tradeoff: authorization for member actions is separate (e.g. resource ownership, not role).
+Members do not receive staff roles from the public member IdP. Provisioner only sets identity attributes (uid, email, name) and `provider: "member_oidc"`. Tradeoff: authorization for member actions is separate (e.g. resource ownership, not role).
 
 ### MFA bypass for member OIDC users
 
-Members who sign in via OIDC do not use the app’s MFA (e.g. Cognito TOTP). The citizen IdP handles MFA. The provisioner sets `mfa_preference` to `opt_out` so the app does not redirect them to the MFA preference page or a Cognito MFA challenge after sign-in. Tradeoff: app does not enforce a second factor for these users; reliance on IdP MFA policy.
+Members who sign in via OIDC do not use the app’s MFA (e.g. Cognito TOTP). The public member IdP handles MFA. The provisioner sets `mfa_preference` to `opt_out` so the app does not redirect them to the MFA preference page or a Cognito MFA challenge after sign-in. Tradeoff: app does not enforce a second factor for these users; reliance on IdP MFA policy.
 
 ### Member auth: Cognito and/or Member OIDC
 
@@ -252,11 +252,11 @@ Member authentication can be Cognito-only, Member OIDC-only, or both. When both 
 
 ## Local Development with Keycloak
 
-Use a Keycloak realm as a mock citizen IdP (can share Keycloak with staff SSO; use a different realm):
+Use a Keycloak realm as a mock public member IdP (can share Keycloak with staff SSO; use a different realm):
 
 ```bash
 MEMBER_OIDC_ENABLED=true
-MEMBER_OIDC_ISSUER_URL=http://localhost:8080/realms/citizen
+MEMBER_OIDC_ISSUER_URL=http://localhost:8080/realms/member
 MEMBER_OIDC_CLIENT_ID=oscer-member
 MEMBER_OIDC_CLIENT_SECRET=oscer-member-secret
 # Redirect URI: http://localhost:3000/auth/member_oidc/callback
@@ -288,7 +288,7 @@ On failure, redirect to the member sign-in path (e.g. `new_user_session_path`) w
 ## Constraints
 
 - OIDC only (no SAML in initial scope).
-- One citizen IdP per deployment for the member OIDC flow.
+- One public member IdP per deployment for the member OIDC flow.
 - MFA and password policy are the IdP's responsibility.
 - No staff role or group claims used for members.
 
@@ -296,8 +296,8 @@ On failure, redirect to the member sign-in path (e.g. `new_user_session_path`) w
 
 ## Future Considerations
 
-- SAML adapter for legacy citizen IdPs.
-- Multiple citizen IdPs (e.g. state portal + Login.gov).
+- SAML adapter for legacy public member IdPs.
+- Multiple public member IdPs (e.g. state portal + Login.gov).
 - Session refresh / silent re-auth.
 - Audit logging for member OIDC events.
 - IdP-initiated login.
@@ -307,4 +307,4 @@ On failure, redirect to the member sign-in path (e.g. `new_user_session_path`) w
 ## Related Documents
 
 - [OIDC Authentication (Staff and Member)](./staff-sso.md) — Combined view of staff and member OIDC, shared decisions, and C4.
-- **Infrastructure:** For deployment and citizen IdP setup (redirect URIs, client registration), see `docs/infra/` (e.g. identity-provider.md, environment-variables-and-secrets.md) where applicable.
+- **Infrastructure:** For deployment and public member IdP setup (redirect URIs, client registration), see `docs/infra/` (e.g. identity-provider.md, environment-variables-and-secrets.md) where applicable.
