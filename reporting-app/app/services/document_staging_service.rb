@@ -12,8 +12,9 @@ class DocumentStagingService
     image/tiff
   ].freeze
 
-  def initialize(doc_ai_service: DocAiService.new)
+  def initialize(doc_ai_service: DocAiService.new, image_to_pdf_service: ImageToPdfConversionService.new)
     @doc_ai_service = doc_ai_service
+    @image_to_pdf_service = image_to_pdf_service
   end
 
   def submit(files:, user:)
@@ -90,12 +91,16 @@ class DocumentStagingService
   end
 
   def submit_to_doc_ai(staged)
-    response = @doc_ai_service.analyze_async(file: staged.file)
+    submission_file = nil
+    submission_file = @image_to_pdf_service.convert(staged.file)
+    response = @doc_ai_service.analyze_async(file: submission_file)
     if response.nil?
       staged.update!(status: :failed)
     else
       staged.update!(doc_ai_job_id: response["jobId"])
     end
+  ensure
+    submission_file.close! if submission_file.is_a?(ImageToPdfConversionService::ConvertedFile)
   end
 
   def update_from_result(staged, result)
