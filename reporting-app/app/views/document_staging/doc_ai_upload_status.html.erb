@@ -1,0 +1,45 @@
+<%= content_for :title, t(".title") %>
+
+<%= render "strata/shared/step_indicator",
+     steps: %i[start select_periods add_activities review submitted],
+     current_step: :add_activities,
+     translation_scope: "activity_report_application_forms.steps" %>
+
+<p>
+  <svg class="usa-icon usa-icon--size-3 text-primary margin-right-05" aria-hidden="true" focusable="false" role="img" style="vertical-align: middle;">
+    <use xlink:href="<%= asset_path('@uswds/uswds/dist/img/sprite.svg') %>#arrow_back"></use>
+  </svg>
+  <%= link_to t(".back_link"), dashboard_path, class: "usa-link" %>
+</p>
+
+<h1><%= t(".title") %></h1>
+<p class="text-base"><%= t(".file_format_note") %></p>
+
+<%= turbo_frame_tag "document_staging_status",
+      data: {
+        controller: "auto-refresh",
+        auto_refresh_active_value: !@all_complete,
+        auto_refresh_interval_value: 5000
+      } do %>
+  <% if @all_complete %>
+    <%= render partial: "results", locals: { staged_documents: @staged_documents } %>
+  <% else %>
+    <%= render partial: "processing_status", locals: { staged_documents: @staged_documents } %>
+  <% end %>
+<% end %>
+
+<div class="usa-summary-box margin-y-3" role="region" aria-labelledby="doc-ai-status-callout">
+  <div class="usa-summary-box__body">
+    <h3 class="usa-summary-box__heading display-flex flex-align-center" id="doc-ai-status-callout">
+      <%= t(".doc_ai.callout_heading") %>
+    </h3>
+    <div class="usa-summary-box__text">
+      <p><%= t(".doc_ai.callout_body") %></p>
+    </div>
+  </div>
+</div>
+
+<div class="display-flex flex-align-center">
+  <%= link_to t(".save_and_continue"), "#", class: "usa-button margin-right-2" %>
+  <%= link_to t(".skip_ai"), "#", class: "usa-button usa-button--outline" %>
+</div>
