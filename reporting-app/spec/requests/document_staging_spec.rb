@@ -32,8 +32,17 @@ RSpec.describe "/document_staging", type: :request do
     end
 
     it "calls the service and redirects to the status page" do
-      post document_staging_path, params: { files: [ uploaded_file ] }
-      expect(response).to redirect_to(doc_ai_upload_status_document_staging_path(ids: [ staged_doc.id ]))
+      activity_report = create(:activity_report_application_form)
+      post document_staging_path, params: {
+        files: [ uploaded_file ],
+        activity_report_application_form_id: activity_report.id
+      }
+      expect(response).to redirect_to(
+        doc_ai_upload_status_document_staging_path(
+          ids: [ staged_doc.id ],
+          activity_report_application_form_id: activity_report.id
+        )
+      )
       expect(service).to have_received(:submit) do |args|
         expect(args[:files]).to be_an(Array)
         expect(args[:files].size).to eq(1)
@@ -71,12 +80,16 @@ RSpec.describe "/document_staging", type: :request do
   end
 
   describe "GET /document_staging/doc_ai_upload_status" do
+    let(:activity_report) { create(:activity_report_application_form) }
     let(:staged_doc) do
       create(:staged_document, user_id: user.id, doc_ai_job_id: "abc-123", status: "pending")
     end
 
     it "renders a successful response with valid staged document IDs" do
-      get doc_ai_upload_status_document_staging_path, params: { ids: [ staged_doc.id ] }
+      get doc_ai_upload_status_document_staging_path, params: {
+        ids: [ staged_doc.id ],
+        activity_report_application_form_id: activity_report.id
+      }
       expect(response).to be_successful
     end
 
@@ -84,7 +97,10 @@ RSpec.describe "/document_staging", type: :request do
       other_user = create(:user)
       other_doc = create(:staged_document, user_id: other_user.id, doc_ai_job_id: "xyz-789")
 
-      get doc_ai_upload_status_document_staging_path, params: { ids: [ other_doc.id ] }
+      get doc_ai_upload_status_document_staging_path, params: {
+        ids: [ other_doc.id ],
+        activity_report_application_form_id: activity_report.id
+      }
       expect(response).to be_successful
       expect(response.body).not_to include(other_doc.file.filename.to_s)
     end
