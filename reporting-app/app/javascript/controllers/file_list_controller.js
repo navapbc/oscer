@@ -5,6 +5,8 @@ export default class extends Controller {
 
   remove(event) {
     const card = event.target.closest("[data-file-list-target='card']")
+    if (!card) return
+
     const id = card.dataset.id
 
     if (id) {
