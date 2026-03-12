@@ -28,18 +28,20 @@
   <% end %>
 <% end %>
 
-<div class="usa-summary-box margin-y-3" role="region" aria-labelledby="doc-ai-status-callout">
-  <div class="usa-summary-box__body">
-    <h3 class="usa-summary-box__heading display-flex flex-align-center" id="doc-ai-status-callout">
-      <%= t(".doc_ai.callout_heading") %>
-    </h3>
-    <div class="usa-summary-box__text">
-      <p><%= t(".doc_ai.callout_body") %></p>
-    </div>
-  </div>
-</div>
+<% if @all_complete %>
+  <%= strata_form_with(url: document_staging_path, method: :post,
+        id: "upload-more-form",
+        data: { turbo_frame: "_top" }) do |f| %>
+    <%= f.hidden_field :activity_report_application_form_id, value: @activity_report_application_form_id %>
+    <%= f.file_field :files, label: t(".choose_file_label"), multiple: true,
+          accept: ".tiff,.tif,.pdf,.jpg,.jpeg,.png" %>
+  <% end %>
+<% end %>
 
-<div class="display-flex flex-align-center">
-  <%= link_to t(".save_and_continue"), "#", class: "usa-button margin-right-2" %>
-  <%= link_to t(".skip_ai"), activity_report_application_form_path(@activity_report_application_form_id), class: "usa-button usa-button--outline" %>
+<div class="display-flex flex-align-center margin-top-3">
+  <%= strata_form_with(url: activity_report_application_form_path(@activity_report_application_form_id),
+        method: :get,
+        id: "save-form") do |f| %>
+    <%= f.submit t(".save_and_continue") %>
+  <% end %>
 </div>

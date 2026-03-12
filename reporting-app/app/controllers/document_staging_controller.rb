@@ -5,11 +5,14 @@ class DocumentStagingController < ApplicationController
 
   def create
     authorize StagedDocument
-    @staged_documents = service.submit(files: Array(create_params), user: current_user)
+    existing_ids = Array(create_params[:existing_ids])
+    @staged_documents = service.submit(files: Array(create_params[:files].reject(&:blank?)), user: current_user)
 
-    if @staged_documents.any?
+    all_ids = existing_ids + @staged_documents.map(&:id)
+
+    if all_ids.any?
       redirect_to doc_ai_upload_status_document_staging_path(
-        ids: @staged_documents.map(&:id),
+        ids: all_ids,
         activity_report_application_form_id: activity_report_application_form_id
       )
     else
@@ -28,6 +31,15 @@ class DocumentStagingController < ApplicationController
     @staged_documents = policy_scope(StagedDocument).where(id: @staged_document_ids)
     @all_complete = @staged_documents.any? && @staged_documents.none?(&:pending?)
     @activity_report_application_form_id = params[:activity_report_application_form_id]
+
+    return unless @all_complete && @staged_documents.any?
+
+    validated = @staged_documents.select(&:validated?)
+    if validated.any?
+      flash.now[:notice] = t("document_staging.results.upload_success")
+    else
+      flash.now[:alert] = t("document_staging.results.upload_failure")
+    end
   end
 
   def lookup
@@ -39,7 +51,7 @@ class DocumentStagingController < ApplicationController
   private
 
   def create_params
-    params.permit(:activity_report_application_form_id, files: [])[:files].reject(&:blank?)
+    params.permit(:activity_report_application_form_id, files: [], existing_ids: [])
   end
 
   def lookup_params

@@ -1,12 +1,3 @@
-<p class="text-bold margin-bottom-1"><%= t("document_staging.doc_ai_upload_status.selected_files") %></p>
-<ul class="usa-list usa-list--unstyled margin-bottom-3">
-  <% staged_documents.each do |doc| %>
-    <li class="margin-bottom-1">
-      <span class="usa-tag bg-primary-lighter text-primary-darker"><%= doc.file.filename %></span>
-    </li>
-  <% end %>
-</ul>
-
 <div class="usa-modal-wrapper is-visible" role="dialog" aria-labelledby="scanning-modal-heading" aria-describedby="scanning-modal-description">
   <div class="usa-modal-overlay is-visible" aria-controls="scanning-modal">
     <div class="usa-modal" id="scanning-modal" tabindex="-1">

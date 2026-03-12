@@ -1,0 +1,41 @@
+en:
+  document_staging:
+    create:
+      title: "Upload error"
+      heading: "Upload error"
+      error_message: "There was a problem with your upload."
+      back_to_upload: "Try uploading again"
+      no_files: "No files were uploaded. Please try again."
+    doc_ai_upload_status:
+      title: "Supporting documents"
+      back_link: "Back to activity report"
+      file_format_note: "Attach documents in .tiff, .tif, .pdf, .jpg, .jpeg, or .png only. Documents must be 30 MB or smaller in size."
+      selected_files: "Selected files:"
+      doc_ai:
+        callout_heading: "✨ Save time with AI"
+        callout_body: "We can help you skip the manual data entry. Our uploader automatically scans your uploaded documents to identify and fill in key details for you. If you'd rather do it yourself, you can enter your details in manually."
+      save_and_continue: "Save and continue"
+      skip_ai: "Skip, and enter details manually"
+      choose_file_label: "Choose a file"
+    processing:
+      title: "Processing documents"
+      body: "We're checking your documents. This may take a moment."
+      time_warning: "This may take 30 seconds to 1 minute. Please do not close this window and we'll update you when we're done."
+      modal_title: "Your document is being checked"
+      modal_body: "We're checking to make sure your document is clear and easy to read before you submit it."
+      scanning: "Scanning..."
+      helpful_tip: "Make sure you complete at least 80 hours each month of work or other approved activities so you don't lose coverage."
+    results:
+      upload_success: "Document/s successfully uploaded."
+      upload_failure: "There was a problem processing your documents."
+      selected_files: "Selected files:"
+      remove_file: "Remove file"
+      success:
+        one: "%{count} document successfully validated"
+        other: "%{count} documents successfully validated"
+      rejected:
+        one: "%{count} document was not recognized"
+        other: "%{count} documents were not recognized"
+      failed:
+        one: "%{count} document could not be processed"
+        other: "%{count} documents could not be processed"

@@ -51,6 +51,25 @@ RSpec.describe "/document_staging", type: :request do
       end
     end
 
+    context "with existing_ids for aggregation" do
+      let(:existing_doc) { create(:staged_document, :validated, user_id: user.id, doc_ai_job_id: "existing-1") }
+
+      it "merges existing IDs with new document IDs in redirect" do
+        activity_report = create(:activity_report_application_form)
+        post document_staging_path, params: {
+          files: [ uploaded_file ],
+          activity_report_application_form_id: activity_report.id,
+          existing_ids: [ existing_doc.id ]
+        }
+        expect(response).to redirect_to(
+          doc_ai_upload_status_document_staging_path(
+            ids: [ existing_doc.id, staged_doc.id ],
+            activity_report_application_form_id: activity_report.id
+          )
+        )
+      end
+    end
+
     context "when no files are provided" do
       before do
         allow(service).to receive(:submit).and_return([])
@@ -133,7 +152,7 @@ RSpec.describe "/document_staging", type: :request do
       it "renders the results partial" do
         get lookup_document_staging_path, params: { ids: [ staged_doc.id ] }
         expect(response).to be_successful
-        expect(response.body).to include("successfully validated")
+        expect(response.body).to include("Selected files:")
       end
     end
   end
