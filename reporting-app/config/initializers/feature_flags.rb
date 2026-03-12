@@ -15,11 +15,6 @@ module Features
   # Registry of all feature flags
   # Add new flags here - methods are generated automatically
   FEATURE_FLAGS = {
-    batch_upload_v2: {
-      env_var: "FEATURE_BATCH_UPLOAD_V2",
-      default: false,
-      description: "Enable batch upload v2 with cloud storage and streaming"
-    },
     doc_ai: {
       env_var: "FEATURE_DOC_AI",
       default: true,
