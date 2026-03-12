@@ -47,7 +47,8 @@ jobs:
               APP_NAME=${{ inputs.app_name }} \
               BASE_URL=${{ inputs.service_endpoint }} \
               CURRENT_SHARD=${{ matrix.shard }} \
-              TOTAL_SHARDS=${{ matrix.total_shards }}
+              TOTAL_SHARDS=${{ matrix.total_shards }} \
+              FEATURE_DOC_AI=false
 
       - name: Verify blob report directory after tests
         run: |

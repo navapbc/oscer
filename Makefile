@@ -137,6 +137,7 @@ e2e-test: e2e-build
 		-e BASE_URL=$(BASE_URL) \
 		-e CURRENT_SHARD=$(CURRENT_SHARD) \
 		-e TOTAL_SHARDS=$(TOTAL_SHARDS) \
+		-e FEATURE_DOC_AI=$(FEATURE_DOC_AI) \
 		-e CI=$(CI) \
 		-v $(CURDIR)/e2e/playwright-report:/e2e/playwright-report \
 		-v $(CURDIR)/e2e/blob-report:/e2e/blob-report \
