@@ -66,6 +66,14 @@ RSpec.describe ImageToPdfConversionService do
   end
 
   describe "#convert" do
+    context "when file does not respond to :blob" do
+      it "raises an ArgumentError" do
+        expect { service.convert(File.new("/dev/null")) }.to raise_error(
+          ArgumentError, /Expected an ActiveStorage attached file, got File/
+        )
+      end
+    end
+
     context "when file is a PDF" do
       let(:file) { build_attachment(content_type: "application/pdf", byte_size: 10.megabytes) }
 

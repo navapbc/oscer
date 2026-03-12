@@ -9,6 +9,8 @@ class ImageToPdfConversionService
     image/tiff
   ].freeze
 
+  private_constant :IMAGE_SIZE_THRESHOLD, :CONVERTIBLE_CONTENT_TYPES
+
   # Duck-type wrapper for converted files, compatible with DocAiAdapter's
   # expected interface: file.blob.open { |tf| }, file.content_type, file.filename.to_s.
   # Caller is responsible for calling #close! to clean up the tempfile.
@@ -42,6 +44,10 @@ class ImageToPdfConversionService
   # Returns the original file unchanged if: PDF, ≤5MB, unsupported type, or conversion fails.
   # Returns a ConvertedFile wrapper when conversion occurs — caller must call #close! to clean up.
   def convert(file)
+    unless file.respond_to?(:blob)
+      raise ArgumentError, "Expected an ActiveStorage attached file, got #{file.class}"
+    end
+
     return file if pdf?(file)
     return file unless convertible_image?(file)
     return file unless exceeds_size_threshold?(file)

@@ -711,7 +711,7 @@ DEPENDENCIES
   faraday-multipart
   good_job (~> 4.0)
   guard-rspec
-  image_processing (~> 1.2)
+  image_processing (~> 1.14)
   importmap-rails
   jbuilder
   jwt
