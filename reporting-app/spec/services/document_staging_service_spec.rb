@@ -4,7 +4,8 @@ require "rails_helper"
 
 RSpec.describe DocumentStagingService do
   let(:doc_ai_service) { instance_double(DocAiService) }
-  let(:service) { described_class.new(doc_ai_service: doc_ai_service) }
+  let(:image_to_pdf_service) { instance_double(ImageToPdfConversionService) }
+  let(:service) { described_class.new(doc_ai_service: doc_ai_service, image_to_pdf_service: image_to_pdf_service) }
   let(:user) { create(:user) }
 
   let(:file) do
@@ -18,6 +19,7 @@ RSpec.describe DocumentStagingService do
 
   describe "#submit" do
     before do
+      allow(image_to_pdf_service).to receive(:convert) { |file| file }
       allow(doc_ai_service).to receive(:analyze_async).and_return(submit_response)
       allow(FetchDocAiResultsJob).to receive(:set).and_return(FetchDocAiResultsJob)
       allow(FetchDocAiResultsJob).to receive(:perform_later)
@@ -148,6 +150,81 @@ RSpec.describe DocumentStagingService do
       it "raises a validation error" do
         expect { service.submit(files: [], user: user) }
           .to raise_error(DocumentStagingService::ValidationError, /at least one file/i)
+      end
+    end
+
+    context "when image conversion is needed" do
+      it "passes the staged file through the image-to-PDF conversion service" do
+        service.submit(files: [ file ], user: user)
+
+        expect(image_to_pdf_service).to have_received(:convert).once
+      end
+
+      it "submits the converted file to DocAI when conversion occurs" do
+        converted_tempfile = Tempfile.new([ "converted", ".pdf" ])
+        converted_file = ImageToPdfConversionService::ConvertedFile.new(
+          tempfile: converted_tempfile,
+          original_filename: "photo.jpg"
+        )
+        allow(image_to_pdf_service).to receive(:convert).and_return(converted_file)
+
+        service.submit(files: [ file ], user: user)
+
+        expect(doc_ai_service).to have_received(:analyze_async).with(file: converted_file)
+      ensure
+        converted_tempfile.close! unless converted_tempfile.closed?
+      end
+
+      it "cleans up the converted tempfile after submission" do
+        converted_tempfile = Tempfile.new([ "converted", ".pdf" ])
+        converted_file = ImageToPdfConversionService::ConvertedFile.new(
+          tempfile: converted_tempfile,
+          original_filename: "photo.jpg"
+        )
+        allow(image_to_pdf_service).to receive(:convert).and_return(converted_file)
+
+        service.submit(files: [ file ], user: user)
+
+        expect(converted_tempfile).to be_closed
+      end
+
+      it "does not attempt cleanup when conversion returns the original file" do
+        # The is_a?(ConvertedFile) guard must prevent calling close! on ActiveStorage attachments.
+        # The default mock passes through the original file — verify it completes without error
+        # and the file remains accessible (not closed/deleted).
+        result = service.submit(files: [ file ], user: user)
+
+        expect(result.first.file).to be_attached
+      end
+
+      it "cleans up the converted tempfile even if DocAI submission fails" do
+        converted_tempfile = Tempfile.new([ "converted", ".pdf" ])
+        converted_file = ImageToPdfConversionService::ConvertedFile.new(
+          tempfile: converted_tempfile,
+          original_filename: "photo.jpg"
+        )
+        allow(image_to_pdf_service).to receive(:convert).and_return(converted_file)
+        allow(doc_ai_service).to receive(:analyze_async).and_raise(StandardError, "network error")
+
+        expect { service.submit(files: [ file ], user: user) }.to raise_error(StandardError, "network error")
+        expect(converted_tempfile).to be_closed
+      end
+
+      it "does not raise NameError in ensure when convert raises before assignment" do
+        allow(image_to_pdf_service).to receive(:convert).and_raise(StandardError, "convert boom")
+
+        expect { service.submit(files: [ file ], user: user) }.to raise_error(StandardError, "convert boom")
+      end
+
+      it "does not call close! on non-ConvertedFile objects returned by convert" do
+        # Verify the is_a?(ConvertedFile) guard — an object that responds to close!
+        # but is NOT a ConvertedFile must not have close! called on it.
+        closeable = Struct.new(:content_type, :blob).new("application/pdf", nil)
+        closeable.define_singleton_method(:close!) { raise "should not be called" }
+        allow(image_to_pdf_service).to receive(:convert).and_return(closeable)
+        allow(doc_ai_service).to receive(:analyze_async).and_return(submit_response)
+
+        expect { service.submit(files: [ file ], user: user) }.not_to raise_error
       end
     end
   end
