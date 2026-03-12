@@ -2,12 +2,15 @@
 
 ## Overview
 
-The Batch Upload feature allows staff members to upload and process multiple certifications at once using CSV files. This guide walks through how to prepare your data, upload a batch file, and view results.
+The Batch Upload feature allows staff members and state system integrators to upload and process multiple certifications at once using CSV files. Files can be uploaded through the **staff web UI** or programmatically via the **API**.
+
+Processing begins automatically when a file is uploaded — there is no manual "process" step. The system splits large files into chunks of 1,000 records and processes them in parallel, providing live progress tracking on the dashboard.
 
 ## Prerequisites
 
-- **Admin access** to the Medicaid staff portal
-- A properly formatted **CSV file** (see Data Schema below)
+- **Staff UI**: Admin access to the Medicaid staff portal
+- **API**: An HMAC API key pair (contact your system administrator)
+- A properly formatted **CSV file** (see [Data Schema](#data-schema) below)
 
 ---
 
@@ -30,22 +33,24 @@ The Batch Upload feature allows staff members to upload and process multiple cer
 | `first_name` | Member's first name | Text |
 | `middle_name` | Member's middle name | Text |
 | `last_name` | Member's last name | Text |
-| `lookback_period` | Months to look back | Integer |
-| `number_of_months_to_certify` | Months to certify | Integer |
-| `due_period_days` | Days until due | Integer |
+| `lookback_period` | Months to look back | Positive integer |
+| `number_of_months_to_certify` | Months to certify | Positive integer |
+| `due_period_days` | Days until due | Positive integer |
 | `address` | Street address | Text |
 | `county` | County name | Text |
 | `zip_code` | ZIP code | Text (e.g., 12345) |
 | `date_of_birth` | Date of birth | YYYY-MM-DD |
 | `pregnancy_status` | Pregnancy status | `yes` or `no` |
 | `race_ethnicity` | Race/ethnicity | Text |
-| `work_hours` | Current work hours | Integer |
+| `work_hours` | Current work hours | Positive integer |
 | `other_income_sources` | Other income description | Text |
 
-### Example CSV
+### Template and Example CSV
 
-[Download sample CSV file](/docs/assets/test_data.csv)  
-Note: If you want to receive an email notification, change the emails in the test_data.csv to real emails. 
+- [Download CSV template](/certification_batch_upload_template.csv) — also available on the upload page
+- [Download sample CSV with test data](/docs/assets/test_data.csv)
+
+> **Note:** If you want to receive email notifications, change the emails in the sample CSV to real email addresses.
 
 ```csv
 member_id,case_number,member_email,first_name,last_name,certification_date,certification_type,date_of_birth,pregnancy_status,race_ethnicity
@@ -55,13 +60,15 @@ M12346,C-002,jane.smith@example.com,Jane,Smith,2025-01-15,recertification,1985-0
 
 ---
 
-## Step 1: Prepare Your CSV File
+## Staff UI Upload
 
-1. Create a CSV file with the required columns (see Data Schema above). You can also [download the sample CSV file](/docs/assets/test_data.csv) 
-2. Ensure **case numbers are unique** — duplicate case numbers will cause upload errors
-3. Save the file as `.csv` format
+### Step 1: Prepare Your CSV File
 
-### Testing Exemptions
+1. Create a CSV file with the required columns (see [Data Schema](#data-schema) above), or [download the template](/certification_batch_upload_template.csv)
+2. Ensure **case numbers are unique** — duplicate case numbers will be flagged as errors
+3. Save the file in `.csv` format
+
+#### Testing Exemptions
 
 To test different exemption scenarios, use the following fields:
 
@@ -73,80 +80,221 @@ To test different exemption scenarios, use the following fields:
 
 **Note:** For Medicaid age eligibility, members must be between 19 and 64 years old.
 
----
-
-## Step 2: Upload Your CSV File
+### Step 2: Upload Your CSV File
 
 1. Navigate to **Batch Uploads** in the header navigation (or go directly to `/staff/certification_batch_uploads`)
-2. Click **"Upload New File"**  
+2. Click **"Upload New File"**
+3. On the upload page, you can expand the **CSV Format Requirements** section to review required and optional fields
+4. Select your CSV file using the file picker
+5. Click **"Upload"**
+6. You'll be redirected to the Batch Uploads list with a success message
 
-<img src="/docs/assets/Certification_Batch_Uploads_Main_Page.png" width="100%" alt="Batch Uploads" />
+Processing begins automatically in the background. There is no separate "process" step.
 
+### Step 3: Monitor Progress
 
-3. Select your CSV file
-<img src="/docs/assets/Upload_Certification_Roster_Page_CSV_Format_Requirements.png" width="100%" alt="Upload Certification Roster Format Requirements" />
-<img src="/docs/assets/Upload_Certification_Roster_Upload_Process.png" width="100%" alt="Upload Certification Roster Upload" />
+The Batch Uploads list page auto-refreshes every 5 seconds while any batch is processing. You'll see:
 
-5. Click **"Upload and Process"**
-6. You'll be redirected back to the to the Batch Uploads page `/staff/certification_batch_uploads` with a success message
-<img src="/docs/assets/Certification_Batch_Uploads_Process.png" width="100%" alt="Upload Certification Batch Uploads Process" />
+- **Status**: Pending, Processing, Completed, or Failed
+- **Progress**: Number of rows processed out of total (e.g., "500 / 1,000")
 
----
+> **Note:** Progress updates after each chunk of 1,000 records completes. For large files, there may be a brief pause between updates while the current chunk is processing — this is normal.
 
-## Step 3: Process the Batch
+### Step 4: View Batch Details
 
-1. In the Certification Batch Uploads queue, find your uploaded file  
-3. Click the **"Process"** button next to your file  
-<img src="/docs/assets/Certification_Batch_Uploads_Process.png" width="100%" alt="Upload Certification Batch Uploads Process" />
-4. The status will change to "Processing" and then "View Results." Refresh the page if you don't see "View Results" after a few seconds. 
-<img src="/docs/assets/Certification_Batch_Uploads_View_Results.png" width="100%" alt="View Results" />
----
+1. Click on a **filename** in the Batch Uploads list to see the batch detail page
+2. The detail page shows:
+   - **Filename** and **uploaded by** (uploader's email)
+   - **Uploaded at** and **processed at** timestamps
+   - **Status** with a color-coded tag
+   - **Total rows** in the CSV
+   - A status alert showing:
+     - Success count and error count for completed batches
+     - Progress for in-progress batches
+     - Error message for failed batches
+3. If the batch completed with errors, an **error table** shows up to 100 errors with:
+   - **Row number** (corresponding to the CSV line)
+   - **Error code** (e.g., VAL_001, DUP_001)
+   - **Error message** (human-readable explanation)
+   - **Row data** (the original CSV record)
 
-## Step 4: View Batch Intake Member Results
- <img src="/docs/assets/Bulk_Intake_Results_Page.png" width="100%" alt="Member Status Results" />
+### Step 5: Download Error Report
 
-### From the Certification Batch Uploads View
+If a completed batch has errors, you can download a full error report:
 
-1. Click **"View Results"** to see members and their status from the uploaded file  
+1. On the batch detail page, click **"Download Errors"**
+2. A CSV file downloads with columns: Row, Error Code, Error Message, Row Data
+3. Use this to fix the errors in your source CSV and re-upload
 
- 
-2. Filter results using the status buttons:
+### Step 6: View Member Results
+
+1. From the Batch Uploads list, click **"View Results"** for a completed batch
+2. The results page shows all certifications created from the batch
+3. Filter results using the status buttons:
    - All
    - Compliant
    - Exempt
    - Member action required
    - Pending review
-  
-3. Click on member name or case number on any row to view individual member or case details, respectively
+4. Click on a member name or case number to view individual details
 
-## Step 5: View Batch File Status Results
- <img src="/docs/assets/Batch_File_Upload_State_Page.png" width="100%" alt="Batch File Status Results" />
+---
 
-1. Go to the [Certification Batch Uploads](https://medicaid.navateam.com/staff/certification_batch_uploads) page
-2. Click on the filename under the **"Filename"** column
-3. View batch details including:
-   - **Uploaded by:** (email of uploader)
-   - **Uploaded at:** (timestamp)
-   - **Status:** (Pending, Processing, Completed, or Failed)
-   - **Total rows:** (number of rows in CSV)
-   - **Processed at:** (completion timestamp)
-   - **Successes and errors:** (detailed results)
+## API Upload
+
+The API allows state systems to upload batch files programmatically using HMAC-authenticated requests.
+
+### Authentication
+
+All API requests must include an HMAC signature. The signature is computed over the request body using your API secret key. See your system administrator for credentials.
+
+### Step 1: Upload the File
+
+Upload the CSV file to get a signed blob ID:
+
+```bash
+# Upload the file via ActiveStorage direct upload
+curl -X POST "${BASE_URL}/rails/active_storage/direct_uploads" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "blob": {
+      "filename": "certifications.csv",
+      "content_type": "text/csv",
+      "byte_size": 1024,
+      "checksum": "<base64-md5-checksum>"
+    }
+  }'
+```
+
+The response includes a `direct_upload` URL and a `signed_id`. Upload the file content to the `direct_upload` URL, then use the `signed_id` in the next step.
+
+```bash
+# Upload file content to the direct upload URL
+curl -X PUT "<direct_upload_url>" \
+  -H "Content-Type: text/csv" \
+  --data-binary @certifications.csv
+```
+
+### Step 2: Create the Batch Upload
+
+```bash
+curl -X POST "${BASE_URL}/api/certification_batch_uploads" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: <hmac-signature>" \
+  -d '{
+    "certification_batch_upload": {
+      "signed_blob_id": "<signed_id_from_step_1>"
+    }
+  }'
+```
+
+**Response** (201 Created):
+```json
+{
+  "id": 42,
+  "status": "pending",
+  "filename": "certifications.csv",
+  "source_type": "api",
+  "num_rows": null,
+  "num_rows_processed": 0,
+  "num_rows_succeeded": 0,
+  "num_rows_errored": 0,
+  "created_at": "2026-03-09T12:00:00Z",
+  "processed_at": null
+}
+```
+
+Processing begins automatically after creation.
+
+### Step 3: Poll for Status
+
+```bash
+curl -X GET "${BASE_URL}/api/certification_batch_uploads/42" \
+  -H "Authorization: <hmac-signature>"
+```
+
+**Response** (200 OK — processing):
+```json
+{
+  "id": 42,
+  "status": "processing",
+  "filename": "certifications.csv",
+  "source_type": "api",
+  "num_rows": 5000,
+  "num_rows_processed": 2000,
+  "num_rows_succeeded": 1950,
+  "num_rows_errored": 50,
+  "created_at": "2026-03-09T12:00:00Z",
+  "processed_at": null
+}
+```
+
+**Response** (200 OK — completed):
+```json
+{
+  "id": 42,
+  "status": "completed",
+  "filename": "certifications.csv",
+  "source_type": "api",
+  "num_rows": 5000,
+  "num_rows_processed": 5000,
+  "num_rows_succeeded": 4900,
+  "num_rows_errored": 100,
+  "created_at": "2026-03-09T12:00:00Z",
+  "processed_at": "2026-03-09T12:05:00Z"
+}
+```
+
+Poll the status endpoint until `status` is `completed` or `failed`. A recommended poll interval is 5–10 seconds.
+
+### API Error Codes
+
+| HTTP Status | Meaning |
+|-------------|---------|
+| 201 | Batch created successfully |
+| 401 | Invalid or missing HMAC signature |
+| 404 | Batch not found, or not an API-sourced upload |
+| 422 | Invalid request (e.g., missing or invalid `signed_blob_id`) |
+
+> **Note:** API clients can only view batches they created (source_type: `api`). Staff-uploaded batches are not visible via the API.
+
+---
+
+## Error Codes Reference
+
+When records fail validation, each error is tagged with a code for programmatic handling:
+
+| Code | Description |
+|------|-------------|
+| `VAL_001` | Missing required field(s) |
+| `VAL_002` | Invalid date format (expected YYYY-MM-DD) |
+| `VAL_003` | Invalid email format |
+| `VAL_004` | Invalid certification type (must be `new_application` or `recertification`) |
+| `VAL_005` | Invalid integer value (must be a positive integer) |
+| `DUP_001` | Duplicate — certification already exists for this member/case |
+| `DB_001` | Database save failed |
+| `STG_001` | Storage read failed |
+| `UNK_001` | Unexpected error |
 
 ---
 
 ## Troubleshooting
 
 | Issue | Potential Cause | Solution |
-|-------|-------|----------|
-| Upload fails | Duplicate case numbers | Ensure all `case_number` values are unique |
-| Row marked as error | Missing required field | Check that all required fields have values |
-| Duplicate certification error | Member/case already exists | This is expected behavior — duplicates are skipped to prevent double-processing |
-| Processing stuck | Large file or server load | Wait and refresh — large files process in the background |
+|-------|-----------------|----------|
+| Upload fails immediately | Invalid file format | Ensure the file is saved as `.csv` with UTF-8 encoding |
+| Row marked with `VAL_001` | Missing required field | Check that all required fields have values for that row |
+| Row marked with `DUP_001` | Member/case already exists | This is expected — duplicates are skipped to prevent double-processing |
+| Batch stuck in "Processing" | Large file still being processed | The dashboard auto-refreshes every 5 seconds. Large files (thousands of rows) may take a few minutes as chunks process in parallel |
+| Batch shows "Failed" | System error during processing | Check the error message on the batch detail page. If it's a transient error, re-upload the file |
+| API returns 401 | Invalid HMAC signature | Verify your API key and signature computation |
+| API returns 404 on status check | Wrong batch ID, or batch was uploaded via UI | API clients can only view API-sourced batches |
 
 ---
 
 ## Error Recovery
 
-- If some rows fail, you can fix the CSV and re-upload
-- Duplicates are automatically skipped on retry (safe to reprocess)
-- View error details to see which rows failed and why
+- **Partial failures are normal** — successfully processed rows are saved even if other rows fail
+- Download the error CSV to see exactly which rows failed and why
+- Fix the errors in your source file and re-upload — duplicates are automatically skipped (safe to reprocess)
+- For system-level failures (status: "Failed"), the entire batch can be re-uploaded
