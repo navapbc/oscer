@@ -394,7 +394,7 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
 
     it "displays the upload documents page content" do
       get doc_ai_upload_activity_report_application_form_url(activity_report_application_form)
-      expect(response.body).to include("Supporting documents")
+      expect(response.body).to include(I18n.t("activity_report_application_forms.doc_ai_upload.title"))
     end
 
     it "errors if not owning user" do

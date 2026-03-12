@@ -152,7 +152,7 @@ RSpec.describe "/document_staging", type: :request do
       it "renders the results partial" do
         get lookup_document_staging_path, params: { ids: [ staged_doc.id ] }
         expect(response).to be_successful
-        expect(response.body).to include("Selected files:")
+        expect(response.body).to include(I18n.t("document_staging.results.selected_files"))
       end
     end
   end

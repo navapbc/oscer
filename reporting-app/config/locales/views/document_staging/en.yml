@@ -17,6 +17,7 @@ en:
       save_and_continue: "Save and continue"
       skip_ai: "Skip, and enter details manually"
       choose_file_label: "Choose a file"
+      upload_more_button: "Upload more files"
     processing:
       title: "Processing documents"
       body: "We're checking your documents. This may take a moment."
