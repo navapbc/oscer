@@ -7,9 +7,6 @@
          data-id="<%= doc.id %>"
          class="border-1px radius-md padding-2 margin-bottom-1 display-flex flex-align-center flex-justify <%= is_valid ? 'border-base-light' : 'border-error' %>">
       <div class="display-flex flex-align-center">
-        <svg class="usa-icon usa-icon--size-3 text-primary margin-right-1" aria-hidden="true" focusable="false" role="img">
-          <use xlink:href="<%= asset_path('@uswds/uswds/dist/img/sprite.svg') %>#attach_file"></use>
-        </svg>
         <span class="<%= is_valid ? 'text-primary' : 'text-error' %>"><%= doc.file.filename %></span>
       </div>
 
