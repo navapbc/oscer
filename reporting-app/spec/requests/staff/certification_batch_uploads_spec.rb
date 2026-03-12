@@ -213,6 +213,17 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
       end
     end
 
+    context "with processing upload" do
+      let(:batch_upload) { create(:certification_batch_upload, :processing, uploader: user) }
+
+      it "shows processing progress message" do
+        get certification_batch_upload_path(batch_upload)
+
+        expect(response).to be_successful
+        expect(response.body).to include("5", "10")
+      end
+    end
+
     context "with pending upload" do
       let(:batch_upload) { create(:certification_batch_upload, uploader: user, status: :pending) }
 

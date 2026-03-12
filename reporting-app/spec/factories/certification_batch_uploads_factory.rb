@@ -36,7 +36,7 @@ FactoryBot.define do
     trait :failed do
       status { :failed }
       processed_at { Time.current }
-      results { { error: "Processing failed" } }
+      results { { "error" => "Processing failed" } }
     end
 
     trait :api_sourced do
