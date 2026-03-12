@@ -24,59 +24,38 @@ RSpec.describe "/api/direct_uploads", type: :request do
   end
 
   describe "POST /api/direct_uploads" do
-    context "when batch_upload_v2 flag is disabled" do
-      it "returns 404" do
-        with_batch_upload_v2_disabled do
-          post api_direct_uploads_url,
-               params: valid_params,
-               headers: auth_headers(valid_params),
-               as: :json
+    it "returns 401 without HMAC auth" do
+      post api_direct_uploads_url,
+           params: valid_params,
+           as: :json
 
-          expect(response).to have_http_status(:not_found)
-        end
-      end
+      expect(response).to have_http_status(:unauthorized)
     end
 
-    context "when batch_upload_v2 flag is enabled" do
-      it "returns 401 without HMAC auth" do
-        with_batch_upload_v2_enabled do
-          post api_direct_uploads_url,
-               params: valid_params,
-               as: :json
+    it "returns 401 with Devise session but no HMAC" do
+      admin = create(:user, :as_admin)
 
-          expect(response).to have_http_status(:unauthorized)
-        end
-      end
+      # Simulate Devise session by setting Warden user
+      login_as(admin, scope: :user)
 
-      it "returns 401 with Devise session but no HMAC" do
-        with_batch_upload_v2_enabled do
-          admin = create(:user, :as_admin)
+      post api_direct_uploads_url,
+           params: valid_params,
+           as: :json
 
-          # Simulate Devise session by setting Warden user
-          login_as(admin, scope: :user)
+      expect(response).to have_http_status(:unauthorized)
+    end
 
-          post api_direct_uploads_url,
-               params: valid_params,
-               as: :json
+    it "returns a presigned URL with valid HMAC auth" do
+      post api_direct_uploads_url,
+           params: valid_params,
+           headers: auth_headers(valid_params),
+           as: :json
 
-          expect(response).to have_http_status(:unauthorized)
-        end
-      end
-
-      it "returns a presigned URL with valid HMAC auth" do
-        with_batch_upload_v2_enabled do
-          post api_direct_uploads_url,
-               params: valid_params,
-               headers: auth_headers(valid_params),
-               as: :json
-
-          expect(response).to have_http_status(:ok)
-          body = response.parsed_body
-          expect(body["signed_id"]).to be_present
-          expect(body["direct_upload"]).to be_present
-          expect(body["direct_upload"]["url"]).to be_present
-        end
-      end
+      expect(response).to have_http_status(:ok)
+      body = response.parsed_body
+      expect(body["signed_id"]).to be_present
+      expect(body["direct_upload"]).to be_present
+      expect(body["direct_upload"]["url"]).to be_present
     end
   end
 end

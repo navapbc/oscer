@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
 # Unified processor for certification records from any source (batch, API, etc.)
-# Extracts business logic from CertificationBatchUploadService to ensure
-# all upload sources apply identical validation and processing rules.
+# Ensures all upload sources apply identical validation and processing rules.
 class UnifiedRecordProcessor
   # Base error class for all processing errors
   class ProcessingError < StandardError
@@ -56,7 +55,6 @@ class UnifiedRecordProcessor
   end
 
   # Validate required fields are present (defense-in-depth safety net)
-  # Extracted from CertificationBatchUploadService (lines 28-34)
   def validate_schema!(record)
     missing = REQUIRED_FIELDS - record.keys
     return if missing.empty?
@@ -68,7 +66,6 @@ class UnifiedRecordProcessor
   end
 
   # Check if certification already exists (idempotency)
-  # Extracted from CertificationBatchUploadService#duplicate_certification? (lines 150-158)
   def check_duplicate!(record)
     return if record["member_id"].blank? || record["case_number"].blank? || record["certification_date"].blank?
 
@@ -86,7 +83,6 @@ class UnifiedRecordProcessor
   end
 
   # Build and persist certification with origin tracking
-  # Extracted from CertificationBatchUploadService#save_certification (lines 160-187)
   def persist!(record, context)
     certification = build_certification(record)
 
@@ -109,7 +105,6 @@ class UnifiedRecordProcessor
   end
 
   # Build certification object from record
-  # Extracted from CertificationBatchUploadService#build_certification_from_row (lines 96-109)
   def build_certification(record)
     Certification.new(
       member_id: record["member_id"],
@@ -120,7 +115,6 @@ class UnifiedRecordProcessor
   end
 
   # Build member_data hash from record fields
-  # Extracted from CertificationBatchUploadService#build_member_data (lines 111-131)
   def build_member_data(record)
     {
       "name" => {
@@ -144,7 +138,6 @@ class UnifiedRecordProcessor
   end
 
   # Build certification_requirements hash from record fields
-  # Extracted from CertificationBatchUploadService#build_certification_requirements (lines 133-146)
   def build_certification_requirements(record)
     requirement_input = {
       "certification_date" => record["certification_date"],

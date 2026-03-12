@@ -16,7 +16,7 @@ RSpec.describe CertificationBatchUploadPolicy, type: :policy do
   it_behaves_like "application policy"
 
   describe "when user is an admin" do
-    it { is_expected.to permit_actions(:index, :new, :create, :edit, :update, :process_batch, :results, :show) }
+    it { is_expected.to permit_actions(:index, :new, :create, :edit, :update, :results, :show) }
     it { is_expected.to forbid_actions(:destroy) }
 
     it "includes all records in the resolved scope" do
@@ -35,7 +35,7 @@ RSpec.describe CertificationBatchUploadPolicy, type: :policy do
   describe "when user is not an admin" do
     let(:user) { non_admin_user }
 
-    it { is_expected.to forbid_actions(:index, :new, :create, :edit, :update, :process_batch, :results, :show, :destroy) }
+    it { is_expected.to forbid_actions(:index, :new, :create, :edit, :update, :results, :show, :destroy) }
 
     it "includes no records in the resolved scope" do
       expect(resolved_scope).to be_empty

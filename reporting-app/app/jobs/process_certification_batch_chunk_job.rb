@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-# Background job to process a single chunk of certification records
-# Part of batch upload v2 streaming architecture - processes chunks in parallel
+# Background job to process a single chunk of certification records in parallel
 class ProcessCertificationBatchChunkJob < ApplicationJob
   queue_as :default
 

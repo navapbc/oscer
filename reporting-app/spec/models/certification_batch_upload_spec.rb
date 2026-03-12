@@ -196,23 +196,6 @@ RSpec.describe CertificationBatchUpload, type: :model do
     end
   end
 
-  describe '#processable?' do
-    it 'returns true when pending' do
-      batch_upload = create(:certification_batch_upload, uploader: user, status: :pending)
-      expect(batch_upload.processable?).to be true
-    end
-
-    it 'returns false when processing' do
-      batch_upload = create(:certification_batch_upload, uploader: user, status: :processing)
-      expect(batch_upload.processable?).to be false
-    end
-
-    it 'returns false when completed' do
-      batch_upload = create(:certification_batch_upload, uploader: user, status: :completed)
-      expect(batch_upload.processable?).to be false
-    end
-  end
-
   describe '#certifications' do
     let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
     let(:cert_first) { create(:certification, member_id: "M777", case_number: "C-777") }

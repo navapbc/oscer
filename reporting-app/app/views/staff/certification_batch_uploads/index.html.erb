@@ -8,7 +8,7 @@
       data: {
         turbo: true,
         controller: "auto-refresh",
-        auto_refresh_active_value: feature_enabled?(:batch_upload_v2) && @batch_uploads.any?(&:processing?),
+        auto_refresh_active_value: @batch_uploads.any?(&:processing?),
         auto_refresh_interval_value: 5000
       } do %>
   <% if @batch_uploads.any? %>

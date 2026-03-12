@@ -13,15 +13,11 @@
     <% if batch_upload.num_rows > 0 %>
       <%= batch_upload.num_rows_processed %> / <%= batch_upload.num_rows %>
       <% if batch_upload.completed? %>
-        <% if feature_enabled?(:batch_upload_v2) %>
-          <% if batch_upload.num_rows_errored > 0 %>
-            (<%= batch_upload.num_rows_succeeded %> <%= t(".succeeded") %>,
-            <%= link_to t(".errors_count", count: batch_upload.num_rows_errored), certification_batch_upload_path(batch_upload), data: { turbo_frame: "_top" } %>)
-          <% else %>
-            (<%= batch_upload.num_rows_succeeded %> <%= t(".succeeded") %>, <%= t(".no_errors") %>)
-          <% end %>
+        <% if batch_upload.num_rows_errored > 0 %>
+          (<%= batch_upload.num_rows_succeeded %> <%= t(".succeeded") %>,
+          <%= link_to t(".errors_count", count: batch_upload.num_rows_errored), certification_batch_upload_path(batch_upload), data: { turbo_frame: "_top" } %>)
         <% else %>
-          (<%= batch_upload.num_rows_succeeded %> success, <%= batch_upload.num_rows_errored %> errors)
+          (<%= batch_upload.num_rows_succeeded %> <%= t(".succeeded") %>, <%= t(".no_errors") %>)
         <% end %>
       <% end %>
     <% else %>
@@ -30,19 +26,12 @@
   </td>
   <td>
     <% if batch_upload.pending? %>
-      <% if feature_enabled?(:batch_upload_v2) %>
-        <span class="text-base-dark"><%= t(".queued") %></span>
-      <% else %>
-        <%= button_to t(".process"), process_batch_certification_batch_upload_path(batch_upload),
-              method: :post,
-              class: "usa-button usa-button--outline",
-              data: { confirm: t(".confirm_process", filename: batch_upload.filename) } %>
-      <% end %>
+      <span class="text-base-dark"><%= t(".queued") %></span>
     <% elsif batch_upload.processing? %>
       <span class="text-base-dark"><%= t(".processing") %>...</span>
     <% elsif batch_upload.completed? %>
       <%= link_to t(".view_results"), results_certification_batch_upload_path(batch_upload), class: "usa-button usa-button--unstyled", data: { turbo_frame: "_top" } %>
-      <% if feature_enabled?(:batch_upload_v2) && batch_upload.num_rows_errored > 0 %>
+      <% if batch_upload.num_rows_errored > 0 %>
         <br>
         <%= link_to t(".download_errors"), download_errors_certification_batch_upload_path(batch_upload), class: "usa-button usa-button--unstyled", data: { turbo: false } %>
       <% end %>
