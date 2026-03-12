@@ -27,6 +27,10 @@ Rails.application.routes.draw do
   resources :activity_report_information_requests, only: [ :edit, :update ]
   resources :exemption_information_requests, only: [ :edit, :update ]
 
+  resource :document_staging, only: [ :create ], controller: "document_staging" do
+    get :lookup, on: :collection
+  end
+
   get "/dashboard", to: "dashboard#index"
 
   scope path: "/exemption-screener", as: :exemption_screener do

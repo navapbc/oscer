@@ -20,7 +20,7 @@ flowchart LR
     DSS -->|file.attach| S3[ActiveStorage / S3]
     DSS -->|"Concurrent::Future per file\n(dedicated FixedThreadPool)"| DSS
     DSS -->|staged_document.file| Service[DocAiService]
-    Service -->|file| Adapter[DocAiAdapter]
+    DSS -->|file| Adapter[DocAiAdapter]
     Adapter -->|"POST /v1/documents?wait=true (60s)"| DocAI[DocAI API]
     DocAI -->|JSON| Adapter
     Adapter -->|response body| Service
@@ -35,15 +35,15 @@ flowchart LR
 | Component | Responsibility |
 |-----------|---------------|
 | `DocumentStagingController` | Feature flag guard — returns 404 when `Features.doc_ai_enabled?` is false. Auth (`authorize :document, :create?`), param handling, delegates to `DocumentStagingService#process`. Renders template with prefilled fields and hidden `signed_id` inputs. Controller is responsible only for: auth, param handling, rendering. |
-| `DocumentStagingService` | Owns extracted constants: `ALLOWED_CONTENT_TYPES` (`application/pdf`, `image/jpeg`, `image/png`, `image/tiff`), `MAX_FILE_SIZE_BYTES` (30 MB), `MAX_FILE_COUNT` (2), `DOC_AI_THREAD_POOL`, `SUPPORTED_RESULT_CLASSES`. `#process(files:, user:)` validates, dispatches concurrent processing, returns results array. Contains: `process_files_concurrently`, `process_file`, `valid_content_type?`, `valid_file_size?`. Calls `ImageToPdfConversionService` when image file >5MB before DocAI submission. Thread pool creation and lifecycle managed here. Constructor-injected `DocAiService` dependency (testable). `current_user` captured before threading (ActionController helpers not thread-safe). Each Future uses `connection_pool.with_connection`. |
+| `DocumentStagingService` | Owns extracted constants: `ALLOWED_CONTENT_TYPES` (`application/pdf`, `image/jpeg`, `image/png`, `image/tiff`), `MAX_FILE_SIZE_BYTES` (30 MB), `MAX_FILE_COUNT` (10), `DOC_AI_THREAD_POOL`, `SUPPORTED_RESULT_CLASSES`. `#process(files:, user:)` validates, dispatches concurrent processing, returns results array. Contains: `process_files_concurrently`, `process_file`, `valid_content_type?`, `valid_file_size?`. Calls `ImageToPdfConversionService` when image file >5MB before DocAI submission. Thread pool creation and lifecycle managed here. Constructor-injected `DocAiService` dependency (testable). `current_user` captured before threading (ActionController helpers not thread-safe). Each Future uses `connection_pool.with_connection`. |
 | `ImageToPdfConversionService` | Uses `image_processing` gem (vips backend). `#convert(file)` converts JPEG/PNG/TIFF >5MB to PDF tempfile. Returns original file unchanged if PDF or if image ≤5MB. `IMAGE_SIZE_THRESHOLD = 5.megabytes`. Isolated responsibility: one service, one job. |
 | `StagedDocument` | ActiveRecord: `has_one_attached :file`, `belongs_to :user`, `belongs_to :stageable, polymorphic: true`. Status enum: `pending`, `validated`, `rejected`, `failed`. `extracted_fields` JSONB stores full raw DocAI fields response (including confidence scores). `job_id` column. `#average_confidence` returns Float (0.0–1.0) computed as mean of all field confidence values from `extracted_fields`. Retained permanently as audit record. Never purged. |
-| `DocAiAdapter` | Extends `DataIntegration::BaseAdapter`. No auth headers (currently unauthenticated). `analyze_document` opens blob as `Tempfile` via `file.blob.open` → passes IO to `Faraday::Multipart::FilePart`. |
-| `DocAiService` | Extends `DataIntegration::BaseService`. Invokes adapter; builds `DocAiResult` via factory; logs `job_id`; raises `ProcessingError` on `status: "failed"`; `handle_integration_error` logs warning and returns `nil` (graceful degradation). |
+| `DocAiAdapter` | Extends `DataIntegration::BaseAdapter`. `analyze_document` (sync, `wait=true`), `analyze_document_async` (async POST, no `wait`), `get_document_status` (GET by job ID). Opens blob as `Tempfile` via `file.blob.open` → passes IO to `Faraday::Multipart::FilePart`. |
+| `DocAiService` | Extends `DataIntegration::BaseService`. `analyze` (sync), `submit` (async submission), `check_status` (poll job). Builds `DocAiResult` via factory on completion; raises `ProcessingError` on `status: "failed"`; `handle_integration_error` logs warning and returns `nil` (graceful degradation). |
 | `DocAiResult` | Base `Strata::ValueObject`. Response envelope, `FieldValue` accessor, self-registration factory (`REGISTRY` hash). Subclass files must be `require_relative`'d before `REGISTRY.freeze`. |
 | `DocAiResult::FieldValue` | `Data.define` struct: `value`, `confidence`. `low_confidence?` predicate (threshold: 0.7). All field accessors return `FieldValue` or `nil`. |
 | `DocAiResult::Payslip` | Self-registers via `register "Payslip"`. Typed snake_case accessors. Boolean flag accessors unwrap value directly. `to_prefill_fields` returns values-only hash for form rendering. |
-| File Validator | Marcel magic-byte detection; `application/pdf`, `image/jpeg`, `image/png`, `image/tiff`; ≤30 MB per file; ≤2 files total. Runs before any DB or DocAI operations. Now lives in `DocumentStagingService`. |
+| File Validator | Marcel magic-byte detection; `application/pdf`, `image/jpeg`, `image/png`, `image/tiff`; ≤30 MB per file; ≤10 files total. Runs before any DB or DocAI operations. Now lives in `DocumentStagingService`. |
 
 ## Feature Flag
 
@@ -167,14 +167,73 @@ Expired/non-validated signed IDs are skipped gracefully. Fallback to manual uplo
 
 ## API Interface
 
+### Turbo Frames Polling Reference
+
+For implementation details on how to use Turbo Frames to auto-refresh a page that polls for document upload status, see the [Turbo Frames Polling Reference](./references/turbo-frames-polling.md).
+
+### Synchronous (wait=true)
+
 | Property | Value |
 |----------|-------|
-| URL | `https://app-docai.platform-test-dev.navateam.com/v1/documents` |
+| URL | `/v1/documents` |
 | Method | `POST` |
 | Query param | `wait=true` |
 | Content-Type | `multipart/form-data` |
-| Auth | None (unauthenticated) |
 | Timeout | 60s (open_timeout: 10s) |
+
+### Asynchronous
+
+#### Submit document
+
+| Property | Value |
+|----------|-------|
+| URL | `/v1/documents` |
+| Method | `POST` |
+| Query param | _(none)_ |
+| Content-Type | `multipart/form-data` |
+| Response | `{ "jobId": "...", "status": "not_started" }` |
+
+#### Poll job status
+
+| Property | Value |
+|----------|-------|
+| URL | `/v1/documents/{job_id}` |
+| Method | `GET` |
+| Response | Job object with `status`: `processing`, `completed`, or `failed` |
+
+### Async Response Examples
+
+**Not started (POST response)**:
+```json
+{
+  "jobId": "abc-123",
+  "status": "not_started"
+}
+```
+
+**Processing (GET response)**:
+```json
+{
+  "job_id": "abc-123",
+  "status": "processing"
+}
+```
+
+**Completed (GET response)**:
+```json
+{
+  "job_id": "d773fa8f-3cc7-47d8-be78-4125c190c290",
+  "status": "completed",
+  "matchedDocumentClass": "Payslip",
+  "message": "Document processed successfully",
+  "totalProcessingTimeSeconds": 38.6,
+  "fields": {
+    "currentgrosspay": { "confidence": 0.93, "value": 1627.74 }
+  }
+}
+```
+
+> **Note:** The POST response uses `jobId` (camelCase) while the GET response uses `job_id` (snake_case). The adapter returns raw response bodies as-is; the service/result layer handles normalization.
 
 ### Success Response (HTTP 200 — Payslip)
 
@@ -254,7 +313,7 @@ Expired/non-validated signed IDs are skipped gracefully. Fallback to manual uplo
 | `federaltaxes.ytd` | `federal_taxes_ytd` | Numeric |
 | `federaltaxes.period` | `federal_taxes_period` | Numeric |
 | `statetaxes.itemdescription` | `state_taxes_description` | String |
-| `statetaxes.ytd` | `state_taxes_ytd` | Numeric |
+| `statetaxes.ytd" | `state_taxes_ytd` | Numeric |
 | `statetaxes.period` | `state_taxes_period` | Numeric |
 | `citytaxes.itemdescription` | `city_taxes_description` | String |
 | `citytaxes.ytd` | `city_taxes_ytd` | Numeric |
@@ -310,7 +369,7 @@ doc_ai: {
 
 ```bash
 # local.env.example
-DOC_AI_API_HOST=https://app-docai.platform-test-dev.navateam.com
+DOC_AI_API_HOST=http://localhost:8000
 DOC_AI_TIMEOUT_SECONDS=60
 DOC_AI_LOW_CONFIDENCE_THRESHOLD=0.7
 DOC_AI_THREAD_POOL_SIZE=4   # default: MAX_FILE_COUNT * 2
@@ -318,7 +377,7 @@ FEATURE_DOC_AI=false
 ```
 
 > **Puma/rack-timeout**: Must allow requests >60s on upload endpoint (recommended: 75s minimum).
-> **DB connection pool**: Each concurrent file holds one connection for ~38–60s. With `MAX_FILE_COUNT=2`, up to 2 additional connections per upload request.
+> **DB connection pool**: Each concurrent file holds one connection for ~38–60s. With `MAX_FILE_COUNT=10`, up to 10 additional connections per upload request.
 > **`image_processing` gem**: Required for `ImageToPdfConversionService`. Uses vips backend (faster than ImageMagick). Already in Gemfile (commented out by default in Rails).
 
 ## Files to Create
@@ -331,7 +390,7 @@ FEATURE_DOC_AI=false
 | `app/services/document_staging_service.rb` | Extracted controller logic: validation, concurrency, processing orchestration |
 | `app/services/image_to_pdf_conversion_service.rb` | Converts JPEG/PNG/TIFF >5MB to PDF via image_processing gem (vips) |
 | `app/views/document_staging/create.html.erb` | Prefilled fields + hidden `staged_document_signed_ids[]` inputs + inline errors |
-| `app/adapters/doc_ai_adapter.rb` | Extends `DataIntegration::BaseAdapter`; multipart POST |
+| `app/adapters/doc_ai_adapter.rb` | Extends `DataIntegration::BaseAdapter`; multipart POST. Methods: `analyze_document`, `analyze_document_async`, `get_document_status`. |
 | `app/services/doc_ai_service.rb` | Extends `DataIntegration::BaseService` |
 | `app/models/doc_ai_result.rb` | Base value object + `FieldValue` struct + factory |
 | `app/models/doc_ai_result/payslip.rb` | Payslip subclass |
@@ -390,7 +449,7 @@ Create subclass, call `register "ClassName"`, implement `to_prefill_fields`. Add
 
 ## Future Considerations
 
-**Authentication**: DocAI endpoint is currently unauthenticated. Add auth via `DataIntegration::BaseAdapter`'s `before_request` hook:
+**Authentication**: DocAI endpoint authentication can be added via `DataIntegration::BaseAdapter`'s `before_request` hook:
 
 ```ruby
 before_request :set_auth_header

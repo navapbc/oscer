@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: bd3097a63cb05c7d9c50229bb4db38b6005f3945
+  revision: 327f129a1c663db35d73f49959f0b1586b48959e
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -259,6 +259,9 @@ GEM
     htmlentities (4.3.4)
     i18n (1.14.8)
       concurrent-ruby (~> 1.0)
+    image_processing (1.14.0)
+      mini_magick (>= 4.9.5, < 6)
+      ruby-vips (>= 2.0.17, < 3)
     importmap-rails (2.2.2)
       actionpack (>= 6.0.0)
       activesupport (>= 6.0.0)
@@ -325,6 +328,8 @@ GEM
     marcel (1.1.0)
     matrix (0.4.3)
     method_source (1.1.0)
+    mini_magick (5.3.1)
+      logger
     mini_mime (1.1.5)
     minitest (6.0.2)
       drb (~> 2.0)
@@ -587,6 +592,9 @@ GEM
     ruby-lsp-rails (0.4.8)
       ruby-lsp (>= 0.26.0, < 0.27.0)
     ruby-progressbar (1.13.0)
+    ruby-vips (2.3.0)
+      ffi (~> 1.12)
+      logger
     rubyzip (3.1.0)
     securerandom (0.4.1)
     selenium-webdriver (4.38.0)
@@ -703,6 +711,7 @@ DEPENDENCIES
   faraday-multipart
   good_job (~> 4.0)
   guard-rspec
+  image_processing (~> 1.14)
   importmap-rails
   jbuilder
   jwt

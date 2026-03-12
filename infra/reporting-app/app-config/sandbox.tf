@@ -19,8 +19,12 @@ module "sandbox_config" {
   # Defaults to `false`. Uncomment the next line to enable.
   # enable_command_execution = true
 
+  # Increase memory from default 512 MiB to give headroom for Puma + GoodJob async workers
+  service_memory = 1024
+
   service_override_extra_environment_variables = {
-    ENABLE_LOOKBOOK = "true"
-    SSO_ENABLED     = "true"
+    ENABLE_LOOKBOOK         = "true"
+    SSO_ENABLED             = "true"
+    FEATURE_BATCH_UPLOAD_V2 = "true"
   }
 }

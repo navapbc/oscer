@@ -18,6 +18,9 @@ locals {
       GOOD_JOB_EXECUTION_MODE = "async"
       GOOD_JOB_MAX_THREADS    = "2"
       DATABASE_POOL           = "8"
+
+      DOC_AI_LOW_CONFIDENCE_THRESHOLD = "0.70"
+      DOC_AI_TIMEOUT_SECONDS          = "60"
     },
     # SSO configuration: always set so any environment can enable SSO by overriding SSO_ENABLED to "true"
     var.enable_identity_provider ? {
@@ -56,6 +59,10 @@ locals {
     VA_PRIVATE_KEY = {
       manage_method     = "manual"
       secret_store_name = "/${var.app_name}-${var.environment}/service/va-private-key"
+    }
+    DOC_AI_API_HOST = {
+      manage_method     = "manual"
+      secret_store_name = "/${var.app_name}-${var.environment}/service/doc-ai-api-host"
     }
   }
 }
