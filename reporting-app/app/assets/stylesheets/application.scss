@@ -56,3 +56,46 @@ div.exemption-screener {
     text-wrap: auto;
   }
 }
+
+// =========================================================
+// DocAI opt-in checkbox (non-tile variant)
+// =========================================================
+.doc-ai-skip-checkbox {
+  // Remove tile wrapper styling from the label
+  .usa-checkbox__label {
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    padding: units(1) 0 units(1) units(5);
+    box-shadow: none;
+  }
+
+  // Keep the standard checkbox square indicator
+  .usa-checkbox__label::before {
+    box-shadow: 0 0 0 2px #1b1b1b;
+    border-radius: 2px;
+    background-color: transparent;
+  }
+
+  // Ensure checked state doesn't re-apply tile background
+  .usa-checkbox__input:checked + .usa-checkbox__label {
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  // Neutralize hover/focus tile effects
+  .usa-checkbox__input:hover + .usa-checkbox__label,
+  .usa-checkbox__input:focus + .usa-checkbox__label {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+// =========================================================
+// Document scanning animation
+// =========================================================
+@keyframes scanning-progress {
+  0% { width: 20%; }
+  100% { width: 80%; }
+}

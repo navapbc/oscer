@@ -40,7 +40,11 @@
     <% else %>
       <%# Requirements not met - show report activities and request exemption buttons %>
       <% if activity_report&.in_progress? %>
-        <%= link_to t(".activity_report.continue_report_button"), activity_report_application_form_path(activity_report), class: "usa-button margin-right-2 margin-bottom-1" %>
+        <% continue_path = feature_enabled?(:doc_ai) && !session[:doc_ai_skip] ?
+              doc_ai_upload_activity_report_application_form_path(activity_report) :
+              activity_report_application_form_path(activity_report) %>
+        <%= link_to t(".activity_report.continue_report_button"), continue_path,
+              class: "usa-button margin-right-2 margin-bottom-1" %>
       <% else %>
         <%= link_to t(".current_period.report_activities_button"), new_activity_report_application_form_path(certification_case_id: certification_case&.id), class: "usa-button margin-right-2 margin-bottom-1" %>
       <% end %>

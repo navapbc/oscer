@@ -181,11 +181,50 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
       end
 
       it "redirects to choose reporting periods page" do
-        post activity_report_application_forms_url, params: valid_params
-        expect(response).to redirect_to(edit_activity_report_application_form_url(ActivityReportApplicationForm.last))
-        follow_redirect!
-        expect(response).to have_http_status(:ok)
-        expect(response.body).to include("Select reporting period")
+        with_doc_ai_disabled do
+          post activity_report_application_forms_url, params: valid_params
+          expect(response).to redirect_to(edit_activity_report_application_form_url(ActivityReportApplicationForm.last))
+          follow_redirect!
+          expect(response).to have_http_status(:ok)
+          expect(response.body).to include("Select reporting period")
+        end
+      end
+
+      context "when doc_ai feature flag is enabled" do
+        it "redirects to edit page when skip_ai is not checked" do
+          with_doc_ai_enabled do
+            post activity_report_application_forms_url, params: valid_params
+            form = ActivityReportApplicationForm.find_by(certification_case_id: certification_case.id)
+            expect(response).to redirect_to(edit_activity_report_application_form_url(form))
+            expect(session[:doc_ai_skip]).to be false
+          end
+        end
+
+        it "redirects to edit page when skip_ai is checked" do
+          with_doc_ai_enabled do
+            params_with_skip = {
+              activity_report_application_form: {
+                certification_case_id: certification_case.id,
+                skip_ai: "1"
+              }
+            }
+            post activity_report_application_forms_url, params: params_with_skip
+            form = ActivityReportApplicationForm.find_by(certification_case_id: certification_case.id)
+            expect(response).to redirect_to(edit_activity_report_application_form_url(form))
+            expect(session[:doc_ai_skip]).to be true
+          end
+        end
+      end
+
+      context "when doc_ai feature flag is disabled" do
+        it "redirects to edit page regardless of skip_ai" do
+          with_doc_ai_disabled do
+            post activity_report_application_forms_url, params: valid_params
+            form = ActivityReportApplicationForm.find_by(certification_case_id: certification_case.id)
+            expect(response).to redirect_to(edit_activity_report_application_form_url(form))
+            expect(session[:doc_ai_skip]).to be false
+          end
+        end
       end
     end
   end
@@ -248,11 +287,39 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
         expect(response).to be_client_error
       end
 
-      it "redirects to the activity_report_application_form" do
-        activity_report_application_form = ActivityReportApplicationForm.create! valid_db_attributes
-        patch activity_report_application_form_url(activity_report_application_form), params: { activity_report_application_form: new_attributes }
-        activity_report_application_form.reload
-        expect(response).to redirect_to(activity_report_application_form_url(activity_report_application_form))
+      it "redirects to the activity_report_application_form when doc_ai is disabled" do
+        with_doc_ai_disabled do
+          activity_report_application_form = ActivityReportApplicationForm.create! valid_db_attributes
+          patch activity_report_application_form_url(activity_report_application_form), params: { activity_report_application_form: new_attributes }
+          activity_report_application_form.reload
+          expect(response).to redirect_to(activity_report_application_form_url(activity_report_application_form))
+        end
+      end
+
+      it "redirects to doc_ai_upload when doc_ai is enabled and skip is false" do
+        with_doc_ai_enabled do
+          activity_report_application_form = ActivityReportApplicationForm.create! valid_db_attributes
+          patch activity_report_application_form_url(activity_report_application_form), params: { activity_report_application_form: new_attributes }
+          activity_report_application_form.reload
+          expect(response).to redirect_to(doc_ai_upload_activity_report_application_form_url(activity_report_application_form))
+        end
+      end
+
+      it "redirects to the activity_report_application_form when doc_ai is enabled but skip is true" do
+        with_doc_ai_enabled do
+          # Create form via POST with skip_ai to set session[:doc_ai_skip] = true
+          post activity_report_application_forms_url, params: {
+            activity_report_application_form: {
+              certification_case_id: certification_case.id,
+              skip_ai: "1"
+            }
+          }
+          activity_report_application_form = ActivityReportApplicationForm.find_by(certification_case_id: certification_case.id)
+
+          patch activity_report_application_form_url(activity_report_application_form), params: { activity_report_application_form: new_attributes }
+          activity_report_application_form.reload
+          expect(response).to redirect_to(activity_report_application_form_url(activity_report_application_form))
+        end
       end
     end
 
@@ -313,6 +380,26 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
 
       post submit_activity_report_application_form_url(application_form)
 
+      expect(response).to be_client_error
+    end
+  end
+
+  describe "GET /doc_ai_upload" do
+    let(:activity_report_application_form) { ActivityReportApplicationForm.create! valid_db_attributes }
+
+    it "renders a successful response" do
+      get doc_ai_upload_activity_report_application_form_url(activity_report_application_form)
+      expect(response).to be_successful
+    end
+
+    it "displays the upload documents page content" do
+      get doc_ai_upload_activity_report_application_form_url(activity_report_application_form)
+      expect(response.body).to include(I18n.t("activity_report_application_forms.doc_ai_upload.title"))
+    end
+
+    it "errors if not owning user" do
+      login_as other_user
+      get doc_ai_upload_activity_report_application_form_url(activity_report_application_form)
       expect(response).to be_client_error
     end
   end

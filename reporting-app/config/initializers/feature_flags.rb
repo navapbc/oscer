@@ -15,7 +15,12 @@ module Features
   # Registry of all feature flags
   # Add new flags here - methods are generated automatically
   FEATURE_FLAGS = {
-    # Example of adding a flag:
+    doc_ai: {
+      env_var: "FEATURE_DOC_AI",
+      default: false,
+      description: "Enable DocAI document analysis for income verification"
+    }
+    # Example of adding more flags:
     # realtime_progress: {
     #   env_var: "FEATURE_REALTIME_PROGRESS",
     #   default: false,

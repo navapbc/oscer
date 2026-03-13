@@ -1,0 +1,21 @@
+<%= turbo_frame_tag "document_staging_status",
+      data: {
+        controller: "auto-refresh",
+        auto_refresh_active_value: !@all_complete,
+        auto_refresh_interval_value: 5000
+      } do %>
+  <% if @all_complete %>
+    <%= render partial: "results", locals: { staged_documents: @staged_documents } %>
+  <% else %>
+    <p class="text-bold margin-bottom-1"><%= t("document_staging.doc_ai_upload_status.selected_files") %></p>
+    <ul class="usa-list usa-list--unstyled margin-bottom-3">
+      <% @staged_documents.each do |doc| %>
+        <li class="margin-bottom-1">
+          <span class="usa-tag bg-primary-lighter text-primary-darker"><%= doc.file.filename %></span>
+        </li>
+      <% end %>
+    </ul>
+
+    <%= render partial: "processing_status", locals: { staged_documents: @staged_documents } %>
+  <% end %>
+<% end %>

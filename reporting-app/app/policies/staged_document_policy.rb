@@ -9,6 +9,10 @@ class StagedDocumentPolicy < ApplicationPolicy
     user
   end
 
+  def doc_ai_upload_status?
+    user
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       scope.where(user_id: user.id)

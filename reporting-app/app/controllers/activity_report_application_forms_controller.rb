@@ -8,6 +8,7 @@ class ActivityReportApplicationFormsController < ApplicationController
     update
     submit
     destroy
+    doc_ai_upload
   ]
   before_action :authenticate_user!
   before_action :set_certification_case, only: %i[show edit review update]
@@ -35,7 +36,11 @@ class ActivityReportApplicationFormsController < ApplicationController
 
     respond_to do |format|
       if @activity_report_application_form.save
-        format.html { redirect_to edit_activity_report_application_form_path(@activity_report_application_form) }
+        format.html do
+          skip_ai = params.dig(:activity_report_application_form, :skip_ai) == "1"
+          session[:doc_ai_skip] = skip_ai
+          redirect_to edit_activity_report_application_form_path(@activity_report_application_form)
+        end
         format.json { render :show, status: :created, location: @activity_report_application_form }
       else
         flash[:errors] = @activity_report_application_form.errors.full_messages
@@ -71,13 +76,23 @@ class ActivityReportApplicationFormsController < ApplicationController
 
     respond_to do |format|
       if @activity_report_application_form.save(context: :reporting_period_selection)
-        format.html { redirect_to @activity_report_application_form, notice: "Activity report application form was successfully updated." }
+        format.html do
+          if Features.doc_ai_enabled? && !session[:doc_ai_skip]
+            redirect_to doc_ai_upload_activity_report_application_form_path(@activity_report_application_form)
+          else
+            redirect_to @activity_report_application_form, notice: "Activity report application form was successfully updated."
+          end
+        end
         format.json { render :show, status: :ok, location: review_activity_report_application_form_path(@activity_report_application_form) }
       else
         format.html { render :edit, status: :unprocessable_content }
         format.json { render json: @activity_report_application_form.errors, status: :unprocessable_content }
       end
     end
+  end
+
+  # GET /activity_report_application_forms/1/doc_ai_upload
+  def doc_ai_upload
   end
 
   # POST /activity_report_application_forms/1/submit
