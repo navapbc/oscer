@@ -91,3 +91,11 @@ div.exemption-screener {
     box-shadow: none;
   }
 }
+
+// =========================================================
+// Document scanning animation
+// =========================================================
+@keyframes scanning-progress {
+  0% { width: 20%; }
+  100% { width: 80%; }
+}
