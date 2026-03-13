@@ -112,7 +112,7 @@ RSpec.describe "/document_staging", type: :request do
       expect(response).to be_successful
     end
 
-    it "does not include documents belonging to another user" do
+    it "redirects when documents belong to another user" do
       other_user = create(:user)
       other_doc = create(:staged_document, user_id: other_user.id, doc_ai_job_id: "xyz-789")
 
@@ -120,8 +120,9 @@ RSpec.describe "/document_staging", type: :request do
         ids: [ other_doc.id ],
         activity_report_application_form_id: activity_report.id
       }
-      expect(response).to be_successful
-      expect(response.body).not_to include(other_doc.file.filename.to_s)
+      expect(response).to redirect_to(
+        doc_ai_upload_activity_report_application_form_path(id: activity_report.id)
+      )
     end
   end
 
@@ -131,17 +132,26 @@ RSpec.describe "/document_staging", type: :request do
     end
 
     it "renders a successful response for the user's documents" do
-      get lookup_document_staging_path, params: { ids: [ staged_doc.id ] }
+      activity_report = create(:activity_report_application_form)
+      get lookup_document_staging_path, params: {
+        ids: [ staged_doc.id ],
+        activity_report_application_form_id: activity_report.id
+      }
       expect(response).to be_successful
     end
 
-    it "does not include documents belonging to another user" do
+    it "redirects when documents belong to another user" do
       other_user = create(:user)
       other_doc = create(:staged_document, user_id: other_user.id, doc_ai_job_id: "xyz-789")
+      activity_report = create(:activity_report_application_form)
 
-      get lookup_document_staging_path, params: { ids: [ other_doc.id ] }
-      expect(response).to be_successful
-      expect(response.body).not_to include(other_doc.file.filename.to_s)
+      get lookup_document_staging_path, params: {
+        ids: [ other_doc.id ],
+        activity_report_application_form_id: activity_report.id
+      }
+      expect(response).to redirect_to(
+        doc_ai_upload_activity_report_application_form_path(id: activity_report.id)
+      )
     end
 
     context "when all documents are complete" do
@@ -150,7 +160,11 @@ RSpec.describe "/document_staging", type: :request do
       end
 
       it "renders the results partial" do
-        get lookup_document_staging_path, params: { ids: [ staged_doc.id ] }
+        activity_report = create(:activity_report_application_form)
+        get lookup_document_staging_path, params: {
+          ids: [ staged_doc.id ],
+          activity_report_application_form_id: activity_report.id
+        }
         expect(response).to be_successful
         expect(response.body).to include(I18n.t("document_staging.results.selected_files"))
       end
