@@ -1,1 +1,78 @@
-<%= render template: 'strata/tasks/index', locals: { tasks: @tasks, task_types: @task_types, unassigned_tasks: @unassigned_tasks } %>
+<div class="grid-container">
+  <h1 class="usa-heading-xl"><%= t("strata.tasks.index.title") %></h1>
+  <nav class="display-flex border-bottom-1px border-base-light">
+    <% task_tabs.each do |tab| %>
+      <%= render partial: "strata/cases/nav_tab", locals: tab %>
+    <% end %>
+  </nav>
+  <!-- Filters -->
+  <div class="grid-row grid-gap-4 margin-bottom-4">
+    <div class="grid-col-12 tablet:grid-col-3">
+      <%= render partial: 'strata/tasks/type_filter', locals: { task_types: @task_types } %>
+    </div>
+    <div class="grid-col-12 tablet:grid-col-3">
+      <%= render partial: 'strata/tasks/due_date_filter' %>
+    </div>
+    <div class="grid-col-12 tablet:grid-col-3">
+      <label class="usa-label" for="next-task-button" style="margin-bottom: 0.5rem">Actions:</label>
+      <%= button_to t("strata.tasks.actions.pick_next"), url_for(only_path: true, action: :pick_up_next_task),
+                      id: "next-task-button",
+                      disabled: !@unassigned_tasks&.any?,
+                      method: :post,
+                      title: @unassigned_tasks&.any? ? t("strata.tasks.messages.no_tasks_available") : nil,
+                      class: "usa-button" %>
+    </div>
+  </div>
+  <% if @tasks&.any? %>
+    <table class="usa-table usa-table--striped usa-table--sticky-header width-full">
+      <thead>
+        <tr>
+          <th data-sortable scope="col" role="columnheader" aria-sort="descending">
+            <%= t("strata.tasks.index.columns.col_due_date") %>
+          </th>
+          <th data-sortable scope="col" role="columnheader">
+            <%= t("strata.tasks.index.columns.col_type") %>
+          </th>
+          <th data-sortable scope="col" role="columnheader">
+            <%= t("strata.tasks.index.columns.col_case_id") %>
+          </th>
+          <th data-sortable scope="col" role="columnheader">
+            <%= t("strata.tasks.index.columns.col_created_date") %>
+          </th>
+          <% if feature_enabled?(:doc_ai) %>
+            <th data-sortable scope="col" role="columnheader" class="text-right">
+              <%= t("staff.tasks.index.confidence") %>
+            </th>
+          <% end %>
+        </tr>
+      </thead>
+      <tbody>
+        <% @tasks.each do |task| %>
+          <% tc = feature_enabled?(:doc_ai) ? task_confidence(task.case_id, @confidence_by_case) : { conf: nil, low: false } %>
+          <tr class="<%= 'bg-error-lighter' if tc[:low] %>">
+            <td data-sort-value="<%= time_since_epoch task.due_on %>">
+              <%= local_en_us task.due_on %>
+            </td>
+            <td data-sort-value="<%= task.type %>">
+              <%= link_to t("tasks.types.#{task.type.underscore}"), url_for(only_path: true, action: :show, id: task.id.to_s) %>
+            </td>
+            <td data-sort-value="<%= task.case_id %>">
+              <%= task.case_id %>
+            </td>
+            <td data-sort-value="<%= time_since_epoch task.created_at %>">
+              <%= local_en_us task.created_at.to_date %>
+            </td>
+            <% if feature_enabled?(:doc_ai) %>
+              <td class="text-right text-no-wrap">
+                <%= confidence_value_content(tc[:conf]) %>
+              </td>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <div class="usa-sr-only usa-table__announcement-region" aria-live="polite"></div>
+  <% else %>
+    <%= render partial: 'strata/tasks/no_tasks_alert' %>
+  <% end %>
+</div>

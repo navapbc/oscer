@@ -6,12 +6,21 @@
       <th scope="col"><%= t(".month") %></th>
       <th scope="col" style="width: 90px"><%= t(".hours_income").html_safe %></th>
       <th scope="col"><%= t(".supporting_documents") %></th>
+      <% if feature_enabled?(:doc_ai) %>
+        <th scope="col" class="text-right"><%= t(".confidence") %></th>
+      <% end %>
     </tr>
   </thead>
   <tbody>
     <% for activity in activity_report.activities do %>
       <tr>
-        <td>Work</td>
+        <td>
+          <% if feature_enabled?(:doc_ai) %>
+            <% icon_info = evidence_source_icon(activity.evidence_source) %>
+            <%= uswds_icon(icon_info[:icon], label: icon_info[:label], css_class: icon_info[:color], style: "vertical-align: middle") %>
+          <% end %>
+          Work
+        </td>
         <td><%= activity.name %></td>
         <td><%= activity.month&.strftime("%b, %Y") %></td>
         <td class="text-right"><%= activity.hours %></td>
@@ -20,7 +29,7 @@
             <ul class="usa-list usa-list--unstyled margin-0">
               <% activity.supporting_documents.each do |document| %>
                 <li c>
-                  <%= link_to document.filename, rails_blob_path(document, disposition: "attachment"), 
+                  <%= link_to document.filename, rails_blob_path(document, disposition: "attachment"),
                       target: "_blank", class: "usa-link" %>
                 </li>
               <% end %>
@@ -29,6 +38,11 @@
             <p>No documents</p>
           <% end %>
         </td>
+        <% if feature_enabled?(:doc_ai) %>
+          <td class="text-right text-no-wrap">
+            <%= confidence_cell_content(activity, @confidence_service) %>
+          </td>
+        <% end %>
       </tr>
     <% end %>
   </tbody>

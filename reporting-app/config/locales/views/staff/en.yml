@@ -8,6 +8,9 @@ en:
         my_tasks: "My tasks"
         task_type: "Task type"
         title: "Dashboard"
+    tasks:
+      index:
+        confidence: "Confidence level"
     users:
       index:
         title: "Organization Settings"

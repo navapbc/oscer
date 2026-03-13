@@ -94,6 +94,48 @@ RSpec.describe StagedDocument, type: :model do
     end
   end
 
+  describe "#average_confidence" do
+    it "returns nil for empty extracted_fields" do
+      doc = build(:staged_document, extracted_fields: {})
+      expect(doc.average_confidence).to be_nil
+    end
+
+    it "returns nil for nil extracted_fields" do
+      doc = build(:staged_document, extracted_fields: nil)
+      expect(doc.average_confidence).to be_nil
+    end
+
+    it "returns the confidence value when there is a single field" do
+      doc = build(:staged_document, extracted_fields: {
+        "currentgrosspay" => { "confidence" => 0.93, "value" => 1627.74 }
+      })
+      expect(doc.average_confidence).to eq(0.93)
+    end
+
+    it "returns the mean confidence for multiple fields" do
+      doc = build(:staged_document, extracted_fields: {
+        "currentgrosspay" => { "confidence" => 0.93, "value" => 1627.74 },
+        "payperiod" => { "confidence" => 0.87, "value" => "2024-01-15" }
+      })
+      expect(doc.average_confidence).to eq(0.90)
+    end
+
+    it "ignores fields without a confidence key" do
+      doc = build(:staged_document, extracted_fields: {
+        "currentgrosspay" => { "confidence" => 0.93, "value" => 1627.74 },
+        "employer_name" => { "value" => "Acme Corp" }
+      })
+      expect(doc.average_confidence).to eq(0.93)
+    end
+
+    it "returns nil when no fields have confidence keys" do
+      doc = build(:staged_document, extracted_fields: {
+        "employer_name" => { "value" => "Acme Corp" }
+      })
+      expect(doc.average_confidence).to be_nil
+    end
+  end
+
   describe "has_one_attached :file" do
     it "has a file attachment" do
       doc = create(:staged_document)

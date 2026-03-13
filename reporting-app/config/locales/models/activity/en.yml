@@ -1,0 +1,9 @@
+en:
+  activities:
+    evidence_sources:
+      self_reported: "Self Reported"
+      ai_assisted: "AI Assisted"
+      ai_assisted_with_member_edits: "AI Assisted with Edits"
+      ai_rejected_member_override: "AI Rejected"
+    confidence:
+      low_label: "Low confidence"

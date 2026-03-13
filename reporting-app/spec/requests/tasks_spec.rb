@@ -69,6 +69,75 @@ RSpec.describe "/staff/tasks", type: :request do
     end
   end
 
+  describe "GET /show with doc_ai" do
+    let(:activity_report_application_form) { create(:activity_report_application_form, certification_case_id: certification_case.id, user_id: user.id) }
+    let(:activity_report_task) { create(:review_activity_report_task, case: certification_case) }
+
+    before do
+      activity_report_application_form.save!
+    end
+
+    context "when doc_ai is enabled" do
+      it "renders confidence column for ai_sourced activity" do
+        activity = activity_report_application_form.activities.create!(
+          name: "AI Employer",
+          type: "WorkActivity",
+          hours: 40,
+          month: Date.current.beginning_of_month,
+          category: "employment",
+          evidence_source: "ai_assisted"
+        )
+        ai_user = create(:user)
+        create(:staged_document, :validated,
+          stageable: activity,
+          user_id: ai_user.id,
+          extracted_fields: { "grosspay" => { "confidence" => 0.91, "value" => 2000 } })
+
+        with_doc_ai_enabled do
+          get "/staff/tasks/#{activity_report_task.id}"
+          expect(response).to be_successful
+          expect(response.body).to include("Confidence Level")
+          expect(response.body).to include("91%")
+        end
+      end
+
+      it "shows evidence source icon" do
+        activity_report_application_form.activities.create!(
+          name: "Manual Employer",
+          type: "WorkActivity",
+          hours: 20,
+          month: Date.current.beginning_of_month,
+          category: "employment",
+          evidence_source: "self_reported"
+        )
+
+        with_doc_ai_enabled do
+          get "/staff/tasks/#{activity_report_task.id}"
+          expect(response).to be_successful
+          expect(response.body).to include("#person")
+        end
+      end
+    end
+
+    context "when doc_ai is disabled" do
+      it "does not show confidence column" do
+        activity_report_application_form.activities.create!(
+          name: "Some Employer",
+          type: "WorkActivity",
+          hours: 30,
+          month: Date.current.beginning_of_month,
+          category: "employment"
+        )
+
+        with_doc_ai_disabled do
+          get "/staff/tasks/#{activity_report_task.id}"
+          expect(response).to be_successful
+          expect(response.body).not_to include("Confidence Level")
+        end
+      end
+    end
+  end
+
   describe "GET /index" do
     let(:pending_task) { build(:review_activity_report_task, case: certification_case, status: :pending) }
     let(:completed_task) { build(:review_activity_report_task, case: certification_case, status: :completed) }
@@ -137,6 +206,71 @@ RSpec.describe "/staff/tasks", type: :request do
         expect(response.body).to include(pending_task.id)
         expect(response.body).not_to include(completed_task.id)
         expect(response.body).not_to include(on_hold_task.id)
+      end
+    end
+
+    context "with doc_ai feature flag" do
+      context "when doc_ai is enabled" do
+        it "shows confidence column header" do
+          with_doc_ai_enabled do
+            get "/staff/tasks", params: { filter_status: "pending" }
+            expect(response.body).to include("Confidence level")
+          end
+        end
+
+        it "renders confidence percentage when DocAI data exists" do
+          form = create(:activity_report_application_form, certification_case_id: certification_case.id)
+          activity = form.activities.create!(
+            name: "AI Co",
+            type: "WorkActivity",
+            hours: 40,
+            month: Date.current.beginning_of_month,
+            category: "employment",
+            evidence_source: "ai_assisted"
+          )
+          ai_user = create(:user)
+          create(:staged_document, :validated,
+            stageable: activity,
+            user_id: ai_user.id,
+            extracted_fields: { "grosspay" => { "confidence" => 0.85, "value" => 1000 } })
+
+          with_doc_ai_enabled do
+            get "/staff/tasks", params: { filter_status: "pending" }
+            expect(response.body).to include("85%")
+          end
+        end
+
+        it "highlights row with bg-error-lighter for low confidence" do
+          form = create(:activity_report_application_form, certification_case_id: certification_case.id)
+          activity = form.activities.create!(
+            name: "Low AI Co",
+            type: "WorkActivity",
+            hours: 40,
+            month: Date.current.beginning_of_month,
+            category: "employment",
+            evidence_source: "ai_assisted"
+          )
+          ai_user = create(:user)
+          create(:staged_document, :validated,
+            stageable: activity,
+            user_id: ai_user.id,
+            extracted_fields: { "grosspay" => { "confidence" => 0.55, "value" => 500 } })
+
+          with_doc_ai_enabled do
+            get "/staff/tasks", params: { filter_status: "pending" }
+            expect(response.body).to include("bg-error-lighter")
+            expect(response.body).to include("55%")
+          end
+        end
+      end
+
+      context "when doc_ai is disabled" do
+        it "does not show confidence column" do
+          with_doc_ai_disabled do
+            get "/staff/tasks", params: { filter_status: "pending" }
+            expect(response.body).not_to include("Confidence level")
+          end
+        end
       end
     end
   end

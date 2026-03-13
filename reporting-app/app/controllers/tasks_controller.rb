@@ -7,6 +7,7 @@ class TasksController < Strata::TasksController
   before_action :set_certification, only: [ :show ]
   before_action :set_member, only: [ :show ]
   before_action :set_information_requests, only: [ :show ]
+  before_action :set_confidence_service, only: [ :show ]
 
   # Override parent index to use policy_scope for authorization.
   # The parent Strata::TasksController uses Strata::Task.all internally,
@@ -15,6 +16,11 @@ class TasksController < Strata::TasksController
     @task_types = policy_scope(Strata::Task).unscope(:order).distinct.pluck(:type)
     @tasks = filter_tasks
     @unassigned_tasks = policy_scope(Strata::Task).incomplete.unassigned
+
+    if Features.doc_ai_enabled? && @tasks.present?
+      case_ids = @tasks.map(&:case_id).compact.uniq
+      @confidence_by_case = DocAiConfidenceService.new.confidence_by_case_id(case_ids)
+    end
   end
 
   def assign
@@ -110,6 +116,10 @@ class TasksController < Strata::TasksController
 
   def information_request_params
     raise NotImplementedError, "Subclasses must implement information_request_params"
+  end
+
+  def set_confidence_service
+    @confidence_service = DocAiConfidenceService.new if Features.doc_ai_enabled?
   end
 
   private

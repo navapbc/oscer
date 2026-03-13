@@ -6,6 +6,18 @@ FactoryBot.define do
     name { Faker::Company.name }
     category { Activity::ALLOWED_CATEGORIES.sample }
 
+    trait :ai_assisted do
+      evidence_source { "ai_assisted" }
+    end
+
+    trait :ai_assisted_with_member_edits do
+      evidence_source { "ai_assisted_with_member_edits" }
+    end
+
+    trait :ai_rejected do
+      evidence_source { "ai_rejected_member_override" }
+    end
+
     factory :hourly_activity, parent: :activity, class: HourlyActivity do
       type { "HourlyActivity" }
       hours { Faker::Number.between(from: 1.0, to: 100.0) }

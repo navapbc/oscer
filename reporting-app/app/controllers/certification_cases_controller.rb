@@ -28,6 +28,7 @@ class CertificationCasesController < StaffController
     @target_hours = HoursComplianceDeterminationService::TARGET_HOURS
     @ex_parte_activities = fetch_ex_parte_activities
     @member_activities = fetch_member_activities
+    @confidence_service = DocAiConfidenceService.new if Features.doc_ai_enabled?
   end
 
   private

@@ -17,4 +17,13 @@ class StagedDocument < ApplicationRecord
   validates :user_id, presence: true
 
   default_scope { with_attached_file }
+
+  def average_confidence
+    return nil if extracted_fields.blank?
+
+    confidences = extracted_fields.filter_map { |_, field| field["confidence"] }
+    return nil if confidences.empty?
+
+    (confidences.sum / confidences.size).round(2)
+  end
 end

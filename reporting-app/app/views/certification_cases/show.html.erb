@@ -91,15 +91,15 @@
 
   <% component.with_heading { t(".ex_parte_data") } %>
   <% component.with_body do %>
-    <%= render partial: 'hours_reported_table', 
-        locals: { 
+    <%= render partial: 'hours_reported_table',
+        locals: {
           ex_parte_activities: @ex_parte_activities,
           member_activities: @member_activities,
           hours_summary: @hours_summary,
-          target_hours: @target_hours 
+          target_hours: @target_hours
         } %>
   <% end %>
-  
+
   <% component.with_heading { t(".activity_report") } %>
   <% component.with_body do %>
     <% if @activity_report %>

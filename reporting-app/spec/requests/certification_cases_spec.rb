@@ -114,6 +114,89 @@ RSpec.describe "/staff/certification_cases", type: :request do
         expect(response.body).to include("No hours reported")
       end
     end
+
+    context "with doc_ai feature flag" do
+      let(:ai_user) { create(:user) }
+      let(:form) do
+        create(:activity_report_application_form, certification_case_id: certification_case.id)
+      end
+      let(:activity) do
+        form.activities.create!(
+          name: "Test Employer",
+          type: "WorkActivity",
+          hours: 40,
+          month: Date.current.beginning_of_month,
+          category: "employment",
+          evidence_source: "ai_assisted"
+        )
+      end
+
+      before do
+        activity
+      end
+
+      context "when doc_ai is enabled" do
+        it "shows confidence column header" do
+          with_doc_ai_enabled do
+            get "/staff/certification_cases/#{certification_case.id}"
+            expect(response.body).to include("Confidence Level")
+          end
+        end
+
+        it "shows evidence source icon" do
+          with_doc_ai_enabled do
+            get "/staff/certification_cases/#{certification_case.id}"
+            expect(response.body).to include("#insights")
+          end
+        end
+
+
+        it "renders confidence percentage for ai_sourced activity" do
+          create(:staged_document, :validated,
+            stageable: activity,
+            user_id: ai_user.id,
+            extracted_fields: { "grosspay" => { "confidence" => 0.93, "value" => 1000 } })
+
+          with_doc_ai_enabled do
+            get "/staff/certification_cases/#{certification_case.id}"
+            expect(response.body).to include("93%")
+          end
+        end
+
+        it "shows blank confidence for self_reported activity" do
+          form.activities.create!(
+            name: "Manual Co",
+            type: "WorkActivity",
+            hours: 20,
+            month: Date.current.beginning_of_month,
+            category: "employment",
+            evidence_source: "self_reported"
+          )
+
+          with_doc_ai_enabled do
+            get "/staff/certification_cases/#{certification_case.id}"
+            expect(response.body).to include("#person")
+            expect(response.body).not_to include("0%")
+          end
+        end
+      end
+
+      context "when doc_ai is disabled" do
+        it "does not show confidence column" do
+          with_doc_ai_disabled do
+            get "/staff/certification_cases/#{certification_case.id}"
+            expect(response.body).not_to include("Confidence Level")
+          end
+        end
+
+        it "does not show evidence source icons" do
+          with_doc_ai_disabled do
+            get "/staff/certification_cases/#{certification_case.id}"
+            expect(response.body).not_to include("#insights")
+          end
+        end
+      end
+    end
   end
 
   describe "GET /index" do
