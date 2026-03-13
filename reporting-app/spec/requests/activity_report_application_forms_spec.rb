@@ -404,6 +404,69 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
     end
   end
 
+  describe "POST /accept_doc_ai" do
+    let(:activity_report_application_form) do
+      ActivityReportApplicationForm.create!(
+        valid_db_attributes.merge(
+          reporting_periods: [ Strata::YearMonth.new(year: 2025, month: 10) ]
+        )
+      )
+    end
+
+    let(:staged_doc) do
+      create(:staged_document, :validated,
+        user_id: user.id,
+        extracted_fields: {
+          "currentgrosspay" => { "confidence" => 0.93, "value" => 1500.0 },
+          "payperiodstartdate" => { "confidence" => 0.95, "value" => "2025-10-15" }
+        }
+      )
+    end
+
+    it "creates activities and redirects to first edit page with pending IDs" do
+      staged_doc_2 = create(:staged_document, :validated,
+        user_id: user.id,
+        extracted_fields: {
+          "currentgrosspay" => { "confidence" => 0.90, "value" => 2000.0 },
+          "payperiodstartdate" => { "confidence" => 0.88, "value" => "2025-10-10" }
+        }
+      )
+
+      expect {
+        post accept_doc_ai_activity_report_application_form_url(activity_report_application_form),
+          params: { staged_document_ids: [ staged_doc.id, staged_doc_2.id ] }
+      }.to change(IncomeActivity, :count).by(2)
+
+      expect(response).to have_http_status(:redirect)
+      expect(response.location).to include("doc_ai_review=true")
+    end
+
+    # Rejected documents should be handled earlier in the upload process.
+    it "redirects to show page with notice when no Payslip documents" do
+      rejected_doc = create(:staged_document, :rejected, user_id: user.id)
+
+      post accept_doc_ai_activity_report_application_form_url(activity_report_application_form),
+        params: { staged_document_ids: [ rejected_doc.id ] }
+
+      expect(response).to redirect_to(activity_report_application_form_url(activity_report_application_form))
+      expect(flash[:notice]).to eq(I18n.t("activity_report_application_forms.accept_doc_ai.no_activities_created"))
+    end
+
+    it "requires authentication" do
+      Warden.test_reset!
+      post accept_doc_ai_activity_report_application_form_url(activity_report_application_form),
+        params: { staged_document_ids: [ staged_doc.id ] }
+      expect(response).not_to be_successful
+    end
+
+    it "errors if not owning user" do
+      login_as other_user
+      post accept_doc_ai_activity_report_application_form_url(activity_report_application_form),
+        params: { staged_document_ids: [ staged_doc.id ] }
+      expect(response).to be_client_error
+    end
+  end
+
   describe "DELETE /destroy" do
     it "destroys the requested activity_report_application_form" do
       activity_report_application_form = ActivityReportApplicationForm.create! valid_db_attributes

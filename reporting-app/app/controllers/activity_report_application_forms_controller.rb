@@ -9,6 +9,7 @@ class ActivityReportApplicationFormsController < ApplicationController
     submit
     destroy
     doc_ai_upload
+    accept_doc_ai
   ]
   before_action :authenticate_user!
   before_action :set_certification_case, only: %i[show edit review update]
@@ -93,6 +94,27 @@ class ActivityReportApplicationFormsController < ApplicationController
 
   # GET /activity_report_application_forms/1/doc_ai_upload
   def doc_ai_upload
+  end
+
+  # POST /activity_report_application_forms/1/accept_doc_ai
+  def accept_doc_ai
+    staged_document_ids = Array(params[:staged_document_ids])
+    service = PayslipToIncomeActivityCreateService.new(form: @activity_report_application_form)
+    activities = service.call(staged_document_ids)
+
+    if activities.any?
+      first_activity = activities.shift
+      remaining_ids = activities.pluck(:id)
+      redirect_to edit_activity_report_application_form_activity_path(
+        @activity_report_application_form,
+        first_activity,
+        doc_ai_review: true,
+        pending_review_ids: remaining_ids
+      )
+    else
+      redirect_to activity_report_application_form_path(@activity_report_application_form),
+        notice: t(".no_activities_created")
+    end
   end
 
   # POST /activity_report_application_forms/1/submit
