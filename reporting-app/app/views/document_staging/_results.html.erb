@@ -19,9 +19,7 @@
                   class="usa-button usa-button--unstyled"
                   data-action="file-list#remove"
                   aria-label="<%= t("document_staging.results.remove_file") %>: <%= doc.file.filename %>">
-            <svg class="usa-icon usa-icon--size-3 text-primary" aria-hidden="true" focusable="false" role="img">
-              <use xlink:href="<%= asset_path('@uswds/uswds/dist/img/sprite.svg') %>#delete"></use>
-            </svg>
+            <%= uswds_icon("delete", css_class: "text-primary") %>
           </button>
         </span>
       </div>

@@ -4,9 +4,7 @@
 
 <div class="bg-white padding-top-3 padding-bottom-5 padding-x-5 border border-base-lighter">
   <div class="text-center margin-bottom-2 padding-bottom-2 border-bottom border-base-lighter">
-    <svg class="usa-icon usa-icon--size-6 text-<%= icon_color %>" aria-hidden="true" focusable="false" role="img">
-      <use xlink:href="<%= asset_path "@uswds/uswds/dist/img/sprite.svg##{icon}" %>"></use>
-    </svg>
+    <%= uswds_icon(icon, size: 6, css_class: "text-#{icon_color}") %>
 
     <h1 class="font-heading-xl margin-y-0"><%= t(".title") %></h1>
   </div>
