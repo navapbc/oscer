@@ -4,14 +4,19 @@ class PayslipToIncomeActivityCreateService
   class PayslipNotInReportingPeriodError < StandardError; end
 
   PAYSLIP_DOC_CLASS = "Payslip"
+  private_constant :PAYSLIP_DOC_CLASS
 
   def initialize(form:)
     @form = form
   end
 
   def call(staged_document_ids)
-    eligible_docs = StagedDocument.where(id: staged_document_ids)
-      .select { |doc| eligible?(doc) }
+    eligible_docs = StagedDocument.where(
+      id: staged_document_ids,
+      status: :validated,
+      doc_ai_matched_class: PAYSLIP_DOC_CLASS,
+      stageable_id: nil
+      )
 
     return [] if eligible_docs.empty?
 
@@ -36,12 +41,6 @@ class PayslipToIncomeActivityCreateService
 
   private
 
-  def eligible?(doc)
-    doc.validated? &&
-      doc.doc_ai_matched_class == PAYSLIP_DOC_CLASS &&
-      doc.stageable_id.nil?
-  end
-
   def build_activity(staged_document)
     payslip = DocAiResult.from_response(
       "matchedDocumentClass" => staged_document.doc_ai_matched_class,
@@ -55,7 +54,7 @@ class PayslipToIncomeActivityCreateService
     IncomeActivity.new(
       activity_report_application_form_id: @form.id,
       category: "employment",
-      evidence_source: "ai_assisted",
+      evidence_source: ActivityAttributions::AI_ASSISTED,
       month: month,
       income: income_cents(payslip)
     )

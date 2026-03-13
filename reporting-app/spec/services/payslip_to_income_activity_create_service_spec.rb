@@ -61,7 +61,7 @@ RSpec.describe PayslipToIncomeActivityCreateService do
 
       it "sets evidence_source to ai_assisted" do
         activities = service.call([ staged_doc.id ])
-        expect(activities.first.evidence_source).to eq("ai_assisted")
+        expect(activities.first.evidence_source).to eq(ActivityAttributions::AI_ASSISTED)
       end
 
       it "attaches the original file blob as a supporting document" do
