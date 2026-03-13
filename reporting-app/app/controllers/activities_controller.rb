@@ -33,6 +33,11 @@ class ActivitiesController < ApplicationController
   # GET /activities/1/edit
   def edit
     authorize @activity_report_application_form, :edit?
+    @doc_ai_review = params[:doc_ai_review] == "true"
+    if @doc_ai_review
+      @pending_review_ids = Array(params[:pending_review_ids])
+      @staged_document = StagedDocument.find_by(stageable: @activity)
+    end
   end
 
   # GET /activities/1/documents
@@ -84,13 +89,39 @@ class ActivitiesController < ApplicationController
   def update
     authorize @activity_report_application_form, :update?
 
+    doc_ai_review = params[:doc_ai_review] == "true"
+    pending_review_ids = Array(params[:pending_review_ids])
+
+    original_income_cents = @activity.income&.cents if doc_ai_review
+    original_month = @activity.month if doc_ai_review
+
     @activity.attributes = activity_attributes_from_params.merge({
       activity_report_application_form_id: @activity_report_application_form.id
     })
 
+    if doc_ai_review && @activity.evidence_source == "ai_assisted"
+      income_edited = @activity.income&.cents != original_income_cents
+      month_edited = @activity.month != original_month
+      @activity.evidence_source = "ai_assisted_with_member_edits" if income_edited || month_edited
+    end
+
     respond_to do |format|
       if @activity_report_application_form.save
-        format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity.becomes(Activity)) }
+        format.html do
+          if doc_ai_review && pending_review_ids.any?
+            next_id = pending_review_ids.shift
+            remaining_ids = pending_review_ids
+            redirect_to edit_activity_report_application_form_activity_path(
+              @activity_report_application_form, next_id,
+              doc_ai_review: true,
+              pending_review_ids: remaining_ids
+            )
+          elsif doc_ai_review
+            redirect_to activity_report_application_form_path(@activity_report_application_form)
+          else
+            redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity.becomes(Activity))
+          end
+        end
         format.json { render :show, status: :ok, location: @activity.becomes(Activity) }
       else
         format.html { render :edit, status: :unprocessable_content }
