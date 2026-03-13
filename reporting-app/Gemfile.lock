@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: 327f129a1c663db35d73f49959f0b1586b48959e
+  revision: 6495a4e41ac3d05b125d3b9d44732f784231f625
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -630,7 +630,7 @@ GEM
       faraday-follow_redirects
     thor (1.5.0)
     timeliness (0.5.3)
-    timeout (0.6.0)
+    timeout (0.6.1)
     tsort (0.2.0)
     turbo-rails (2.0.20)
       actionpack (>= 7.1.0)
