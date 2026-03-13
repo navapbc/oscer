@@ -29,8 +29,15 @@ class DocumentStagingController < ApplicationController
     authorize StagedDocument
     @staged_document_ids = Array(params[:ids])
     @staged_documents = policy_scope(StagedDocument).where(id: @staged_document_ids)
+
+    if @staged_document_ids.blank? || (@staged_documents.size != @staged_document_ids.size)
+      redirect_to doc_ai_upload_activity_report_application_form_path(
+        id: activity_report_application_form_id
+      )
+    end
+
     @all_complete = @staged_documents.any? && @staged_documents.none?(&:pending?)
-    @activity_report_application_form_id = params[:activity_report_application_form_id]
+    @activity_report_application_form_id = activity_report_application_form_id
 
     return unless @all_complete && @staged_documents.any?
 
@@ -45,6 +52,13 @@ class DocumentStagingController < ApplicationController
   def lookup
     authorize StagedDocument
     @staged_documents = policy_scope(StagedDocument).where(id: lookup_params[:ids])
+
+    if @staged_documents.blank? || (@staged_documents.size != lookup_params[:ids].size)
+      redirect_to doc_ai_upload_activity_report_application_form_path(
+        id: activity_report_application_form_id
+      )
+    end
+
     @all_complete = @staged_documents.any? && @staged_documents.none?(&:pending?)
   end
 
