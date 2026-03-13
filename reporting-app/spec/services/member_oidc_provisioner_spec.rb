@@ -185,7 +185,7 @@ RSpec.describe MemberOidcProvisioner, type: :service do
       end
     end
 
-    context "does not raise for no role (unlike staff provisioner)" do
+    context "without role mapping (unlike staff provisioner)" do
       it "successfully provisions user without any role logic" do
         claims = mock_member_claims
 
