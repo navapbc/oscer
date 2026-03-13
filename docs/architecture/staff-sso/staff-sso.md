@@ -1,23 +1,58 @@
-# Staff Single Sign-On (OIDC)
+# OIDC Authentication (Staff and Member)
 
 ## Problem
 
-Staff currently manage separate OSCER credentials, creating friction and security burden. States have existing identity providers (Azure Entra ID, IBM ISVA, AWS) that already handle authentication and MFA. OSCER needs to accept authentication from any state's identity provider while maintaining user records for audit trails and role-based access control.
+Staff need to use existing state credentials instead of separate OSCER passwords. States have identity providers (IdPs) that handle authentication and MFA. Separately, members (citizens) may authenticate via a state citizen IdP or continue with app-managed credentials (e.g. Cognito). OSCER must support:
+
+- **Staff**: OIDC redirect to state staff IdP; JIT provisioning and role mapping from IdP groups.
+- **Member**: Optional OIDC redirect to state citizen IdP, parallel to existing credential-based member auth; no state-specific naming in code or config.
 
 ## Approach
 
-1. **OIDC Client Integration** — OSCER acts as an OIDC Relying Party, redirecting staff to their state's identity provider and validating returned tokens.
-2. **Configuration-Driven Multi-IdP** — Each deployment configures its IdP settings (issuer, client credentials, claim mappings) without code changes.
-3. **Just-In-Time User Provisioning** — Staff accounts are created automatically on first successful SSO login, mapped to OSCER roles via IdP group claims.
-4. **Attribute Sync on Login** — User profile (name, email, role) is refreshed from IdP claims on every login, keeping OSCER in sync with state systems.
+1. **Two independent enable flags** — `SSO_ENABLED` controls staff OIDC; `MEMBER_OIDC_ENABLED` controls member OIDC. Each can be on or off, so staff can use state IdP or Cognito (or app-managed auth), and members can use citizen IdP or Cognito, in any combination.
+2. **Two parallel OIDC flows** — Staff OIDC and Member OIDC use the same protocol and patterns (OmniAuth, redirect, callback, provisioner) but separate config, routes, and provisioners. No shared IdP.
+3. **Configuration-driven** — Each flow uses its own env-driven config (`SSO_*` for staff, `MEMBER_OIDC_*` for member). No state names in repo.
+4. **Staff**: JIT provisioning, role from IdP groups, attribute sync on login when staff SSO is enabled.
+5. **Member**: Optional JIT provisioning from citizen IdP when member OIDC is enabled; find/create by UID, sync email/name; no role mapping. Otherwise members use Cognito only.
 
 ```mermaid
 flowchart LR
     Staff[Staff User] --> OSCER[OSCER]
-    OSCER -->|"Redirect"| IdP[State IdP]
-    IdP -->|"Token with claims"| OSCER
-    OSCER -->|"JIT Provision/Update"| DB[(User Record)]
+    OSCER -->|Redirect| StaffIdP[Staff IdP]
+    StaffIdP -->|Token| OSCER
+    OSCER -->|JIT Provision| DB[(User)]
+
+    Member[Member] --> OSCER
+    OSCER -->|Redirect optional| MemberIdP[Citizen IdP]
+    MemberIdP -->|Token| OSCER
+    OSCER -->|JIT Provision or Cognito| DB
 ```
+
+---
+
+## Feature flags: staff SSO vs member OIDC
+
+Two separate enable flags control who can use OIDC vs standard (e.g. Cognito) login:
+
+| Flag | Controls | When `true` | When `false` |
+|------|----------|-------------|--------------|
+| **SSO_ENABLED** | Staff authentication | Staff sign in via state staff IdP (OIDC) | Staff sign in via Cognito / app-managed auth |
+| **MEMBER_OIDC_ENABLED** | Member authentication | Members can sign in via state citizen IdP (OIDC), optionally alongside Cognito | Members sign in via Cognito only |
+
+**Configuration matrix:**
+
+| SSO_ENABLED | MEMBER_OIDC_ENABLED | Staff login | Member login |
+|-------------|---------------------|-------------|--------------|
+| `true` | `true` | State staff IdP (OIDC) | Citizen IdP (OIDC) and/or Cognito |
+| `true` | `false` | State staff IdP (OIDC) | Cognito only |
+| `false` | `true` | Cognito / app-managed | Citizen IdP (OIDC) and/or Cognito |
+| `false` | `false` | Cognito / app-managed | Cognito only |
+
+Flags are independent. Deployments can enable one, both, or neither. No state or IdP names in code; each flag gates its own routes, UI, and OmniAuth provider.
+
+**Member login screen when member OIDC is enabled:** When `MEMBER_OIDC_ENABLED` is true, the app can show the standard member login page with an additional "Sign in with your account" (OIDC) option alongside email/password, or—when member OIDC is the only auth method—redirect unauthenticated members directly to the OIDC flow so the email/password form is bypassed. See [Member OIDC — Login flow and MFA bypass](./member-sso.md#login-flow-and-mfa-bypass).
+
+**MFA bypass for OIDC users:** Staff and member users who sign in via OIDC do not use the app’s own MFA (e.g. Cognito TOTP). The IdP handles MFA. Provisioners set `mfa_preference` to `opt_out` for OIDC users so the app skips the MFA preference page and any in-app MFA challenge after sign-in.
 
 ---
 
@@ -27,127 +62,143 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    subgraph External["External Systems"]
+    subgraph External["External"]
         Staff[Staff User]
-        IdP[State Identity Provider]
+        Member[Member]
+        StaffIdP[Staff IdP]
+        MemberIdP[Citizen IdP]
     end
 
-    subgraph OSCER["OSCER System"]
-        App[OSCER Application]
+    subgraph OSCER["OSCER"]
+        App[Application]
         DB[(PostgreSQL)]
     end
 
-    Staff -->|"1. Access OSCER"| App
-    App -->|"2. Redirect to login"| IdP
-    IdP -->|"3. Authenticate + MFA"| Staff
-    IdP -->|"4. Return ID token"| App
-    App -->|"5. Create/update user"| DB
-    App -->|"6. Establish session"| Staff
+    Staff -->|Access staff| App
+    App -->|Redirect| StaffIdP
+    StaffIdP -->|ID token| App
+    App -->|Provision/update| DB
+    App -->|Session| Staff
+
+    Member -->|Access member| App
+    App -->|Redirect or form| MemberIdP
+    MemberIdP -->|ID token| App
+    App -->|Provision or Cognito| DB
+    App -->|Session| Member
 ```
-
-### Identity Provider Mapping
-
-| Function        | Azure Entra ID      | IBM ISVA           | AWS Cognito         |
-| --------------- | ------------------- | ------------------ | ------------------- |
-| Protocol        | OIDC                | OIDC               | OIDC                |
-| Group claims    | `groups`            | `groups`           | `cognito:groups`    |
-| MFA             | Conditional Access  | Access Policy      | User Pool MFA       |
-| Admin console   | Azure Portal        | ISVA Admin Console | Cognito Console     |
 
 ---
 
 ## C4 Component Diagram
 
-> Level 3: Internal components within OSCER
+> Level 3: Internal components
 
 ```mermaid
 flowchart TB
-    subgraph Controllers["Controllers"]
-        SessionsController[Staff::SessionsController]
-        CallbackController[Auth::OidcCallbackController]
+    subgraph Middleware["Middleware"]
+        OmniAuth[OmniAuth OpenID Connect]
     end
 
-    subgraph Auth["Authentication Layer"]
-        OidcClient[OidcClient]
-        TokenValidator[TokenValidator]
-    end
-
-    subgraph UserMgmt["User Management"]
-        UserProvisioner[StaffUserProvisioner]
+    subgraph StaffFlow["Staff OIDC"]
+        SsoController[Auth::SsoController]
+        StaffProvisioner[StaffUserProvisioner]
         RoleMapper[RoleMapper]
     end
 
+    subgraph MemberFlow["Member OIDC"]
+        MemberOidcController[Auth::MemberOidcController]
+        MemberProvisioner[MemberOidcProvisioner]
+    end
+
     subgraph Config["Configuration"]
-        IdpConfig[IdpConfiguration]
-        RoleMapping[RoleMappingConfig]
+        SsoConfig[config.sso]
+        MemberOidcConfig[config.member_oidc]
+        RoleMapping[Role mapping]
     end
 
     subgraph Models["Models"]
-        User[User Model]
+        User[User]
     end
 
-    SessionsController -->|"initiate login"| OidcClient
-    OidcClient -->|"reads"| IdpConfig
-    CallbackController -->|"validate token"| TokenValidator
-    TokenValidator -->|"reads"| IdpConfig
-    CallbackController -->|"provision/update"| UserProvisioner
-    UserProvisioner -->|"map groups"| RoleMapper
-    RoleMapper -->|"reads"| RoleMapping
-    UserProvisioner -->|"creates/updates"| User
+    OmniAuth -->|":sso"| SsoController
+    OmniAuth -->|":member_oidc"| MemberOidcController
+    SsoController --> StaffProvisioner
+    StaffProvisioner --> RoleMapper
+    StaffProvisioner --> User
+    RoleMapper --> RoleMapping
+    SsoController --> SsoConfig
+    MemberOidcController --> MemberProvisioner
+    MemberOidcController --> MemberOidcConfig
+    MemberProvisioner --> User
 ```
 
 ---
 
 ## Key Interfaces
 
-### IdpConfiguration
+### Staff SSO configuration
 
-Provider-agnostic configuration loaded from environment/credentials:
+Redirect URI is built at runtime from `APP_HOST`, `APP_PORT`, and `DISABLE_HTTPS` (e.g. `build_sso_redirect_uri` → `https://host/auth/sso/callback`). Same helper pattern is reused for member OIDC with path `/auth/member_oidc/callback`.
+
+OmniAuth is configured to allow only POST for the request phase (CVE-2015-9284); the login page renders a form that auto-submits via POST with Rails CSRF token. Callback and failure are GET (IdP redirects).
 
 ```ruby
 # config/initializers/sso.rb
 Rails.application.config.sso = {
   enabled: ENV.fetch("SSO_ENABLED", "false") == "true",
-  issuer: ENV["SSO_ISSUER_URL"],
-  client_id: ENV["SSO_CLIENT_ID"],
-  client_secret: ENV["SSO_CLIENT_SECRET"],
-  redirect_uri: ENV["SSO_REDIRECT_URI"],
-  scopes: %w[openid profile email groups],
   claims: {
     email: ENV.fetch("SSO_CLAIM_EMAIL", "email"),
     name: ENV.fetch("SSO_CLAIM_NAME", "name"),
     groups: ENV.fetch("SSO_CLAIM_GROUPS", "groups"),
-    unique_id: ENV.fetch("SSO_CLAIM_UID", "sub")
+    unique_id: ENV.fetch("SSO_CLAIM_UID", "sub"),
+    region: ENV.fetch("SSO_CLAIM_REGION", "custom:region")
   }
-}
+}.freeze
+# OmniAuth provider :sso — SSO_ISSUER_URL, SSO_CLIENT_ID, SSO_CLIENT_SECRET, redirect_uri
 ```
 
-### OidcClient Service
+### Member OIDC configuration
 
-| Method                     | Purpose                                      |
-| -------------------------- | -------------------------------------------- |
-| `authorization_url`        | Generate redirect URL to IdP                 |
-| `exchange_code(code)`      | Exchange authorization code for tokens       |
-| `validate_token(id_token)` | Verify signature, issuer, audience, expiry   |
-| `extract_claims(id_token)` | Parse user attributes from validated token   |
+Generic naming only (no state names in code or config):
 
-### StaffUserProvisioner Service
+```ruby
+# config (e.g. initializer)
+Rails.application.config.member_oidc = {
+  enabled: ENV.fetch("MEMBER_OIDC_ENABLED", "false") == "true",
+  claims: {
+    email: ENV.fetch("MEMBER_OIDC_CLAIM_EMAIL", "email"),
+    name: ENV.fetch("MEMBER_OIDC_CLAIM_NAME", "name"),
+    unique_id: ENV.fetch("MEMBER_OIDC_CLAIM_UID", "sub")
+  }
+}
+# OmniAuth provider :member_oidc — MEMBER_OIDC_ISSUER_URL, MEMBER_OIDC_CLIENT_ID, etc.
+# Redirect URI: same host, path /auth/member_oidc/callback
+```
 
-| Method                   | Purpose                                          |
-| ------------------------ | ------------------------------------------------ |
-| `provision!(claims)`     | Find or create user, update attributes, set role |
-| `find_by_uid(uid)`       | Lookup user by IdP unique identifier             |
-| `sync_attributes(user, claims)` | Update name, email from IdP claims        |
+### StaffUserProvisioner
 
-### RoleMapper Service
+| Method             | Purpose                                       |
+| ------------------ | --------------------------------------------- |
+| `provision!(claims)` | Find or create user by UID, sync attributes, set role from groups |
+| Role source        | RoleMapper maps IdP groups to OSCER role      |
 
-| Method                   | Purpose                                      |
-| ------------------------ | -------------------------------------------- |
-| `map_groups_to_role(groups)` | Return OSCER role based on IdP groups    |
-| `default_role`           | Role for users with no matching groups       |
-| `deny_if_no_match?`      | Whether to deny access if no role matches    |
+### MemberOidcProvisioner
 
-### Role Mapping Configuration
+| Method             | Purpose                                       |
+| ------------------ | --------------------------------------------- |
+| `provision!(claims)` | Find or create user by UID, sync email/name; provider `"member_oidc"`; no staff role |
+
+### RoleMapper (staff only)
+
+| Method               | Purpose                          |
+| -------------------- | -------------------------------- |
+| `map_groups_to_role(groups)` | OSCER role from IdP groups |
+| `default_role`       | Role for users with no matching groups |
+| `deny_if_no_match?`  | Deny access when no role matches |
+
+### Role mapping configuration (staff)
+
+Role mapping is defined in a config file (e.g. YAML) and loaded by RoleMapper:
 
 ```yaml
 # config/sso_role_mapping.yml
@@ -165,73 +216,34 @@ no_match_behavior: deny  # or: assign_default
 default_role: null       # only used if no_match_behavior: assign_default
 ```
 
----
-
-## Authentication Flow
-
-```mermaid
-sequenceDiagram
-    participant Staff
-    participant OSCER as OSCER
-    participant IdP as State IdP
-
-    Staff->>OSCER: GET /staff (not logged in)
-    OSCER->>Staff: Redirect to /auth/sso
-    
-    Staff->>OSCER: GET /auth/sso
-    OSCER->>OSCER: Generate state, nonce
-    OSCER->>Staff: Redirect to IdP authorization URL
-
-    Staff->>IdP: Authorization request
-    IdP->>Staff: Login page
-    Staff->>IdP: Credentials + MFA
-    IdP->>Staff: Redirect to callback with code
-
-    Staff->>OSCER: GET /auth/sso/callback?code=xxx
-    OSCER->>IdP: Exchange code for tokens
-    IdP->>OSCER: ID token + access token
-    OSCER->>OSCER: Validate token signature & claims
-    OSCER->>OSCER: Provision/update user
-    OSCER->>OSCER: Map groups to role
-    
-    alt Role mapped successfully
-        OSCER->>OSCER: Create session
-        OSCER->>Staff: Redirect to /staff (logged in)
-    else No matching role
-        OSCER->>Staff: 403 Access Denied
-    end
-```
-
----
-
-## User Provisioning Flow
+### Staff user provisioning flow
 
 ```mermaid
 flowchart TB
     Start([Token validated]) --> Extract[Extract claims]
     Extract --> FindUser{User exists?}
-    
-    FindUser -->|"By UID"| Found[Found user]
-    FindUser -->|"Not found"| Create[Create new user]
-    
+
+    FindUser -->|By UID| Found[Found user]
+    FindUser -->|Not found| Create[Create new user]
+
     Found --> SyncAttrs[Sync attributes]
     Create --> SyncAttrs
-    
+
     SyncAttrs --> MapRole[Map IdP groups to role]
-    
+
     MapRole --> HasRole{Role matched?}
-    HasRole -->|"Yes"| UpdateRole[Update user role]
-    HasRole -->|"No + deny"| Deny[Deny access]
-    HasRole -->|"No + default"| DefaultRole[Assign default role]
-    
+    HasRole -->|Yes| UpdateRole[Update user role]
+    HasRole -->|No + deny| Deny[Deny access]
+    HasRole -->|No + default| DefaultRole[Assign default role]
+
     UpdateRole --> CreateSession[Create session]
     DefaultRole --> CreateSession
-    
+
     CreateSession --> Done([Login complete])
     Deny --> Forbidden([403 Forbidden])
 ```
 
-### Provisioning Rules
+### Provisioning rules (staff)
 
 | Scenario | Behavior |
 | -------- | -------- |
@@ -244,48 +256,87 @@ flowchart TB
 
 ---
 
+## Authentication Flows
+
+### Staff OIDC
+
+```mermaid
+sequenceDiagram
+    participant Staff
+    participant OSCER
+    participant IdP as Staff IdP
+
+    Staff->>OSCER: GET /sso/login (POST to OmniAuth)
+    OSCER->>Staff: Redirect to IdP
+    Staff->>IdP: Login + MFA
+    IdP->>Staff: Redirect to /auth/sso/callback?code=
+    Staff->>OSCER: Callback
+    OSCER->>OSCER: Validate token, extract claims
+    OSCER->>OSCER: StaffUserProvisioner.provision!
+    OSCER->>OSCER: Map groups to role
+    alt Role mapped
+        OSCER->>Staff: Session, redirect to staff
+    else No matching role
+        OSCER->>Staff: 403 Access Denied
+    end
+```
+
+### Member OIDC (optional)
+
+Same pattern as staff: redirect to IdP, callback, validate, provision. MemberOidcProvisioner finds/creates user by UID, sets `provider: "member_oidc"`, syncs email/name; no role mapping. Member login page can offer both "Sign in with your account" (OIDC) and email/password (Cognito) when both are configured.
+
+---
+
 ## Decisions
 
 ### OIDC over SAML
 
-Use OpenID Connect instead of SAML 2.0. OIDC is modern, JSON-based, easier to implement in Ruby, and supported by all target IdPs (Azure, IBM ISVA, AWS Cognito). SAML adds XML complexity and requires additional libraries. Tradeoff: some legacy state systems may only support SAML (defer to future phase).
+Use OpenID Connect. OIDC is widely supported by state and citizen IdPs, JSON-based, and easier to implement. Tradeoff: legacy systems that only support SAML are out of scope for initial rollout.
+
+### Two IdPs: staff and member
+
+Staff and member authentication use separate OIDC configurations and flows. Same protocol and shared pieces (OmniAuth, Devise, User model); different provisioners, claim config, and routes. Enables staff IdP (e.g. state enterprise directory) and citizen IdP (e.g. state citizen portal) to be different. Tradeoff: two provider configs and two callback paths to maintain.
+
+### Generic member OIDC naming
+
+Member OIDC uses only generic names: `MEMBER_OIDC_*` env vars, `member_oidc` provider name, `Auth::MemberOidcController`, `MemberOidcProvisioner`. No state or IdP names in code or config. Tradeoff: deployment docs list which env to set for a given state's citizen IdP.
 
 ### Configuration-driven IdP settings
 
-All IdP-specific values (issuer URL, client ID, claim names) are loaded from environment variables and config files, not code. This allows deploying the same OSCER codebase to different states with different IdPs. Tradeoff: requires careful configuration management and documentation per deployment.
+IdP-specific values (issuer, client id/secret, claim names) come from environment and config. Same codebase deploys to different states. Tradeoff: configuration and documentation must be clear per deployment.
 
 ### Just-In-Time user provisioning
 
-Create OSCER user records on first successful SSO login instead of pre-seeding. Reduces coordination with state IT—they only manage IdP group membership. User records exist for audit trails and association with case activity. Tradeoff: user lookup by UID required; email changes must be handled gracefully.
+Create user records on first successful OIDC login (staff or member). No pre-seeding. Tradeoff: match users by IdP UID; handle email changes via UID.
 
 ### Match users by IdP UID, not email
 
-Use the IdP's unique identifier (`sub` claim) as the primary key for user matching. Email addresses can change; UIDs are immutable. Tradeoff: if a user is recreated in the IdP with a new UID, OSCER sees them as a new user.
+Use IdP unique identifier (`sub` or configured claim) as the stable key. Tradeoff: if IdP recreates a user with a new UID, OSCER treats them as a new user.
 
-### Role sync on every login
+### Role sync on every login (staff)
 
-Refresh user role from IdP group claims on each login, not just first login. If state IT changes someone's group membership, the change takes effect on next OSCER login. Tradeoff: brief window where cached role may be stale; user must re-login to get updated permissions.
+Refresh staff role from IdP group claims on each login. Tradeoff: role changes apply after next login.
 
-### Deny access for no matching role
+### Deny access for no matching role (staff)
 
-By default, users whose IdP groups don't match any OSCER role mapping are denied access entirely (403). This prevents accidental access grants. Configurable to assign a default role instead for less restrictive deployments. Tradeoff: tight coordination required with state IT on group structure.
+Staff whose IdP groups do not map to any OSCER role are denied (403). Configurable to assign a default role. Tradeoff: group structure must align with state IT.
 
-### Preserve existing Cognito authentication
+### Member auth: Cognito and/or Member OIDC
 
-Staff SSO is additive—the existing Cognito-based member authentication remains unchanged. Staff portal gets SSO; member portal keeps current login. This isolates risk and simplifies rollout. Tradeoff: two authentication systems to maintain long-term.
+Member authentication can be Cognito-only, Member OIDC-only, or both (login page offers both options). Staff OIDC is independent. Tradeoff: two member auth paths when both are enabled.
 
-### Keycloak for local development and demos
+### Keycloak for local development
 
-Use Keycloak in Docker for local development and demo presentations instead of building a custom mock IdP. Keycloak is a production-grade OIDC provider that's well-documented, standards-compliant, and easily configured. Pre-seeded realm exports allow consistent test data across environments. Tradeoff: ~500MB Docker image, but avoids maintaining custom mock code and ensures real OIDC compliance.
+Use Keycloak in Docker for local OIDC testing. Tradeoff: image size in exchange for a realistic, standards-compliant IdP.
 
 ---
 
 ## Local Development with Keycloak
 
-For local development and demos, use Keycloak as a mock IdP:
+Use Keycloak as mock IdP for staff (and optionally a second realm for member OIDC):
 
 ```yaml
-# docker-compose.yml
+# docker-compose.yml (conceptual)
 services:
   keycloak:
     image: quay.io/keycloak/keycloak:23.0
@@ -299,67 +350,69 @@ services:
       - ./keycloak/oscer-realm.json:/opt/keycloak/data/import/oscer-realm.json
 ```
 
-### Pre-configured Test Users
-
-| User | Email | Groups | OSCER Role |
-|------|-------|--------|------------|
-| Jane Admin | jane.admin@example.com | `OSCER-Admin` | admin |
-| Bob Caseworker | bob.caseworker@example.com | `OSCER-Caseworker` | caseworker |
-| Carol Staff | carol.staff@example.com | `OSCER-Staff` | caseworker |
-| Dan Nobody | dan.nobody@example.com | (none) | denied |
-
-### Local Environment Variables
+### Local environment (staff)
 
 ```bash
-# local.env (for Keycloak)
 SSO_ENABLED=true
 SSO_ISSUER_URL=http://localhost:8080/realms/oscer
 SSO_CLIENT_ID=oscer-staff
 SSO_CLIENT_SECRET=oscer-secret
-SSO_REDIRECT_URI=http://localhost:3000/auth/sso/callback
+# Redirect URI: http://localhost:3000/auth/sso/callback
+```
+
+### Local environment (member OIDC, optional)
+
+```bash
+MEMBER_OIDC_ENABLED=true
+MEMBER_OIDC_ISSUER_URL=http://localhost:8080/realms/citizen
+MEMBER_OIDC_CLIENT_ID=oscer-member
+MEMBER_OIDC_CLIENT_SECRET=oscer-member-secret
+# Redirect URI: http://localhost:3000/auth/member_oidc/callback
 ```
 
 ---
 
 ## Logout Behavior
 
-| Option | Description | Recommendation |
-| ------ | ----------- | -------------- |
-| **Local logout** | End OSCER session only; IdP session persists | Default |
-| **Single logout** | End OSCER session and trigger IdP logout | Optional |
-
-**Default**: Local logout. Staff remains logged into their state system for other apps. If IdP-initiated single logout is required, configure `SSO_SINGLE_LOGOUT_URL`.
+| Option        | Description                          | Default |
+| ------------- | ------------------------------------ | ------- |
+| Local logout  | End OSCER session only; IdP session persists | Yes (both flows) |
+| Single logout | End OSCER session and trigger IdP logout | Optional, per IdP config |
 
 ---
 
 ## Error Handling
 
-| Error | Cause | User Experience |
-| ----- | ----- | --------------- |
-| `InvalidToken` | Signature invalid or expired | "Authentication failed. Please try again." |
-| `InvalidState` | CSRF protection triggered | "Session expired. Please try again." |
-| `NoMatchingRole` | No IdP groups map to OSCER roles | "Access denied. Contact your administrator." |
-| `IdpUnavailable` | IdP unreachable | "Login service unavailable. Try again later." |
-| `MissingClaims` | Required claims not in token | "Login configuration error. Contact support." |
+| Error           | Cause                    | User experience |
+| --------------- | ------------------------- | ---------------- |
+| InvalidToken    | Signature invalid/expired | "Authentication failed. Please try again." |
+| InvalidState    | CSRF                      | "Session expired. Please try again." |
+| NoMatchingRole  | No IdP groups map (staff)  | "Access denied. Contact your administrator." |
+| MissingClaims   | Required claims missing   | "Login configuration error. Contact support." |
 
 ---
 
 ## Constraints
 
-- OIDC protocol only (SAML support deferred)
-- Single IdP per OSCER deployment (multi-IdP deferred)
-- Staff portal only (member SSO out of scope)
-- MFA handled by IdP, not OSCER
-- Role mapping is coarse-grained (IdP group → OSCER role, not per-permission)
+- OIDC only (no SAML in initial scope).
+- One staff IdP and one member IdP per deployment (each flow has a single IdP).
+- MFA and credential policy handled by IdPs.
+- Staff role mapping is IdP group → OSCER role.
 
 ---
 
 ## Future Considerations
 
-- **SAML support**: Add SAML 2.0 adapter for legacy IdPs
-- **Multi-IdP**: Support multiple identity providers per deployment (e.g., different IdP per region)
-- **Offline role cache**: Grace period for IdP unavailability
-- **Session refresh**: Silent token refresh without full re-authentication
-- **Audit trail**: Log all SSO events (login, logout, role changes, denials)
-- **IdP-initiated login**: Support login starting from IdP portal
+- SAML adapter for legacy IdPs.
+- Multiple IdPs per flow (e.g. per region).
+- Offline role cache when IdP is unavailable.
+- Session refresh / silent re-auth.
+- Audit logging for OIDC events.
+- IdP-initiated login.
 
+---
+
+## Related Documents
+
+- [Member OIDC (member-sso.md)](./member-sso.md) — Member-only architecture: citizen IdP flow, MemberOidcProvisioner, and config.
+- **Infrastructure:** For deployment and IdP setup (e.g. redirect URIs, client registration), see `docs/infra/` (e.g. identity-provider.md, environment-variables-and-secrets.md) where applicable.
