@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_05_120000) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_13_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -52,6 +52,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_05_120000) do
     t.string "type"
     t.integer "income"
     t.string "category", default: "employment", null: false
+    t.string "evidence_source"
     t.index ["activity_report_application_form_id"], name: "index_activities_on_activity_report_application_form_id"
     t.index ["category"], name: "index_activities_on_category"
   end
