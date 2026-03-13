@@ -465,6 +465,36 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
         params: { staged_document_ids: [ staged_doc.id ] }
       expect(response).to be_client_error
     end
+
+    it "rejects staged documents belonging to another user" do
+      other_user_doc = create(:staged_document, :validated,
+        user_id: other_user.id,
+        extracted_fields: {
+          "currentgrosspay" => { "confidence" => 0.93, "value" => 1500.0 },
+          "payperiodstartdate" => { "confidence" => 0.95, "value" => "2025-10-15" }
+        }
+      )
+
+      post accept_doc_ai_activity_report_application_form_url(activity_report_application_form),
+        params: { staged_document_ids: [ other_user_doc.id ] }
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it "rejects when mix of own and other user's staged documents" do
+      other_user_doc = create(:staged_document, :validated,
+        user_id: other_user.id,
+        extracted_fields: {
+          "currentgrosspay" => { "confidence" => 0.90, "value" => 2000.0 },
+          "payperiodstartdate" => { "confidence" => 0.88, "value" => "2025-10-10" }
+        }
+      )
+
+      post accept_doc_ai_activity_report_application_form_url(activity_report_application_form),
+        params: { staged_document_ids: [ staged_doc.id, other_user_doc.id ] }
+
+      expect(response).to have_http_status(:forbidden)
+    end
   end
 
   describe "DELETE /destroy" do

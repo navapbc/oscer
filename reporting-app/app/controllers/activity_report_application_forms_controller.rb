@@ -99,6 +99,13 @@ class ActivityReportApplicationFormsController < ApplicationController
   # POST /activity_report_application_forms/1/accept_doc_ai
   def accept_doc_ai
     staged_document_ids = Array(params[:staged_document_ids])
+
+    owned_count = StagedDocument.where(id: staged_document_ids, user_id: current_user.id).count
+    if owned_count != staged_document_ids.size
+      head :forbidden
+      return
+    end
+
     service = PayslipToIncomeActivityCreateService.new(form: @activity_report_application_form)
     activities = service.call(staged_document_ids)
 
