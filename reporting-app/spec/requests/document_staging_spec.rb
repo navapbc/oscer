@@ -112,7 +112,17 @@ RSpec.describe "/document_staging", type: :request do
       expect(response).to be_successful
     end
 
-    it "redirects when documents belong to another user" do
+    it "redirects when document does not exist (prevents auto-refresh loop for missing docs)" do
+      get doc_ai_upload_status_document_staging_path, params: {
+        ids: [ SecureRandom.uuid ],
+        activity_report_application_form_id: activity_report.id
+      }
+      expect(response).to redirect_to(
+        doc_ai_upload_activity_report_application_form_path(id: activity_report.id)
+      )
+    end
+
+    it "redirects when documents belong to another user (prevents auto-refresh loop for missing docs)" do
       other_user = create(:user)
       other_doc = create(:staged_document, user_id: other_user.id, doc_ai_job_id: "xyz-789")
 
@@ -140,13 +150,24 @@ RSpec.describe "/document_staging", type: :request do
       expect(response).to be_successful
     end
 
-    it "redirects when documents belong to another user" do
+    it "redirects when documents belong to another user (prevents auto-refresh loop for missing docs)" do
       other_user = create(:user)
       other_doc = create(:staged_document, user_id: other_user.id, doc_ai_job_id: "xyz-789")
       activity_report = create(:activity_report_application_form)
 
       get lookup_document_staging_path, params: {
         ids: [ other_doc.id ],
+        activity_report_application_form_id: activity_report.id
+      }
+      expect(response).to redirect_to(
+        doc_ai_upload_activity_report_application_form_path(id: activity_report.id)
+      )
+    end
+
+    it "redirects when document does not exist (prevents auto-refresh loop for missing docs)" do
+      activity_report = create(:activity_report_application_form)
+      get lookup_document_staging_path, params: {
+        ids: [ SecureRandom.uuid ],
         activity_report_application_form_id: activity_report.id
       }
       expect(response).to redirect_to(
