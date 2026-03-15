@@ -327,6 +327,21 @@ RSpec.describe "/activities", type: :request do
         expect(response.location).to include(second_activity.id)
         expect(response.location).to include("doc_ai_review=true")
       end
+
+      [ "1", "t", "T", "true", "TRUE", "on", "ON", "yes", "YES" ].each do |truthy_value|
+        it "redirects to the next activity edit page when doc_ai_review is '#{truthy_value}'" do
+          patch activity_report_application_form_activity_url(activity_report_application_form, income_activity),
+            params: {
+              activity: { name: "Acme Corp", income: "1500", month: Date.new(2025, 1, 1) },
+              doc_ai_review: truthy_value,
+              pending_review_ids: [ second_activity.id ]
+            }
+
+          expect(response).to have_http_status(:redirect)
+          expect(response.location).to include(second_activity.id)
+          expect(response.location).to include("doc_ai_review=true")
+        end
+      end
     end
 
     context "without pending_review_ids" do
