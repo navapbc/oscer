@@ -90,21 +90,19 @@ class ActivitiesController < ApplicationController
     authorize @activity_report_application_form, :update?
     pending_review_ids = Array(params[:pending_review_ids])
 
-    original_income_cents = @activity.income&.cents if @doc_ai_review
-    original_month = @activity.month if @doc_ai_review
-
-    @activity.attributes = activity_attributes_from_params.merge({
+    attributes = activity_attributes_from_params.merge({
       activity_report_application_form_id: @activity_report_application_form.id
     })
 
-    if @doc_ai_review && @activity.evidence_source == "ai_assisted"
-      income_edited = @activity.income&.cents != original_income_cents
-      month_edited = @activity.month != original_month
-      @activity.evidence_source = "ai_assisted_with_member_edits" if income_edited || month_edited
+    success = if @doc_ai_review && @activity.is_a?(IncomeActivity)
+                @activity.update_with_doc_ai_review(attributes)
+    else
+                @activity.update(attributes)
     end
 
     respond_to do |format|
-      if @activity_report_application_form.save
+      if success
+        @activity_report_application_form.reload
         format.html do
           if @doc_ai_review && pending_review_ids.any?
             next_id = pending_review_ids.shift
