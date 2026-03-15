@@ -102,15 +102,13 @@ class ActivitiesController < ApplicationController
 
     respond_to do |format|
       if success
-        @activity_report_application_form.reload
         format.html do
           if @doc_ai_review && pending_review_ids.any?
             next_id = pending_review_ids.shift
-            remaining_ids = pending_review_ids
             redirect_to edit_activity_report_application_form_activity_path(
               @activity_report_application_form, next_id,
               doc_ai_review: true,
-              pending_review_ids: remaining_ids
+              pending_review_ids: pending_review_ids
             )
           elsif @doc_ai_review
             redirect_to activity_report_application_form_path(@activity_report_application_form)
@@ -186,6 +184,6 @@ class ActivitiesController < ApplicationController
     end
 
     def set_doc_ai_review
-      @doc_ai_review ||= ActiveModel::Type::Boolean.new.cast(params[:doc_ai_review])
+      @doc_ai_review = ActiveModel::Type::Boolean.new.cast(params[:doc_ai_review])
     end
 end
