@@ -4,6 +4,15 @@ en:
       title: "Edit activity"
       back: "Back to activity report"
       edit: "Edit activity"
+      doc_ai_review:
+        title: "Review your information"
+        subtitle: "Here's what we found. AI can make mistakes, please review your information for accuracy."
+        document_label: "Document: %{filename}"
+        activity_type_label: "Activity type"
+        employment_label: "Employment"
+        employment_description: "Time spent working for yourself or another organization."
+        reporting_method_label: "Reporting method"
+        report_income_label: "Report income"
     new_activity:
       back: "Back to activity report"
     form:

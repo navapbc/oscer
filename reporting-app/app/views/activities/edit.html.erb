@@ -1,4 +1,41 @@
-<% content_for :title, t(".title") %>
-<%= link_to t(".back"), activity_report_application_form_path(@activity_report_application_form) %>
-<h1><%= t(".title") %></h1>
-<%= render "form", activity_report_application_form: @activity_report_application_form, activity: @activity %>
+<% if @doc_ai_review %>
+  <% content_for :title, t(".doc_ai_review.title") %>
+
+  <%= render "strata/shared/step_indicator",
+       steps: %i[start select_periods add_activities review submitted],
+       current_step: :add_activities,
+       translation_scope: "activity_report_application_forms.steps" %>
+
+  <%= link_to t(".back"), activity_report_application_form_path(@activity_report_application_form), class: "usa-link" %>
+
+  <h1><%= t(".doc_ai_review.title") %></h1>
+  <p class="text-base"><%= t(".doc_ai_review.subtitle") %></p>
+
+  <% if @staged_document&.file&.attached? %>
+    <h2><%= t(".doc_ai_review.document_label", filename: @staged_document.file.filename) %></h2>
+  <% end %>
+
+  <div class="margin-bottom-3">
+    <p class="usa-label"><%= t(".doc_ai_review.activity_type_label") %></p>
+    <div class="usa-card padding-2 radius-md border-1px border-base-light margin-bottom-1">
+      <strong><%= t(".doc_ai_review.employment_label") %></strong>
+      <p class="margin-top-05 margin-bottom-0 text-base"><%= t(".doc_ai_review.employment_description") %></p>
+    </div>
+
+    <p class="usa-label"><%= t(".doc_ai_review.reporting_method_label") %></p>
+    <div class="usa-card padding-2 radius-md border-1px border-base-light">
+      <strong><%= t(".doc_ai_review.report_income_label") %></strong>
+    </div>
+  </div>
+
+  <%= render "form",
+       activity_report_application_form: @activity_report_application_form,
+       activity: @activity,
+       doc_ai_review: true,
+       pending_review_ids: @pending_review_ids %>
+<% else %>
+  <% content_for :title, t(".title") %>
+  <%= link_to t(".back"), activity_report_application_form_path(@activity_report_application_form) %>
+  <h1><%= t(".title") %></h1>
+  <%= render "form", activity_report_application_form: @activity_report_application_form, activity: @activity %>
+<% end %>

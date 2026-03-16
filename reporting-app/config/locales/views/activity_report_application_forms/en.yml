@@ -37,6 +37,8 @@ en:
         callout_heading: "✨ Save time with AI"
         callout_body: "We can help you skip the manual data entry. Our uploader automatically scans your uploaded documents to identify and fill in key details for you."
         skip_ai_label: "Skip AI, and enter my details manually"
+    accept_doc_ai:
+      no_activities_created: "No income activities were created from your documents."
     doc_ai_upload:
       title: "Supporting documents"
       instructions: "Please upload your documents to verify your income. You can provide any of the following, as long as they are from the same reporting period:"

@@ -13,6 +13,7 @@ Rails.application.routes.draw do
       get :review
       post :submit
       get :doc_ai_upload
+      post :accept_doc_ai
     end
   end
 
