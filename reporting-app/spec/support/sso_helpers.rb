@@ -113,35 +113,11 @@ module SsoHelpers
     OmniAuth.config.mock_auth[:sso] = auth_hash
   end
 
-  # Sets up OmniAuth test mode with a mock auth hash for member OIDC
-  # @param auth_hash [OmniAuth::AuthHash] Auth hash to return (uses mock_member_omniauth_hash by default)
-  def setup_member_omniauth_mock(auth_hash = nil)
-    auth_hash ||= mock_member_omniauth_hash
-    OmniAuth.config.test_mode = true
-    # OmniAuth looks up by path segment (string); set both for compatibility
-    OmniAuth.config.mock_auth[:member_oidc] = auth_hash
-    OmniAuth.config.mock_auth["member_oidc"] = auth_hash
-  end
-
   # Sets up OmniAuth to return a failure for staff SSO
   # @param message [Symbol] Failure message/type
   def setup_omniauth_failure(message = :invalid_credentials)
     OmniAuth.config.test_mode = true
     OmniAuth.config.mock_auth[:sso] = message
-  end
-
-  # Sets up OmniAuth to return a failure for member OIDC
-  # @param message [Symbol] Failure message/type
-  def setup_member_omniauth_failure(message = :invalid_credentials)
-    OmniAuth.config.test_mode = true
-    OmniAuth.config.mock_auth[:member_oidc] = message
-    OmniAuth.config.mock_auth["member_oidc"] = message
-  end
-
-  # Resets OmniAuth test mode for staff SSO
-  def reset_omniauth
-    OmniAuth.config.test_mode = false
-    OmniAuth.config.mock_auth[:sso] = nil
   end
 
   # Returns a mock member OIDC configuration hash for Rails.application.config.member_oidc
