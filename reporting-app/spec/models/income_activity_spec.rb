@@ -59,18 +59,18 @@ RSpec.describe IncomeActivity, type: :model do
     end
 
     context "when evidence_source is not ai_assisted" do
-      let(:manual_activity) do
+      let(:self_reported_activity) do
         create(:income_activity,
           activity_report_application_form_id: activity_report_application_form.id,
-          evidence_source: "manual",
+          evidence_source: "self_reported",
           income: 100_000
         )
       end
 
       it "does not change evidence_source even if income changes" do
-        manual_activity.update_with_doc_ai_review(income: 200_000)
-        expect(manual_activity.income.cents).to eq(200_000)
-        expect(manual_activity.evidence_source).to eq("manual")
+        self_reported_activity.update_with_doc_ai_review(income: 200_000)
+        expect(self_reported_activity.income.cents).to eq(200_000)
+        expect(self_reported_activity.evidence_source).to eq("self_reported")
       end
     end
   end
