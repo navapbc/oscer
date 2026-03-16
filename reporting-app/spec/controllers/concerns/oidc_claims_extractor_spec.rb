@@ -2,14 +2,8 @@
 
 require "rails_helper"
 
-RSpec.describe OidcClaimsExtractor, type: :controller do
-  controller(ApplicationController) do
-    include OidcClaimsExtractor
-
-    def extract(auth, config)
-      extract_oidc_claims(auth, config)
-    end
-  end
+RSpec.describe OidcClaimsExtractor do
+  let(:extractor) { Class.new { include OidcClaimsExtractor }.new }
 
   let(:auth) do
     OmniAuth::AuthHash.new(
@@ -39,7 +33,7 @@ RSpec.describe OidcClaimsExtractor, type: :controller do
       end
 
       it "returns uid, email, name, groups, and region" do
-        claims = controller.extract(auth, config)
+        claims = extractor.extract_oidc_claims(auth, config)
 
         expect(claims[:uid]).to eq("user-123")
         expect(claims[:email]).to eq("staff@example.gov")
@@ -59,7 +53,7 @@ RSpec.describe OidcClaimsExtractor, type: :controller do
       end
 
       it "returns only uid, email, and name" do
-        claims = controller.extract(auth, config)
+        claims = extractor.extract_oidc_claims(auth, config)
 
         expect(claims[:uid]).to eq("user-123")
         expect(claims[:email]).to eq("staff@example.gov")
@@ -73,7 +67,7 @@ RSpec.describe OidcClaimsExtractor, type: :controller do
       let(:config) { { email: "email", name: "name" } }
 
       it "falls back to auth.uid" do
-        claims = controller.extract(auth, config)
+        claims = extractor.extract_oidc_claims(auth, config)
 
         expect(claims[:uid]).to eq("user-123")
       end
