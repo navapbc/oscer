@@ -28,6 +28,10 @@ class CertificationCasesController < StaffController
     @target_hours = HoursComplianceDeterminationService::TARGET_HOURS
     @ex_parte_activities = fetch_ex_parte_activities
     @member_activities = fetch_member_activities
+    if Features.doc_ai_enabled? && @activity_report
+      activity_ids = @activity_report.activities.pluck(:id)
+      @confidence_by_activity = DocAiConfidenceService.new.confidence_by_activity_id(activity_ids)
+    end
   end
 
   private

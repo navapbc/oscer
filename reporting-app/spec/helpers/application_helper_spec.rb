@@ -32,4 +32,52 @@ RSpec.describe ApplicationHelper, type: :helper do
       end
     end
   end
+
+  describe "#uswds_icon" do
+    it "renders a decorative icon when no label is provided" do
+      result = helper.uswds_icon("warning")
+      expect(result).to include('aria-hidden="true"')
+      expect(result).to include("#warning")
+      expect(result).not_to include("<title>")
+    end
+
+    it "renders an accessible icon when label is provided" do
+      result = helper.uswds_icon("warning", label: "Low confidence")
+      expect(result).to include('aria-label="Low confidence"')
+      expect(result).to include("<title>Low confidence</title>")
+      expect(result).not_to include("aria-hidden")
+    end
+
+    it "applies the default size class" do
+      result = helper.uswds_icon("check_circle")
+      expect(result).to include("usa-icon--size-3")
+    end
+
+    it "applies a custom size class" do
+      result = helper.uswds_icon("check_circle", size: 4)
+      expect(result).to include("usa-icon--size-4")
+    end
+
+    it "omits size class when size is nil" do
+      result = helper.uswds_icon("check_circle", size: nil)
+      expect(result).to include("usa-icon")
+      expect(result).not_to include("usa-icon--size-")
+    end
+
+    it "applies additional css_class" do
+      result = helper.uswds_icon("warning", css_class: "text-error margin-right-1")
+      expect(result).to include("usa-icon")
+      expect(result).to include("text-error margin-right-1")
+    end
+
+    it "applies inline style when provided" do
+      result = helper.uswds_icon("warning", style: "vertical-align: middle")
+      expect(result).to include('style="vertical-align: middle"')
+    end
+
+    it "includes the sprite sheet href" do
+      result = helper.uswds_icon("person")
+      expect(result).to match(/sprite.*\.svg#person/)
+    end
+  end
 end
