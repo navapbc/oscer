@@ -136,6 +136,36 @@ RSpec.describe StagedDocument, type: :model do
     end
   end
 
+  describe "#low_confidence?" do
+    let(:threshold) { Rails.application.config.doc_ai[:low_confidence_threshold] }
+
+    it "returns true when average_confidence is below threshold" do
+      doc = build(:staged_document, extracted_fields: {
+        "grosspay" => { "confidence" => threshold - 0.01, "value" => 100 }
+      })
+      expect(doc.low_confidence?).to be true
+    end
+
+    it "returns false when average_confidence meets threshold" do
+      doc = build(:staged_document, extracted_fields: {
+        "grosspay" => { "confidence" => threshold, "value" => 100 }
+      })
+      expect(doc.low_confidence?).to be false
+    end
+
+    it "returns false when average_confidence exceeds threshold" do
+      doc = build(:staged_document, extracted_fields: {
+        "grosspay" => { "confidence" => 0.95, "value" => 100 }
+      })
+      expect(doc.low_confidence?).to be false
+    end
+
+    it "returns false when average_confidence is nil (no extracted fields)" do
+      doc = build(:staged_document, extracted_fields: {})
+      expect(doc.low_confidence?).to be false
+    end
+  end
+
   describe "has_one_attached :file" do
     it "has a file attachment" do
       doc = create(:staged_document)

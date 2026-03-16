@@ -40,7 +40,7 @@
         </td>
         <% if feature_enabled?(:doc_ai) %>
           <td class="text-right text-no-wrap">
-            <%= confidence_cell_content(activity, @confidence_service) %>
+            <%= confidence_cell_content(activity, @confidence_by_activity) %>
           </td>
         <% end %>
       </tr>

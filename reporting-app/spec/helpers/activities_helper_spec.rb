@@ -114,19 +114,17 @@ RSpec.describe ActivitiesHelper, type: :helper do
   end
 
   describe "#confidence_cell_content" do
-    let(:confidence_service) { instance_double(DocAiConfidenceService) }
-
     before do
       allow(Rails.application.config).to receive(:doc_ai).and_return({ low_confidence_threshold: 0.7 })
     end
 
     it "returns em-dash for non-AI activity" do
       activity = build(:work_activity, evidence_source: "self_reported")
-      result = helper.confidence_cell_content(activity, confidence_service)
+      result = helper.confidence_cell_content(activity, { activity.id => 0.91 })
       expect(result).to eq("—")
     end
 
-    it "returns em-dash when confidence_service is nil" do
+    it "returns em-dash when confidence_by_activity is nil" do
       activity = build(:work_activity, evidence_source: "ai_assisted")
       result = helper.confidence_cell_content(activity, nil)
       expect(result).to eq("—")
@@ -134,15 +132,13 @@ RSpec.describe ActivitiesHelper, type: :helper do
 
     it "returns percentage for AI activity with confidence" do
       activity = build(:work_activity, evidence_source: "ai_assisted")
-      allow(confidence_service).to receive(:confidence_for_activity).with(activity).and_return(0.91)
-      result = helper.confidence_cell_content(activity, confidence_service)
+      result = helper.confidence_cell_content(activity, { activity.id => 0.91 })
       expect(result).to include("91%")
     end
 
     it "returns em-dash for AI activity with nil confidence" do
       activity = build(:work_activity, evidence_source: "ai_assisted")
-      allow(confidence_service).to receive(:confidence_for_activity).with(activity).and_return(nil)
-      result = helper.confidence_cell_content(activity, confidence_service)
+      result = helper.confidence_cell_content(activity, { activity.id => nil })
       expect(result).to eq("—")
     end
   end

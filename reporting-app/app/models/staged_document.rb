@@ -18,6 +18,13 @@ class StagedDocument < ApplicationRecord
 
   default_scope { with_attached_file }
 
+  def low_confidence?
+    conf = average_confidence
+    return false if conf.nil?
+
+    conf < Rails.application.config.doc_ai[:low_confidence_threshold]
+  end
+
   def average_confidence
     return nil if extracted_fields.blank?
 

@@ -7,7 +7,7 @@ class TasksController < Strata::TasksController
   before_action :set_certification, only: [ :show ]
   before_action :set_member, only: [ :show ]
   before_action :set_information_requests, only: [ :show ]
-  before_action :set_confidence_service, only: [ :show ]
+  before_action :set_confidence_by_activity, only: [ :show ]
 
   # Override parent index to use policy_scope for authorization.
   # The parent Strata::TasksController uses Strata::Task.all internally,
@@ -118,8 +118,11 @@ class TasksController < Strata::TasksController
     raise NotImplementedError, "Subclasses must implement information_request_params"
   end
 
-  def set_confidence_service
-    @confidence_service = DocAiConfidenceService.new if Features.doc_ai_enabled?
+  def set_confidence_by_activity
+    return unless Features.doc_ai_enabled? && @application_form.respond_to?(:activities)
+
+    activity_ids = @application_form.activities.pluck(:id)
+    @confidence_by_activity = DocAiConfidenceService.new.confidence_by_activity_id(activity_ids)
   end
 
   private

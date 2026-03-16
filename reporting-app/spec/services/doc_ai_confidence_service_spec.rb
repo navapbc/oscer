@@ -60,24 +60,76 @@ RSpec.describe DocAiConfidenceService do
       end
     end
 
-    context "when activity has multiple validated staged documents" do
-      let(:user) { create(:user) }
-      let(:form) { create(:activity_report_application_form) }
+    # Note: The system enforces a 1:1 relationship between activity and staged document.
+    # Each activity has at most one validated staged document, so multi-document
+    # averaging is not needed. See ActivityAttributions for evidence source definitions.
+  end
+
+  describe "#confidence_by_activity_id" do
+    let(:user) { create(:user) }
+    let(:form) { create(:activity_report_application_form) }
+
+    context "with empty activity_ids" do
+      it "returns empty hash" do
+        expect(service.confidence_by_activity_id([])).to eq({})
+      end
+    end
+
+    context "with ai_sourced activity and validated document" do
       let(:activity) { create(:work_activity, evidence_source: "ai_assisted", activity_report_application_form_id: form.id) }
 
       before do
         create(:staged_document, :validated,
           stageable: activity,
           user_id: user.id,
-          extracted_fields: { "grosspay" => { "confidence" => 0.95, "value" => 1000 } })
-        create(:staged_document, :validated,
-          stageable: activity,
-          user_id: user.id,
-          extracted_fields: { "grosspay" => { "confidence" => 0.85, "value" => 2000 } })
+          extracted_fields: { "grosspay" => { "confidence" => 0.93, "value" => 1000 } })
       end
 
-      it "returns average across all documents" do
-        expect(service.confidence_for_activity(activity)).to eq(0.90)
+      it "returns confidence for the activity" do
+        result = service.confidence_by_activity_id([ activity.id ])
+        expect(result[activity.id]).to eq(0.93)
+      end
+    end
+
+    context "with non-AI activity" do
+      let(:activity) { create(:work_activity, evidence_source: "self_reported", activity_report_application_form_id: form.id) }
+
+      it "returns nil for the activity" do
+        result = service.confidence_by_activity_id([ activity.id ])
+        expect(result[activity.id]).to be_nil
+      end
+    end
+
+    context "with ai_sourced activity but no validated documents" do
+      let(:activity) { create(:work_activity, evidence_source: "ai_assisted", activity_report_application_form_id: form.id) }
+
+      it "returns nil for the activity" do
+        result = service.confidence_by_activity_id([ activity.id ])
+        expect(result[activity.id]).to be_nil
+      end
+    end
+
+    context "with multiple activities" do
+      let(:high_confidence_activity) { create(:work_activity, evidence_source: "ai_assisted", activity_report_application_form_id: form.id) }
+      let(:low_confidence_activity) { create(:work_activity, evidence_source: "ai_assisted", activity_report_application_form_id: form.id) }
+      let(:self_reported_activity) { create(:work_activity, evidence_source: "self_reported", activity_report_application_form_id: form.id) }
+
+      before do
+        create(:staged_document, :validated,
+          stageable: high_confidence_activity,
+          user_id: user.id,
+          extracted_fields: { "grosspay" => { "confidence" => 0.95, "value" => 1000 } })
+        create(:staged_document, :validated,
+          stageable: low_confidence_activity,
+          user_id: user.id,
+          extracted_fields: { "grosspay" => { "confidence" => 0.60, "value" => 500 } })
+      end
+
+      it "returns correct confidence per activity without bleed" do
+        result = service.confidence_by_activity_id([ high_confidence_activity.id, low_confidence_activity.id, self_reported_activity.id ])
+        expect(result[high_confidence_activity.id]).to eq(0.95)
+        expect(result[low_confidence_activity.id]).to eq(0.60)
+        expect(result[self_reported_activity.id]).to be_nil
       end
     end
   end
