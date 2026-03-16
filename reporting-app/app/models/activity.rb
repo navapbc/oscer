@@ -3,14 +3,14 @@
 class Activity < ApplicationRecord
   include Strata::Attributes
   ALLOWED_CATEGORIES = ActivityCategories::ALL
-  AI_SOURCED_EVIDENCE_SOURCES = %w[
-    ai_assisted
-    ai_assisted_with_member_edits
+  AI_SOURCED_EVIDENCE_SOURCES = [
+    ActivityAttributions::AI_ASSISTED,
+    ActivityAttributions::AI_ASSISTED_WITH_MEMBER_EDITS
   ].freeze
 
-  NON_AI_EVIDENCE_SOURCES = %w[
-    self_reported
-    ai_rejected_member_override
+  NON_AI_EVIDENCE_SOURCES = [
+    ActivityAttributions::SELF_REPORTED,
+    ActivityAttributions::AI_REJECTED_MEMBER_OVERRIDE
   ].freeze
 
   EVIDENCE_SOURCES = (AI_SOURCED_EVIDENCE_SOURCES + NON_AI_EVIDENCE_SOURCES).freeze

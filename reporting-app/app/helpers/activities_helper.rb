@@ -2,10 +2,10 @@
 
 module ActivitiesHelper
   EVIDENCE_SOURCE_ICONS = {
-    "self_reported" => { icon: "person", color: "text-primary" },
-    "ai_assisted" => { icon: "insights", color: "text-gold" },
-    "ai_assisted_with_member_edits" => { icon: "edit", color: "text-green" },
-    "ai_rejected_member_override" => { icon: "warning", color: "text-error" }
+    ActivityAttributions::SELF_REPORTED => { icon: "person", color: "text-primary" },
+    ActivityAttributions::AI_ASSISTED => { icon: "insights", color: "text-gold" },
+    ActivityAttributions::AI_ASSISTED_WITH_MEMBER_EDITS => { icon: "edit", color: "text-green" },
+    ActivityAttributions::AI_REJECTED_MEMBER_OVERRIDE => { icon: "warning", color: "text-error" }
   }.freeze
 
   def evidence_source_icon(evidence_source)
@@ -31,10 +31,10 @@ module ActivitiesHelper
     }
   end
 
-  def confidence_cell_content(activity, confidence_service)
-    return confidence_value_content(nil) unless confidence_service && activity.ai_sourced?
+  def confidence_cell_content(activity, confidence_by_activity)
+    return confidence_value_content(nil) unless confidence_by_activity && activity.ai_sourced?
 
-    conf = confidence_display(confidence_service.confidence_for_activity(activity))
+    conf = confidence_display(confidence_by_activity[activity.id])
     confidence_value_content(conf)
   end
 
