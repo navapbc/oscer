@@ -14,6 +14,8 @@
 # - Error handling
 #
 class Auth::SsoController < ApplicationController
+  include OidcClaimsExtractor
+
   # Use minimal layout for the auto-submit form (no flash messages, headers, etc.)
   layout "sso", only: [ :new ]
 
@@ -38,8 +40,12 @@ class Auth::SsoController < ApplicationController
   # Handles the OmniAuth callback after successful authentication
   def callback
     auth = request.env["omniauth.auth"]
+    unless auth
+      Rails.logger.warn("SSO callback: missing omniauth.auth")
+      redirect_to root_path, alert: t("auth.sso.authentication_failed") and return
+    end
 
-    claims = extract_claims(auth)
+    claims = extract_oidc_claims(auth, Rails.application.config.sso[:claims])
     user = provisioner.provision!(claims)
     sign_in(user)
 
@@ -52,7 +58,7 @@ class Auth::SsoController < ApplicationController
   # GET /auth/sso/failure
   # Handles OmniAuth authentication failures
   def failure
-    message = params[:message] || "unknown_error"
+    message = sanitized_failure_message(params[:message])
     Rails.logger.error("SSO authentication failed: #{message}")
     redirect_to root_path, alert: t("auth.sso.authentication_failed")
   end
@@ -86,17 +92,12 @@ class Auth::SsoController < ApplicationController
     redirect_to after_sign_in_path_for(current_user)
   end
 
-  # Extract claims from OmniAuth auth hash using configured claim names
-  def extract_claims(auth)
-    claim_config = Rails.application.config.sso[:claims]
-    raw_info = auth.extra.raw_info
+  ALLOWED_OMNIAUTH_FAILURE_MESSAGES = %w[invalid_credentials timeout].freeze
 
-    {
-      uid: auth.uid,
-      email: raw_info[claim_config[:email]],
-      name: raw_info[claim_config[:name]],
-      groups: Array(raw_info[claim_config[:groups]]),
-      region: raw_info[claim_config[:region]]
-    }
+  def sanitized_failure_message(raw)
+    return "unknown_error" if raw.blank?
+
+    msg = raw.to_s.strip
+    ALLOWED_OMNIAUTH_FAILURE_MESSAGES.include?(msg) ? msg : "unknown_error"
   end
 end
