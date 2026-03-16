@@ -16,7 +16,7 @@ RSpec.describe DocAiConfidenceService do
 
     context "when activity is ai_sourced with no validated staged documents" do
       let(:form) { create(:activity_report_application_form) }
-      let(:activity) { create(:work_activity, evidence_source: "ai_assisted", activity_report_application_form_id: form.id) }
+      let(:activity) { create(:income_activity, evidence_source: "ai_assisted", activity_report_application_form_id: form.id) }
 
       it "returns nil" do
         expect(service.confidence_for_activity(activity)).to be_nil
@@ -26,7 +26,7 @@ RSpec.describe DocAiConfidenceService do
     context "when activity is ai_sourced with validated staged documents" do
       let(:user) { create(:user) }
       let(:form) { create(:activity_report_application_form) }
-      let(:activity) { create(:work_activity, evidence_source: "ai_assisted", activity_report_application_form_id: form.id) }
+      let(:activity) { create(:income_activity, evidence_source: "ai_assisted", activity_report_application_form_id: form.id) }
 
       before do
         create(:staged_document, :validated,
@@ -46,7 +46,7 @@ RSpec.describe DocAiConfidenceService do
     context "when activity is ai_assisted_with_member_edits" do
       let(:user) { create(:user) }
       let(:form) { create(:activity_report_application_form) }
-      let(:activity) { create(:work_activity, evidence_source: "ai_assisted_with_member_edits", activity_report_application_form_id: form.id) }
+      let(:activity) { create(:income_activity, evidence_source: "ai_assisted_with_member_edits", activity_report_application_form_id: form.id) }
 
       before do
         create(:staged_document, :validated,
@@ -76,7 +76,7 @@ RSpec.describe DocAiConfidenceService do
     end
 
     context "with ai_sourced activity and validated document" do
-      let(:activity) { create(:work_activity, evidence_source: "ai_assisted", activity_report_application_form_id: form.id) }
+      let(:activity) { create(:income_activity, evidence_source: "ai_assisted", activity_report_application_form_id: form.id) }
 
       before do
         create(:staged_document, :validated,
@@ -101,7 +101,7 @@ RSpec.describe DocAiConfidenceService do
     end
 
     context "with ai_sourced activity but no validated documents" do
-      let(:activity) { create(:work_activity, evidence_source: "ai_assisted", activity_report_application_form_id: form.id) }
+      let(:activity) { create(:income_activity, evidence_source: "ai_assisted", activity_report_application_form_id: form.id) }
 
       it "returns nil for the activity" do
         result = service.confidence_by_activity_id([ activity.id ])
@@ -110,8 +110,8 @@ RSpec.describe DocAiConfidenceService do
     end
 
     context "with multiple activities" do
-      let(:high_confidence_activity) { create(:work_activity, evidence_source: "ai_assisted", activity_report_application_form_id: form.id) }
-      let(:low_confidence_activity) { create(:work_activity, evidence_source: "ai_assisted", activity_report_application_form_id: form.id) }
+      let(:high_confidence_activity) { create(:income_activity, evidence_source: "ai_assisted", activity_report_application_form_id: form.id) }
+      let(:low_confidence_activity) { create(:income_activity, evidence_source: "ai_assisted", activity_report_application_form_id: form.id) }
       let(:self_reported_activity) { create(:work_activity, evidence_source: "self_reported", activity_report_application_form_id: form.id) }
 
       before do
@@ -152,8 +152,8 @@ RSpec.describe DocAiConfidenceService do
       before do
         activity = form.activities.create!(
           name: "Test Co",
-          type: "WorkActivity",
-          hours: 40,
+          type: "IncomeActivity",
+          income: 200_000,
           month: Date.current.beginning_of_month,
           category: "employment",
           evidence_source: "ai_assisted"
@@ -176,8 +176,8 @@ RSpec.describe DocAiConfidenceService do
       before do
         activity = form.activities.create!(
           name: "Edited Co",
-          type: "WorkActivity",
-          hours: 30,
+          type: "IncomeActivity",
+          income: 150_000,
           month: Date.current.beginning_of_month,
           category: "employment",
           evidence_source: "ai_assisted_with_member_edits"
@@ -200,8 +200,8 @@ RSpec.describe DocAiConfidenceService do
       before do
         form.activities.create!(
           name: "No Docs Co",
-          type: "WorkActivity",
-          hours: 20,
+          type: "IncomeActivity",
+          income: 100_000,
           month: Date.current.beginning_of_month,
           category: "employment",
           evidence_source: "ai_assisted"
@@ -222,8 +222,8 @@ RSpec.describe DocAiConfidenceService do
       before do
         activity1 = form.activities.create!(
           name: "Co A",
-          type: "WorkActivity",
-          hours: 40,
+          type: "IncomeActivity",
+          income: 200_000,
           month: Date.current.beginning_of_month,
           category: "employment",
           evidence_source: "ai_assisted"
@@ -235,8 +235,8 @@ RSpec.describe DocAiConfidenceService do
 
         activity2 = form2.activities.create!(
           name: "Co B",
-          type: "WorkActivity",
-          hours: 20,
+          type: "IncomeActivity",
+          income: 100_000,
           month: Date.current.beginning_of_month,
           category: "employment",
           evidence_source: "ai_assisted"

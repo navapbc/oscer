@@ -85,6 +85,12 @@ RSpec.describe ActivitiesHelper, type: :helper do
       expect(result[:percentage]).to eq(69)
       expect(result[:low]).to be true
     end
+
+    it "returns low: false when confidence rounds up to threshold" do
+      result = helper.confidence_display(0.695)
+      expect(result[:percentage]).to eq(70)
+      expect(result[:low]).to be false
+    end
   end
 
   describe "#confidence_value_content" do
@@ -125,19 +131,19 @@ RSpec.describe ActivitiesHelper, type: :helper do
     end
 
     it "returns em-dash when confidence_by_activity is nil" do
-      activity = build(:work_activity, evidence_source: "ai_assisted")
+      activity = build(:income_activity, evidence_source: "ai_assisted")
       result = helper.confidence_cell_content(activity, nil)
       expect(result).to eq("—")
     end
 
     it "returns percentage for AI activity with confidence" do
-      activity = build(:work_activity, evidence_source: "ai_assisted")
+      activity = build(:income_activity, evidence_source: "ai_assisted")
       result = helper.confidence_cell_content(activity, { activity.id => 0.91 })
       expect(result).to include("91%")
     end
 
     it "returns em-dash for AI activity with nil confidence" do
-      activity = build(:work_activity, evidence_source: "ai_assisted")
+      activity = build(:income_activity, evidence_source: "ai_assisted")
       result = helper.confidence_cell_content(activity, { activity.id => nil })
       expect(result).to eq("—")
     end

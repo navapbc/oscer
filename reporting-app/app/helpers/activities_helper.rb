@@ -24,10 +24,11 @@ module ActivitiesHelper
   def confidence_display(confidence)
     return nil if confidence.nil?
 
-    threshold = Rails.application.config.doc_ai[:low_confidence_threshold]
+    percentage = (confidence * 100).round
+    threshold_percentage = (Rails.application.config.doc_ai[:low_confidence_threshold] * 100).round
     {
-      percentage: (confidence * 100).round,
-      low: confidence < threshold
+      percentage: percentage,
+      low: percentage < threshold_percentage
     }
   end
 

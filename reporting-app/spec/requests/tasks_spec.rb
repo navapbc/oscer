@@ -81,8 +81,8 @@ RSpec.describe "/staff/tasks", type: :request do
       it "renders confidence column for ai_sourced activity" do
         activity = activity_report_application_form.activities.create!(
           name: "AI Employer",
-          type: "WorkActivity",
-          hours: 40,
+          type: "IncomeActivity",
+          income: 200_000,
           month: Date.current.beginning_of_month,
           category: "employment",
           evidence_source: "ai_assisted"
@@ -222,8 +222,8 @@ RSpec.describe "/staff/tasks", type: :request do
           form = create(:activity_report_application_form, certification_case_id: certification_case.id)
           activity = form.activities.create!(
             name: "AI Co",
-            type: "WorkActivity",
-            hours: 40,
+            type: "IncomeActivity",
+            income: 200_000,
             month: Date.current.beginning_of_month,
             category: "employment",
             evidence_source: "ai_assisted"
@@ -244,8 +244,8 @@ RSpec.describe "/staff/tasks", type: :request do
           form = create(:activity_report_application_form, certification_case_id: certification_case.id)
           activity = form.activities.create!(
             name: "Low AI Co",
-            type: "WorkActivity",
-            hours: 40,
+            type: "IncomeActivity",
+            income: 200_000,
             month: Date.current.beginning_of_month,
             category: "employment",
             evidence_source: "ai_assisted"
