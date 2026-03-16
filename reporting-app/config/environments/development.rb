@@ -107,6 +107,8 @@ Rails.application.configure do
     IPAddr.new("0.0.0.0/0"), # All IPv4 addresses.
     IPAddr.new("::/0"),      # All IPv6 addresses.
     "localhost",              # The localhost reserved domain.
-    "host.docker.internal:3000"
+    "host.docker.internal:3000",
+    /.*\.ngrok\.app/,         # ngrok tunnels for external IdP testing
+    /.*\.ngrok-free\.app/     # ngrok free tier domains
   ]
 end

@@ -1,40 +1,41 @@
 <div class="usa-overlay"></div>
-<header class="usa-header usa-header--basic">
-  <div class="usa-nav-container">
-    <div class="usa-navbar flex-row gap-1">
-      <div class="usa-logo desktop:width-tablet">
-        <em class="usa-logo__text">
-          <a href="<%= url_for root_path %>">
-            <%= t 'header.title' %>
-          </a>
-        </em>
-      </div>
-
-      <%= render partial: "application/language-toggle", locals: { container_class: "display-block desktop:display-none" } %>
-      <button type="button" class="usa-menu-btn">Menu</button>
+<header class="usa-header usa-header--basic nava-header">
+  <!-- Header Main: Logo and title -->
+  <div class="nava-header__main">
+    <div class="usa-logo">
+      <a href="<%= url_for root_path %>" class="display-flex flex-align-center gap-2 text-no-underline">
+        <div class="nava-state-seal">NAVA</div>
+        <div class="display-flex flex-column">
+          <span class="usa-logo__text"><%= t('header.title') %></span>
+          <span class="nava-logo-subtitle"><%= t('header.subtitle') %></span>
+        </div>
+      </a>
     </div>
-
-    <nav aria-label="Primary navigation" class="usa-nav">
-      <div class="usa-nav__inner">
-        <button type="button" class="usa-nav__close">
-          <img src="<%= asset_path('@uswds/uswds/dist/img/usa-icons/close.svg') %>" alt="<%= t 'header.close' %>" />
-        </button>
-        <ul class="usa-nav__primary usa-accordion">
-            <% if user_signed_in? %>
-              <li class="usa-nav__primary-item">
-                <%= link_to t('header.dashboard'), dashboard_path, class: "usa-nav-link" %>
-              </li>
-              <li class="usa-nav__primary-item">
-                <%= link_to t('header.account'), users_account_path, class: "usa-nav-link" %>
-              </li>
-              <li class="usa-nav__primary-item">
-                <%= button_to t('header.logout'), destroy_user_session_path, method: :delete, class: "usa-nav-link" %>
-              </li>
-            <% end %>
-        </ul>
-      </div>
-    </nav>
-
-    <%= render partial: "application/language-toggle", locals: { container_class: "usa-language-container display-none desktop:display-block padding-bottom-1" } %>
+    <button type="button" class="usa-menu-btn desktop:display-none">Menu</button>
   </div>
+
+  <!-- Navigation Bar -->
+  <nav aria-label="Primary navigation" class="nava-nav">
+    <button type="button" class="usa-nav__close desktop:display-none">
+      <img src="<%= asset_path('@uswds/uswds/dist/img/usa-icons/close.svg') %>" alt="<%= t 'header.close' %>" />
+    </button>
+    <ul class="nava-nav__list">
+      <% if user_signed_in? %>
+        <li class="nava-nav__item">
+          <%= link_to t('header.dashboard'), dashboard_path, 
+              class: "nava-nav__link#{' nava-nav__link--active' if current_page?(dashboard_path)}" %>
+        </li>
+        <li class="nava-nav__item">
+          <%= link_to t('header.account'), users_account_path, 
+              class: "nava-nav__link#{' nava-nav__link--active' if current_page?(users_account_path)}" %>
+        </li>
+        <li class="nava-nav__item">
+          <%= button_to t('header.logout'), destroy_user_session_path, method: :delete, class: "nava-nav__link" %>
+        </li>
+      <% end %>
+      <li class="nava-nav__item">
+        <%= render partial: "application/language-toggle", locals: { container_class: "" } %>
+      </li>
+    </ul>
+  </nav>
 </header>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="60" height="60">
+  <!-- Gold circle background -->
+  <circle cx="30" cy="30" r="28" fill="#f0c14b"/>
+  <!-- NAVA text -->
+  <text x="30" y="36" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#1a3d5c" text-anchor="middle">NAVA</text>
+</svg>
