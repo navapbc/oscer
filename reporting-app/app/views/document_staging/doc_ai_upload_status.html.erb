@@ -38,8 +38,8 @@
 <% end %>
 
 <div class="display-flex flex-align-center margin-top-3">
-  <%= strata_form_with(url: activity_report_application_form_path(@activity_report_application_form_id),
-        method: :get,
+  <%= strata_form_with(url: accept_doc_ai_activity_report_application_form_path(@activity_report_application_form_id),
+        method: :post,
         id: "save-form") do |f| %>
     <%= f.submit t(".save_and_continue") %>
   <% end %>

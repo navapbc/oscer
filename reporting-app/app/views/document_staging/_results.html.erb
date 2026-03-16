@@ -27,7 +27,7 @@
       </div>
 
       <% if is_valid %>
-        <input type="hidden" name="staged_document_signed_ids[]" value="<%= doc.file.blob.signed_id %>" form="save-form">
+        <input type="hidden" name="staged_document_ids[]" value="<%= doc.id %>" form="save-form">
       <% end %>
       <input type="hidden" name="existing_ids[]" value="<%= doc.id %>" form="upload-more-form">
     </div>

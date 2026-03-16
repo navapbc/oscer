@@ -290,6 +290,121 @@ RSpec.describe "/activities", type: :request do
     end
   end
 
+  describe "PATCH /update with doc_ai_review" do
+    let(:income_activity) do
+      activity = IncomeActivity.new(
+        activity_report_application_form_id: activity_report_application_form.id,
+        category: "employment",
+        evidence_source: "ai_assisted",
+        month: Date.new(2025, 1, 1),
+        income: 150_000
+      )
+      activity.save!(validate: false)
+      activity
+    end
+    let(:second_activity) do
+      activity = IncomeActivity.new(
+        activity_report_application_form_id: activity_report_application_form.id,
+        category: "employment",
+        evidence_source: "ai_assisted",
+        month: Date.new(2025, 2, 1),
+        income: 200_000
+      )
+      activity.save!(validate: false)
+      activity
+    end
+
+    context "with pending_review_ids" do
+      it "redirects to the next activity edit page" do
+        patch activity_report_application_form_activity_url(activity_report_application_form, income_activity),
+          params: {
+            activity: { name: "Acme Corp", income: "1500", month: Date.new(2025, 1, 1) },
+            doc_ai_review: "true",
+            pending_review_ids: [ second_activity.id ]
+          }
+
+        expect(response).to have_http_status(:redirect)
+        expect(response.location).to include(second_activity.id)
+        expect(response.location).to include("doc_ai_review=true")
+      end
+
+      [ "1", "t", "T", "true", "TRUE", "on", "ON", "yes", "YES" ].each do |truthy_value|
+        it "redirects to the next activity edit page when doc_ai_review is '#{truthy_value}'" do
+          patch activity_report_application_form_activity_url(activity_report_application_form, income_activity),
+            params: {
+              activity: { name: "Acme Corp", income: "1500", month: Date.new(2025, 1, 1) },
+              doc_ai_review: truthy_value,
+              pending_review_ids: [ second_activity.id ]
+            }
+
+          expect(response).to have_http_status(:redirect)
+          expect(response.location).to include(second_activity.id)
+          expect(response.location).to include("doc_ai_review=true")
+        end
+      end
+    end
+
+    context "without pending_review_ids" do
+      it "redirects to the activity report show page" do
+        patch activity_report_application_form_activity_url(activity_report_application_form, income_activity),
+          params: {
+            activity: { name: "Acme Corp", income: "1500", month: Date.new(2025, 1, 1) },
+            doc_ai_review: "true"
+          }
+
+        expect(response).to redirect_to(activity_report_application_form_url(activity_report_application_form))
+      end
+    end
+
+    context "with evidence_source tracking" do
+      it "keeps evidence_source as ai_assisted when income and month are unchanged" do
+        patch activity_report_application_form_activity_url(activity_report_application_form, income_activity),
+          params: {
+            activity: { name: "Acme Corp", income: "1500", month: Date.new(2025, 1, 1) },
+            doc_ai_review: "true"
+          }
+
+        income_activity.reload
+        expect(income_activity.evidence_source).to eq("ai_assisted")
+      end
+
+      it "sets evidence_source to ai_assisted_with_member_edits when income differs" do
+        patch activity_report_application_form_activity_url(activity_report_application_form, income_activity),
+          params: {
+            activity: { name: "Acme Corp", income: "2000", month: Date.new(2025, 1, 1) },
+            doc_ai_review: "true"
+          }
+
+        income_activity.reload
+        expect(income_activity.evidence_source).to eq("ai_assisted_with_member_edits")
+      end
+
+      it "sets evidence_source to ai_assisted_with_member_edits when month differs" do
+        patch activity_report_application_form_activity_url(activity_report_application_form, income_activity),
+          params: {
+            activity: { name: "Acme Corp", income: "1500", month: Date.new(2025, 2, 1) },
+            doc_ai_review: "true"
+          }
+
+        income_activity.reload
+        expect(income_activity.evidence_source).to eq("ai_assisted_with_member_edits")
+      end
+    end
+
+    context "without doc_ai_review param" do
+      it "preserves existing redirect behavior" do
+        patch activity_report_application_form_activity_url(activity_report_application_form, income_activity),
+          params: {
+            activity: { name: "Acme Corp", income: "1500", month: Date.new(2025, 1, 1) }
+          }
+
+        expect(response).to redirect_to(
+          documents_activity_report_application_form_activity_url(activity_report_application_form, income_activity)
+        )
+      end
+    end
+  end
+
   describe "POST /upload_document" do
     let(:supporting_documents) { [
       fixture_file_upload('spec/fixtures/files/test_document_1.pdf', 'application/pdf'),

@@ -4,6 +4,7 @@ class ActivitiesController < ApplicationController
   before_action :authenticate_user!
   before_action :set_activity_report_application_form
   before_action :set_activity, only: %i[ show edit update documents upload_documents destroy ]
+  before_action :set_doc_ai_review, only: %i[ edit update ]
 
   # GET /activities/1 or /activities/1.json
   def show
@@ -33,6 +34,10 @@ class ActivitiesController < ApplicationController
   # GET /activities/1/edit
   def edit
     authorize @activity_report_application_form, :edit?
+    if @doc_ai_review
+      @pending_review_ids = Array(params[:pending_review_ids])
+      @staged_document = StagedDocument.find_by(stageable: @activity)
+    end
   end
 
   # GET /activities/1/documents
@@ -83,14 +88,34 @@ class ActivitiesController < ApplicationController
   # PATCH/PUT /activities/1 or /activities/1.json
   def update
     authorize @activity_report_application_form, :update?
+    pending_review_ids = Array(params[:pending_review_ids])
 
-    @activity.attributes = activity_attributes_from_params.merge({
+    attributes = activity_attributes_from_params.merge({
       activity_report_application_form_id: @activity_report_application_form.id
     })
 
+    success = if @doc_ai_review && @activity.is_a?(IncomeActivity)
+                @activity.update_with_doc_ai_review(attributes)
+    else
+                @activity.update(attributes)
+    end
+
     respond_to do |format|
-      if @activity_report_application_form.save
-        format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity.becomes(Activity)) }
+      if success
+        format.html do
+          if @doc_ai_review && pending_review_ids.any?
+            next_id = pending_review_ids.shift
+            redirect_to edit_activity_report_application_form_activity_path(
+              @activity_report_application_form, next_id,
+              doc_ai_review: true,
+              pending_review_ids: pending_review_ids
+            )
+          elsif @doc_ai_review
+            redirect_to activity_report_application_form_path(@activity_report_application_form)
+          else
+            redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity.becomes(Activity))
+          end
+        end
         format.json { render :show, status: :ok, location: @activity.becomes(Activity) }
       else
         format.html { render :edit, status: :unprocessable_content }
@@ -156,5 +181,9 @@ class ActivitiesController < ApplicationController
       attrs[:income] = activity_params[:income].to_i * 100 if activity_params.key?(:income)
       attrs[:hours] = activity_params[:hours].to_i if activity_params.key?(:hours)
       attrs
+    end
+
+    def set_doc_ai_review
+      @doc_ai_review = ActiveModel::Type::Boolean.new.cast(params[:doc_ai_review])
     end
 end

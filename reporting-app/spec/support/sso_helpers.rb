@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-# Shared test helpers for SSO testing
-# Used by StaffUserProvisioner, RoleMapper, and controller specs
+# Shared test helpers for SSO and OIDC testing
+# Used by StaffUserProvisioner, MemberOidcProvisioner, RoleMapper, and controller specs
 module SsoHelpers
   # Returns mock staff user claims for provisioning tests
   # @param overrides [Hash] values to override in the default claims
@@ -13,6 +13,17 @@ module SsoHelpers
       name: "Jane Doe",
       groups: [ "OSCER-Caseworker" ],
       region: nil
+    }.merge(overrides)
+  end
+
+  # Returns mock member user claims for provisioning tests
+  # @param overrides [Hash] values to override in the default claims
+  # @return [Hash] Member claims with symbol keys (no groups or region)
+  def mock_member_claims(overrides = {})
+    {
+      uid: "member-user-456",
+      email: "john.smith@example.com",
+      name: "John Smith"
     }.merge(overrides)
   end
 
@@ -106,9 +117,10 @@ RSpec.configure do |config|
   config.include SsoHelpers, type: :helper
   config.include SsoHelpers, sso: true
 
-  # Reset OmniAuth after each SSO test
+  # Reset OmniAuth after each SSO/OIDC test
   config.after(:each, type: :request) do
     OmniAuth.config.test_mode = false
     OmniAuth.config.mock_auth[:sso] = nil
+    OmniAuth.config.mock_auth[:member_oidc] = nil
   end
 end
