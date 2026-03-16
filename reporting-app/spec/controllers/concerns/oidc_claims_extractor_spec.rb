@@ -4,7 +4,7 @@ require "rails_helper"
 
 RSpec.describe OidcClaimsExtractor, type: :controller do
   controller(ApplicationController) do
-    include described_class
+    include OidcClaimsExtractor
 
     def extract(auth, config)
       extract_oidc_claims(auth, config)
