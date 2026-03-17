@@ -29,6 +29,85 @@ RSpec.describe "/staff/tasks", type: :request do
         expect(response).to be_successful
         expect(response.body).to include(activity_report_task.id)
       end
+
+      context "with work activities" do
+        let(:work_activity) do
+          create(
+            :work_activity,
+            activity_report_application_form_id: activity_report_application_form.id,
+            category: "employment",
+            hours: 40
+          )
+        end
+
+        before { work_activity }
+
+        it "displays activity category and hours" do
+          get "/staff/tasks/#{activity_report_task.id}"
+
+          expect(response.body).to include("Employment")
+          expect(response.body).to include("40")
+        end
+      end
+
+      context "with income activities" do
+        let(:income_activity) do
+          create(
+            :income_activity,
+            activity_report_application_form_id: activity_report_application_form.id,
+            category: "employment",
+            income: 150_000
+          )
+        end
+
+        before { income_activity }
+
+        it "displays activity category and formatted income" do
+          get "/staff/tasks/#{activity_report_task.id}"
+
+          expect(response.body).to include("Employment")
+          expect(response.body).to include("$1,500")
+        end
+      end
+
+      context "with activities that have supporting documents" do
+        let(:activity) do
+          create(
+            :work_activity,
+            activity_report_application_form_id: activity_report_application_form.id
+          )
+        end
+
+        before do
+          activity.supporting_documents.attach(
+            fixture_file_upload("spec/fixtures/files/test_document_1.pdf", "application/pdf")
+          )
+        end
+
+        it "displays document links" do
+          get "/staff/tasks/#{activity_report_task.id}"
+
+          expect(response.body).to include("test_document_1.pdf")
+          expect(response.body).to include("usa-link")
+        end
+      end
+
+      context "with activities that have no supporting documents" do
+        let(:activity) do
+          create(
+            :work_activity,
+            activity_report_application_form_id: activity_report_application_form.id
+          )
+        end
+
+        before { activity }
+
+        it "displays the no documents message" do
+          get "/staff/tasks/#{activity_report_task.id}"
+
+          expect(response.body).to include(I18n.t("activity_report_application_forms.staff_activity_report.no_documents"))
+        end
+      end
     end
 
     context "with ExemptionApplicationForm" do
