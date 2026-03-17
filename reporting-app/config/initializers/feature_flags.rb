@@ -17,7 +17,7 @@ module Features
   FEATURE_FLAGS = {
     doc_ai: {
       env_var: "FEATURE_DOC_AI",
-      default: false,
+      default: true,
       description: "Enable DocAI document analysis for income verification"
     }
     # Example of adding more flags:
