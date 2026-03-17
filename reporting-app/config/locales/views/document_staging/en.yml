@@ -25,7 +25,6 @@ en:
       modal_title: "Your document is being checked"
       modal_body: "We're checking to make sure your document is clear and easy to read before you submit it."
       scanning: "Scanning..."
-      helpful_tip: "Make sure you complete at least 80 hours each month of work or other approved activities so you don't lose coverage."
     results:
       upload_success: "Document/s successfully uploaded."
       upload_failure: "There was a problem processing your documents."
