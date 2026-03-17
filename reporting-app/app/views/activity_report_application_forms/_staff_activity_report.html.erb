@@ -4,7 +4,7 @@
       <th scope="col"><%= t(".activity_type") %></th>
       <th scope="col"><%= t(".organization_name") %></th>
       <th scope="col"><%= t(".month") %></th>
-      <th scope="col" style="width: 90px"><%= t(".hours_income").html_safe %></th>
+      <th scope="col" style="width: 90px"><%= t(".hours_income") %></th>
       <th scope="col"><%= t(".supporting_documents") %></th>
       <% if feature_enabled?(:doc_ai) %>
         <th scope="col" class="text-right"><%= t(".confidence") %></th>
@@ -12,30 +12,36 @@
     </tr>
   </thead>
   <tbody>
-    <% for activity in activity_report.activities do %>
+    <% activity_report.activities.each do |activity| %>
       <tr>
         <td>
           <% if feature_enabled?(:doc_ai) %>
             <% icon_info = evidence_source_icon(activity.evidence_source) %>
             <%= uswds_icon(icon_info[:icon], label: icon_info[:label], css_class: icon_info[:color], style: "vertical-align: middle") %>
           <% end %>
-          Work
+          <%= activity.category.titleize %>
         </td>
         <td><%= activity.name %></td>
         <td><%= activity.month&.strftime("%b, %Y") %></td>
-        <td class="text-right"><%= activity.hours %></td>
+        <td class="text-right">
+          <% if activity.is_a?(IncomeActivity) %>
+            <%= number_to_currency(activity.income&.dollar_amount, precision: 0) %>
+          <% else %>
+            <%= activity.hours %>
+          <% end %>
+        </td>
         <td>
           <% if activity.supporting_documents.any? %>
             <ul class="usa-list usa-list--unstyled margin-0">
               <% activity.supporting_documents.each do |document| %>
-                <li c>
+                <li>
                   <%= link_to document.filename, rails_blob_path(document, disposition: "attachment"),
                       target: "_blank", class: "usa-link" %>
                 </li>
               <% end %>
             </ul>
           <% else %>
-            <p>No documents</p>
+            <p><%= t(".no_documents") %></p>
           <% end %>
         </td>
         <% if feature_enabled?(:doc_ai) %>
