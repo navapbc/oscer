@@ -31,12 +31,3 @@ en:
       upload_failure: "There was a problem processing your documents."
       selected_files: "Selected files:"
       remove_file: "Remove file"
-      success:
-        one: "%{count} document successfully validated"
-        other: "%{count} documents successfully validated"
-      rejected:
-        one: "%{count} document was not recognized"
-        other: "%{count} documents were not recognized"
-      failed:
-        one: "%{count} document could not be processed"
-        other: "%{count} documents could not be processed"
