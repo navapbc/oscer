@@ -13,8 +13,7 @@ export class BeforeYouStartPage extends BasePage {
   constructor(page: Page) {
     super(page);
     this.startButton = page.getByRole('button', { name: /start/i });
-    this.skipAiCheckbox =
-      page.locator('.doc-ai-skip-checkbox') || page.locator('.usa-checkbox__label');
+    this.skipAiCheckbox = page.locator('.usa-checkbox__label') || page.getByLabel(/skip ai/i);
   }
 
   async clickStart() {
