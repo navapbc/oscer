@@ -193,5 +193,6 @@ Rails.application.routes.draw do
   get "/demo", to: "demo#index"
   namespace :demo do
     resources :certifications, only: [ :new, :create ]
+    post "document_staging/validate", to: "document_staging#validate", as: :validate_document_staging
   end
 end

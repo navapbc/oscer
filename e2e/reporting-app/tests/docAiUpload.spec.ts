@@ -1,0 +1,61 @@
+import path from 'path';
+
+import { expect } from '@playwright/test';
+
+import { test } from '../../fixtures';
+import { CertificationRequestPage } from '../pages';
+import { DocAiUploadFlow } from '../flows';
+
+/**
+ * DocAI upload integration test
+ *
+ * Creates a certification with a February 2026 certification date and a
+ * 1-month look-back period so that February 2026 is the sole selectable
+ * reporting period.  Two paystubs from that pay period (one PDF, one JPEG)
+ * are uploaded; the DocAI staged-document status is stubbed immediately via
+ * the demo validate endpoint so the test does not wait for the real async
+ * DocAI job.  After accept_doc_ai creates IncomeActivities from the validated
+ * payslips, the test walks through reviewing and confirming each AI-created
+ * activity before submitting the completed report.
+ */
+test('DocAI upload: paystubs are read and activity is created for the upload period', async ({
+  page,
+}) => {
+  test.slow();
+
+  // February 2026 certification date with the default lookback of 1 and
+  // number_of_months_to_certify of 1 means "February 2026" is the only
+  // available reporting month — matching the pay date in both fixture files.
+  const email = 'testuser+docai@example.com';
+  const password = 'testPassword';
+  const certificationDate = '2/15/2026'; // M/D/YYYY — matches en-US locale format
+
+  // ── Step 1: Create a certification request ──────────────────────────────
+  const certificationRequestPage = await new CertificationRequestPage(page).go();
+  await certificationRequestPage.fillAndSubmit(email, { certificationDate });
+
+  // ── Step 2: Sign in ──────────────────────────────────────────────────────
+  await page.goto('/users/sign_in');
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password').fill(password);
+  await page.getByRole('button', { name: /sign in/i }).click();
+  await page.waitForURL('**/dashboard', { timeout: 30_000 }).catch(() => {});
+  await page.goto('/dashboard');
+  await page.waitForLoadState('networkidle');
+
+  // ── Step 3: Run the DocAI upload flow ───────────────────────────────────
+  // Fixture paths
+  const pdfPath = path.resolve(
+    __dirname,
+    '../../../docs/architecture/doc-ai-integration/frontend/paystub_sample_gen_1.pdf'
+  );
+  const jpegPath = path.resolve(__dirname, '../fixtures/paystub_feb2026.jpg');
+
+  const flow = new DocAiUploadFlow(page);
+  await flow.run(pdfPath, jpegPath);
+
+  // ── Assertions ──────────────────────────────────────────────────────────
+  // After submission the controller redirects back to the activity report
+  // show page (same URL pattern used by ActivityReportPage).
+  expect(page.url()).toMatch(/activity_report_application_forms/);
+});

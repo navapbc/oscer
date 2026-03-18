@@ -16,9 +16,11 @@ export class BeforeYouStartPage extends BasePage {
     this.skipAiCheckbox = page.locator('.usa-checkbox__label') || page.getByLabel(/skip ai/i);
   }
 
-  async clickStart() {
-    // Skip DocAI for original document upload flow
-    await this.skipAiCheckbox.check();
+  async clickStart(skipAi: boolean = true) {
+    if (skipAi) {
+      // Skip DocAI for the traditional manual document upload flow
+      await this.skipAiCheckbox.check();
+    }
     await this.startButton.click();
 
     return new ChooseMonthsPage(this.page).waitForURLtoMatchPagePath();

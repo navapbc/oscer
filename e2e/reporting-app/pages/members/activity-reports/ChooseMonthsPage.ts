@@ -1,6 +1,7 @@
 import { Locator, Page } from '@playwright/test';
 import { BasePage } from '../../BasePage';
 import { ActivityReportPage } from './ActivityReportPage';
+import { DocAiUploadPage } from './DocAiUploadPage';
 
 export class ChooseMonthsPage extends BasePage {
   get pagePath() {
@@ -22,5 +23,16 @@ export class ChooseMonthsPage extends BasePage {
     await this.reportingPeriodCheckboxes.first().check();
     await this.saveButton.click();
     return new ActivityReportPage(this.page).waitForURLtoMatchPagePath();
+  }
+
+  /**
+   * Selects the first reporting period and saves when the DocAI flow is active.
+   * With DocAI enabled and skip_ai=false, the controller redirects to the
+   * doc_ai_upload page instead of the activity report page.
+   */
+  async selectFirstReportingPeriodAndSaveForDocAi() {
+    await this.reportingPeriodCheckboxes.first().check();
+    await this.saveButton.click();
+    return new DocAiUploadPage(this.page).waitForURLtoMatchPagePath();
   }
 }
