@@ -37,7 +37,8 @@ class DocumentStagingService
 
     pending_ids = staged_documents.select(&:pending?).map(&:id)
     if pending_ids.any?
-      FetchDocAiResultsJob.set(wait: 1.minute).perform_later(pending_ids)
+      delay = ENV.fetch("DOC_AI_JOB_DELAY_SECONDS", "60").to_i.seconds
+      FetchDocAiResultsJob.set(wait: delay).perform_later(pending_ids)
     end
 
     staged_documents
