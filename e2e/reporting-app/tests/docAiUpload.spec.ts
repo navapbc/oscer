@@ -45,10 +45,7 @@ test('DocAI upload: paystubs are read and activity is created for the upload per
 
   // ── Step 3: Run the DocAI upload flow ───────────────────────────────────
   // Fixture paths
-  const pdfPath = path.resolve(
-    __dirname,
-    '../../../docs/architecture/doc-ai-integration/frontend/paystub_sample_gen_1.pdf'
-  );
+  const pdfPath = path.resolve(__dirname, '../fixtures/paystub_test_feb_2026_paydate.pdf');
   const jpegPath = path.resolve(__dirname, '../fixtures/paystub_feb2026.jpg');
 
   const flow = new DocAiUploadFlow(page);
