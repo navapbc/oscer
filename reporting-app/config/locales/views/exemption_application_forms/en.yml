@@ -17,6 +17,9 @@ en:
     exemption_type:
       title: "Select exemption type"
       heading: "What type of exemption are you requesting?"
+    review:
+      title: "Review and submit"
+      submit_button: "Submit exemption"
     show:
       title: "Exemption"
       back: "Back to dashboard"
