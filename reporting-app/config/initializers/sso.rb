@@ -66,7 +66,7 @@ Rails.application.config.member_oidc = {
 
 # Register OmniAuth OIDC provider(s)
 staff_sso_enabled = Rails.application.config.sso[:enabled] || Rails.env.test?
-member_oidc_enabled = Rails.application.config.member_oidc[:enabled]
+member_oidc_enabled = Rails.application.config.member_oidc[:enabled] || Rails.env.test?
 
 if staff_sso_enabled
   issuer_url = ENV.fetch("SSO_ISSUER_URL", "https://test-idp.example.com")
@@ -104,7 +104,7 @@ if staff_sso_enabled
 end
 
 if member_oidc_enabled
-  member_issuer_url = ENV.fetch("MEMBER_OIDC_ISSUER_URL")
+  member_issuer_url = Rails.env.test? ? ENV.fetch("MEMBER_OIDC_ISSUER_URL", "https://test-member-idp.example.com") : ENV.fetch("MEMBER_OIDC_ISSUER_URL")
   member_issuer_uri = URI.parse(member_issuer_url)
   member_use_http = member_issuer_url.start_with?("http://")
 
@@ -119,8 +119,8 @@ if member_oidc_enabled
       response_type: :code,
       discovery: !member_use_http,
       client_options: {
-        identifier: ENV.fetch("MEMBER_OIDC_CLIENT_ID"),
-        secret: ENV.fetch("MEMBER_OIDC_CLIENT_SECRET"),
+        identifier: Rails.env.test? ? ENV.fetch("MEMBER_OIDC_CLIENT_ID", "test-member-client") : ENV.fetch("MEMBER_OIDC_CLIENT_ID"),
+        secret: Rails.env.test? ? ENV.fetch("MEMBER_OIDC_CLIENT_SECRET", "test-member-secret") : ENV.fetch("MEMBER_OIDC_CLIENT_SECRET"),
         redirect_uri: build_oidc_redirect_uri("/auth/member_oidc/callback")
       }
     }
