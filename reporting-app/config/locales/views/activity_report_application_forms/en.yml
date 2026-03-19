@@ -39,6 +39,7 @@ en:
         skip_ai_label: "Skip AI, and enter my details manually"
     accept_doc_ai:
       no_activities_created: "No income activities were created from your documents."
+      payslip_not_in_reporting_period: "One or more uploaded documents have dates that don't match your selected reporting period. Please review your documents and try again."
     doc_ai_upload:
       title: "Supporting documents"
       instructions: "Please upload your documents to verify your income. You can provide any of the following, as long as they are from the same reporting period:"

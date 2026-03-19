@@ -481,6 +481,24 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
       expect(response).to have_http_status(:forbidden)
     end
 
+    it "redirects to doc_ai_upload with error when payslip date is outside reporting period" do
+      out_of_period_doc = create(:staged_document, :validated,
+        user_id: user.id,
+        extracted_fields: {
+          "currentgrosspay" => { "confidence" => 0.93, "value" => 1500.0 },
+          "payperiodstartdate" => { "confidence" => 0.95, "value" => "2024-06-15" }
+        }
+      )
+
+      expect {
+        post accept_doc_ai_activity_report_application_form_url(activity_report_application_form),
+          params: { staged_document_ids: [ out_of_period_doc.id ] }
+      }.not_to change(IncomeActivity, :count)
+
+      expect(response).to redirect_to(doc_ai_upload_activity_report_application_form_url(activity_report_application_form))
+      expect(flash[:errors]).to eq([ I18n.t("activity_report_application_forms.accept_doc_ai.payslip_not_in_reporting_period") ])
+    end
+
     it "rejects when mix of own and other user's staged documents" do
       other_user_doc = create(:staged_document, :validated,
         user_id: other_user.id,

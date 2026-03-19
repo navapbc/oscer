@@ -122,6 +122,9 @@ class ActivityReportApplicationFormsController < ApplicationController
       redirect_to activity_report_application_form_path(@activity_report_application_form),
         notice: t(".no_activities_created")
     end
+  rescue PayslipToIncomeActivityCreateService::PayslipNotInReportingPeriodError
+    flash[:errors] = [ t(".payslip_not_in_reporting_period") ]
+    redirect_to doc_ai_upload_activity_report_application_form_path(@activity_report_application_form)
   end
 
   # POST /activity_report_application_forms/1/submit
