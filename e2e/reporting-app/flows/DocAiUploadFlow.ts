@@ -17,7 +17,7 @@ export class DocAiUploadFlow {
    *  1. Navigate from dashboard to "Before you start" — do NOT skip AI
    *  2. Select the February 2026 reporting period
    *  3. Upload the provided PDF and JPEG paystubs
-   *  4. Stub staged-document status via the demo validate endpoint
+   *  4. Wait for DocAI background job to validate staged documents
    *  5. Accept the DocAI results (creates IncomeActivities from payslips)
    *  6. Review and confirm each activity the AI created
    *  7. Review and submit the completed activity report
@@ -34,8 +34,8 @@ export class DocAiUploadFlow {
     // 3. Upload PDF and JPEG paystubs
     const docAiUploadStatusPage = await docAiUploadPage.uploadFiles(pdfPath, jpegPath);
 
-    // 4. Stub: immediately validate both staged documents with mock payslip data
-    await docAiUploadStatusPage.stubValidateDocuments();
+    // 4. Wait for DocAI processing to complete (background job + Turbo Frame refresh)
+    await docAiUploadStatusPage.waitForCompletion();
 
     // 5. Submit accept_doc_ai → PayslipToIncomeActivityCreateService creates activities
     const docAiActivityReviewPage = await docAiUploadStatusPage.clickSaveAndContinue();

@@ -12,16 +12,16 @@ import { DocAiUploadFlow } from '../flows';
  * Creates a certification with a February 2026 certification date and a
  * 1-month look-back period so that February 2026 is the sole selectable
  * reporting period.  Two paystubs from that pay period (one PDF, one JPEG)
- * are uploaded; the DocAI staged-document status is stubbed immediately via
- * the demo validate endpoint so the test does not wait for the real async
- * DocAI job.  After accept_doc_ai creates IncomeActivities from the validated
+ * are uploaded; the mock DocAI server (started by Playwright's webServer config)
+ * responds immediately so GoodJob validates staged documents within ~1 second.
+ * After accept_doc_ai creates IncomeActivities from the validated
  * payslips, the test walks through reviewing and confirming each AI-created
  * activity before submitting the completed report.
  */
 test('DocAI upload: paystubs are read and activity is created for the upload period', async ({
   page,
 }) => {
-  test.slow();
+  test.setTimeout(60000);
 
   // February 2026 certification date with the default lookback of 1 and
   // number_of_months_to_certify of 1 means "February 2026" is the only

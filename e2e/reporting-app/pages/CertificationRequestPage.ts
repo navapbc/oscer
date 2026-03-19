@@ -30,8 +30,7 @@ export class CertificationRequestPage extends BasePage {
     );
 
     // Use the provided date or fall back to today in M/D/YYYY format
-    const certificationDate =
-      options.certificationDate ?? new Date().toLocaleDateString('en-US');
+    const certificationDate = options.certificationDate ?? new Date().toLocaleDateString('en-US');
 
     await this.emailField.fill(email);
     await this.firstNameField.fill('John');

@@ -12,30 +12,12 @@ export class DocAiUploadStatusPage extends BasePage {
   }
 
   /**
-   * Extracts the staged document IDs from the current URL query string.
+   * Waits for all staged documents to finish processing.
+   * The status page uses a Turbo Frame that auto-refreshes every 5 seconds.
+   * When all documents are validated, the scanning modal disappears.
    */
-  getStagedDocumentIds(): string[] {
-    const url = new URL(this.page.url());
-    return url.searchParams.getAll('ids[]');
-  }
-
-  /**
-   * Stubs the staged document status by calling the demo validate endpoint.
-   * This immediately marks all pending staged documents as validated with
-   * mock February 2026 payslip data, bypassing the real DocAI async processing.
-   */
-  async stubValidateDocuments() {
-    const ids = this.getStagedDocumentIds();
-    const formBody = ids.map((id) => `ids[]=${encodeURIComponent(id)}`).join('&');
-
-    await this.page.request.post('/demo/document_staging/validate', {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      data: formBody,
-    });
-
-    // Reload so the page fetches the now-validated status from the DB
-    await this.page.reload();
-    await this.page.waitForLoadState('networkidle');
+  async waitForCompletion(timeout = 30000) {
+    await this.page.locator('#scanning-modal').waitFor({ state: 'detached', timeout });
   }
 
   /**
