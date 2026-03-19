@@ -4,7 +4,7 @@ import { expect } from '@playwright/test';
 
 import { test } from '../../fixtures';
 import { CertificationRequestPage } from '../pages';
-import { DocAiUploadFlow } from '../flows';
+import { AccountCreationFlow, DocAiUploadFlow } from '../flows';
 
 /**
  * DocAI upload integration test
@@ -20,13 +20,14 @@ import { DocAiUploadFlow } from '../flows';
  */
 test('DocAI upload: paystubs are read and activity is created for the upload period', async ({
   page,
+  emailService,
 }) => {
-  test.setTimeout(60000);
+  test.slow();
 
   // February 2026 certification date with the default lookback of 1 and
   // number_of_months_to_certify of 1 means "February 2026" is the only
   // available reporting month — matching the pay date in both fixture files.
-  const email = 'testuser+docai@example.com';
+  const email = emailService.generateEmailAddress(emailService.generateUsername());
   const password = 'testPassword';
   const certificationDate = '2/15/2026'; // M/D/YYYY — matches en-US locale format
 
@@ -35,13 +36,10 @@ test('DocAI upload: paystubs are read and activity is created for the upload per
   await certificationRequestPage.fillAndSubmit(email, { certificationDate });
 
   // ── Step 2: Sign in ──────────────────────────────────────────────────────
-  await page.goto('/users/sign_in');
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill(password);
-  await page.getByRole('button', { name: /sign in/i }).click();
-  await page.waitForURL('**/dashboard', { timeout: 30_000 }).catch(() => {});
-  await page.goto('/dashboard');
-  await page.waitForLoadState('networkidle');
+  const accountCreationFlow = new AccountCreationFlow(page, emailService);
+  const signInPage = await accountCreationFlow.run(email, password);
+  const mfaPreferencePage = await signInPage.signIn(email, password);
+  await mfaPreferencePage.skipMFA();
 
   // ── Step 3: Run the DocAI upload flow ───────────────────────────────────
   // Fixture paths
