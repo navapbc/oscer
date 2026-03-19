@@ -194,7 +194,7 @@ end
 
 - `source_type`: `"api"`, `"batch_upload"`, `"quarterly_wage_data"` (stored for attribution)
 - `source_id`: batch upload ID or external reference
-- Immutable after creation; never updated or deleted
+- **Data governance:** Append-only in normal intake flows. Updates or deletes are exceptional (e.g., corrections, backfills) and must be recorded in an audit log. See [Audit trail over hard immutability](#audit-trail-over-hard-immutability) below.
 
 ---
 
@@ -269,6 +269,16 @@ Use `CE_INCOME_THRESHOLD_MONTHLY` (default 580) so states can adjust. Tradeoff: 
 
 Store `source_type` and `source_id` on each `ExParteIncome` for audit. Tradeoff: redundant source data; required for traceability.
 
+### Audit trail over hard immutability
+
+Use an **audit trail** to satisfy the business requirement for traceable, trustworthy income data instead of enforcing strict immutability (e.g., DB triggers or model hooks that block updates/deletes).
+
+**Rationale:** Strict immutability is difficult to enforce reliably (triggers and hooks can be bypassed; raw SQL, console, or other services may change data). It also blocks legitimate cases: corrections after a bad load, transient states (e.g., pending verification), merges, backfills, or compliance-driven updates. The business need is **traceability**—who changed what, when, and why—plus **origin metadata** (source_type, source_id, reported_at). An audit log provides both and accommodates edge cases.
+
+**Approach:** Record all create/update/delete events for `ExParteIncome` in an audit store (e.g., `ex_parte_income_audit` or a generic audit table): old/new values, `changed_at`, `changed_by` (user or system), optional reason/context, and origin fields at time of event. Normal flows are append-only (create only); any update or delete goes through a defined process and is always audited. Optionally, model-level guards (e.g., `before_update` / `before_destroy` that raise or log) may be used as defense-in-depth; the primary guarantee is the audit log.
+
+**Tradeoff:** Policy-based "do not update in normal flows" instead of technical enforcement. Mitigated by audit, code review, and optional model guards.
+
 ### No income-to-hours conversion (out of scope)
 
 Do not convert income to hours (e.g., income / federal min wage). CER allows either hours or income; income path is independent. Tradeoff: none for this scope.
@@ -278,7 +288,7 @@ Do not convert income to hours (e.g., income / federal min wage). CER allows eit
 ## Constraints
 
 - OSCER does not pull or query external systems; states send data to OSCER.
-- Income records are immutable after creation.
+- Income data is **append-only in normal flows**; updates or deletes are exceptional and must be fully audited (see [Audit trail over hard immutability](#audit-trail-over-hard-immutability)). No silent changes.
 - Determinations are versioned (new record on recalculation).
 - Source attribution is required for all income records.
 - API authentication matches hours API (API key or HMAC).
