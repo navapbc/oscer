@@ -15,6 +15,11 @@ en:
         report_income_label: "Report income"
     new_activity:
       back: "Back to activity report"
+    activity:
+      month: "Month"
+      name: "Organization name"
+      hours: "Hours"
+      income: "Income"
     form:
       title_prefix: "Add"
       title_suffix: "activity"
