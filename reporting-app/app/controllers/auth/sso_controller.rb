@@ -85,19 +85,4 @@ class Auth::SsoController < ApplicationController
   def sso_enabled?
     Rails.application.config.sso[:enabled]
   end
-
-  def redirect_if_authenticated
-    return unless user_signed_in?
-
-    redirect_to after_sign_in_path_for(current_user)
-  end
-
-  ALLOWED_OMNIAUTH_FAILURE_MESSAGES = %w[invalid_credentials timeout].freeze
-
-  def sanitized_failure_message(raw)
-    return "unknown_error" if raw.blank?
-
-    msg = raw.to_s.strip
-    ALLOWED_OMNIAUTH_FAILURE_MESSAGES.include?(msg) ? msg : "unknown_error"
-  end
 end

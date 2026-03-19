@@ -160,6 +160,5 @@ RSpec.configure do |config|
     OmniAuth.config.test_mode = false
     OmniAuth.config.mock_auth[:sso] = nil
     OmniAuth.config.mock_auth[:member_oidc] = nil
-    OmniAuth.config.mock_auth["member_oidc"] = nil
   end
 end

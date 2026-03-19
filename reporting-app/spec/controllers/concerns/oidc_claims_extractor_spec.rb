@@ -73,4 +73,22 @@ RSpec.describe OidcClaimsExtractor do
       end
     end
   end
+
+  describe "#sanitized_failure_message" do
+    it "returns allowlisted messages as-is" do
+      expect(extractor.sanitized_failure_message("invalid_credentials")).to eq("invalid_credentials")
+      expect(extractor.sanitized_failure_message("timeout")).to eq("timeout")
+    end
+
+    it "returns unknown_error for non-allowlisted message" do
+      expect(extractor.sanitized_failure_message("csrf_detected")).to eq("unknown_error")
+      expect(extractor.sanitized_failure_message("malicious<script>")).to eq("unknown_error")
+    end
+
+    it "returns unknown_error for blank or nil" do
+      expect(extractor.sanitized_failure_message("")).to eq("unknown_error")
+      expect(extractor.sanitized_failure_message(nil)).to eq("unknown_error")
+      expect(extractor.sanitized_failure_message("   ")).to eq("unknown_error")
+    end
+  end
 end
