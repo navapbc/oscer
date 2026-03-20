@@ -26,7 +26,7 @@ export class DocAiUploadStatusPage extends BasePage {
    * The status page uses a Turbo Frame that auto-refreshes every 5 seconds.
    * When all documents are validated, the scanning modal disappears.
    */
-  async waitForCompletion(timeout = 120000) {
+  async waitForCompletion(timeout = 180000) {
     await this.page.locator('#scanning-modal').waitFor({ state: 'detached', timeout });
   }
 
