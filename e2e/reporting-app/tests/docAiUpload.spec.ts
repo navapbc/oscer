@@ -12,9 +12,10 @@ import { AccountCreationFlow, DocAiUploadFlow } from '../flows';
  * Creates a certification with a February 2026 certification date and a
  * 1-month look-back period so that February 2026 is the sole selectable
  * reporting period.  Two paystubs from that pay period (one PDF, one JPEG)
- * are uploaded; the mock DocAI server (started by Playwright's webServer config)
- * responds immediately so GoodJob validates staged documents within ~1 second.
- * After accept_doc_ai creates IncomeActivities from the validated
+ * are uploaded and sent to the real DocAI server for processing. The status
+ * page actively polls DocAI for results on each Turbo Frame refresh (~5s),
+ * so documents are validated as soon as DocAI finishes processing (typically
+ * 5-30s). After accept_doc_ai creates IncomeActivities from the validated
  * payslips, the test walks through reviewing and confirming each AI-created
  * activity before submitting the completed report.
  */

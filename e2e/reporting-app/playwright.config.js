@@ -10,10 +10,5 @@ export default defineConfig(
     use: {
       baseURL: baseConfig.use.baseURL || 'http://localhost:3000',
     },
-    webServer: {
-      command: 'node support/mockDocAiServer.js',
-      port: 3001,
-      reuseExistingServer: true,
-    },
   })
 );
