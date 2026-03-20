@@ -35,6 +35,8 @@ require_relative '../config/environment'
 # Prevent database truncation if the environment is production
 abort("The Rails environment is running in production mode!") if Rails.env.production?
 require 'rspec/rails'
+require 'view_component/test_helpers'
+require 'capybara/rspec'
 require 'webmock/rspec'
 # Add additional requires below this line. Rails is not loaded until this point!
 require_relative 'support/factory_bot'
@@ -72,6 +74,7 @@ RSpec.configure do |config|
   config.include Strata::Testing::ApiAuthHelpers
   config.include Devise::Test::ControllerHelpers, type: :controller
   config.include PunditSpecViewHelper, type: :view
+  config.include ViewComponent::TestHelpers, type: :component
 
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_paths = [
