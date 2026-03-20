@@ -43,12 +43,16 @@ user = User.first || FactoryBot.create(:user, :as_admin, region: "Southeast", em
 
   next if index == 0 # Skip adding activities for the first form to test empty state
 
+  # Each activity gets a different evidence_source to test attribution color-coding in the preview panel:
+  #   self_reported = blue, ai_assisted = gold, ai_assisted_with_member_edits = green,
+  #   ai_rejected_member_override = red, nil = defaults to self_reported (blue)
   app_form.activities.create!(
     name: "Community Meeting",
     type: "HourlyActivity",
     category: "community_service",
     month: Date.today.prev_month.beginning_of_month,
     hours: rand(1..5),
+    evidence_source: ActivityAttributions::SELF_REPORTED,
     supporting_documents: [
       { io: File.open(Rails.root.join("db/seeds/files/fake_paystub.png")), filename: "Courthouse Clerk Paystub.png", content_type: "image/png" }
     ]
@@ -59,6 +63,7 @@ user = User.first || FactoryBot.create(:user, :as_admin, region: "Southeast", em
     category: "community_service",
     month: Date.today.prev_month.beginning_of_month,
     hours: rand(1..5),
+    evidence_source: ActivityAttributions::AI_ASSISTED,
     supporting_documents: [
       { io: File.open(Rails.root.join("db/seeds/files/fake_paystub.pdf")), filename: "Paystub1.pdf", content_type: "application/pdf" },
       { io: File.open(Rails.root.join("db/seeds/files/fake_paystub.png")), filename: "Paystub2.png", content_type: "image/png" },
@@ -71,6 +76,7 @@ user = User.first || FactoryBot.create(:user, :as_admin, region: "Southeast", em
     category: "education",
     month: Date.today.prev_month.beginning_of_month,
     income: rand(15..300),
+    evidence_source: ActivityAttributions::AI_ASSISTED_WITH_MEMBER_EDITS,
     supporting_documents: [
       { io: File.open(Rails.root.join("db/seeds/files/fake_training_certificate.pdf")), filename: "Training Certificate.pdf", content_type: "application/pdf" }
     ]
@@ -80,7 +86,8 @@ user = User.first || FactoryBot.create(:user, :as_admin, region: "Southeast", em
     type: "HourlyActivity",
     category: "community_service",
     month: Date.today.prev_month.prev_month.beginning_of_month,
-    hours: rand(1..10)
+    hours: rand(1..10),
+    evidence_source: ActivityAttributions::AI_REJECTED_MEMBER_OVERRIDE
   )
   app_form.activities.create!(
     name: "Volunteer Coordination",
@@ -88,6 +95,7 @@ user = User.first || FactoryBot.create(:user, :as_admin, region: "Southeast", em
     category: "community_service",
     month: Date.today.prev_month.prev_month.beginning_of_month,
     hours: rand(15..60),
+    evidence_source: ActivityAttributions::AI_ASSISTED,
     supporting_documents: [
       { io: File.open(Rails.root.join("db/seeds/files/fake_paystub.pdf")), filename: "Administrative Paystub.pdf", content_type: "application/pdf" },
       { io: File.open(Rails.root.join("db/seeds/files/fake_paystub.pdf")), filename: "Art Event Coordination Paystub.pdf", content_type: "application/pdf" },

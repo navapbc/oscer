@@ -1,15 +1,50 @@
 <%= render partial: 'application/flash' %>
-<h2><%= t(".intro") %></h2>
-<p><%= t(".instructions") %></p>
-<%= render partial: 'activity_report_application_forms/staff_activity_report', locals: { activity_report: application_form } %>
-<%= render partial: 'information_requests/information_requests_list',
-  locals: { application_form: application_form, information_requests: information_requests } %>
-<% if task.pending? %>
-  <h2><%= t(".activity_report_decision.heading") %></h2>
-  <%= strata_form_with(model: task) do |f| %>
-    <%= f.radio_button :activity_report_decision, "yes", { label: t(".activity_report_decision.options.yes_acceptable"), tile: false } %>
-    <%= f.radio_button :activity_report_decision, "no-additional-info", { label: t(".activity_report_decision.options.no_additional_info"), tile: false } %>
-    <%= f.radio_button :activity_report_decision, "no-not-acceptable", { label: t(".activity_report_decision.options.no_not_acceptable"), tile: false } %>
-    <%= f.submit t(".activity_report_decision.submit_button") %>
+<% has_document_preview = feature_enabled?(:doc_ai) && application_form.activities.any? { |a| a.supporting_documents.any? } %>
+
+<%= tag.div(data: has_document_preview ? { controller: "document-preview" } : {}) do %>
+  <%# Table view (visible by default, hidden when preview is open) %>
+  <%= tag.div(data: has_document_preview ? { document_preview_target: "table" } : {}) do %>
+    <h2><%= t(".intro") %></h2>
+    <p><%= t(".instructions") %></p>
+    <%= render partial: 'activity_report_application_forms/staff_activity_report',
+      locals: { activity_report: application_form, has_document_preview: has_document_preview } %>
+
+    <%# Information requests %>
+    <%= render partial: 'information_requests/information_requests_list',
+      locals: { application_form: application_form, information_requests: information_requests } %>
+
+    <%# Decision form %>
+    <% if task.pending? %>
+      <h2><%= t(".activity_report_decision.heading") %></h2>
+      <%= strata_form_with(model: task) do |f| %>
+        <%= f.radio_button :activity_report_decision, "yes", { label: t(".activity_report_decision.options.yes_acceptable"), tile: false } %>
+        <%= f.radio_button :activity_report_decision, "no-additional-info", { label: t(".activity_report_decision.options.no_additional_info"), tile: false } %>
+        <%= f.radio_button :activity_report_decision, "no-not-acceptable", { label: t(".activity_report_decision.options.no_not_acceptable"), tile: false } %>
+        <%= f.submit t(".activity_report_decision.submit_button") %>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <% if has_document_preview %>
+    <%# Two-column preview area (hidden by default, shown when eye icon is clicked) %>
+    <div class="grid-row grid-gap-4 display-none" data-document-preview-target="previewArea">
+      <%# Left column: per-activity prefill forms (one shown at a time) %>
+      <div class="desktop:grid-col-6">
+        <% application_form.activities.each do |activity| %>
+          <% next unless activity.supporting_documents.any? %>
+          <div class="display-none"
+               data-document-preview-target="prefillForm"
+               data-activity-id="<%= activity.id %>">
+            <%= render partial: 'tasks/details/activity_prefill_form',
+              locals: { activity: activity } %>
+          </div>
+        <% end %>
+      </div>
+
+      <%# Right column: document preview (iframe/img/fallback) %>
+      <div class="desktop:grid-col-6">
+        <%= render partial: 'tasks/details/document_preview_panel' %>
+      </div>
+    </div>
   <% end %>
 <% end %>

@@ -85,3 +85,5 @@ en:
       supporting_documents: Supporting documents
       confidence: "Confidence Level"
       no_documents: No documents
+      preview: Preview
+      preview_icon_label: "Preview %{filename}"
