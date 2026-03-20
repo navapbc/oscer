@@ -3,15 +3,15 @@
 <h2><%= t('information_requests.edit.instructions_heading') %></h2>
 <p class="font-serif-md"><%= t('information_requests.edit.instructions_html') %></p>
 
-<div class="usa-alert usa-alert--info margin-top-3" role="status">
-  <div class="usa-alert__body">
+<%= render AlertComponent.new(type: "info", classes: "margin-top-3") do |c| %>
+  <% c.with_body do %>
     <p class="usa-alert__text">
       <%= @information_request.staff_comment %>
       <p class="margin-top-2"></p>
       <%= t('information_requests.edit.due_by', due_date: @information_request.due_date.strftime('%B %d, %Y')) %>
     </p>
-  </div>
-</div>
+  <% end %>
+<% end %>
 
 <%= strata_form_with(model: @information_request) do |f| %>
   <%= f.file_field :supporting_documents, label: t('information_requests.edit.upload_documents'), multiple: true %>

@@ -1,7 +1,6 @@
 <div class="grid-container">
-  <div class="usa-alert usa-alert--warning margin-bottom-3" role="status">
-    <div class="usa-alert__body">
-      <h3 class="usa-alert__heading"><%= t('.heading') %></h3>
+  <%= render AlertComponent.new(type: "warning", heading: t('.heading'), heading_level: 3, classes: "margin-bottom-3") do |c| %>
+    <% c.with_body do %>
       <p class="usa-alert__text">
         <%= t('.intro_html', due_date: information_request.due_date&.strftime('%B %d, %Y') || '<date due>') %>
       </p>
@@ -12,6 +11,6 @@
           <%= link_to t('.cta_button'), edit_exemption_information_request_path(information_request), class: 'usa-button display-inline-block' %>
         <% end %>
       </div>
-    </div>
-  </div>
+    <% end %>
+  <% end %>
 </div>

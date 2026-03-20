@@ -11,10 +11,11 @@
       <% end %>
     </ul>
   <% else %>
-    <div style="padding: unset;" class="usa-alert usa-alert--info usa-alert--slim  usa-alert--no-icon" role="status">
-      <div class="usa-alert__body">
-        <p class="usa-alert__text">No tasks available</p>
-      </div>
-    </div>
+    <%= render AlertComponent.new(
+      type: "info",
+      message: "No tasks available",
+      classes: "usa-alert--slim usa-alert--no-icon",
+      style: "padding: unset;"
+    ) %>
   <% end %>
 <% end %>

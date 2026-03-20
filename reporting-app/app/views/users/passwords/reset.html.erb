@@ -1,13 +1,11 @@
 <% content_for :title, t(".title") %>
 
-<div class="usa-alert usa-alert--info">
-  <div class="usa-alert__body">
-    <h2 class="usa-alert__heading"><%= t(".instructions_heading") %></h2>
-    <p class="usa-alert__text">
-      <%= t(".instructions_html", verify_account_url: url_for(users_verify_account_path)) %>
-    </p>
-  </div>
-</div>
+<%= render AlertComponent.new(
+  type: "info",
+  heading: t(".instructions_heading"),
+  message: t(".instructions_html", verify_account_url: url_for(users_verify_account_path)),
+  heading_level: 2
+) %>
 
 <h1><%= t(".title") %></h1>
 
