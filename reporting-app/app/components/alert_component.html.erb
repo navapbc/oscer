@@ -1,0 +1,12 @@
+<%= tag.div class: alert_classes, role: (error? ? "alert" : nil), style: style do %>
+  <div class="usa-alert__body">
+    <% if heading.present? %>
+      <%= content_tag(:"h#{heading_level}", heading, class: "usa-alert__heading") %>
+    <% end %>
+    <% if body %>
+      <%= body %>
+    <% elsif message.present? %>
+      <p class="usa-alert__text"><%= message %></p>
+    <% end %>
+  </div>
+<% end %>
