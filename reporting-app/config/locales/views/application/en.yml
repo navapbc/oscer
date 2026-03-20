@@ -41,4 +41,4 @@ en:
     no_documents_text: "No documents available"
   case_tasks:
     title: "Tasks"
-    no_tasks_text: "No tasks"
+    no_tasks_text: "No tasks available"
