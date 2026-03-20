@@ -20,18 +20,6 @@ RSpec.describe DocAiResult do
     }
   end
 
-  let(:w2_response) do
-    {
-      "job_id"               => "e8b21c94-5d4f-48a9-bc91-37d6f4a09c11",
-      "status"               => "completed",
-      "matchedDocumentClass" => "W2",
-      "fields" => {
-        "employerInfo.employerName"                     => { "confidence" => 0.92, "value" => "University of North Carolina" },
-        "federalWageInfo.wagesTipsOtherCompensation"    => { "confidence" => 0.94, "value" => 31964.00 }
-      }
-    }
-  end
-
   let(:failed_response) do
     {
       "job_id" => "a4187dd2-8ccd-4e6f-b7a7-164092e49eca",
@@ -55,16 +43,10 @@ RSpec.describe DocAiResult do
       expect(result).to be_a(DocAiResult::Payslip)
     end
 
-    it "dispatches to DocAiResult::W2 for W2 documents" do
-      result = described_class.from_response(w2_response)
-      expect(result).to be_a(DocAiResult::W2)
-    end
-
     it "falls back to DocAiResult for unregistered document types" do
       result = described_class.from_response(unknown_response)
       expect(result).to be_a(described_class)
       expect(result).not_to be_a(DocAiResult::Payslip)
-      expect(result).not_to be_a(DocAiResult::W2)
     end
   end
 
@@ -154,10 +136,6 @@ RSpec.describe DocAiResult do
   describe "REGISTRY" do
     it "includes Payslip" do
       expect(DocAiResult::REGISTRY["Payslip"]).to eq(DocAiResult::Payslip)
-    end
-
-    it "includes W2" do
-      expect(DocAiResult::REGISTRY["W2"]).to eq(DocAiResult::W2)
     end
   end
 

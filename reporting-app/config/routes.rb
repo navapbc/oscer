@@ -146,6 +146,12 @@ Rails.application.routes.draw do
     # Login initiation route (checks SSO enabled, then redirects to OmniAuth)
     get "sso/login", to: "auth/sso#new", as: :sso_login
 
+    # Member OIDC authentication (OmniAuth)
+    # /auth/member_oidc is handled by OmniAuth middleware
+    get "member_oidc/login", to: "auth/member_oidc#new", as: :member_oidc_login
+    get "auth/member_oidc/callback", to: "auth/member_oidc#callback", as: :member_oidc_callback
+    get "auth/member_oidc/failure", to: "auth/member_oidc#failure", as: :member_oidc_failure
+
     # Session management
     devise_for :users, controllers: { sessions: "users/sessions" }
     devise_scope :user do

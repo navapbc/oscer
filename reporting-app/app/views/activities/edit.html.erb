@@ -16,16 +16,15 @@
   <% end %>
 
   <div class="margin-bottom-3">
-    <p class="usa-label"><%= t(".doc_ai_review.activity_type_label") %></p>
-    <div class="usa-card padding-2 radius-md border-1px border-base-light margin-bottom-1">
-      <strong><%= t(".doc_ai_review.employment_label") %></strong>
-      <p class="margin-top-05 margin-bottom-0 text-base"><%= t(".doc_ai_review.employment_description") %></p>
-    </div>
+    <%= strata_form_with(model: [@activity_report_application_form, @activity.becomes(Activity)]) do |f| %>
+      <%= f.fieldset t(".doc_ai_review.activity_type_label") do %>
+        <%= f.radio_button :category, "employment", checked: true, class: "usa-radio__input", disabled: true, label: t(".doc_ai_review.employment_label") %>
+      <% end %>
 
-    <p class="usa-label"><%= t(".doc_ai_review.reporting_method_label") %></p>
-    <div class="usa-card padding-2 radius-md border-1px border-base-light">
-      <strong><%= t(".doc_ai_review.report_income_label") %></strong>
-    </div>
+      <%= f.fieldset t(".doc_ai_review.reporting_method_label") do %>
+        <%= f.radio_button :reporting_method, "income", checked: true, class: "usa-radio__input", disabled: true, label: t(".doc_ai_review.report_income_label") %>
+      <% end %>
+    <% end %>
   </div>
 
   <%= render "form",
