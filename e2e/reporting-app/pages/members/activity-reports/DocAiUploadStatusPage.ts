@@ -12,6 +12,16 @@ export class DocAiUploadStatusPage extends BasePage {
   }
 
   /**
+   * Override to use 'commit' instead of the default 'load' waitUntil.
+   * The upload form is Turbo-driven, so the redirect updates the URL via
+   * history.pushState without firing the native 'load' event.
+   */
+  async waitForURLtoMatchPagePath(): Promise<typeof this> {
+    await this.page.waitForURL(this.pagePath, { waitUntil: 'commit' });
+    return this;
+  }
+
+  /**
    * Waits for all staged documents to finish processing.
    * The status page uses a Turbo Frame that auto-refreshes every 5 seconds.
    * When all documents are validated, the scanning modal disappears.
