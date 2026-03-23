@@ -14,7 +14,7 @@
     },
     {
       label: @assignee.present? ? t("strata.tasks.show.details.assigned_to") : "",
-      value: @assignee.try(:email) || button_to("Assign to me", assign_task_path(@task), method: :patch, class: "usa-button")
+      value: @assignee.try(:email) || button_to(t("tasks.show.assign_to_me_button"), assign_task_path(@task), method: :patch, class: "usa-button")
     }
   ],
   breadcrumbs: task_breadcrumbs(@member, @case, @task)

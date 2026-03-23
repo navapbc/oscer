@@ -47,5 +47,6 @@ en:
       required: "Required"
       additional_hours_needed: "Additional hours needed"
       no_hours_reported: "No hours reported"
+      activity_label: "Activity"
     notes:
       title: "Notes"

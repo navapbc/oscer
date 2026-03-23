@@ -23,6 +23,10 @@ en:
       add_activities: "Add activities"
       review: "Review and submit"
       submitted: "Submitted"
+    form:
+      save: "Save"
+    verify_activity_report_button:
+      verify: "Verify"
     new:
       title: "Before you start"
       time_to_complete_description: "Estimated time to complete:"

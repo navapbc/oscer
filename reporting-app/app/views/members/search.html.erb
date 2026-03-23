@@ -1,20 +1,20 @@
-<h1>Member Search</h1>
+<h1><%= t("members.search.title") %></h1>
 
 <%= form_with url: search_members_path, method: :post, class: "usa-form" do |form| %>
   <div class="usa-form-group">
-    <%= form.label :email, "By Email", class: "usa-label" %>
+    <%= form.label :email, t("members.search.by_email"), class: "usa-label" %>
     <%= form.text_field :email, value: params[:email], class: "usa-input" %>
   </div>
-  <%= form.submit "Search", class: "usa-button" %>
+  <%= form.submit t("members.search.search"), class: "usa-button" %>
 <% end %>
 
 <% if @members.any? %>
-  <h2>Results</h2>
+  <h2><%= t("members.search.results") %></h2>
   <table class="usa-table usa-table--borderless width-full">
     <thead>
       <tr>
-        <th>Member ID</th>
-        <th>Email</th>
+        <th><%= t("members.search.member_id") %></th>
+        <th><%= t("members.search.email") %></th>
       </tr>
     </thead>
     <tbody>

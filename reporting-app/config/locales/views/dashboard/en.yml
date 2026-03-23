@@ -1,5 +1,7 @@
 en:
   dashboard:
+    no_certification:
+      message: "No pending certifications."
     index:
       greeting: "Hi %{first_name}"
       activity_report:
