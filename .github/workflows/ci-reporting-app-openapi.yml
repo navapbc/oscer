@@ -23,6 +23,9 @@ concurrency:
 jobs:
   update-openapi-docs:
     runs-on: ubuntu-latest
+    env:
+      # Pass through env so shell steps are not script-injection vectors (github.head_ref in run:)
+      HEAD_REF: ${{ github.head_ref }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,7 +34,7 @@ jobs:
 
       # Detached HEAD at SHA breaks `git push`; recreate the PR branch name at this commit for same-repo PRs
       - name: Match branch for git push
-        run: git checkout -B ${{ github.head_ref }}
+        run: git checkout -B "$HEAD_REF"
 
       - name: Update OpenAPI spec
         run: make .env openapi-spec
@@ -49,4 +52,5 @@ jobs:
             --ignore-matching-lines='ref": .*\/[0-9a-z]{32}"$' \
             --ignore-matching-lines='[ "'\'']+[0-9a-z]{32}["'\'']*:' \
             || git commit -m "Update OpenAPI spec"
-          git push
+          # No upstream after checkout -B; push explicitly (same as push -u origin <branch>)
+          git push origin "HEAD:refs/heads/${HEAD_REF}"
