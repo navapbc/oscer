@@ -23,7 +23,7 @@ test('DocAI upload: paystubs are read and activity is created for the upload per
   page,
   emailService,
 }) => {
-  test.setTimeout(300000);
+  test.setTimeout(240000);
 
   // February 2026 certification date with the default lookback of 1 and
   // number_of_months_to_certify of 1 means "February 2026" is the only

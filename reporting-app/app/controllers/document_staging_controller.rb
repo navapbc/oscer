@@ -34,7 +34,6 @@ class DocumentStagingController < ApplicationController
       redirect_to doc_ai_upload_activity_report_application_form_path(
         id: activity_report_application_form_id
       )
-      return
     end
 
     @all_complete = @staged_documents.any? && @staged_documents.none?(&:pending?)
