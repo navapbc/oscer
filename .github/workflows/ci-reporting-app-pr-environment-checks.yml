@@ -11,12 +11,24 @@ on:
   pull_request:
 
 jobs:
+  # Fork PRs cannot use id-token/OIDC to AWS; running build + PR env + e2e would always fail.
   update:
     name: " " # GitHub UI is noisy when calling reusable workflows, so use whitespace for name to reduce noise
     uses: ./.github/workflows/pr-environment-checks.yml
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.state == 'open'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.state == 'open')
     with:
       app_name: "reporting-app"
       environment: "dev"
       pr_number: ${{ inputs.pr_number || github.event.number }}
       commit_hash: ${{ inputs.commit_hash || github.event.pull_request.head.sha }}
+
+  # Keeps fork PR workflow runs successful with an explicit notice (avoids red e2e/AWS failures).
+  fork-pr-skip-notice:
+    name: PR environment / E2E skipped (fork PR)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && github.event.pull_request.state == 'open'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain skip
+        run: |
+          echo "::notice::PR environment update and E2E are skipped for fork PRs (GitHub does not grant OIDC/AWS credentials to workflows from forks)."
+          echo "Validate after merge to the default branch, or push a branch on the upstream repo for a full run."

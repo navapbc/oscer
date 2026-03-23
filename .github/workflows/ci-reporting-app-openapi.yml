@@ -26,8 +26,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Checkout the feature branch associated with the pull request
-          ref: ${{ github.head_ref }}
+          # Use PR head SHA so fork PRs work (branch name from head_ref may not exist on upstream)
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # Detached HEAD at SHA breaks `git push`; recreate the PR branch name at this commit for same-repo PRs
+      - name: Match branch for git push
+        run: git checkout -B ${{ github.head_ref }}
 
       - name: Update OpenAPI spec
         run: make .env openapi-spec
