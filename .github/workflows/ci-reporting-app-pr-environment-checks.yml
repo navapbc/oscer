@@ -12,11 +12,11 @@ on:
 
 jobs:
   # Fork PRs cannot use id-token/OIDC to AWS; running build + PR env + e2e would always fail.
-  # Same-repo check: github.repository_id is a string; head.repo.id is numeric — raw == is always false. Coerce with format() and/or match full_name.
+  # Same-repo PR: head branch lives in this repo (matches `gh api repos/.../pulls/N` head.repo.full_name vs base).
   update:
     name: " " # GitHub UI is noisy when calling reusable workflows, so use whitespace for name to reduce noise
     uses: ./.github/workflows/pr-environment-checks.yml
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && (format('{0}', github.event.pull_request.head.repo.id) == github.repository_id || github.event.pull_request.head.repo.full_name == github.repository))
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.head.repo.full_name == github.repository)
     with:
       app_name: "reporting-app"
       environment: "dev"
@@ -26,7 +26,7 @@ jobs:
   # Keeps fork PR workflow runs successful with an explicit notice (avoids red e2e/AWS failures).
   fork-pr-skip-notice:
     name: PR environment / E2E skipped (fork PR)
-    if: github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && format('{0}', github.event.pull_request.head.repo.id) != github.repository_id && github.event.pull_request.head.repo.full_name != github.repository
+    if: github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Explain skip
