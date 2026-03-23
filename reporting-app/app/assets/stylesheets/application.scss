@@ -93,6 +93,39 @@ div.exemption-screener {
 }
 
 // =========================================================
+// DocAI attribution field styles
+// =========================================================
+[class*="bg-attribution-"] {
+  // Make all nested elements transparent so the parent tint shows through
+  *:not(svg):not(use) {
+    background-color: transparent !important;
+    background: transparent !important;
+  }
+
+  // Keep form inputs white for readability
+  .usa-input,
+  .usa-select {
+    background-color: white !important;
+  }
+}
+
+.bg-attribution-primary {
+  background-color: color("blue-cool-5v") !important;
+}
+
+.bg-attribution-gold {
+  background-color: color("gold-5v") !important;
+}
+
+.bg-attribution-green {
+  background-color: color("green-cool-5v") !important;
+}
+
+.bg-attribution-error {
+  background-color: color("red-cool-5v") !important;
+}
+
+// =========================================================
 // Document scanning animation
 // =========================================================
 @keyframes scanning-progress {

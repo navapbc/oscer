@@ -53,6 +53,44 @@ RSpec.describe ActivitiesHelper, type: :helper do
     end
   end
 
+  describe "ATTRIBUTION_FIELD_CLASSES" do
+    it "has a class mapping for every Activity evidence source" do
+      expect(ActivitiesHelper::ATTRIBUTION_FIELD_CLASSES.keys).to match_array(Activity::EVIDENCE_SOURCES)
+    end
+  end
+
+  describe "#attribution_field_classes" do
+    it "returns primary classes for nil evidence source" do
+      result = helper.attribution_field_classes(nil)
+      expect(result).to eq("border-1px border-primary bg-attribution-primary")
+    end
+
+    it "returns primary classes for self_reported" do
+      result = helper.attribution_field_classes(ActivityAttributions::SELF_REPORTED)
+      expect(result).to eq("border-1px border-primary bg-attribution-primary")
+    end
+
+    it "returns gold classes for ai_assisted" do
+      result = helper.attribution_field_classes(ActivityAttributions::AI_ASSISTED)
+      expect(result).to eq("border-1px border-gold bg-attribution-gold")
+    end
+
+    it "returns green classes for ai_assisted_with_member_edits" do
+      result = helper.attribution_field_classes(ActivityAttributions::AI_ASSISTED_WITH_MEMBER_EDITS)
+      expect(result).to eq("border-1px border-green bg-attribution-green")
+    end
+
+    it "returns error classes for ai_rejected_member_override" do
+      result = helper.attribution_field_classes(ActivityAttributions::AI_REJECTED_MEMBER_OVERRIDE)
+      expect(result).to eq("border-1px border-error bg-attribution-error")
+    end
+
+    it "returns empty string for unknown evidence source" do
+      result = helper.attribution_field_classes("unknown_source")
+      expect(result).to eq("")
+    end
+  end
+
   describe "#confidence_display" do
     before do
       allow(Rails.application.config).to receive(:doc_ai).and_return({ low_confidence_threshold: 0.7 })
