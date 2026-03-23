@@ -9,6 +9,9 @@
       <% if feature_enabled?(:doc_ai) %>
         <th scope="col" class="text-right"><%= t(".confidence") %></th>
       <% end %>
+      <% if local_assigns[:has_document_preview] %>
+        <th scope="col"><%= t(".preview") %></th>
+      <% end %>
     </tr>
   </thead>
   <tbody>
@@ -47,6 +50,24 @@
         <% if feature_enabled?(:doc_ai) %>
           <td class="text-right text-no-wrap">
             <%= confidence_cell_content(activity, @confidence_by_activity) %>
+          </td>
+        <% end %>
+        <% if local_assigns[:has_document_preview] %>
+          <td>
+            <% if activity.supporting_documents.any? %>
+              <% activity.supporting_documents.each do |document| %>
+                <button type="button"
+                        class="usa-button usa-button--unstyled"
+                        aria-label="<%= t(".preview_icon_label", filename: document.filename) %>"
+                        data-action="document-preview#select"
+                        data-document-preview-url-param="<%= rails_blob_path(document, disposition: "inline") %>"
+                        data-document-preview-filename-param="<%= document.filename %>"
+                        data-document-preview-content-type-param="<%= document.content_type %>"
+                        data-document-preview-activity-id-param="<%= activity.id %>">
+                  <%= uswds_icon("visibility", size: 3) %>
+                </button>
+              <% end %>
+            <% end %>
           </td>
         <% end %>
       </tr>
