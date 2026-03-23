@@ -176,7 +176,8 @@ RSpec.describe "/staff/certification_cases", type: :request do
           with_doc_ai_enabled do
             get "/staff/certification_cases/#{certification_case.id}"
             expect(response.body).to include("#person")
-            expect(response.body).not_to include("0%")
+            # Self-reported activities show "—" (em dash) instead of a percentage
+            expect(response.body).to include("—")
           end
         end
       end
