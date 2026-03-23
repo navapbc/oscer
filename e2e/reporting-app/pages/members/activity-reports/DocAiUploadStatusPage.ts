@@ -1,3 +1,5 @@
+import { setTimeout as delay } from 'node:timers/promises';
+
 import { Page } from '@playwright/test';
 import { BasePage } from '../../BasePage';
 import { DocAiActivityReviewPage } from './DocAiActivityReviewPage';
@@ -12,22 +14,14 @@ export class DocAiUploadStatusPage extends BasePage {
   }
 
   /**
-   * Override to use 'commit' instead of the default 'load' waitUntil.
-   * The upload form is Turbo-driven, so the redirect updates the URL via
-   * history.pushState without firing the native 'load' event.
+   * Waits for all staged documents to finish processing.
+   * Waits a fixed 90s (DocAI + polling), reloads the page, then waits until the
+   * results partial renders at least one file card (processing complete).
    */
   async waitForURLtoMatchPagePath(): Promise<typeof this> {
-    await this.page.waitForURL(this.pagePath, { waitUntil: 'commit' });
+    await delay(90_000);
+    await this.page.reload({ waitUntil: 'load' });
     return this;
-  }
-
-  /**
-   * Waits for all staged documents to finish processing.
-   * The status page uses a Turbo Frame that auto-refreshes every 5 seconds.
-   * When all documents are validated, the scanning modal disappears.
-   */
-  async waitForCompletion(timeout = 180000) {
-    await this.page.locator('#scanning-modal').waitFor({ state: 'detached', timeout });
   }
 
   /**

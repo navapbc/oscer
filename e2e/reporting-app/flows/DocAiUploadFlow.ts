@@ -34,19 +34,16 @@ export class DocAiUploadFlow {
     // 3. Upload PDF and JPEG paystubs
     const docAiUploadStatusPage = await docAiUploadPage.uploadFiles(pdfPath, jpegPath);
 
-    // 4. Wait for DocAI processing to complete (background job + Turbo Frame refresh)
-    await docAiUploadStatusPage.waitForCompletion();
-
-    // 5. Submit accept_doc_ai → PayslipToIncomeActivityCreateService creates activities
+    // 4. Submit accept_doc_ai form to create activities
     const docAiActivityReviewPage = await docAiUploadStatusPage.clickSaveAndContinue();
 
-    // 6. Review each AI-created activity (there will be one per uploaded paystub)
+    // 5. Review each AI-created activity (there will be one per uploaded paystub)
     let hasMoreReviews = true;
     while (hasMoreReviews) {
       hasMoreReviews = await docAiActivityReviewPage.reviewAndConfirm(EMPLOYER_NAME);
     }
 
-    // 7. Review and submit the activity report
+    // 6. Review and submit the activity report
     const activityReportPage = new ActivityReportPage(this.page);
     const reviewAndSubmitPage = await activityReportPage.clickReviewAndSubmit();
     await reviewAndSubmitPage.clickSubmit();
