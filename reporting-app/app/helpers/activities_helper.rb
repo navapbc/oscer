@@ -8,10 +8,22 @@ module ActivitiesHelper
     ActivityAttributions::AI_REJECTED_MEMBER_OVERRIDE => { icon: "warning", color: "text-error" }
   }.freeze
 
+  ATTRIBUTION_FIELD_CLASSES = {
+    ActivityAttributions::SELF_REPORTED => "border-1px border-primary bg-attribution-primary",
+    ActivityAttributions::AI_ASSISTED => "border-1px border-gold bg-attribution-gold",
+    ActivityAttributions::AI_ASSISTED_WITH_MEMBER_EDITS => "border-1px border-green bg-attribution-green",
+    ActivityAttributions::AI_REJECTED_MEMBER_OVERRIDE => "border-1px border-error bg-attribution-error"
+  }.freeze
+
+  def attribution_field_classes(evidence_source)
+    source = evidence_source || ActivityAttributions::SELF_REPORTED
+    ATTRIBUTION_FIELD_CLASSES.fetch(source, "")
+  end
+
   def evidence_source_icon(evidence_source)
-    source = evidence_source || "self_reported"
+    source = evidence_source || ActivityAttributions::SELF_REPORTED
     # Fall back both the icon config AND the source key for i18n lookup
-    source = "self_reported" unless EVIDENCE_SOURCE_ICONS.key?(source)
+    source = ActivityAttributions::SELF_REPORTED unless EVIDENCE_SOURCE_ICONS.key?(source)
     icon_config = EVIDENCE_SOURCE_ICONS[source]
 
     {

@@ -90,6 +90,75 @@ RSpec.describe "/staff/tasks", type: :request do
           expect(response.body).to include("test_document_1.pdf")
           expect(response.body).to include("usa-link")
         end
+
+        it "renders the document preview panel with Stimulus targets" do
+          with_doc_ai_enabled do
+            get "/staff/tasks/#{activity_report_task.id}"
+
+            expect(response.body).to include('data-controller="document-preview"')
+            expect(response.body).to include('data-document-preview-target="previewArea"')
+            expect(response.body).to include('data-document-preview-target="table"')
+            expect(response.body).to include('data-action="document-preview#select"')
+            expect(response.body).to include('aria-label="Preview test_document_1.pdf"')
+            expect(response.body).to include(I18n.t("activity_report_application_forms.staff_activity_report.preview"))
+          end
+        end
+
+        it "renders the prefill form with close button for the activity" do
+          with_doc_ai_enabled do
+            get "/staff/tasks/#{activity_report_task.id}"
+
+            expect(response.body).to include('data-document-preview-target="prefillForm"')
+            expect(response.body).to include("data-activity-id=\"#{activity.id}\"")
+            expect(response.body).to include(activity.name)
+            expect(response.body).to include('data-action="document-preview#close"')
+          end
+        end
+
+        it "renders document links without preview panel when doc_ai is disabled" do
+          with_doc_ai_disabled do
+            get "/staff/tasks/#{activity_report_task.id}"
+
+            expect(response.body).to include("test_document_1.pdf")
+            expect(response.body).to include("usa-link")
+            expect(response.body).not_to include('data-controller="document-preview"')
+          end
+        end
+      end
+
+      context "with mixed activities (some with documents, some without)" do
+        let(:activity_with_doc) do
+          create(
+            :work_activity,
+            activity_report_application_form_id: activity_report_application_form.id,
+            name: "Documented Work"
+          )
+        end
+        let(:activity_without_doc) do
+          create(
+            :work_activity,
+            activity_report_application_form_id: activity_report_application_form.id,
+            name: "Undocumented Work"
+          )
+        end
+
+        before do
+          activity_with_doc.supporting_documents.attach(
+            fixture_file_upload("spec/fixtures/files/test_document_1.pdf", "application/pdf")
+          )
+          activity_without_doc
+        end
+
+        it "renders prefill form only for activity with documents" do
+          with_doc_ai_enabled do
+            get "/staff/tasks/#{activity_report_task.id}"
+
+            expect(response.body).to include("data-activity-id=\"#{activity_with_doc.id}\"")
+            expect(response.body).to include("Documented Work")
+            expect(response.body).to include("Undocumented Work")
+            expect(response.body).not_to include("data-activity-id=\"#{activity_without_doc.id}\"")
+          end
+        end
       end
 
       context "with activities that have no supporting documents" do
@@ -106,6 +175,15 @@ RSpec.describe "/staff/tasks", type: :request do
           get "/staff/tasks/#{activity_report_task.id}"
 
           expect(response.body).to include(I18n.t("activity_report_application_forms.staff_activity_report.no_documents"))
+        end
+
+        it "renders the activity table without preview panel when doc_ai is enabled" do
+          with_doc_ai_enabled do
+            get "/staff/tasks/#{activity_report_task.id}"
+
+            expect(response.body).to include(activity.name)
+            expect(response.body).not_to include('data-document-preview-target="previewArea"')
+          end
         end
       end
     end
