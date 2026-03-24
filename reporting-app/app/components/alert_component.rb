@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
 # USWDS alert (usa-alert). Simple mode: message and optional heading, or use the body slot
-# for lists, buttons, accordions. Only type "error" sets role="alert". Optional style is
-# forwarded to the root element (e.g. slim / no-icon layouts).
+# for lists, buttons, accordions.
 class AlertComponent < ViewComponent::Base
   TYPES = %w[info success warning error].freeze
+  ROLE_DEFAULT = Object.new.freeze
 
   renders_one :body
 
-  def initialize(type:, heading: nil, message: nil, heading_level: 2, classes: nil, style: nil)
+  def initialize(type:, heading: nil, message: nil, heading_level: 2, classes: nil, style: nil, role: ROLE_DEFAULT)
     @type = type.to_s
     raise ArgumentError, "Invalid alert type: #{type.inspect}" unless TYPES.include?(@type)
 
@@ -19,6 +19,7 @@ class AlertComponent < ViewComponent::Base
 
     @classes = classes
     @style = style
+    @role = role
   end
 
   attr_reader :type, :heading, :message, :heading_level, :classes, :style
@@ -29,5 +30,13 @@ class AlertComponent < ViewComponent::Base
 
   def error?
     type == "error"
+  end
+
+  def resolved_role
+    if @role != ROLE_DEFAULT
+      @role.presence
+    else
+      error? ? "alert" : "status"
+    end
   end
 end

@@ -24,12 +24,27 @@ RSpec.describe AlertComponent, type: :component do
       expect(page).to have_css('.usa-alert[role="alert"]')
     end
 
-    it "omits role for non-error types" do
+    it "defaults to role=status for non-error types" do
       %w[info success warning].each do |alert_type|
         render_inline(described_class.new(type: alert_type, message: "m"))
         expect(page).to have_css(".usa-alert.usa-alert--#{alert_type}")
-        expect(page).to have_no_css('.usa-alert[role]')
+        expect(page).to have_css('.usa-alert[role="status"]')
       end
+    end
+
+    it "honors explicit role (e.g. status on info)" do
+      render_inline(described_class.new(type: "info", message: "m", role: "status"))
+      expect(page).to have_css('.usa-alert[role="status"]')
+    end
+
+    it "honors explicit role=alert on error" do
+      render_inline(described_class.new(type: "error", message: "e", role: "alert"))
+      expect(page).to have_css('.usa-alert[role="alert"]')
+    end
+
+    it "allows role: nil to omit the attribute" do
+      render_inline(described_class.new(type: "info", message: "m", role: nil))
+      expect(page).to have_no_css('.usa-alert[role]')
     end
   end
 
@@ -62,7 +77,7 @@ RSpec.describe AlertComponent, type: :component do
       end
       expect(page).to have_css("h3.usa-alert__heading", text: "Notice")
       expect(page).to have_css("p.usa-alert__text", text: "Details")
-      expect(page).to have_no_css('.usa-alert[role]')
+      expect(page).to have_css('.usa-alert[role="status"]')
     end
   end
 

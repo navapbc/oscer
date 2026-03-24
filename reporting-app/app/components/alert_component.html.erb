@@ -1,4 +1,4 @@
-<%= tag.div class: alert_classes, role: (error? ? "alert" : nil), style: style do %>
+<%= tag.div class: alert_classes, role: resolved_role, style: style do %>
   <div class="usa-alert__body">
     <% if heading.present? %>
       <%= content_tag(:"h#{heading_level}", heading, class: "usa-alert__heading") %>
