@@ -20,7 +20,7 @@ test('Exemption application: direct form submission', async ({ page, emailServic
   const mfaPreferencePage = await signInPage.signIn(email, password);
   await mfaPreferencePage.skipMFA();
 
-  const fixturePath = path.resolve(__dirname, '../../example-screenshot.png');
+  const fixturePath = path.resolve(__dirname, '../fixtures/exemption_medically_frail.pdf');
   const showPage = await new ExemptionFlow(page).run(fixturePath);
 
   await expect(showPage.statusText).toBeVisible();
