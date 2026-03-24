@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paystub Generator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a1a; font-size: 14px; }
+
+  .app { display: grid; grid-template-columns: 340px 1fr; min-height: 100vh; gap: 0; }
+
+  /* FORM PANEL */
+  .form-panel { background: #fff; border-right: 1px solid #e0e0db; padding: 1.5rem; overflow-y: auto; }
+  .form-panel h2 { font-size: 15px; font-weight: 600; margin-bottom: 1.25rem; color: #111; }
+  .section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: #888; font-weight: 600; margin: 1.25rem 0 0.5rem; border-top: 1px solid #eee; padding-top: 1rem; }
+  .section-label:first-of-type { margin-top: 0; border-top: none; padding-top: 0; }
+  .field { margin-bottom: 0.6rem; }
+  .field label { display: block; font-size: 11px; color: #666; margin-bottom: 3px; }
+  .field input, .field select { width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; color: #1a1a1a; background: #fafaf8; outline: none; }
+  .field input:focus, .field select:focus { border-color: #888; background: #fff; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn { width: 100%; padding: 9px; border-radius: 7px; border: none; font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 0.5rem; }
+  .btn-print { background: #1a1a1a; color: #fff; }
+  .btn-print:hover { background: #333; }
+  .btn-reset { background: #f0f0ed; color: #555; margin-top: 0.4rem; }
+  .btn-reset:hover { background: #e5e5e0; }
+
+  .deduction-row { display: grid; grid-template-columns: 1fr 90px 20px; gap: 6px; align-items: center; margin-bottom: 5px; }
+  .deduction-row input { padding: 5px 7px; border: 1px solid #ddd; border-radius: 5px; font-size: 12px; background: #fafaf8; }
+  .remove-btn { background: none; border: none; color: #bbb; font-size: 16px; cursor: pointer; line-height: 1; padding: 0; }
+  .remove-btn:hover { color: #e24b4a; }
+  .add-btn { background: none; border: 1px dashed #ccc; color: #666; border-radius: 5px; padding: 5px 10px; font-size: 12px; cursor: pointer; width: 100%; margin-top: 4px; }
+  .add-btn:hover { border-color: #999; color: #333; }
+
+  /* PREVIEW PANEL */
+  .preview-panel { padding: 2rem; overflow-y: auto; background: #eee; }
+  .preview-wrap { max-width: 680px; margin: 0 auto; position: relative; }
+
+  /* PAYSTUB */
+  .paystub { background: #fff; border-radius: 8px; border: 1px solid #ddd; overflow: hidden; font-family: 'Georgia', serif; position: relative; }
+  .ps-header { background: #f8f8f6; border-bottom: 1px solid #e5e5e0; padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: flex-start; }
+  .ps-org { font-size: 16px; font-weight: 700; color: #111; font-family: system-ui; }
+  .ps-org-sub { font-size: 11px; color: #888; margin-top: 3px; font-family: system-ui; }
+  .ps-title { text-align: right; font-family: system-ui; }
+  .ps-title .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #aaa; font-weight: 600; }
+  .ps-title .value { font-size: 12px; color: #666; margin-top: 2px; }
+
+  .ps-employee { padding: 1rem 1.5rem; border-bottom: 1px solid #eee; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; font-family: system-ui; }
+  .ps-field { }
+  .ps-field .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #aaa; }
+  .ps-field .val { font-size: 13px; font-weight: 600; color: #111; margin-top: 1px; }
+
+  .ps-section { padding: 1rem 1.5rem; border-bottom: 1px solid #eee; }
+  .ps-section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #aaa; margin-bottom: 8px; font-family: system-ui; font-weight: 600; }
+  table.ps-table { width: 100%; border-collapse: collapse; font-family: system-ui; font-size: 13px; }
+  table.ps-table th { text-align: left; font-weight: 400; color: #aaa; font-size: 11px; padding: 3px 0; border-bottom: 1px solid #eee; }
+  table.ps-table th:not(:first-child) { text-align: right; }
+  table.ps-table td { padding: 6px 0; border-bottom: 1px solid #f5f5f3; color: #333; }
+  table.ps-table td:not(:first-child) { text-align: right; }
+
+  .ps-totals { padding: 1rem 1.5rem; background: #f8f8f6; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; font-family: system-ui; }
+  .ps-total-item .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #aaa; }
+  .ps-total-item .amt { font-size: 20px; font-weight: 700; color: #111; margin-top: 4px; }
+  .ps-total-item.net .amt { color: #1a6b3a; }
+
+  .ps-footer { padding: 0.5rem 1.5rem; border-top: 1px solid #eee; text-align: center; font-size: 10px; color: #bbb; font-family: system-ui; }
+
+  @media print {
+    .form-panel { display: none !important; }
+    .app { display: block; }
+    .preview-panel { padding: 0; background: #fff; }
+    .paystub { border: none; border-radius: 0; box-shadow: none; }
+    .btn, .add-btn, .remove-btn { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- FORM -->
+  <div class="form-panel">
+    <h2>Paystub builder</h2>
+
+    <div class="section-label">Employer</div>
+    <div class="field"><label>Organization name</label><input id="org" value="Crestwood Digital Solutions LLC"></div>
+    <div class="field"><label>Address</label><input id="address" value="412 Harmon Ave, Suite 7, Portland OR 97201"></div>
+    <div class="field"><label>EIN</label><input id="ein" value="00-0000000"></div>
+
+    <div class="section-label">Pay period</div>
+    <div class="field-row">
+      <div class="field"><label>Period start</label><input type="date" id="period-start" value="2026-02-01"></div>
+      <div class="field"><label>Period end</label><input type="date" id="period-end" value="2026-02-28"></div>
+    </div>
+    <div class="field"><label>Pay date</label><input type="date" id="pay-date" value="2026-03-05"></div>
+
+    <div class="section-label">Employee</div>
+    <div class="field"><label>Full name</label><input id="emp-name" value="Jane A. Sample"></div>
+    <div class="field-row">
+      <div class="field"><label>Employee ID</label><input id="emp-id" value="EMP-00000"></div>
+      <div class="field"><label>Department</label><input id="dept" value="Operations"></div>
+    </div>
+    <div class="field"><label>Pay type</label>
+      <select id="pay-type">
+        <option>Salaried</option>
+        <option>Hourly</option>
+        <option>Contract</option>
+      </select>
+    </div>
+
+    <div class="section-label">Earnings</div>
+    <div class="field-row">
+      <div class="field"><label>Hours worked</label><input id="hours" type="number" value="160"></div>
+      <div class="field"><label>Hourly rate ($)</label><input id="rate" type="number" step="0.01" value="28.85"></div>
+    </div>
+
+    <div class="section-label">Deductions</div>
+    <div id="deductions-list"></div>
+    <button class="add-btn" onclick="addDeduction()">+ Add deduction</button>
+
+    <div style="margin-top:1.25rem;">
+      <button class="btn btn-print" onclick="window.print()">Print / Save as PDF</button>
+      <button class="btn btn-reset" onclick="resetForm()">Reset to defaults</button>
+    </div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="preview-panel">
+    <div class="preview-wrap">
+      <div class="paystub" id="paystub">
+        <div class="ps-header">
+          <div>
+            <div class="ps-org" id="v-org"></div>
+            <div class="ps-org-sub" id="v-address"></div>
+            <div class="ps-org-sub" id="v-ein"></div>
+          </div>
+          <div class="ps-title">
+            <div class="label">Earnings Statement</div>
+            <div class="value" id="v-period"></div>
+            <div class="value" id="v-paydate"></div>
+          </div>
+        </div>
+        <div class="ps-employee">
+          <div class="ps-field"><div class="lbl">Employee name</div><div class="val" id="v-name"></div></div>
+          <div class="ps-field"><div class="lbl">Employee ID</div><div class="val" id="v-empid"></div></div>
+          <div class="ps-field"><div class="lbl">Department</div><div class="val" id="v-dept"></div></div>
+          <div class="ps-field"><div class="lbl">Pay type</div><div class="val" id="v-paytype"></div></div>
+        </div>
+        <div class="ps-section">
+          <div class="ps-section-title">Earnings</div>
+          <table class="ps-table">
+            <thead><tr><th>Description</th><th>Hours</th><th>Rate</th><th>Amount</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Regular pay</td>
+                <td id="v-hours"></td>
+                <td id="v-rate"></td>
+                <td id="v-gross"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="ps-section" id="deductions-preview-wrap">
+          <div class="ps-section-title">Deductions</div>
+          <table class="ps-table">
+            <tbody id="v-deductions"></tbody>
+          </table>
+        </div>
+        <div class="ps-totals">
+          <div class="ps-total-item"><div class="lbl">Gross pay</div><div class="amt" id="v-total-gross"></div></div>
+          <div class="ps-total-item"><div class="lbl">Total deductions</div><div class="amt" id="v-total-ded"></div></div>
+          <div class="ps-total-item net"><div class="lbl">Net pay</div><div class="amt" id="v-net"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const defaults = {
+  deductions: [
+    { label: 'Federal income tax', amount: 554.23 },
+    { label: 'State income tax (OR)', amount: 244.15 },
+    { label: 'Social Security', amount: 286.15 },
+    { label: 'Medicare', amount: 66.92 },
+    { label: 'Health insurance', amount: 120.00 },
+    { label: '401(k)', amount: 184.62 },
+  ]
+};
+
+let deductions = [...defaults.deductions.map(d => ({...d}))];
+
+function fmt(n) { return '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[parseInt(m)-1] + ' ' + parseInt(day) + ', ' + y;
+}
+
+function renderDeductionInputs() {
+  const list = document.getElementById('deductions-list');
+  list.innerHTML = '';
+  deductions.forEach((d, i) => {
+    const row = document.createElement('div');
+    row.className = 'deduction-row';
+    row.innerHTML = `
+      <input placeholder="Label" value="${d.label}" oninput="deductions[${i}].label=this.value;update()">
+      <input placeholder="Amount" type="number" step="0.01" value="${d.amount}" oninput="deductions[${i}].amount=parseFloat(this.value)||0;update()">
+      <button class="remove-btn" onclick="removeDeduction(${i})">×</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function addDeduction() {
+  deductions.push({ label: '', amount: 0 });
+  renderDeductionInputs();
+  update();
+}
+
+function removeDeduction(i) {
+  deductions.splice(i, 1);
+  renderDeductionInputs();
+  update();
+}
+
+function update() {
+  const g = v => document.getElementById(v);
+  g('v-org').textContent = g('org').value;
+  g('v-address').textContent = g('address').value;
+  g('v-ein').textContent = 'EIN: ' + g('ein').value;
+  g('v-name').textContent = g('emp-name').value;
+  g('v-empid').textContent = g('emp-id').value;
+  g('v-dept').textContent = g('dept').value;
+  g('v-paytype').textContent = g('pay-type').value;
+
+  const ps = g('period-start').value, pe = g('period-end').value;
+  g('v-period').textContent = 'Pay period: ' + fmtDate(ps) + ' – ' + fmtDate(pe);
+  g('v-paydate').textContent = 'Pay date: ' + fmtDate(g('pay-date').value);
+
+  const hours = parseFloat(g('hours').value) || 0;
+  const rate = parseFloat(g('rate').value) || 0;
+  const gross = hours * rate;
+  g('v-hours').textContent = hours.toFixed(2);
+  g('v-rate').textContent = fmt(rate);
+  g('v-gross').textContent = fmt(gross);
+  g('v-total-gross').textContent = fmt(gross);
+
+  const dedTbody = g('v-deductions');
+  dedTbody.innerHTML = '';
+  let totalDed = 0;
+  deductions.forEach(d => {
+    totalDed += d.amount || 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${d.label}</td><td style="text-align:right">${fmt(d.amount)}</td>`;
+    dedTbody.appendChild(tr);
+  });
+
+  g('v-total-ded').textContent = fmt(totalDed);
+  g('v-net').textContent = fmt(gross - totalDed);
+}
+
+function resetForm() {
+  document.getElementById('org').value = 'Crestwood Digital Solutions LLC';
+  document.getElementById('address').value = '412 Harmon Ave, Suite 7, Portland OR 97201';
+  document.getElementById('ein').value = '00-0000000';
+  document.getElementById('period-start').value = '2026-02-01';
+  document.getElementById('period-end').value = '2026-02-28';
+  document.getElementById('pay-date').value = '2026-03-05';
+  document.getElementById('emp-name').value = 'Jane A. Sample';
+  document.getElementById('emp-id').value = 'EMP-00000';
+  document.getElementById('dept').value = 'Operations';
+  document.getElementById('pay-type').value = 'Salaried';
+  document.getElementById('hours').value = 160;
+  document.getElementById('rate').value = 28.85;
+  deductions = defaults.deductions.map(d => ({...d}));
+  renderDeductionInputs();
+  update();
+}
+
+// Live update on all inputs
+document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', update));
+
+renderDeductionInputs();
+update();
+</script>
+</body>
+</html>
