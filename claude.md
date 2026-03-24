@@ -249,7 +249,8 @@ JSON API under `/api/` namespace with HMAC authentication (`ApiHmacAuthenticatio
 ### E2E tests
 
 Playwright end-to-end tests live in `e2e/` (TypeScript). Page Object pattern with flow fixtures:
-- Run: `./run-e2e-test` from `e2e/`
+- **To create a new e2e test:** Use the `/e2e-test` skill. It guides you through planning (with plan mode approval), live app exploration via Playwright MCP, code generation, and two-phase validation (CLI test + localhost walkthrough).
+- Run tests: `./run-e2e-test` from `e2e/` or `APP_NAME=reporting-app npx playwright test` for individual specs
 - Config: `e2e/playwright.config.js` (Chromium + Mobile Chrome)
 - Tests: `e2e/reporting-app/tests/`
 

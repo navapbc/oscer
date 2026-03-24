@@ -10,6 +10,25 @@ description: >
   MCP, and generates idiomatic test files that match the project's existing conventions.
 ---
 
+## ⚠️ Plan Mode Required
+
+**ALWAYS enter plan mode first.** Do not write any code until the user approves the plan.
+
+1. **Gather information**: Steps 1–4 (check localhost:3000, ask questions, explore live app, plan structure)
+2. **Create a plan file** using your plan tool with:
+   - Which existing page objects can be reused as-is
+   - Which pages need new methods or brand new `Page` classes
+   - Whether a new `Flow` class is warranted
+   - Test file name and final assertions
+   - Example: "Reuse `LoginPage` and `DashboardPage`, create new `ExemptionDetailsPage` with `fillClaim()` method, test file: `exemption-claim.spec.ts`, assertion: 'expect URL to match /exemptions/*/submitted'"
+3. **Exit plan mode** only after the user explicitly approves
+4. **Write code** (Steps 5–6) only after approval
+5. **Validate** in two phases: CLI test first, then Playwright MCP live walkthrough
+
+This ensures the plan is correct before generating any files.
+
+---
+
 # e2e-test skill
 
 You help write new Playwright end-to-end tests for the **oscer reporting-app** — a Rails 7.2
@@ -170,6 +189,14 @@ Share this plan with the user: "I'll reuse X and Y, create a new Z page object w
 
 ---
 
+## ⏸️ STOP — Plan Approval Required
+
+**Do not proceed to Step 5 until the user has explicitly approved the plan above.**
+
+Use the plan tool (`ExitPlanMode`) to present the plan and pause. Only after the user says "approved" or "looks good" should you continue to Step 5.
+
+---
+
 ## Step 5 — Write the code
 
 Generate all files needed:
@@ -227,9 +254,11 @@ flow classes to reuse before creating new ones.
 
 ---
 
-## Step 6 — Validate generated code (DRY-RUN)
+## Step 6 — Validate generated code (Two-Phase Validation)
 
-**CRITICAL:** Before presenting tests to the user, validate that they work by running them once.
+**CRITICAL:** Before presenting tests to the user, validate them in two phases:
+
+### Phase A — CLI test dry-run (validate the code compiles and runs)
 
 1. **Navigate to the e2e directory:**
    ```bash
@@ -242,14 +271,14 @@ flow classes to reuse before creating new ones.
    ```
 
 3. **If the test passes:**
-   - ✅ Test is production-ready. Record: "Passed on 1st attempt". Proceed to Step 7.
+   - ✅ Code is syntactically correct and executes. Proceed to Phase B.
 
 4. **If the test fails:**
    - ❌ Read the Playwright error message carefully
-   - Identify the failure type (see guide below)
+   - Identify the failure type (see Common Failure Patterns below)
    - Fix the generated code
    - Re-run the test (single file only)
-   - Repeat until passing, then proceed to Step 7
+   - Repeat until passing, then proceed to Phase B
 
 **Common Failure Patterns & Fixes:**
 
@@ -262,14 +291,42 @@ flow classes to reuse before creating new ones.
 | `Timeout waiting for... networkidle` | Page load took too long | Increase timeout: `test.setTimeout(30000)` or `test.slow()` |
 | `Cannot read property 'signIn'` | Return type wrong (method doesn't exist) | Verify method exists on returned page object; check import |
 
-**Recovery workflow:**
-1. Run test with `--debug` flag to see live Playwright inspector
-2. Find the exact element using the inspector
-3. Update the locator or method accordingly
-4. Re-run the single test file
-5. If still failing after 2 attempts, check Step 3 (live exploration) was accurate
+---
 
-**Why this matters:** Tests that fail on first run defeat the purpose — the skill MUST generate 100% correct code.
+### Phase B — Playwright MCP live walkthrough (validate the plan matches the actual app)
+
+After the CLI test passes, validate that the planned page objects and flow match the live app running on `localhost:3000`:
+
+1. **Use Playwright MCP** to navigate through each page in the flow:
+   - `mcp__playwright__browser_navigate('http://localhost:3000/<path>')` to go to each page
+   - `mcp__playwright__browser_snapshot` to capture the page structure
+   - Verify that all planned locators (`getByLabel`, `getByRole`, etc.) actually exist on the page
+   - Check button labels, form field names, and page URLs match what was planned
+
+2. **Click through the entire user flow** using Playwright MCP:
+   - Fill each form field with test data
+   - Click each button
+   - Verify page transitions happen as expected
+   - Confirm final URL matches the expected destination
+
+3. **If the live walkthrough passes:**
+   - ✅ Plan is accurate and code works. Proceed to Step 7.
+
+4. **If the live walkthrough fails:**
+   - ❌ A locator doesn't exist or page structure differs from plan
+   - Go back to Step 3 (live exploration) and re-document the actual page structure
+   - Update the plan with the correct information
+   - Regenerate the page object / test code
+   - Run Phase A again, then Phase B again
+
+**Recovery workflow:**
+1. Use `mcp__playwright__browser_snapshot` to see what elements actually exist
+2. Compare against what was planned — identify the mismatch
+3. Update the plan and code accordingly
+4. Re-run Phase A (CLI test)
+5. Re-run Phase B (Playwright MCP walkthrough)
+
+**Why this matters:** A test that passes the CLI but doesn't match the actual app indicates a bad plan. Phase B ensures the plan is correct before handing off to the user.
 
 ---
 
