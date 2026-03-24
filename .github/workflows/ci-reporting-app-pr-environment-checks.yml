@@ -11,10 +11,13 @@ on:
   pull_request:
 
 jobs:
+  # Fork PRs often fail at configure-aws-credentials (no OIDC). Reliable fork detection in job-level `if` is flaky
+  # because `pull_request` payload fields differ from the REST API — do not re-add a “fork skip” job without verifying
+  # in Actions logs. Use branch protection to treat this check as optional for external contributors if needed.
   update:
     name: " " # GitHub UI is noisy when calling reusable workflows, so use whitespace for name to reduce noise
     uses: ./.github/workflows/pr-environment-checks.yml
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.state == 'open'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.state == 'open')
     with:
       app_name: "reporting-app"
       environment: "dev"
