@@ -5,6 +5,8 @@ This guide covers setting up the DocAI document extraction service for local dev
 ## Prerequisites
 
 - DocAI API service running (AWS-hosted in production)
+- `FEATURE_DOC_AI=true` environment variable set (default: false)
+- Rails app running locally or deployed
 
 ## Environment Variables
 
@@ -33,6 +35,24 @@ FEATURE_DOC_AI=true
 | `DOC_AI_TIMEOUT_SECONDS` | Timeout for API calls (both submission and polling) | `60` | Increase if network is slow or processing takes longer. |
 | `DOC_AI_LOW_CONFIDENCE_THRESHOLD` | Confidence floor for task prioritization | `0.7` (70%) | Range: 0.0–1.0. Lower threshold = more tasks flagged as high-priority. |
 | `FEATURE_DOC_AI` | Enable/disable DocAI feature | `false` (disabled) | Set `true` to activate document staging flow for members. |
+
+### Routes
+
+DocAI document staging endpoints are registered in `config/routes.rb`:
+
+```ruby
+resource :document_staging, only: [:create], controller: "document_staging" do
+  get :lookup, on: :collection
+  get :doc_ai_upload_status, on: :collection
+end
+```
+
+This creates:
+- `POST /document_staging` → `DocumentStagingController#create` (upload files)
+- `GET /document_staging/lookup?ids=...` → `DocumentStagingController#lookup` (query status)
+- `GET /document_staging/doc_ai_upload_status?ids=...` → `DocumentStagingController#doc_ai_upload_status` (poll status page)
+
+All endpoints require user authentication and authorization via `StagedDocumentPolicy`.
 
 ### Using the Paystub Template Generator
 
@@ -77,7 +97,7 @@ After uploading a document, you can check the extraction result:
 
 ```ruby
 # Find the most recent staged document
-staged = StagedDocument.order(created_at: :desc).first
+staged = StagedDocument.where(user_id: current_user.id).order(created_at: :desc).first
 
 # Check processing status
 staged.status                # => "pending", "validated", "rejected", or "failed"
@@ -87,6 +107,9 @@ staged.extracted_fields      # => { "currentgrosspay" => { "confidence" => 0.93,
 
 # Check average confidence
 staged.average_confidence    # => 0.87 (float, 0.0–1.0)
+
+# Check if confidence is low
+staged.low_confidence?       # => true/false (uses DOC_AI_LOW_CONFIDENCE_THRESHOLD, default 0.7)
 
 # Identify matched document class
 staged.doc_ai_matched_class  # => "Payslip"
@@ -126,7 +149,13 @@ Job details:
 ## Troubleshooting
 
 ### New document type not recognized
-- Currently, only **Payslip** is registered in `SUPPORTED_RESULT_CLASSES`
-- To add support: register the new `DocAiResult::ClassName` in `DocumentStagingService`
-- Other document types DocAI can ingest include W2s, Driver Licenses, Bank Statements, Receipts.
-- Issues may be opened up to request document types in addition to Payslip.
+- Currently, only **Payslip** is registered in `DocAiResult::REGISTRY`
+- To add support: create a new subclass `DocAiResult::NewType < DocAiResult`, call `register "NewType"`, implement `to_prefill_fields`, and require it in `config/initializers/doc_ai.rb`
+- Other document types DocAI can ingest include W2s, Driver Licenses, Bank Statements, Receipts
+- To request additional document types, open an issue in the OSCER repository
+
+### Document rejected (status: rejected)
+- DocAI could not recognize the document type
+- Possible causes: document is not a supported type, image quality too low, unsupported format
+- Member can resubmit with a different document
+- Future enhancement: member override to proceed anyway (marked `AI_REJECTED_MEMBER_OVERRIDE`)
