@@ -21,6 +21,8 @@ class TasksController < Strata::TasksController
       case_ids = @tasks.map(&:case_id).compact.uniq
       @confidence_by_case = DocAiConfidenceService.new.confidence_by_case_id(case_ids)
     end
+
+    render "strata/tasks/index", locals: tasks_index_locals
   end
 
   def assign
@@ -73,6 +75,13 @@ class TasksController < Strata::TasksController
   end
 
   protected
+
+  def tasks_index_locals
+    super.merge(
+      task_row_component_class: Staff::TaskRowComponent,
+      task_row_component_options: { confidence_by_case: @confidence_by_case }
+    )
+  end
 
   def filter_tasks
     policy_scope super, policy_scope_class: Strata::TaskPolicy::Scope
