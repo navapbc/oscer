@@ -47,36 +47,6 @@ See **`references/code-patterns-async-timeout.md`** for detailed timeout and wai
 
 ## Dynamic Content & Lists (Reference)
 
-**For pages with dynamically rendered lists, tables, or conditionally visible elements:**
-
-| Scenario | Pattern | Example |
-|----------|---------|---------|
-| Click nth item in list | `page.locator('li').nth(N).click()` | Click 3rd activity: `page.locator('[data-testid="activity"]').nth(2).click()` |
-| Verify list has N items | `await expect(page.locator('li')).toHaveCount(N)` | Check 3 activities added |
-| Find & click by text | `page.getByText(/exact text/).click()` | Click button with dynamic text |
-| Wait for element to appear | `await page.locator('.dynamic-element').waitFor()` | Wait for spinner to disappear |
-| Get text from element | `const text = await page.locator('h1').textContent()` | Extract heading for assertion |
-| Conditional visibility | `await expect(page.locator('.success')).toBeVisible()` / `toBeHidden()` | Check success message appears |
-
-**Common patterns:**
-```typescript
-// List with dynamic count
-const activityCount = await page.locator('[data-testid="activity"]').count();
-expect(activityCount).toBe(3);
-
-// Wait then interact
-await page.locator('[role="dialog"]').waitFor();
-await page.locator('button', { hasText: 'Confirm' }).click();
-
-// Assertion on dynamic content
-const status = await page.locator('[data-testid="status"]').textContent();
-expect(status?.trim()).toBe('Submitted');
-```
-
----
-
-## Dynamic Content & Lists (Reference)
-
 See **`references/code-patterns-dynamic-content.md`** for handling dynamically rendered lists, tables, conditionally visible elements, and page object methods for working with dynamic content.
 
 ---
@@ -187,13 +157,9 @@ ActivityDetailsPage
 
 Share this plan with the user: "I'll reuse X and Y, create a new Z page object with these methods [list], and write the test to assert [outcome]. Does that sound right?"
 
----
+**⏸️ STOP — Plan Approval Required**
 
-## ⏸️ STOP — Plan Approval Required
-
-**Do not proceed to Step 5 until the user has explicitly approved the plan above.**
-
-Use the plan tool (`ExitPlanMode`) to present the plan and pause. Only after the user says "approved" or "looks good" should you continue to Step 5.
+Use the plan tool (`ExitPlanMode`) to present the plan and pause. **Do not proceed to Step 5 until the user explicitly approves.** Only after the user says "approved" or "looks good" should you continue.
 
 ---
 
@@ -293,9 +259,15 @@ flow classes to reuse before creating new ones.
 
 ---
 
-### Phase B — Playwright MCP live walkthrough (validate the plan matches the actual app)
+### Phase B — Playwright MCP live walkthrough (catch hidden plan mismatches)
 
-After the CLI test passes, validate that the planned page objects and flow match the live app running on `localhost:3000`:
+**Why both phases?**
+- **Phase A** validates that code *compiles and runs* against the test data
+- **Phase B** validates that the plan *matches the actual app* — URLs, labels, button text, navigation flow
+
+A test can pass Phase A but still fail in production if the plan contained errors (e.g., button label typo, URL path mismatch, page doesn't redirect as expected).
+
+After the CLI test passes, manually walk through the flow on `localhost:3000` to verify:
 
 1. **Use Playwright MCP** to navigate through each page in the flow:
    - `mcp__playwright__browser_navigate('http://localhost:3000/<path>')` to go to each page
@@ -317,16 +289,9 @@ After the CLI test passes, validate that the planned page objects and flow match
    - Go back to Step 3 (live exploration) and re-document the actual page structure
    - Update the plan with the correct information
    - Regenerate the page object / test code
-   - Run Phase A again, then Phase B again
+   - Re-run Phase A, then Phase B again
 
-**Recovery workflow:**
-1. Use `mcp__playwright__browser_snapshot` to see what elements actually exist
-2. Compare against what was planned — identify the mismatch
-3. Update the plan and code accordingly
-4. Re-run Phase A (CLI test)
-5. Re-run Phase B (Playwright MCP walkthrough)
-
-**Why this matters:** A test that passes the CLI but doesn't match the actual app indicates a bad plan. Phase B ensures the plan is correct before handing off to the user.
+**Why Phase B matters:** A test that passes the CLI but doesn't match the actual app indicates a bad plan. Phase B catches these mismatches before handing the test off to the user.
 
 ---
 
