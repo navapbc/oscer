@@ -30,7 +30,6 @@ make precompile-assets     # Precompile asset pipeline
 # Testing
 make test                             # Full test suite
 make test args="spec/path/to/file.rb" # Single file
-make test-watch                       # Guard file watcher
 
 # Database
 make db-migrate        # Run pending migrations
@@ -55,21 +54,6 @@ make openapi-spec      # Generate OpenAPI YAML spec
 
 # Code quality
 make lint       # RuboCop with auto-fix
-make lint-ci    # RuboCop without fixing
-```
-
-## Architecture
-
-### Layer overview
-
-```
-Controllers (thin, HTTP only)
-    ↓ uses
-Services (orchestration, dep-injected adapters)    Forms (input validation, no DB)
-    ↓ uses                                              ↓ uses
-ActiveRecord Models (business logic & rules)       Adapters (external services)
-    ↓
-BusinessProcesses (complex workflow state machines)
 ```
 
 ### Bounded contexts
@@ -192,12 +176,6 @@ Headless policies (no record): `authorize :symbol, :action?`
 | MFA challenge | Email contains `mfa` |
 | Successful login | Any other email/password |
 
-### Frontend changes
-
-> **IMPORTANT**: For any frontend updates or UI changes, always invoke the `/frontend-design` skill to ensure consistent, production-grade design quality.
-
-Frontend stack: Hotwire (Turbo + Stimulus), USWDS design system, Importmap for JS, cssbundling-rails for CSS.
-
 ### USWDS forms
 
 Use `us_form_with` instead of `form_with` for all views. It applies USWDS styling automatically:
@@ -212,8 +190,6 @@ Use `us_form_with` instead of `form_with` for all views. It applies USWDS stylin
   <%= f.submit %>
 <% end %>
 ```
-
-Test the form builder at `/dev/sandbox` (development only).
 
 ### Internationalization
 
@@ -242,7 +218,6 @@ JSON API under `/api/` namespace with HMAC authentication (`ApiHmacAuthenticatio
 - **Run a single spec**: `make test args="spec/models/certification_spec.rb"`
 - Adapters are swappable — inject mock adapters in tests, not real external services
 - Test coverage enforced by SimpleCov; CI will fail below thresholds
-- No shoulda-matchers — use plain RSpec assertions for validations/associations
 - Feature flag test helpers: `with_<flag>_enabled` / `with_<flag>_disabled`
 - `instance_double(ActiveStorage::Attached::One)` doesn't work for `blob` — use `double` with rubocop disable comment
 
@@ -250,20 +225,12 @@ JSON API under `/api/` namespace with HMAC authentication (`ApiHmacAuthenticatio
 
 Playwright end-to-end tests live in `e2e/` (TypeScript). Page Object pattern with flow fixtures:
 - **To create a new e2e test:** Use the `/e2e-test` skill. It guides you through planning (with plan mode approval), live app exploration via Playwright MCP, code generation, and two-phase validation (CLI test + localhost walkthrough).
-- Run tests: `./run-e2e-test` from `e2e/` or `APP_NAME=reporting-app npx playwright test` for individual specs
-- Config: `e2e/playwright.config.js` (Chromium + Mobile Chrome)
-- Tests: `e2e/reporting-app/tests/`
 
 ## Development workflow
 
 1. **Ask clarifying questions** before writing code — never assume business logic
 2. **Write RSpec tests first**, present for approval, then implement
 3. After passing tests: `make lint` then `make test`
-4. **Propose refactorings** after implementation — never implement without approval
-
-## GitHub
-
-Always use the `gh` CLI for all GitHub-related operations (PRs, issues, checks, releases, comments, etc.). Never use the GitHub MCP tools or web API directly.
 
 ## Reference files
 
