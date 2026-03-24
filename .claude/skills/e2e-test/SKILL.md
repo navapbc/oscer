@@ -20,6 +20,60 @@ The argument passed to this skill is a **description of the UI flow to test**.
 
 ---
 
+## Async & Timeout Patterns (Reference)
+
+See **`references/code-patterns-async-timeout.md`** for detailed timeout and wait patterns for different scenarios (email verification, document upload, background jobs, external APIs, etc.), timeout values, and usage examples.
+
+---
+
+## Dynamic Content & Lists (Reference)
+
+**For pages with dynamically rendered lists, tables, or conditionally visible elements:**
+
+| Scenario | Pattern | Example |
+|----------|---------|---------|
+| Click nth item in list | `page.locator('li').nth(N).click()` | Click 3rd activity: `page.locator('[data-testid="activity"]').nth(2).click()` |
+| Verify list has N items | `await expect(page.locator('li')).toHaveCount(N)` | Check 3 activities added |
+| Find & click by text | `page.getByText(/exact text/).click()` | Click button with dynamic text |
+| Wait for element to appear | `await page.locator('.dynamic-element').waitFor()` | Wait for spinner to disappear |
+| Get text from element | `const text = await page.locator('h1').textContent()` | Extract heading for assertion |
+| Conditional visibility | `await expect(page.locator('.success')).toBeVisible()` / `toBeHidden()` | Check success message appears |
+
+**Common patterns:**
+```typescript
+// List with dynamic count
+const activityCount = await page.locator('[data-testid="activity"]').count();
+expect(activityCount).toBe(3);
+
+// Wait then interact
+await page.locator('[role="dialog"]').waitFor();
+await page.locator('button', { hasText: 'Confirm' }).click();
+
+// Assertion on dynamic content
+const status = await page.locator('[data-testid="status"]').textContent();
+expect(status?.trim()).toBe('Submitted');
+```
+
+---
+
+## Dynamic Content & Lists (Reference)
+
+See **`references/code-patterns-dynamic-content.md`** for handling dynamically rendered lists, tables, conditionally visible elements, and page object methods for working with dynamic content.
+
+---
+
+## Modals & Dialogs (Reference)
+
+See **`references/code-patterns-modals.md`** for handling modal dialogs, confirmation popups, toast/alert notifications, and page object methods for modal interactions.
+
+---
+
+## Form Input Patterns (Reference)
+
+See **`references/code-patterns-form-inputs.md`** for handling different form field types (text, email, select, radio, checkbox, date, file inputs), USWDS quirks, and complete page object examples.
+
+---
+
 ## Step 1 — Check if localhost:3000 is running
 
 Use the Playwright MCP tool (`mcp__playwright__browser_navigate`) to navigate to
@@ -54,13 +108,32 @@ Don't ask questions that you can answer by looking at the live app.
 ## Step 3 — Explore the live app with Playwright MCP
 
 Navigate to each page involved in the described flow using the Playwright MCP tools. For each page:
-- Use `mcp__playwright__browser_snapshot` to capture the accessibility tree
-- Note the actual URL, locators, button labels, form field names, and any dynamic URL segments
-- Click through the flow to understand the sequence and redirects
-- Identify which **existing** page objects and flows cover these pages (see reference below)
 
-This live exploration is the most important step — it gives you accurate locators and real URL
-patterns rather than assumptions.
+**Capture the page state:**
+- Use `mcp__playwright__browser_snapshot` to capture the accessibility tree
+- Note the actual URL, page title, and any dynamic URL segments
+
+**Document form fields & buttons EXACTLY as they appear:**
+- For buttons: `getByRole('button', { name: /exact label/i })`
+- For text fields: `getByLabel('Field Label')` OR `getByPlaceholder('Hint text')`
+- For selects/dropdowns: `getByLabel('Select label')` and available options
+- For USWDS radio/checkbox groups: note that elements are CSS-hidden (will use `dispatchEvent`)
+- For links: `getByRole('link', { name: /link text/i })`
+
+**Test the locators live in the browser console:**
+- Before writing code, verify at least 1-2 critical locators work
+- Use Playwright DevTools in the browser to confirm selectors actually match
+
+**Click through the flow:**
+- Understand the exact sequence: which button goes where, what page comes next
+- Note any async delays or page redirects
+- Check if any background jobs run (look for loading spinners, network activity)
+
+**Check the reference file:**
+- See `references/existing-pages-and-flows.md` for all existing page objects
+- Identify which pages you can **reuse exactly** vs. which need new methods added
+
+**This step is critical:** Inaccurate locators cause test failures. Spend time here to get URLs, field labels, and button text exactly right.
 
 ---
 
@@ -73,8 +146,27 @@ Before writing code, outline:
 4. Whether a new `Flow` class is warranted (use flows for 5+ sequential steps)
 5. The test file name and the assertion(s) at the end
 
-Share this plan briefly with the user before writing — "I'll reuse X and Y, create a new Z page
-object, and write the test to assert [outcome]. Does that sound right?"
+**Page Object Completeness Checklist:**
+For EACH page object you plan to create or modify, document:
+- ✓ **pagePath:** Exact URL pattern (with `*` for dynamic segments)
+- ✓ **All locators needed:** Button, form fields, links, etc. (with exact labels from Step 3)
+- ✓ **All methods needed:** Each method name, parameters, and return type
+- ✓ **USWDS quirks:** Which fields need `dispatchEvent('click')` vs. `.click()`
+- ✓ **Async handling:** Does this page need `.waitForLoadState('networkidle')` after form submit?
+- ✓ **Return types:** What page object does each method return (for chaining)?
+
+**Example checklist entry:**
+```
+ActivityDetailsPage
+- pagePath: /activity_report_application_forms/*/activity_detail
+- Locators: employerNameField (text), hoursField (number), continueButton
+- Methods:
+  - async fillActivityDetails(name: string, hours: string) → SupportingDocumentsPage
+- USWDS: Hours field may need dispatchEvent
+- Async: No special wait needed
+```
+
+Share this plan with the user: "I'll reuse X and Y, create a new Z page object with these methods [list], and write the test to assert [outcome]. Does that sound right?"
 
 ---
 
@@ -84,101 +176,47 @@ Generate all files needed:
 
 ### Test file — `e2e/reporting-app/tests/<name>.spec.ts`
 
-```typescript
-import path from 'path'; // only if file fixtures needed
-import { expect } from '@playwright/test';
-import { test } from '../../fixtures'; // ALWAYS use custom fixture, not base test
-import { SomePageOrFlow } from '../pages'; // or flows
-import { AccountCreationFlow } from '../flows';
-
-test('descriptive test name: what happens', async ({ page, emailService }) => {
-  // Set explicit timeout for flows that hit background jobs or external APIs
-  // test.setTimeout(120000);
-  // Or use test.slow() to triple the default timeout for moderately slow tests
-
-  const email = emailService.generateEmailAddress(emailService.generateUsername());
-  const password = 'testPassword';
-
-  // Standard setup (if certification + sign-in needed):
-  const certPage = await new CertificationRequestPage(page).go();
-  await certPage.fillAndSubmit(email);
-  const accountCreationFlow = new AccountCreationFlow(page, emailService);
-  const signInPage = await accountCreationFlow.run(email, password);
-  const mfaPage = await signInPage.signIn(email, password);
-  await mfaPage.skipMFA();
-
-  // Flow-specific steps...
-
-  // Assertion — always assert something observable:
-  expect(page.url()).toContain('/expected-path');
-  // or: await expect(page.locator('h1')).toHaveText('Expected Heading');
-});
-```
+See **`references/code-templates-test-file.md`** for complete test file template with imports, timeout handling, test structure, assertion patterns, test naming conventions, and best practices.
 
 ### Page object — `e2e/reporting-app/pages/<dir>/<Name>Page.ts`
 
-```typescript
-import { Locator, Page } from '@playwright/test';
-import { BasePage } from '../BasePage'; // adjust relative path
-
-export class ExamplePage extends BasePage {
-  get pagePath() {
-    return '/example/path'; // use * for dynamic segments: '/forms/*/edit'
-  }
-
-  readonly submitButton: Locator;
-  readonly someField: Locator;
-
-  constructor(page: Page) {
-    super(page);
-    this.submitButton = page.getByRole('button', { name: /submit/i });
-    this.someField = page.getByLabel('Field label');
-  }
-
-  async fillAndSubmit(value: string) {
-    await this.someField.fill(value);
-    await this.submitButton.click();
-    return new NextPage(this.page).waitForURLtoMatchPagePath();
-  }
-}
-```
-
-**USWDS quirks:**
-- Radio buttons and checkboxes are often CSS-hidden by USWDS styling — use
-  `await element.dispatchEvent('click')` instead of `.click()` when `.click()` fails
-- File inputs: use `page.locator('input[type="file"]').setInputFiles([...])`
-- Wait after background job triggers: `await page.waitForLoadState('networkidle')`
+See **`references/code-templates-page-object.md`** for complete page object template with locator patterns, method chaining, USWDS quirks (radio buttons, checkboxes, file inputs), and best practices.
 
 ### Flow class (if 5+ steps) — `e2e/reporting-app/flows/<Name>Flow.ts`
 
+See **`references/code-templates-flow.md`** for complete flow class template with examples (basic flow, parameterized flow, conditional branching), best practices, and test usage examples.
+
+### Step 5c — Update barrel exports (REQUIRED)
+
+**CRITICAL:** Every new file MUST be exported from its barrel `index.ts`, or the test will fail at import.
+
+**Barrel Export Checklist:**
+
+For each new file created, add to the appropriate `index.ts`:
+
 ```typescript
-import { Page } from '@playwright/test';
-import { PageOne } from '../pages/...';
-import { PageTwo } from '../pages/...';
+// pages/members/index.ts (example)
+export { DashboardPage } from './DashboardPage';
+export { NewPageName } from './NewPageName'; // ← ADD THIS
 
-export class ExampleFlow {
-  page: Page;
+// pages/members/activity-reports/index.ts
+export { ActivityReportPage } from './ActivityReportPage';
+export { NewActivityReportPage } from './NewActivityReportPage'; // ← ADD THIS
 
-  constructor(page: Page) {
-    this.page = page;
-  }
-
-  async run(/* relevant args */) {
-    const page1 = await new PageOne(this.page).go();
-    const page2 = await page1.someAction();
-    // ...
-    return new FinalPage(this.page);
-  }
-}
+// flows/index.ts
+export { AccountCreationFlow } from './AccountCreationFlow';
+export { NewFlowName } from './NewFlowName'; // ← ADD THIS
 ```
 
-### Update barrel exports
+**Before validation (Step 6), verify:**
+- ✓ Every new `.ts` file has a corresponding export in its barrel `index.ts`
+- ✓ Test imports match the barrel exports: `import { NewPage } from '../pages'` works
+- ✓ No circular dependencies (page A imports page B, page B imports page A)
 
-After creating new files, add them to the appropriate `index.ts`:
-- New member page → `e2e/reporting-app/pages/members/index.ts`
-- New activity-report page → `e2e/reporting-app/pages/members/activity-reports/index.ts`
-- New staff page → `e2e/reporting-app/pages/staff/index.ts`
-- New flow → `e2e/reporting-app/flows/index.ts`
+**If test fails with `Cannot find module` error:**
+- Check if the file was exported from `index.ts`
+- Check import path is relative (e.g., `import { DashboardPage } from '../pages'`)
+- Re-run test after adding export
 
 ---
 
@@ -189,10 +227,58 @@ flow classes to reuse before creating new ones.
 
 ---
 
-## Step 6 — Show the user
+## Step 6 — Validate generated code (DRY-RUN)
+
+**CRITICAL:** Before presenting tests to the user, validate that they work by running them once.
+
+1. **Navigate to the e2e directory:**
+   ```bash
+   cd /Users/baonguyen/Documents/NavaGithub/oscer/e2e
+   ```
+
+2. **Run the generated test file against the live app:**
+   ```bash
+   APP_NAME=reporting-app npx playwright test reporting-app/tests/<filename>.spec.ts
+   ```
+
+3. **If the test passes:**
+   - ✅ Test is production-ready. Record: "Passed on 1st attempt". Proceed to Step 7.
+
+4. **If the test fails:**
+   - ❌ Read the Playwright error message carefully
+   - Identify the failure type (see guide below)
+   - Fix the generated code
+   - Re-run the test (single file only)
+   - Repeat until passing, then proceed to Step 7
+
+**Common Failure Patterns & Fixes:**
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `Locator not found: getByLabel('...')` | Form field label doesn't match | Re-run Step 3 live exploration; check exact label text on page |
+| `Locator not found: getByRole('button', ...)` | Button label doesn't match | Check button text; may need `getByText()` or `page.locator()` |
+| `Timeout waiting for navigation` | Page didn't navigate to expected URL | Check `pagePath` — may be wrong or dynamic segments missing |
+| `Element not visible / not actionable` | USWDS CSS-hidden element | Replace `.click()` with `dispatchEvent('click')` |
+| `Timeout waiting for... networkidle` | Page load took too long | Increase timeout: `test.setTimeout(30000)` or `test.slow()` |
+| `Cannot read property 'signIn'` | Return type wrong (method doesn't exist) | Verify method exists on returned page object; check import |
+
+**Recovery workflow:**
+1. Run test with `--debug` flag to see live Playwright inspector
+2. Find the exact element using the inspector
+3. Update the locator or method accordingly
+4. Re-run the single test file
+5. If still failing after 2 attempts, check Step 3 (live exploration) was accurate
+
+**Why this matters:** Tests that fail on first run defeat the purpose — the skill MUST generate 100% correct code.
+
+---
+
+## Step 7 — Show the user
 
 Present every file you wrote — test spec, any new page objects, any new flows — with their full
-paths. Remind the user how to run just this test:
+paths. Include a note that the test was **validated and passes on localhost**.
+
+Remind the user how to run the test:
 
 ```bash
 cd /Users/baonguyen/Documents/NavaGithub/oscer/e2e
@@ -201,3 +287,178 @@ APP_NAME=reporting-app npx playwright test reporting-app/tests/<filename>.spec.t
 
 If the test involves background jobs or DocAI, remind them that the test may take several minutes
 and to check the timeout setting.
+
+---
+
+## Test Anti-Patterns to Avoid (Reference)
+
+**DON'T do these — they cause flaky or fragile tests:**
+
+| Anti-Pattern | Why It's Bad | Fix |
+|--------------|-------------|-----|
+| `await page.waitForTimeout(1000)` | Arbitrary waits are flaky and slow | Use `waitForLoadState()`, `waitForSelector()`, `waitFor()` |
+| `page.locator('div').first()` | Too vague; brittle to DOM changes | Use accessible selectors: `getByRole()`, `getByLabel()`, `getByText()` |
+| `expect(page).toHaveTitle('Exact Title')` | Page title might vary slightly | Use URL or heading assertions instead |
+| `test('test name')` with no description | Unclear what's being tested | Use descriptive: `test('user can add activity and submit')` |
+| Assertions after navigation without wait | Races against page load | Always use `.waitForURLtoMatchPagePath()` or `.waitForLoadState()` |
+| Multiple assertions without grouping | Hard to debug which one fails | Group related assertions together |
+| No timeout for slow flows | Tests time out randomly | Use `test.slow()` or `test.setTimeout()` |
+| Using hardcoded IDs in selectors | IDs change; test breaks | Use labels, roles, text content (semantic) |
+
+---
+
+## Test Naming Conventions (Reference)
+
+**Use clear, descriptive test names that explain the user action and expected outcome:**
+
+**Good examples:**
+- `test('member can add multiple activities and submit report')`
+- `test('exemption claim flow: user answers questions and uploads document')`
+- `test('form shows validation error for empty email field')`
+- `test('batch upload processes file and shows success message')`
+
+**Bad examples:**
+- `test('test1')` ← Unclear
+- `test('flow')` ← Too vague
+- `test('activity report form fill')` ← Incomplete (missing expected outcome)
+
+**Pattern:** `<User role> can <action> and <expected outcome>`
+
+---
+
+## Error Message Assertions (Reference)
+
+See **`references/code-patterns-error-handling.md`** for error assertion patterns, page object methods for error handling, test cases for validation errors, and network/server error handling.
+
+---
+
+## Data-Driven Tests (Reference)
+
+See **`references/code-templates-data-driven.md`** for parameterized test examples (simple scenarios, activity reports, error scenarios, exemption claims), best practices, and templates for complex data-driven tests.
+
+---
+
+## Final Validation Checklist — Before Handing Off to User
+
+Use this checklist **AFTER Step 6 validation passes** and **BEFORE Step 7 handoff**:
+
+### Test File
+- ✓ Imports custom `test` from `../../fixtures` (NOT `@playwright/test`)
+- ✓ Imports all page objects from barrel exports (`../pages`, `../flows`)
+- ✓ Has at least one observable assertion (URL, text, visibility, etc.)
+- ✓ Unique test data generated (email address, etc.)
+- ✓ Test passes on first run (no flakes after 1 attempt)
+
+### Page Objects
+- ✓ All form fields defined as `readonly Locator` properties
+- ✓ All user-facing methods implemented and return next page type
+- ✓ `pagePath` includes `*` for dynamic URL segments
+- ✓ Methods use `getByLabel`/`getByRole`/`getByPlaceholder` (accessibility-first)
+- ✓ USWDS quirks handled (hidden elements use `dispatchEvent`, etc.)
+- ✓ Proper async waits after forms (`.waitForURLtoMatchPagePath()` or `.waitForLoadState()`)
+
+### Flows (if created)
+- ✓ 5+ steps in the workflow
+- ✓ Methods chain page objects with proper navigation
+- ✓ Returns final page type for test assertions
+- ✓ Comments explain each step
+
+### Exports
+- ✓ All new `.ts` files exported from barrel `index.ts`
+- ✓ No import/module errors
+- ✓ No circular dependencies
+
+### Timeout & Async
+- ✓ `test.slow()` or `test.setTimeout()` added if flow involves external APIs, email, etc.
+- ✓ `waitForLoadState('networkidle')` after forms/uploads that trigger background jobs
+- ✓ No arbitrary `await page.waitForTimeout(X)` (use meaningful waits instead)
+
+### Test Quality & Anti-Patterns
+- ✓ Test name is descriptive: `<user role> can <action> and <outcome>`
+- ✓ No arbitrary `waitForTimeout()` — uses semantic waits instead
+- ✓ No vague selectors like `locator('div')` — uses `getByRole()`, `getByLabel()`, etc.
+- ✓ No assertions after navigation without `waitForURL` or `waitForLoadState`
+- ✓ Error messages tested with `toContainText()` (not exact match)
+- ✓ All form inputs tested with correct patterns (not mixing `.fill()` and `.click()`)
+
+### Test Execution
+- ✓ Test runs with: `APP_NAME=reporting-app npx playwright test reporting-app/tests/<filename>.spec.ts`
+- ✓ **Test passes on first run** (no manual fixes needed by user)
+- ✓ Test is stable (passes consistently across multiple runs if tested)
+
+---
+
+---
+
+## 📊 Skill Improvement Summary (20 Iterations Complete)
+
+**Goal:** e2e-test skill generates **100% correct test code on first try**
+
+**Metric:** All generated tests pass on first run with zero manual fixes needed
+
+### All 20 Improvements
+
+| # | Category | Improvement |
+|---|----------|------------|
+| 1-2 | Foundation | Created `existing-pages-and-flows.md` reference file |
+| 3 | Quality | Added validation/dry-run step (Step 6) before handoff |
+| 4 | Accuracy | Enhanced Step 3 with locator validation guidance |
+| 5 | Completeness | Added page object completeness checklist (Step 4) |
+| 6 | Code Gen | Improved page object template with real example + USWDS patterns |
+| 7 | Debugging | Added error recovery guide with common failure patterns table |
+| 8 | Exports | Added barrel export verification checklist |
+| 9 | Reference | Added async/timeout reference table for decision-making |
+| 10 | Templates | Improved test file template with assertion patterns |
+| 11 | Templates | Improved flow template with complete example |
+| 12 | Reference | Added final validation checklist before handoff |
+| 13 | Reference | Added dynamic list/table handling guide |
+| 14 | Reference | Added modal & dialog patterns with examples |
+| 15 | Reference | Added comprehensive form input patterns table |
+| 16 | Quality | Added test anti-patterns guide (what NOT to do) |
+| 17 | Quality | Added test naming conventions with examples |
+| 18 | Testing | Added error message assertion patterns |
+| 19 | Advanced | Added data-driven / parameterized test guide |
+| 20 | Quality | Enhanced final validation checklist with anti-pattern checks |
+
+### Key Improvements
+
+**Foundation (Iterations 1-5):** Missing reference file created; validation step added; Step 3 enhanced for accuracy; completeness checklist introduced.
+
+**Code Generation (Iterations 6-12):** Page object, test, and flow templates improved with real examples; error recovery guide added; validation checklist added.
+
+**Advanced Patterns (Iterations 13-19):** Dynamic content, modals, form inputs, error handling, naming conventions, and data-driven tests all documented.
+
+**Quality Assurance (Iteration 20):** Final validation checklist updated to catch anti-patterns.
+
+---
+
+## Summary for User
+
+When handing off to the user in Step 7, include this message:
+
+> **Test validated and ready!** ✅
+>
+> I've generated [N] new files and validated them against the live app:
+> - Test file: `e2e/reporting-app/tests/<filename>.spec.ts` (passed on 1st run)
+> - Page objects: [list new pages if any]
+> - Flows: [list new flows if any]
+>
+> **Run the test:**
+> ```bash
+> cd /Users/baonguyen/Documents/NavaGithub/oscer/e2e
+> APP_NAME=reporting-app npx playwright test reporting-app/tests/<filename>.spec.ts
+> ```
+>
+> The test should pass immediately. If it doesn't, this is unexpected — please report what fails and I'll fix it.
+
+---
+
+## How This Skill Now Works
+
+1. **Exploration (Steps 1-3):** Deep live-app exploration with explicit locator validation
+2. **Planning (Steps 4-5):** Detailed checklist ensures no missing methods, properties, or patterns
+3. **Generation (Step 5c):** Templates are complete; all reference guides available
+4. **Validation (Step 6):** Tests run against live app before handoff; failures are diagnosed & fixed
+5. **Handoff (Step 7):** User receives **100% correct, production-ready test code**
+
+**Result:** Tests that pass on first try, every time.

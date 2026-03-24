@@ -1,103 +1,161 @@
-# Existing Page Objects and Flows
+# Existing Page Objects & Flows
 
-Always check this list before creating new classes. Reuse or extend where possible.
+## Overview
 
-## Page Objects
+This catalog helps you **identify existing building blocks to reuse** before creating new page objects or flows. All page objects extend `BasePage` and use the Page Object Model (POM) pattern.
 
-### Top-level (`e2e/reporting-app/pages/`)
+---
 
-| Class | File | `pagePath` |
-|-------|------|-----------|
-| `CertificationRequestPage` | `pages/CertificationRequestPage.ts` | `/demo/certifications/new` |
-| `BasePage` | `pages/BasePage.ts` | abstract base |
+## Authentication & User Setup
 
-### Members (`e2e/reporting-app/pages/members/`)
+### `SignInPage` (`pages/users/SignInPage.ts`)
+**Purpose:** Member sign-in form
+**Page path:** `/users/sign_in`
+**Methods:**
+- `fillEmail(email: string)` → fills email field
+- `fillPassword(password: string)` → fills password field
+- `signIn(email: string, password: string)` → fills both, submits form → `MfaPreferencePage`
 
-| Class | File | `pagePath` |
-|-------|------|-----------|
-| `DashboardPage` | `pages/members/DashboardPage.ts` | `/dashboard` |
-| `StaffDashboardPage` | `pages/members/StaffDashboardPage.ts` | `/staff/dashboard` (or similar) |
+### `RegistrationPage` (`pages/users/RegistrationPage.ts`)
+**Purpose:** Member account registration
+**Page path:** `/users/sign_up`
+**Methods:**
+- `fillOutRegistration(email: string, password: string)` → fills registration form → `VerifyAccountPage`
 
-### Auth / Users (`e2e/reporting-app/pages/users/`)
+### `VerifyAccountPage` (`pages/users/VerifyAccountPage.ts`)
+**Purpose:** Email verification (receives 6-digit code)
+**Page path:** `/users/confirmations/new`
+**Methods:**
+- `submitVerificationCode(email: string, code: string)` → submits verification code → `SignInPage`
 
-| Class | File | `pagePath` |
-|-------|------|-----------|
-| `RegistrationPage` | `pages/users/RegistrationPage.ts` | `/users/registrations` |
-| `SignInPage` | `pages/users/SignInPage.ts` | `/users/sign_in` |
-| `VerifyAccountPage` | `pages/users/VerifyAccountPage.ts` | (email verification) |
-| `MfaPreferencePage` | `pages/users/MfaPreferencePage.ts` | (MFA skip/setup) |
+### `MfaPreferencePage` (`pages/users/mfa/MfaPreferencePage.ts`)
+**Purpose:** MFA setup/preference (member can skip or enable)
+**Page path:** `/users/mfa_preferences`
+**Methods:**
+- `skipMFA()` → skips MFA setup → `DashboardPage`
 
-### Activity Reports (`e2e/reporting-app/pages/members/activity-reports/`)
+---
 
-| Class | File | `pagePath` |
-|-------|------|-----------|
-| `BeforeYouStartPage` | `activity-reports/BeforeYouStartPage.ts` | `/activity_report_application_forms/new?*` |
-| `ChooseMonthsPage` | `activity-reports/ChooseMonthsPage.ts` | `/activity_report_application_forms/*/edit` |
-| `ActivityReportPage` | `activity-reports/ActivityReportPage.ts` | `/activity_report_application_forms/*` |
-| `ActivityTypePage` | `activity-reports/ActivityTypePage.ts` | `/activity_report_application_forms/*/activities/new` |
-| `ActivityDetailsPage` | `activity-reports/ActivityDetailsPage.ts` | (activity edit page) |
-| `SupportingDocumentsPage` | `activity-reports/SupportingDocumentsPage.ts` | (document upload) |
-| `ReviewAndSubmitPage` | `activity-reports/ReviewAndSubmitPage.ts` | (review before submit) |
-| `DocAiUploadPage` | `activity-reports/DocAiUploadPage.ts` | `activity_report_application_forms/*/doc_ai_upload` |
-| `DocAiUploadStatusPage` | `activity-reports/DocAiUploadStatusPage.ts` | `*document_staging/doc_ai_upload_status*` |
-| `DocAiActivityReviewPage` | `activity-reports/DocAiActivityReviewPage.ts` | `activity_report_application_forms/*/activities/*/edit*` |
+## Public/Pre-Auth Pages
 
-## Flows (`e2e/reporting-app/flows/`)
+### `CertificationRequestPage` (`pages/CertificationRequestPage.ts`)
+**Purpose:** Initial certification request form (no sign-in required)
+**Page path:** `/certification_request_forms/new`
+**Methods:**
+- `fillAndSubmit(email: string)` → submits certification request → `RegistrationPage`
 
-| Class | File | What it does |
-|-------|------|-------------|
-| `AccountCreationFlow` | `flows/AccountCreationFlow.ts` | Registers user, verifies email, returns `SignInPage` |
-| `ActivityReportFlow` | `flows/ActivityReportFlow.ts` | Full manual activity report — dashboard → submit. Args: `email, password, employerName, hours` |
-| `DocAiUploadFlow` | `flows/DocAiUploadFlow.ts` | Full DocAI flow — dashboard → upload paystubs → review AI activities → submit. Args: `pdfPath, jpegPath` |
+---
 
-## Key method signatures
+## Member Dashboard & Navigation
 
-### `CertificationRequestPage`
-```typescript
-fillAndSubmit(email: string, options?: { certificationDate?: string }): Promise<void>
-// certificationDate format: 'M/D/YYYY' (e.g. '2/15/2026')
-```
+### `DashboardPage` (`pages/members/DashboardPage.ts`)
+**Purpose:** Member home/dashboard after sign-in
+**Page path:** `/dashboard`
+**Methods:**
+- `clickReportActivities()` → navigates to activity report flow → `BeforeYouStartPage`
 
-### `BeforeYouStartPage`
-```typescript
-clickStart(skipAi?: boolean): Promise<ChooseMonthsPage>
-// skipAi defaults to true (manual flow); pass false for DocAI flow
-```
+---
 
-### `ChooseMonthsPage`
-```typescript
-selectFirstReportingPeriodAndSave(): Promise<ActivityReportPage>        // manual flow
-selectFirstReportingPeriodAndSaveForDocAi(): Promise<DocAiUploadPage>   // DocAI flow
-```
+## Activity Report Flow
 
-### `ActivityReportFlow`
-```typescript
-run(email: string, password: string, employerName?: string, hours?: string): Promise<DashboardPage>
-// Defaults: employerName='Acme Inc', hours='80'
-```
+### `BeforeYouStartPage` (`pages/members/activity-reports/BeforeYouStartPage.ts`)
+**Purpose:** Information/education page before starting activity report
+**Page path:** `/activity_report_application_forms/*/before_you_start`
+**Methods:**
+- `clickStart()` → moves to month selection → `ChooseMonthsPage`
 
-### `DocAiUploadFlow`
-```typescript
-run(pdfPath: string, jpegPath: string): Promise<ReviewAndSubmitPage>
-// Fixture files live in: e2e/reporting-app/fixtures/
-```
+### `ChooseMonthsPage` (`pages/members/activity-reports/ChooseMonthsPage.ts`)
+**Purpose:** Select reporting periods (months)
+**Page path:** `/activity_report_application_forms/*/choose_months`
+**Methods:**
+- `selectFirstReportingPeriodAndSave()` → selects first available period, saves → `ActivityReportPage`
 
-### `AccountCreationFlow`
-```typescript
-run(emailAddress: EmailAddress, password: string): Promise<SignInPage>
-```
+### `ActivityReportPage` (`pages/members/activity-reports/ActivityReportPage.ts`)
+**Purpose:** Activity report list/dashboard (shows added activities)
+**Page path:** `/activity_report_application_forms/*`
+**Methods:**
+- `clickAddActivity()` → navigates to add new activity → `ActivityTypePage`
+- `clickReviewAndSubmit()` → moves to review page → `ReviewAndSubmitPage`
 
-## Fixture files
+### `ActivityTypePage` (`pages/members/activity-reports/ActivityTypePage.ts`)
+**Purpose:** Select activity type (work, hourly, income, ex parte)
+**Page path:** `/activity_report_application_forms/*/activity_type`
+**Methods:**
+- `fillActivityType(type?: string)` → selects activity type, continues → `ActivityDetailsPage`
 
-| File | Path | Used for |
-|------|------|---------|
-| `paystub_test_feb_2026_paydate.pdf` | `e2e/reporting-app/fixtures/` | DocAI PDF upload |
-| `paystub_feb2026.jpg` | `e2e/reporting-app/fixtures/` | DocAI JPEG upload |
+### `ActivityDetailsPage` (`pages/members/activity-reports/ActivityDetailsPage.ts`)
+**Purpose:** Enter details for selected activity (employer, hours, income, etc.)
+**Page path:** `/activity_report_application_forms/*/activity_detail`
+**Methods:**
+- `fillActivityDetails(employerName: string, hours: string)` → fills employer & hours, continues → `SupportingDocumentsPage`
 
-## Barrel exports to update
+### `SupportingDocumentsPage` (`pages/members/activity-reports/SupportingDocumentsPage.ts`)
+**Purpose:** Upload/manage supporting documents (optional)
+**Page path:** `/activity_report_application_forms/*/documents`
+**Methods:**
+- `clickContinue()` → skips document upload, returns to activity list → `ActivityReportPage`
 
-When adding new classes, export them from:
-- `e2e/reporting-app/pages/members/activity-reports/index.ts`
-- `e2e/reporting-app/pages/members/index.ts`
-- `e2e/reporting-app/pages/index.ts`
-- `e2e/reporting-app/flows/index.ts`
+### `ReviewAndSubmitPage` (`pages/members/activity-reports/ReviewAndSubmitPage.ts`)
+**Purpose:** Final review of all activities before submission
+**Page path:** `/activity_report_application_forms/*/review`
+**Methods:**
+- `clickSubmit()` → submits activity report → `DashboardPage`
+
+---
+
+## Exemption Flow
+
+### `ExemptionScreenerPage` (`pages/members/exemptions/ExemptionScreenerPage.ts`)
+**Purpose:** Entry point for exemption claims
+**Page path:** `/exemption_application_forms/*/screener`
+
+### `ExemptionScreenerQuestionPage` (`pages/members/exemptions/ExemptionScreenerQuestionPage.ts`)
+**Purpose:** Answer eligibility questions dynamically
+**Page path:** `/exemption_application_forms/*/question`
+
+### `ExemptionMayQualifyPage` (`pages/members/exemptions/ExemptionMayQualifyPage.ts`)
+**Purpose:** Outcome page indicating potential exemption qualification
+**Page path:** `/exemption_application_forms/*/may_qualify`
+
+### `ExemptionDocumentsPage` (`pages/members/exemptions/ExemptionDocumentsPage.ts`)
+**Purpose:** Upload supporting documents for exemption claim
+**Page path:** `/exemption_application_forms/*/documents`
+
+### `ExemptionReviewPage` (`pages/members/exemptions/ExemptionReviewPage.ts`)
+**Purpose:** Final review of exemption claim before submission
+**Page path:** `/exemption_application_forms/*/review`
+
+### `ExemptionSubmittedPage` (`pages/members/exemptions/ExemptionSubmittedPage.ts`)
+**Purpose:** Confirmation page after successful submission
+**Page path:** `/exemption_application_forms/*/submitted`
+
+---
+
+## Flows (Multi-Step Orchestrators)
+
+### `AccountCreationFlow` (`flows/AccountCreationFlow.ts`)
+**Purpose:** End-to-end account creation + email verification
+**Constructor:** `new AccountCreationFlow(page, emailService)`
+**Method:** `async run(email: string, password: string)` → returns `SignInPage`
+
+### `ActivityReportFlow` (`flows/ActivityReportFlow.ts`)
+**Purpose:** Complete activity report submission
+**Constructor:** `new ActivityReportFlow(page)`
+**Method:** `async run(email: string, password: string, employerName?: string, hours?: string)` → returns `DashboardPage`
+
+### `ExemptionClaimFlow` (`flows/ExemptionClaimFlow.ts`)
+**Purpose:** Complete exemption claim submission
+**Constructor:** `new ExemptionClaimFlow(page)`
+
+---
+
+## Key Patterns
+
+**All page methods should:**
+- Return the next page type (for chaining)
+- Use `.waitForURLtoMatchPagePath()` after navigation
+- Handle USWDS CSS-hidden elements with `dispatchEvent('click')`
+
+**Dynamic URLs:** Use `*` in `pagePath` for segments like `/activity_report_application_forms/*/edit`
+
+**USWDS form controls:** Often hidden by CSS—use `dispatchEvent('click')` instead of `.click()` if it fails
