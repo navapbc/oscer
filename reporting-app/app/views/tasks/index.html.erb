@@ -20,7 +20,7 @@
       <%= render partial: 'strata/tasks/due_date_filter' %>
     </div>
     <div class="grid-col-12 tablet:grid-col-3">
-      <label class="usa-label" for="next-task-button" style="margin-bottom: 0.5rem">Actions:</label>
+      <label class="usa-label" for="next-task-button" style="margin-bottom: 0.5rem"><%= t("tasks.index.actions_label") %></label>
       <%= button_to t("strata.tasks.actions.pick_next"), url_for(only_path: true, action: :pick_up_next_task),
                       id: "next-task-button",
                       disabled: !@unassigned_tasks&.any?,

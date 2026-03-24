@@ -1,12 +1,12 @@
-<h2>Month</h2>
+<h2><%= t(".month") %></h2>
 <p><%= activity.month.strftime("%B %Y") %></p>
-<h2>Employer name</h2>
+<h2><%= t(".name") %></h2>
 <p><%= activity.name %></p>
 <% if activity.is_a?(HourlyActivity) %>
-  <h2>Hours</h2>
+  <h2><%= t(".hours") %></h2>
   <p><%= activity.hours %></p>
 <% elsif activity.is_a?(IncomeActivity) %>
-  <h2>Income</h2>
+  <h2><%= t(".income") %></h2>
   <p><%= activity.income %></p>
 <% end %>
 <%= render "application/supporting_documents", 

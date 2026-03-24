@@ -17,8 +17,17 @@ en:
     exemption_type:
       title: "Select exemption type"
       heading: "What type of exemption are you requesting?"
+      continue_button: "Continue"
+      short_term_hardship_label: "Short-term Hardship"
+      short_term_hardship_hint: "You are experiencing a short-term hardship as defined here: TODO: Add link to the definition"
+      incarceration_label: "Incarceration"
+      incarceration_hint: "You are currently incarcerated or have left incarceration within the last 3 months."
+    review:
+      title: "Review and submit"
+      submit_button: "Submit exemption"
     show:
       title: "Exemption"
+      review_and_submit: "Review and submit"
       back: "Back to dashboard"
       edit: "Edit exemption"
       submitted_on: "Submitted on"

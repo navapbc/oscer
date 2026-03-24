@@ -27,3 +27,7 @@ en:
         github_repo: "GitHub repo: "
         github_repo_url: "https://github.com/navapbc/OSCER/blob/main/README.md"
         api_docs: "API docs: "
+    certifications:
+      new:
+        select_region: "Select Region"
+        generic: "Generic"

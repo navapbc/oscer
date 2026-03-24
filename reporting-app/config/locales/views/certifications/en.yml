@@ -1,5 +1,6 @@
 en:
   certifications:
+    save: "Save"
     member_id: "Member ID"
     case_number: "Medicaid case number"
     va_icn: "Veteran Affairs ICN"

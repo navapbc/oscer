@@ -14,6 +14,7 @@ en:
     logout: "Log out"
     title: "Medicaid Work Reporting Portal"
     close: "Close"
+    menu: "Menu"
   flash:
     error_heading:
       zero: "An unexpected error occurred"
@@ -37,5 +38,7 @@ en:
     upload: "Upload document(s)"
   case_documents:
     title: "Documents"
+    no_documents_text: "No documents available"
   case_tasks:
     title: "Tasks"
+    no_tasks_text: "No tasks available"

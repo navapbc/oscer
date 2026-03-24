@@ -1,0 +1,14 @@
+en:
+  members:
+    show:
+      certification_cases: "Certification Cases"
+      case_number: "Case No."
+      certification_date: "Certification date"
+      status: "Status"
+    search:
+      title: "Member Search"
+      by_email: "By Email"
+      search: "Search"
+      results: "Results"
+      member_id: "Member ID"
+      email: "Email"

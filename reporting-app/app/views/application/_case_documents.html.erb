@@ -12,7 +12,7 @@
   <% else %>
     <%= render AlertComponent.new(
       type: "info",
-      message: "No documents available",
+      message: t("case_documents.no_documents_text"),
       classes: "usa-alert--slim usa-alert--no-icon",
       style: "padding: unset;"
     ) %>

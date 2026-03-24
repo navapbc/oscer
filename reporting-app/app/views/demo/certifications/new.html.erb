@@ -4,7 +4,7 @@
 <p><%= t("certifications.demo_create.intro") %></p>
 
 <% tabs = [
-  { name: "Generic", path: new_demo_certification_path, active: !@form.certification_type },
+  { name: t(".generic"), path: new_demo_certification_path, active: !@form.certification_type },
 ] + Demo::Certifications::CreateForm.attribute_types["certification_type"].options.map { |ct| { name: t("certifications.demo_create.certification_type_options.#{ct}"), path: new_demo_certification_path(certification_type: ct), active: @form.certification_type == ct } }
 %>
 
@@ -22,7 +22,7 @@
 
   <%= f.hidden_field :certification_type, value: @form.certification_type %>
 
-  <%= f.select :region, @regions, {  prompt: 'Select Region' } %>
+  <%= f.select :region, @regions, {  prompt: t(".select_region") } %>
 
   <%= f.date_picker :certification_date %>
 

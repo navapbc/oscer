@@ -13,7 +13,7 @@
   <% else %>
     <%= render AlertComponent.new(
       type: "info",
-      message: "No tasks available",
+      message: t("case_tasks.no_tasks_text"),
       classes: "usa-alert--slim usa-alert--no-icon",
       style: "padding: unset;"
     ) %>

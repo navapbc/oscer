@@ -1,5 +1,9 @@
 en:
   tasks:
+    index:
+      actions_label: "Actions:"
+    show:
+      assign_to_me_button: "Assign to me"
     types:
       review_activity_report_task: "Review activity report"
       review_exemption_claim_task: "Review exemption claim"

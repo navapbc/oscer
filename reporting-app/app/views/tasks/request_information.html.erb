@@ -1,5 +1,5 @@
 <h1><%= t(".information_requests.new.title") %></h1>
-<p><<%= t(".information_requests.new.instructions") %></p>
+<p><%= t(".information_requests.new.instructions") %></p>
 <%= strata_form_with(model: @information_request, url: @create_path) do |f| %>
   <div class="usa-form-group">
     <%= f.text_area :staff_comment, { label: t(".information_requests.new.label"), rows: 5 } %>
