@@ -6,44 +6,46 @@ OSCER members submit income verification documents (pay stubs) for certification
 
 ## Architecture
 
-Adapter + service + value object pattern. `wait=true` for synchronous processing (~38s); multiple files processed concurrently via `Concurrent::Future` on a dedicated `FixedThreadPool` (total time ≈ one DocAI call regardless of file count). Feature flag gates the entire flow. Controller delegates to `DocumentStagingService`; images >5MB are converted to PDF before DocAI submission.
+Adapter + service + value object pattern. **Asynchronous processing** via background job polling: submit to DocAI → receive `jobId` → `FetchDocAiResultsJob` polls for results on a retry schedule (max 5 attempts). Feature flag gates the entire flow. Controller delegates to `DocumentStagingService`; images >5MB are converted to PDF before DocAI submission.
 
 ```mermaid
 flowchart LR
     Browser -->|"POST multipart/form-data files[]"| Controller[DocumentStagingController]
     Controller -->|"Features.doc_ai_enabled? == false → 404"| Controller
-    Controller -->|"delegates to"| DSS[DocumentStagingService]
+    Controller -->|"delegates to"| DSS[DocumentStagingService.submit]
     DSS -->|"Marcel magic-byte\nPDF/JPG/PNG/TIFF ≤30 MB"| DSS
     DSS -->|"image >5 MB?"| IPC[ImageToPdfConversionService]
     IPC -->|"converted PDF"| DSS
     DSS -->|"StagedDocument.new(pending)\n+ file.attach + save!"| DB[(PostgreSQL)]
     DSS -->|file.attach| S3[ActiveStorage / S3]
-    DSS -->|"Concurrent::Future per file\n(dedicated FixedThreadPool)"| DSS
-    DSS -->|staged_document.file| Service[DocAiService]
-    DSS -->|file| Adapter[DocAiAdapter]
-    Adapter -->|"POST /v1/documents?wait=true (60s)"| DocAI[DocAI API]
-    DocAI -->|JSON| Adapter
-    Adapter -->|response body| Service
-    Service -->|DocAiResult| DSS
-    DSS -->|"update!(validated, fields, job_id)"| DB
-    DSS -->|results array| Controller
-    Controller -->|"Render template (prefilled fields + signed_ids)"| Browser
+    DSS -->|staged_document.file| Adapter[DocAiAdapter]
+    Adapter -->|"POST /v1/documents (no wait)"| DocAI["DocAI API\n(on AWS)"]
+    DocAI -->|"jobId, status: not_started"| Adapter
+    Adapter -->|response| DSS
+    DSS -->|"store jobId\nupdate!(pending, doc_ai_job_id)"| DB
+    DSS -->|"enqueue with 1-min delay"| Job["FetchDocAiResultsJob"]
+    Job -->|"poll (5 attempts, 30s retry)"| Adapter
+    Adapter -->|"GET /v1/documents/{jobId}"| DocAI
+    Job -->|"update StagedDocument"| DB
+    DB -->|"update!(validated/rejected/failed)"| S3
+    Controller -->|"redirect to"| StatusPage["doc_ai_upload_status\n(browser polls for completion)"]
 ```
 
 ## Components
 
 | Component | Responsibility |
 |-----------|---------------|
-| `DocumentStagingController` | Feature flag guard — returns 404 when `Features.doc_ai_enabled?` is false. Auth (`authorize :document, :create?`), param handling, delegates to `DocumentStagingService#process`. Renders template with prefilled fields and hidden `signed_id` inputs. Controller is responsible only for: auth, param handling, rendering. |
-| `DocumentStagingService` | Owns extracted constants: `ALLOWED_CONTENT_TYPES` (`application/pdf`, `image/jpeg`, `image/png`, `image/tiff`), `MAX_FILE_SIZE_BYTES` (30 MB), `MAX_FILE_COUNT` (10), `DOC_AI_THREAD_POOL`, `SUPPORTED_RESULT_CLASSES`. `#process(files:, user:)` validates, dispatches concurrent processing, returns results array. Contains: `process_files_concurrently`, `process_file`, `valid_content_type?`, `valid_file_size?`. Calls `ImageToPdfConversionService` when image file >5MB before DocAI submission. Thread pool creation and lifecycle managed here. Constructor-injected `DocAiService` dependency (testable). `current_user` captured before threading (ActionController helpers not thread-safe). Each Future uses `connection_pool.with_connection`. |
-| `ImageToPdfConversionService` | Uses `image_processing` gem (vips backend). `#convert(file)` converts JPEG/PNG/TIFF >5MB to PDF tempfile. Returns original file unchanged if PDF or if image ≤5MB. `IMAGE_SIZE_THRESHOLD = 5.megabytes`. Isolated responsibility: one service, one job. |
-| `StagedDocument` | ActiveRecord: `has_one_attached :file`, `belongs_to :user`, `belongs_to :stageable, polymorphic: true`. Status enum: `pending`, `validated`, `rejected`, `failed`. `extracted_fields` JSONB stores full raw DocAI fields response (including confidence scores). `job_id` column. `#average_confidence` returns Float (0.0–1.0) computed as mean of all field confidence values from `extracted_fields`. Retained permanently as audit record. Never purged. |
-| `DocAiAdapter` | Extends `DataIntegration::BaseAdapter`. `analyze_document` (sync, `wait=true`), `analyze_document_async` (async POST, no `wait`), `get_document_status` (GET by job ID). Opens blob as `Tempfile` via `file.blob.open` → passes IO to `Faraday::Multipart::FilePart`. |
-| `DocAiService` | Extends `DataIntegration::BaseService`. `analyze` (sync), `submit` (async submission), `check_status` (poll job). Builds `DocAiResult` via factory on completion; raises `ProcessingError` on `status: "failed"`; `handle_integration_error` logs warning and returns `nil` (graceful degradation). |
-| `DocAiResult` | Base `Strata::ValueObject`. Response envelope, `FieldValue` accessor, self-registration factory (`REGISTRY` hash). Subclass files must be `require_relative`'d before `REGISTRY.freeze`. |
-| `DocAiResult::FieldValue` | `Data.define` struct: `value`, `confidence`. `low_confidence?` predicate (threshold: 0.7). All field accessors return `FieldValue` or `nil`. |
-| `DocAiResult::Payslip` | Self-registers via `register "Payslip"`. Typed snake_case accessors. Boolean flag accessors unwrap value directly. `to_prefill_fields` returns values-only hash for form rendering. |
-| File Validator | Marcel magic-byte detection; `application/pdf`, `image/jpeg`, `image/png`, `image/tiff`; ≤30 MB per file; ≤10 files total. Runs before any DB or DocAI operations. Now lives in `DocumentStagingService`. |
+| `DocumentStagingController` | Feature flag guard — returns 404 when `Features.doc_ai_enabled?` is false. Auth (`authorize :document, :create?`), param handling, delegates to `DocumentStagingService#submit`. Redirects to `doc_ai_upload_status` polling page after submission. Controller is responsible only for: auth, param handling, HTTP flow. |
+| `DocumentStagingService` | Owns constants: `ALLOWED_CONTENT_TYPES` (`application/pdf`, `image/jpeg`, `image/png`, `image/tiff`), `MAX_FILE_SIZE_BYTES` (30 MB), `MAX_FILE_COUNT` (10), `SUPPORTED_RESULT_CLASSES`. `#submit(files:, user:)` validates files, calls `ImageToPdfConversionService`, submits async to DocAI via `DocAiAdapter#analyze_document_async`, stores `jobId` on `StagedDocument`, enqueues `FetchDocAiResultsJob` with 1-minute initial delay. `#fetch_results(staged_document_ids:)` called by background job: polls `DocAiAdapter#get_document_status`, updates `StagedDocument` status (validated/rejected/failed), returns early if all resolved. Constructor-injected `DocAiService` dependency. |
+| `ImageToPdfConversionService` | Uses `image_processing` gem (vips backend). `#convert(file)` converts JPEG/PNG/TIFF >5MB to PDF tempfile. Returns original file unchanged if PDF or if image ≤5MB. `IMAGE_SIZE_THRESHOLD = 5.megabytes`. Logs warning on conversion failure; returns original file (graceful degradation). |
+| `StagedDocument` | ActiveRecord: `has_one_attached :file`, `belongs_to :user`, `belongs_to :stageable, polymorphic: true`. Status enum: `pending`, `validated`, `rejected`, `failed`. `doc_ai_job_id` stores the job ID from async submission. `extracted_fields` JSONB stores full raw DocAI fields response (including confidence scores) when completed. `#average_confidence` returns Float (0.0–1.0) computed as mean of all field confidence values; `nil` if blank. Retained permanently as audit record. Never purged. |
+| `FetchDocAiResultsJob` | Background job (queued `:default`). `MAX_ATTEMPTS = 5`. Polls `DocAiService#check_status(jobId)` for each pending `StagedDocument`. When completed/failed, calls `update_from_result` to set final status + `extracted_fields`. If still pending after 5 attempts, bulk-updates all remaining docs to `failed`. Re-enqueues itself with 30-second wait between attempts. |
+| `DocAiAdapter` | Extends `DataIntegration::BaseAdapter`. `analyze_document_async(file:)` — POST to `/v1/documents` (no `wait` param), returns raw response with `jobId`. `get_document_status(job_id:)` — GET `/v1/documents/{job_id}` with `include_extracted_data=true`, returns full response envelope. Opens blob via `file.blob.open` → wraps in `Faraday::Multipart::FilePart`. Timeout: 60s (configurable). |
+| `DocAiService` | Extends `DataIntegration::BaseService`. `analyze_async(file:)` calls adapter, returns raw response hash. `check_status(job_id:)` calls adapter; dispatches on status: returns `DocAiResult` when completed, raises `ProcessingError` on failed, returns raw hash when still processing. `handle_integration_error` logs warning, returns `nil` (graceful degradation). |
+| `DocAiResult` | Base `Strata::ValueObject`. Response envelope, `FieldValue` accessor, self-registration factory (`REGISTRY` hash). Subclass files must be `require_relative`'d before `REGISTRY.freeze`. Factory method: `DocAiResult.from_response(response)` dispatches on `matchedDocumentClass`. |
+| `DocAiResult::FieldValue` | `Data.define` struct: `value`, `confidence`. `low_confidence?` predicate (threshold: configurable, default 0.7). All field accessors return `FieldValue` or `nil`. |
+| `DocAiResult::Payslip` | Self-registers via `register "Payslip"`. ~40 typed snake_case accessors. Boolean flag accessors unwrap value directly (not `FieldValue`). `to_prefill_fields` returns values-only hash for form rendering. |
+| File Validator | Marcel magic-byte detection; `application/pdf`, `image/jpeg`, `image/png`, `image/tiff`; ≤30 MB per file; ≤10 files total. Runs in `DocumentStagingService#submit` before any DB or DocAI operations. |
 
 ## Feature Flag
 
@@ -87,20 +89,33 @@ Five evidence-source statuses provide CMS-auditable tracking of how activity dat
 
 | Status Label | Meaning | How Determined |
 |---|---|---|
-| `state_provided` | Data from ex parte / external data sources | Activity type is `ExPartActivity` (no member upload involved) |
-| `self_reported` | Member manually entered and uploaded | No `StagedDocument` associated with activity (member opted out of AI or feature flag off) |
-| `ai_assisted` | Member uploaded, AI extracted, caseworker reviewed | `StagedDocument` exists with `status: :validated`; all comparable prefill values match activity's submitted values |
-| `ai_assisted_with_member_edits` | Member uploaded, AI extracted, member corrected before submission | `StagedDocument` exists with `status: :validated`; one or more prefill values differ from activity's submitted values |
-| `ai_rejected_member_override` | DocAI rejected document, member proceeded anyway, caseworker reviews | `StagedDocument` exists with `status: :rejected` and member chose to continue (nice-to-have) |
+| `STATE_PROVIDED` | Data from ex parte / external data sources | Activity type is `ExPartActivity` (no member upload involved) |
+| `SELF_REPORTED` | Member manually entered and uploaded | No `StagedDocument` associated with activity (member opted out of AI or feature flag off) |
+| `AI_ASSISTED` | Member uploaded, AI extracted, member submitted unchanged | `StagedDocument` exists with `status: :validated`; all comparable prefill values match activity's submitted values |
+| `AI_ASSISTED_WITH_MEMBER_EDITS` | Member uploaded, AI extracted, member corrected before submission | `StagedDocument` exists with `status: :validated`; one or more prefill values differ from activity's submitted values |
+| `AI_REJECTED_MEMBER_OVERRIDE` | DocAI rejected document, member proceeded anyway, caseworker reviews | `StagedDocument` exists with `status: :rejected` and member chose to continue (nice-to-have) |
 
-**Storage**: New `evidence_source` string column on `activities` table (enum on model). Set at activity creation time based on the flow path taken.
+### Data Model
 
-**Comparison logic** (for `ai_assisted` vs `ai_assisted_with_member_edits`):
+**Constants**: Defined in `app/models/activity_attributions.rb` as string constants (`SELF_REPORTED`, `AI_ASSISTED`, etc.).
+
+**Storage**: `evidence_source` column on `activities` table — stored as string (no DB-level enum constraint). Set at activity creation time based on flow path.
+
+**Activity model grouping**: `Activity` model defines:
+- `AI_SOURCED_EVIDENCE_SOURCES = [AI_ASSISTED, AI_ASSISTED_WITH_MEMBER_EDITS]` — sources where DocAI contributed
+- `NON_AI_EVIDENCE_SOURCES = [SELF_REPORTED, AI_REJECTED_MEMBER_OVERRIDE]` — sources with no AI extraction
+- Predicates: `ai_sourced?`, `self_reported?`
+
+**Confidence lookup**: `DocAiConfidenceService` provides batch confidence queries:
+- `confidence_by_activity_id(activity_ids)` — returns `{ activity_id => avg_confidence }` hash
+- `confidence_by_case_id(case_ids)` — averages confidences per case (for task queue)
+- Uses `unscoped` to bypass default eager-load of attached files (only `extracted_fields` JSONB needed)
+
+**Comparison logic** (for `AI_ASSISTED` vs `AI_ASSISTED_WITH_MEMBER_EDITS`):
 - Rebuild `DocAiResult` from `StagedDocument#extracted_fields` JSONB
-- Call `to_prefill_fields` to get the values DocAI would have prefilled
-- Compare against the activity's stored attributes (`income`, `name`, `month`, etc.)
-- If all mapped fields match → `ai_assisted`; if any differ → `ai_assisted_with_member_edits`
-- Implemented as `Activity#determine_evidence_source` or a dedicated service
+- Call `to_prefill_fields` to get values DocAI would have prefilled
+- Compare against activity's stored attributes (`income`, `name`, `month`, etc.)
+- If all mapped fields match → `AI_ASSISTED`; if any differ → `AI_ASSISTED_WITH_MEMBER_EDITS`
 
 ## Staff Case Worker View
 
@@ -322,6 +337,32 @@ For implementation details on how to use Turbo Frames to auto-refresh a page tha
 | `isYtdGrossPayHighest` | `ytd_gross_pay_highest?` | Boolean |
 | `areFieldNamesSufficient` | `field_names_sufficient?` | Boolean |
 
+## Infrastructure
+
+DocAI API is built on **AWS infrastructure**. OSCER uses ActiveStorage backed by AWS S3 for file storage. When submitting a document to DocAI:
+
+1. Blob is stored in S3 via ActiveStorage
+2. `blob.open` streams from S3 to a local tempfile
+3. Tempfile is uploaded to DocAI API via Faraday multipart
+4. No direct `aws-sdk-s3` calls in the DocAI path — all access goes through ActiveStorage abstraction
+
+This architecture supports secure, scalable processing without local file copies.
+
+## Separation of Concerns
+
+DocAI is a **pure extraction service**: it reads document fields (payroll, tax, identity) and returns structured data with confidence scores. OSCER's **rules engine** (certification eligibility, exemption screener) is entirely separate and consumes the extracted fields but makes all eligibility decisions independently.
+
+Key boundary: DocAI has **no knowledge** of OSCER's eligibility rules. The service simply extracts and returns data; caseworkers and OSCER's eligibility logic determine program qualification.
+
+## Known Limitations
+
+- **Polling timeout**: Background job makes max 5 attempts after initial 1-minute delay (30s between retries). On exhaustion (~3 minutes total), docs are marked `failed`. No automatic retry after that; manual resubmission required.
+- **No authentication**: DocAI endpoint has no auth header implemented; all requests use HTTP only. Future enhancement: `DataIntegration::BaseAdapter#before_request` hook exists to add auth headers.
+- **Payslip only**: Only `DocAiResult::Payslip` is registered in `SUPPORTED_RESULT_CLASSES`. W2 and Driver License value objects exist but are not yet wired into `DocumentStagingService`.
+- **No real-time push**: Status updates are browser-polled (Turbo Frames HTTP endpoints); no WebSocket, ActionCable, or server push. Polling interval is configurable per view.
+- **Silent image conversion fallback**: If `ImageToPdfConversionService` fails to convert an image >5MB, the original file is sent to DocAI anyway. DocAI may reject it. Logs warning only.
+- **JPEG/PNG/TIFF >5MB limitation**: DocAI API has trouble with large image files; automatic conversion to PDF happens at 5MB threshold. PDF files upload as-is regardless of size (up to 30MB total).
+
 ## Error Handling
 
 | Scenario | HTTP | Handling |
@@ -353,8 +394,7 @@ resource :document_staging, only: [:create], controller: "document_staging"
 Rails.application.config.doc_ai = {
   api_host:                 ENV.fetch("DOC_AI_API_HOST"),
   timeout_seconds:          ENV.fetch("DOC_AI_TIMEOUT_SECONDS", "60").to_i,
-  low_confidence_threshold: ENV.fetch("DOC_AI_LOW_CONFIDENCE_THRESHOLD", "0.7").to_f,
-  thread_pool_size:         ENV.fetch("DOC_AI_THREAD_POOL_SIZE", "4").to_i
+  low_confidence_threshold: ENV.fetch("DOC_AI_LOW_CONFIDENCE_THRESHOLD", "0.7").to_f
 }
 ```
 
@@ -372,74 +412,64 @@ doc_ai: {
 DOC_AI_API_HOST=http://localhost:8000
 DOC_AI_TIMEOUT_SECONDS=60
 DOC_AI_LOW_CONFIDENCE_THRESHOLD=0.7
-DOC_AI_THREAD_POOL_SIZE=4   # default: MAX_FILE_COUNT * 2
 FEATURE_DOC_AI=false
 ```
 
-> **Puma/rack-timeout**: Must allow requests >60s on upload endpoint (recommended: 75s minimum).
-> **DB connection pool**: Each concurrent file holds one connection for ~38–60s. With `MAX_FILE_COUNT=10`, up to 10 additional connections per upload request.
-> **`image_processing` gem**: Required for `ImageToPdfConversionService`. Uses vips backend (faster than ImageMagick). Already in Gemfile (commented out by default in Rails).
+> **`DOC_AI_API_HOST`**: URL of the DocAI API service (runs on AWS in production). Required; no default.
+> **`DOC_AI_TIMEOUT_SECONDS`**: Timeout for individual API calls (both async submit and polling). Default: 60s.
+> **`DOC_AI_LOW_CONFIDENCE_THRESHOLD`**: Confidence floor for task queue prioritization. Default: 0.7 (70%).
+> **`image_processing` gem**: Required for `ImageToPdfConversionService`. Uses vips backend (faster than ImageMagick). Already in Gemfile (may be commented out by default in Rails).
 
-## Files to Create
+## Implementation Files
+
+Core DocAI files implemented:
 
 | File | Purpose |
 |------|---------|
-| `app/models/staged_document.rb` | Model: status enum, `has_one_attached :file`, `extracted_fields` JSONB, `#average_confidence` |
-| `db/migrate/<ts>_create_staged_documents.rb` | Migration: uuid pk, status, doc_ai_job_id, extracted_fields, user_id, stageable polymorphic |
-| `app/controllers/document_staging_controller.rb` | See Components table |
-| `app/services/document_staging_service.rb` | Extracted controller logic: validation, concurrency, processing orchestration |
-| `app/services/image_to_pdf_conversion_service.rb` | Converts JPEG/PNG/TIFF >5MB to PDF via image_processing gem (vips) |
-| `app/views/document_staging/create.html.erb` | Prefilled fields + hidden `staged_document_signed_ids[]` inputs + inline errors |
-| `app/adapters/doc_ai_adapter.rb` | Extends `DataIntegration::BaseAdapter`; multipart POST. Methods: `analyze_document`, `analyze_document_async`, `get_document_status`. |
-| `app/services/doc_ai_service.rb` | Extends `DataIntegration::BaseService` |
-| `app/models/doc_ai_result.rb` | Base value object + `FieldValue` struct + factory |
-| `app/models/doc_ai_result/payslip.rb` | Payslip subclass |
-| `config/initializers/doc_ai.rb` | App config |
-| `app/policies/document_policy.rb` | Pundit: `authorize :document, :create?` |
-| `db/migrate/<ts>_add_evidence_source_to_activities.rb` | Adds `evidence_source` string column to activities |
-| `spec/models/staged_document_spec.rb` | Model validations, enum, `#average_confidence` |
-| `spec/controllers/document_staging_controller_spec.rb` | Feature flag guard, delegation, error handling |
-| `spec/services/document_staging_service_spec.rb` | Validation, concurrency, delegation |
-| `spec/services/image_to_pdf_conversion_service_spec.rb` | Conversion tests: threshold, format handling, passthrough |
-| `spec/adapters/doc_ai_adapter_spec.rb` | WebMock stubs |
-| `spec/services/doc_ai_service_spec.rb` | Service tests |
-| `spec/models/doc_ai_result_spec.rb` | Base value object |
-| `spec/models/doc_ai_result/payslip_spec.rb` | Payslip accessors |
+| `app/models/staged_document.rb` | Status enum (`pending`, `validated`, `rejected`, `failed`), `has_one_attached :file`, `doc_ai_job_id`, `extracted_fields` JSONB, `#average_confidence` |
+| `app/controllers/document_staging_controller.rb` | Feature flag gate, auth, delegates to `DocumentStagingService#submit`, redirects to `doc_ai_upload_status` |
+| `app/services/document_staging_service.rb` | `submit(files:, user:)` — validates, converts images, submits async, enqueues job. `fetch_results(staged_document_ids:)` — polls for results, updates status |
+| `app/jobs/fetch_doc_ai_results_job.rb` | Background job (max 5 attempts, 30s retry), calls `DocumentStagingService#fetch_results` |
+| `app/services/image_to_pdf_conversion_service.rb` | Converts JPEG/PNG/TIFF >5MB to PDF via `image_processing` gem (vips backend) |
+| `app/adapters/doc_ai_adapter.rb` | Multipart HTTP client. Methods: `analyze_document_async` (POST, no wait), `get_document_status` (GET by jobId) |
+| `app/services/doc_ai_service.rb` | `analyze_async` (submit), `check_status` (poll). Builds `DocAiResult` factory on completion |
+| `app/models/doc_ai_result.rb` | Base `Strata::ValueObject`, `FieldValue` struct (value + confidence), self-registering factory |
+| `app/models/doc_ai_result/payslip.rb` | ~40 typed accessors, `to_prefill_fields` method |
+| `app/models/activity_attributions.rb` | String constants: `SELF_REPORTED`, `AI_ASSISTED`, `AI_ASSISTED_WITH_MEMBER_EDITS`, `AI_REJECTED_MEMBER_OVERRIDE`, `STATE_PROVIDED` |
+| `app/services/doc_ai_confidence_service.rb` | Batch confidence lookup by activity or case ID |
+| `app/models/activity.rb` | `evidence_source` string column, `AI_SOURCED_EVIDENCE_SOURCES` / `NON_AI_EVIDENCE_SOURCES` grouping, `has_many :staged_documents, as: :stageable` |
+| `app/policies/document_policy.rb` | Pundit authorization: `authorize :document, :create?` |
+| `config/initializers/doc_ai.rb` | Loads `api_host`, `timeout_seconds`, `low_confidence_threshold` from ENV |
+| Gemfile | `faraday-multipart` gem for multipart HTTP uploads |
 
-## Files to Modify
+Related files also modified for integration:
 
-| File | Change |
-|------|--------|
-| `Gemfile` | Add `faraday-multipart` if not present; uncomment `image_processing` gem |
-| `local.env.example` | Add `DOC_AI_API_HOST`, `DOC_AI_TIMEOUT_SECONDS`, `DOC_AI_LOW_CONFIDENCE_THRESHOLD`, `DOC_AI_THREAD_POOL_SIZE`, `FEATURE_DOC_AI` |
-| `config/routes.rb` | Add `resource :document_staging` inside localized block |
-| `config/initializers/feature_flags.rb` | Add `doc_ai` feature flag entry |
-| `app/controllers/activities_controller.rb` | Permit `staged_document_signed_ids: []`; iterate `find_signed`, attach blobs, set `stageable`, skip upload redirect |
-| `app/models/activity.rb` | Add `has_many :staged_documents, as: :stageable`; add `evidence_source` enum; add `#determine_evidence_source` |
-| `app/models/staged_document.rb` | Add `#average_confidence` method |
-| `app/views/activity_report_application_forms/_staff_activity_report.html.erb` | Add Evidence Source and Confidence columns |
-| `app/views/staff/dashboard/index.html.erb` | Add confidence-based sort to task queue |
+| File | Changes |
+|------|---------|
+| `app/controllers/activities_controller.rb` | Permit `staged_document_signed_ids: []`, iterate to resolve signed IDs, attach blobs |
+| `app/views/tasks/details/_attribution_tag.html.erb` | Renders evidence source icon + label |
+| `app/views/tasks/index.html.erb` | Task row highlighting for low confidence (behind `feature_enabled?(:doc_ai)`) |
+| `app/helpers/activities_helper.rb` | Icon/color/label mappings for attribution, confidence display helpers |
 
 ## Key Decisions
 
-- **`wait=true` synchronous**: Realtime validation is required UX; background processing adds polling/WebSocket complexity with no benefit.
-- **`Concurrent::Future` on dedicated `FixedThreadPool`**: Sequential processing of N files would take N×38s; concurrent keeps it at ~38s. Dedicated pool isolates DocAI from global concurrent-ruby IO pool (prevents starving ActiveStorage callbacks).
+- **Asynchronous submission + background job polling**: Avoids Puma request timeout risk when submitting N files (each ~38–60s upload). Member sees status page that polls `/doc_ai_upload_status` for completion updates. Browser polls via Turbo Frames.
+- **Background job max 5 attempts with 30s retry**: After initial 1-minute delay, job retries up to 4 more times (30s between). Total window: ~3 minutes. On exhaustion, docs marked `failed` (no indefinite retry loop).
 - **`signed_id` not raw UUID**: Prevents IDOR without a DB membership query. 1-hour expiry. `find_signed` returns `nil` on expiry → falls back to manual upload (graceful degradation).
 - **Blob sharing not copying**: `attach(staged.file.blob)` creates a new `active_storage_attachments` row pointing at same S3 object. No storage duplication.
-- **`StagedDocument` as permanent audit record**: `stageable` polymorphic association set on consumption. Never purged — blob safe from premature deletion.
-- **`FieldValue` struct**: Pairs value + confidence so callers cannot ignore confidence. `to_prefill_fields` provides values-only hash for form rendering.
-- **Raw JSONB for `extracted_fields`**: Full DocAI fields response stored (not stripped). No data lost at persistence; staff can review low-confidence fields without replaying DocAI.
+- **`StagedDocument` as permanent audit record**: `stageable` polymorphic association set on consumption. Never purged — blob safe from premature deletion. Full `extracted_fields` JSONB preserved.
+- **`FieldValue` struct**: Pairs value + confidence so callers cannot ignore confidence. `to_prefill_fields` provides values-only hash for form rendering. Confidence never stripped.
+- **Raw JSONB for `extracted_fields`**: Full DocAI fields response stored (not stripped). No data lost at persistence; staff can review all fields and low-confidence scores without replaying DocAI.
 - **Self-registering subclasses**: `register "ClassName"` in each subclass populates `REGISTRY`. Adding a new document type requires only a new subclass — `DocAiResult` and `DocumentStagingService` need no changes.
-- **`DocAiService` receives ActiveStorage attachment**: Works with stored copy (not transient upload object). `blob.open` streams from S3 to tempfile for Faraday upload.
-- **Server-rendered prefill**: Controller renders HTML template (not JSON). No client-side JS upload controller needed.
-- **Double-submit prevention**: Submit button uses `data-turbo-submits-with` / `data-disable-with` — disabled after first click until response renders (~38s).
+- **`DocAiService` receives ActiveStorage attachment**: Works with stored copy (not transient upload object). `blob.open` streams from S3 to tempfile for Faraday multipart upload.
+- **Turbo Frames polling for status**: Member sees real-time status page updates without WebSocket/ActionCable. Browser polls HTTP endpoint (simple, stateless).
 - **Authorization**: `authorize :document, :create?` at top of `#create`. Requires `DocumentPolicy`.
-- **Graceful degradation**: When `staged_document_signed_ids` absent, existing documents upload page redirect is preserved unchanged. `handle_integration_error` returns `nil` rather than raising.
+- **Graceful degradation**: Image conversion failure → proceed with original file (may be rejected by DocAI). `handle_integration_error` logs warning, returns `nil`. Missing `staged_document_signed_ids` → fallback to manual documents upload.
 - **Feature flag via `Features` module**: Reuses proven pattern; ENV-based; default off; no code path changes when disabled.
-- **Evidence source on Activity, not StagedDocument**: Attribution describes the *submission flow*, not the document. One activity = one evidence source. Stored as enum for query efficiency.
-- **Average confidence**: Simple mean across all fields — intuitive for staff, no weighting complexity. Full per-field confidence preserved in JSONB for drill-down.
-- **Image conversion at 5MB**: Matches DocAI API limitation for image files. `image_processing` gem (vips backend) already in Gemfile; faster than ImageMagick.
-- **Controller extraction (SRP)**: Controller handles HTTP only; service owns validation, threading, orchestration. Enables testing without controller context.
+- **Evidence source on Activity, not StagedDocument**: Attribution describes the *submission flow*, not the document. One activity = one evidence source. Stored as string column (no DB-level enum constraint).
+- **Average confidence**: Simple mean across all fields — intuitive for staff. Full per-field confidence preserved in JSONB for drill-down.
+- **Image conversion at 5MB**: Matches DocAI API limitation for JPEG/PNG/TIFF files. `image_processing` gem (vips backend) is faster than ImageMagick.
+- **Controller extraction (SRP)**: Controller handles HTTP + auth only; service owns validation, async submission, job enqueueing. Service method is testable without controller context.
 - **Member opt-in is a routing decision, not persisted consent**: The `evidence_source` label on the resulting activity provides the audit trail. No separate consent record needed.
 - **Member override of DocAI rejection (nice-to-have)**: When DocAI rejects a document, member can proceed; `ai_rejected_member_override` label flags it for caseworker manual review.
 

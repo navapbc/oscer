@@ -136,6 +136,21 @@ RSpec.describe "/activities", type: :request do
           expect(response).to have_http_status(:redirect)
           expect(response.location).to match(%r{/activity_report_application_forms/#{activity_report_application_form.id}/activities/[^/]+/documents})
         end
+
+        it "preserves decimal hours" do
+          valid_attributes = {
+            name: Faker::Company.name,
+            activity_type: "work_activity",
+            hours: "5.25",
+            month: (Date.today - 2.months).beginning_of_month,
+            category: "employment"
+          }
+
+          post activity_report_application_form_activities_url(activity_report_application_form), params: { activity: valid_attributes }
+
+          created_activity = activity_report_application_form.activities.where(name: valid_attributes[:name]).first
+          expect(created_activity.hours).to eq(5.25)
+        end
       end
     end
 
@@ -266,6 +281,17 @@ RSpec.describe "/activities", type: :request do
 
       it "redirects to the activity report" do
         expect(response).to redirect_to(documents_activity_report_application_form_activity_url(activity_report_application_form, existing_activity))
+      end
+    end
+
+    context "with decimal hours" do
+      it "preserves decimal values" do
+        patch activity_report_application_form_activity_url(activity_report_application_form, existing_activity),
+          params: { activity: { hours: "3.5" } }
+
+        activity_report_application_form.reload
+        updated_activity = activity_report_application_form.activities_by_id[existing_activity.id]
+        expect(updated_activity.hours).to eq(3.5)
       end
     end
 

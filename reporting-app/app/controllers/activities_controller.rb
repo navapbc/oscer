@@ -179,7 +179,7 @@ class ActivitiesController < ApplicationController
         "category",
       )
       attrs[:income] = activity_params[:income].to_i * 100 if activity_params.key?(:income)
-      attrs[:hours] = activity_params[:hours].to_i if activity_params.key?(:hours)
+      attrs[:hours] = activity_params[:hours].to_f if activity_params.key?(:hours)
       attrs
     end
 
