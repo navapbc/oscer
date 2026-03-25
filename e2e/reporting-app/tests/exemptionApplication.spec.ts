@@ -10,8 +10,7 @@ test('member can apply for a medical exemption and submit the application', asyn
   page,
   emailService,
 }) => {
-  // Triple timeout — this test waits for an external email verification code
-  test.slow();
+  test.setTimeout(120000); // 2 minutes
 
   const email = emailService.generateEmailAddress(emailService.generateUsername());
   const password = 'testPassword';
