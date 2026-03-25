@@ -5,7 +5,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig(
   deepMerge(baseConfig, {
     use: {
-      baseURL: baseConfig.use.baseURL || 'localhost:3000',
+      baseURL: baseConfig.use.baseURL || 'http://localhost:3000',
     },
   })
 );
