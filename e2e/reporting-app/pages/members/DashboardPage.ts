@@ -1,7 +1,6 @@
 import { Locator, Page } from '@playwright/test';
 import { BasePage } from '../BasePage';
 import { BeforeYouStartPage } from './activity-reports';
-import { ExemptionApplicationNewPage } from './exemptions';
 
 export class DashboardPage extends BasePage {
   get pagePath() {
@@ -21,10 +20,5 @@ export class DashboardPage extends BasePage {
   async clickReportActivities() {
     await this.reportActivitiesButton.click();
     return new BeforeYouStartPage(this.page).waitForURLtoMatchPagePath();
-  }
-
-  async clickRequestExemption() {
-    await this.requestExemptionButton.click();
-    return new ExemptionApplicationNewPage(this.page).waitForURLtoMatchPagePath();
   }
 }
