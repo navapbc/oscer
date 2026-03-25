@@ -5,11 +5,14 @@
     <%= t(".title") %>
   </h1>
 
-  <% if sso_enabled? %>
+  <% if member_oidc_enabled? %>
     <div class="margin-bottom-4">
-      <%= link_to t(".sso_button"), sso_login_path, class: "usa-button usa-button--outline width-full", data: { turbo: false } %>
+      <%= link_to t("auth.member_oidc.sign_in_button"),
+          member_oidc_login_path,
+          class: "usa-button usa-button--outline width-full",
+          data: { turbo: false } %>
       <p class="text-center margin-top-2 text-base">
-        <%= t(".sso_description") %>
+        <%= t("auth.member_oidc.sign_in_description") %>
       </p>
     </div>
 

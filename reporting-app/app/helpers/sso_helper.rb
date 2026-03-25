@@ -10,4 +10,20 @@ module SsoHelper
     # SSO config not loaded (e.g., in tests without SSO setup)
     false
   end
+
+  # Member OIDC (citizen IdP) — see docs/architecture/staff-sso/member-sso.md
+  def member_oidc_enabled?
+    Rails.application.config.member_oidc[:enabled] == true
+  rescue NoMethodError
+    false
+  end
+
+  # When true, member sign-in URL redirects to member OIDC (no Cognito email/password on that page).
+  def member_oidc_member_auth_only?
+    return false unless member_oidc_enabled?
+
+    Rails.application.config.member_oidc[:member_auth_only] == true
+  rescue NoMethodError
+    false
+  end
 end

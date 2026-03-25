@@ -15,27 +15,27 @@ RSpec.describe "users/sessions/new", type: :view do
     )
   end
 
-  context "when SSO is enabled" do
+  context "when member OIDC is enabled" do
     before do
       allow(view).to receive_messages(
-        sso_enabled?: true,
-        sso_login_path: "/sso/login"
+        member_oidc_enabled?: true,
+        member_oidc_login_path: "/member_oidc/login"
       )
     end
 
-    it "displays the SSO login button" do
+    it "displays the member OIDC login button" do
       render
 
       expect(rendered).to have_link(
-        I18n.t("users.sessions.new.sso_button"),
-        href: "/sso/login"
+        I18n.t("auth.member_oidc.sign_in_button"),
+        href: "/member_oidc/login"
       )
     end
 
-    it "displays the SSO description" do
+    it "displays the member OIDC description" do
       render
 
-      expect(rendered).to have_content(I18n.t("users.sessions.new.sso_description"))
+      expect(rendered).to have_content(I18n.t("auth.member_oidc.sign_in_description"))
     end
 
     it "displays the divider" do
@@ -52,21 +52,21 @@ RSpec.describe "users/sessions/new", type: :view do
     end
   end
 
-  context "when SSO is disabled" do
+  context "when member OIDC is disabled" do
     before do
-      allow(view).to receive(:sso_enabled?).and_return(false)
+      allow(view).to receive(:member_oidc_enabled?).and_return(false)
     end
 
-    it "does not display the SSO login button" do
+    it "does not display the member OIDC login button" do
       render
 
-      expect(rendered).not_to have_link(I18n.t("users.sessions.new.sso_button"))
+      expect(rendered).not_to have_link(I18n.t("auth.member_oidc.sign_in_button"))
     end
 
-    it "does not display the SSO description" do
+    it "does not display the member OIDC description" do
       render
 
-      expect(rendered).not_to have_content(I18n.t("users.sessions.new.sso_description"))
+      expect(rendered).not_to have_content(I18n.t("auth.member_oidc.sign_in_description"))
     end
 
     it "does not display the divider" do
