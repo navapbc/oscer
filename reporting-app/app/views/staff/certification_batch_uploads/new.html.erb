@@ -4,8 +4,8 @@
 <p>
   <%= link_to t(".download_template"), "/certification_batch_upload_template.csv", class: "usa-link", download: true %>
 </p>
-<div class="usa-alert usa-alert--info" role="alert">
-  <div class="usa-alert__body">
+<%= render AlertComponent.new(type: AlertComponent::TYPES::INFO) do |c| %>
+  <% c.with_body do %>
     <h2 class="usa-alert__heading"><%= t(".csv_format.heading") %></h2>
     <p class="usa-alert__text"><%= t(".csv_format.description") %></p>
     <div class="usa-accordion usa-accordion--bordered maxw-tablet">
@@ -43,8 +43,8 @@
         </ul>
       </div>
     </div>
-  </div>
-</div>
+  <% end %>
+<% end %>
 <%= form_with(url: certification_batch_uploads_path, multipart: true, class: "margin-top-4") do |f| %>
   <div class="usa-form-group">
     <%= f.label :csv_file, t(".csv_file_label"), class: "usa-label" %>
