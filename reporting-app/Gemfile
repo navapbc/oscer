@@ -6,7 +6,6 @@ ruby "3.4.7"
 
 # Strata Government Digital Services SDK Rails engine
 gem "strata", git: "https://github.com/navapbc/strata-sdk-rails.git"
-# Local SDK checkout (uncomment and point at your clone): gem "strata", path: "../../strata-sdk-rails"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 7.2.0", ">= 7.2.2.1"
