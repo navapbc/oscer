@@ -3,7 +3,7 @@
 <h2><%= t('information_requests.edit.instructions_heading') %></h2>
 <p class="font-serif-md"><%= t('information_requests.edit.instructions_html') %></p>
 
-<%= render AlertComponent.new(type: "info", classes: "margin-top-3") do |c| %>
+<%= render AlertComponent.new(type: AlertComponent::TYPES::INFO, classes: "margin-top-3") do |c| %>
   <% c.with_body do %>
     <p class="usa-alert__text">
       <%= @information_request.staff_comment %>

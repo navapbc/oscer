@@ -1,7 +1,7 @@
 <% content_for :title, t(".title") %>
 
 <%= render AlertComponent.new(
-  type: "info",
+  type: AlertComponent::TYPES::INFO,
   heading: t(".instructions_heading"),
   message: t(".instructions_html", verify_account_url: url_for(users_verify_account_path)),
   heading_level: 2

@@ -28,6 +28,6 @@
       </tbody>
     </table>
   <% else %>
-    <%= render AlertComponent.new(type: "info", message: t(".no_uploads"), classes: "margin-top-4") %>
+    <%= render AlertComponent.new(type: AlertComponent::TYPES::INFO, message: t(".no_uploads"), classes: "margin-top-4") %>
   <% end %>
 <% end %>

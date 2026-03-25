@@ -1,5 +1,5 @@
 <div class="grid-container">
-  <%= render AlertComponent.new(type: "error", heading: t(".heading"), message: t(".intro"), heading_level: 3) %>
+  <%= render AlertComponent.new(type: AlertComponent::TYPES::ERROR, heading: t(".heading"), message: t(".intro"), heading_level: 3) %>
   <div class="margin-top-3">
     <%= link_to t(".view_activity_report_button"), activity_report_application_form_path(activity_report), class: "usa-button" %>
   </div>

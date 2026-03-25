@@ -5,7 +5,7 @@ require "rails_helper"
 RSpec.describe AlertComponent, type: :component do
   describe "types" do
     it "renders each type with matching modifier class" do
-      AlertComponent::TYPES.each do |alert_type|
+      AlertComponent::TYPES::ALL.each do |alert_type|
         render_inline(described_class.new(type: alert_type, message: "x"))
         expect(page).to have_css(".usa-alert.usa-alert--#{alert_type}")
       end

@@ -33,12 +33,12 @@ module CertificationBatchUploadsHelper
     case batch_upload.status
     when "pending"
       {
-        type: "info",
+        type: AlertComponent::TYPES::INFO,
         message: t("queued_message", scope: scope)
       }
     when "processing"
       {
-        type: "info",
+        type: AlertComponent::TYPES::INFO,
         message: t(
           "processing_message",
           scope: scope,
@@ -48,7 +48,7 @@ module CertificationBatchUploadsHelper
       }
     when "failed"
       {
-        type: "error",
+        type: AlertComponent::TYPES::ERROR,
         heading: t("failed_heading", scope: scope),
         message: batch_upload.results&.dig("error") || t("failed_message", scope: scope)
       }

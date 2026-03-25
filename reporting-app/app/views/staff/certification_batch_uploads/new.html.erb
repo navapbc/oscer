@@ -4,7 +4,7 @@
 <p>
   <%= link_to t(".download_template"), "/certification_batch_upload_template.csv", class: "usa-link", download: true %>
 </p>
-<%= render AlertComponent.new(type: "info") do |c| %>
+<%= render AlertComponent.new(type: AlertComponent::TYPES::INFO) do |c| %>
   <% c.with_body do %>
     <h2 class="usa-alert__heading"><%= t(".csv_format.heading") %></h2>
     <p class="usa-alert__text"><%= t(".csv_format.description") %></p>

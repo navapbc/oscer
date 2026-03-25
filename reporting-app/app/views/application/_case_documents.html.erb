@@ -11,7 +11,7 @@
     </ul>
   <% else %>
     <%= render AlertComponent.new(
-      type: "info",
+      type: AlertComponent::TYPES::INFO,
       message: t("case_documents.no_documents_text"),
       classes: "usa-alert--slim usa-alert--no-icon",
       style: "padding: unset;"

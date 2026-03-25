@@ -3,11 +3,11 @@
   <div class="grid-row margin-bottom-3">
     <div class="grid-col-12">
       <% if flash[:notice] || notice %>
-        <%= render AlertComponent.new(type: "success", message: flash[:notice] || notice) %>
+        <%= render AlertComponent.new(type: AlertComponent::TYPES::SUCCESS, message: flash[:notice] || notice) %>
       <% end %>
 
       <% if flash[:errors] || alert %>
-        <%= render AlertComponent.new(type: "error") do |c| %>
+        <%= render AlertComponent.new(type: AlertComponent::TYPES::ERROR) do |c| %>
           <% c.with_body do %>
             <% if flash[:errors] %>
               <h3 class="usa-alert__heading">
