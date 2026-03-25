@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Staff::TaskRowComponent < Strata::Tasks::TaskRowComponent
+  include ActivitiesHelper
+
   def initialize(task:, confidence_by_case: nil, **kwargs)
     @confidence_by_case = confidence_by_case
     super(task: task, **kwargs)
@@ -19,14 +21,14 @@ class Staff::TaskRowComponent < Strata::Tasks::TaskRowComponent
 
   def row_classes
     return nil unless Features.doc_ai_enabled?
-    tc = helpers.task_confidence(@task.case_id, @confidence_by_case)
+    tc = task_confidence(@task.case_id, @confidence_by_case)
     "bg-error-lighter" if tc[:low]
   end
 
   protected
 
   def confidence
-    tc = helpers.task_confidence(@task.case_id, @confidence_by_case)
+    tc = task_confidence(@task.case_id, @confidence_by_case)
     helpers.confidence_value_content(tc[:conf])
   end
 
