@@ -76,11 +76,15 @@ class TasksController < Strata::TasksController
 
   protected
 
+  # define #tasks_index_locals in all gem versions (it was added with TaskRowComponent).
   def tasks_index_locals
-    super.merge(
+    {
+      tasks: @tasks,
+      task_types: @task_types,
+      unassigned_tasks: @unassigned_tasks,
       task_row_component_class: Staff::TaskRowComponent,
       task_row_component_options: { confidence_by_case: @confidence_by_case }
-    )
+    }
   end
 
   def filter_tasks
