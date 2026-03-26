@@ -62,6 +62,8 @@ A connection error or timeout means it is not.
 If the flow description is ambiguous, ask before exploring. Common questions:
 - Member-facing or staff-facing flow?
 - Does this flow require an existing certification/account, or start from scratch?
+- **Skip account creation?** While using the Playwright MCP to verify the testing flow, would you like to skip account creation and use existing credentials?
+- **Login credentials:** If skipping account creation, what login credentials (email/password) would you like to use? (These are specific to your local environment).
 - What is the observable success state? (URL change, text on page, redirect, etc.)
 - Are there any fixture files (PDFs, images) needed?
 - Is this a happy path only, or should edge cases be covered?
