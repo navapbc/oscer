@@ -31,42 +31,33 @@ This ensures the plan is correct before generating any files.
 
 # e2e-test skill
 
-You help write new Playwright end-to-end tests for the **oscer reporting-app** — a Rails 7.2
-government-benefits app. Tests live in `e2e/reporting-app/` and follow a Page Object Model (POM)
+You help write new Playwright end-to-end tests for web applications. Tests follow a Page Object Model (POM)
 pattern with flow orchestrators for multi-step scenarios.
 
 The argument passed to this skill is a **description of the UI flow to test**.
 
 ---
 
-## Step 1 — Check if localhost:3000 is running
+## Step 1 — Check if the dev server is running
 
-Use the Playwright MCP tool (`mcp__playwright__browser_navigate`) to navigate to
-`http://localhost:3000`. A redirect to the login page or a dashboard page means the server is up.
-A connection error or timeout means it is not.
+Use the Playwright MCP tool (`mcp__playwright__browser_navigate`) to navigate to the dev server URL
+(e.g., `http://localhost:3000`). A successful navigation (no connection error) means the server is up.
 
 **If not running:**
-1. Tell the user: "The local server isn't running. Let me build it first."
-2. Run in the terminal:
-   ```bash
-   cd /oscer/reporting-app && make build
-   ```
-3. Ask: "Would you like to start with `make start-container` (Docker) or `make start-native` (native Ruby)?"
-4. Instruct them to run the chosen command in a separate terminal, then confirm when it's up.
-5. Once confirmed, navigate to `http://localhost:3000` again to verify.
+1. Tell the user: "The dev server isn't running. Please check your project's documentation for startup instructions."
+2. Ask the user to start the server per their project's conventions (e.g., `make start-container`, `npm run dev`, etc.)
+3. Once confirmed, navigate to the dev server URL again to verify.
 
 ---
 
 ## Step 2 — Ask clarifying questions if needed
 
 If the flow description is ambiguous, ask before exploring. Common questions:
-- Member-facing or staff-facing flow?
-- Does this flow require an existing certification/account, or start from scratch?
-- **Skip account creation?** While using the Playwright MCP to verify the testing flow, would you like to skip account creation and use existing credentials?
-- **Login credentials:** If skipping account creation, what login credentials (email/password) would you like to use? (These are specific to your local environment).
 - What is the observable success state? (URL change, text on page, redirect, etc.)
 - Are there any fixture files (PDFs, images) needed?
 - Is this a happy path only, or should edge cases be covered?
+- Does this flow require pre-existing data (user account, etc.), or does it create from scratch?
+- Are there login credentials or test accounts you'd like to use?
 
 Don't ask questions that you can answer by looking at the live app.
 
@@ -84,8 +75,8 @@ Navigate to each page involved in the described flow using the Playwright MCP to
 - For buttons: `getByRole('button', { name: /exact label/i })`
 - For text fields: `getByLabel('Field Label')` OR `getByPlaceholder('Hint text')`
 - For selects/dropdowns: `getByLabel('Select label')` and available options
-- For USWDS radio/checkbox groups: note that elements are CSS-hidden (will use `dispatchEvent`)
 - For links: `getByRole('link', { name: /link text/i })`
+- **Project-specific patterns:** Check the project's testing rules for CSS-hidden elements, framework-specific quirks, etc.
 
 **Test the locators live in the browser console:**
 - Before writing code, verify at least 1-2 critical locators work
@@ -96,8 +87,8 @@ Navigate to each page involved in the described flow using the Playwright MCP to
 - Note any async delays or page redirects
 - Check if any background jobs run (look for loading spinners, network activity)
 
-**Check the reference file:**
-- See `references/existing-pages-and-flows.md` for all existing page objects
+**Review existing page objects:**
+- Look at existing pages in the `pages/` directory to understand the project's patterns
 - Identify which pages you can **reuse exactly** vs. which need new methods added
 
 **This step is critical:** Inaccurate locators cause test failures. Spend time here to get URLs, field labels, and button text exactly right.
@@ -145,43 +136,13 @@ Use the plan tool (`ExitPlanMode`) to present the plan and pause. **Do not proce
 
 Generate all files needed:
 
-### Test file — `e2e/reporting-app/tests/<name>.spec.ts`
+### Test file — `<app-e2e-dir>/tests/<name>.spec.ts`
 
-### Page object — `e2e/reporting-app/pages/<dir>/<Name>Page.ts`
+### Page object — `<app-e2e-dir>/pages/<dir>/<Name>Page.ts`
 
-### Flow class (if 5+ steps) — `e2e/reporting-app/flows/<Name>Flow.ts`
+### Flow class (if 5+ steps) — `<app-e2e-dir>/flows/<Name>Flow.ts`
 
-### Step 5c — Update barrel exports (REQUIRED)
-
-**CRITICAL:** Every new file MUST be exported from its barrel `index.ts`, or the test will fail at import.
-
-**Barrel Export Checklist:**
-
-For each new file created, add to the appropriate `index.ts`:
-
-```typescript
-// pages/members/index.ts (example)
-export { DashboardPage } from './DashboardPage';
-export { NewPageName } from './NewPageName'; // ← ADD THIS
-
-// pages/members/activity-reports/index.ts
-export { ActivityReportPage } from './ActivityReportPage';
-export { NewActivityReportPage } from './NewActivityReportPage'; // ← ADD THIS
-
-// flows/index.ts
-export { AccountCreationFlow } from './AccountCreationFlow';
-export { NewFlowName } from './NewFlowName'; // ← ADD THIS
-```
-
-**Before validation (Step 6), verify:**
-- ✓ Every new `.ts` file has a corresponding export in its barrel `index.ts`
-- ✓ Test imports match the barrel exports: `import { NewPage } from '../pages'` works
-- ✓ No circular dependencies (page A imports page B, page B imports page A)
-
-**If test fails with `Cannot find module` error:**
-- Check if the file was exported from `index.ts`
-- Check import path is relative (e.g., `import { DashboardPage } from '../pages'`)
-- Re-run test after adding export
+Check your project's testing rules for barrel export requirements and directory layout specifics.
 
 ---
 
@@ -197,9 +158,7 @@ export { NewFlowName } from './NewFlowName'; // ← ADD THIS
    ```
 
 2. **Run the generated test file against the live app:**
-   ```bash
-   APP_NAME=reporting-app npx playwright test reporting-app/tests/<filename>.spec.ts
-   ```
+   Use your project's test command (see project testing rules for the exact command)
 
 3. **If the test passes:**
    - ✅ Code is syntactically correct and executes. Proceed to Phase B.
@@ -265,15 +224,7 @@ After the CLI test passes, manually walk through the flow on `localhost:3000` to
 Present every file you wrote — test spec, any new page objects, any new flows — with their full
 paths. Include a note that the test was **validated and passes on localhost**.
 
-Remind the user how to run the test:
-
-```bash
-cd oscer/e2e
-APP_NAME=reporting-app npx playwright test reporting-app/tests/<filename>.spec.ts
-```
-
-If the test involves background jobs or DocAI, remind them that the test may take several minutes
-and to check the timeout setting.
+Remind the user how to run the test (check your project's testing rules for the exact command).
 
 ---
 
@@ -316,19 +267,20 @@ and to check the timeout setting.
 Use this checklist **AFTER Step 6 validation passes** and **BEFORE Step 7 handoff**:
 
 ### Test File
-- ✓ Imports custom `test` from `../../fixtures` (NOT `@playwright/test`)
-- ✓ Imports all page objects from barrel exports (`../pages`, `../flows`)
+- ✓ Imports from the project's test fixture setup
+- ✓ Imports all page objects from barrel exports
 - ✓ Has at least one observable assertion (URL, text, visibility, etc.)
 - ✓ Unique test data generated (email address, etc.)
 - ✓ Test passes on first run (no flakes after 1 attempt)
 
 ### Page Objects
-- ✓ All form fields defined as `readonly Locator` properties
+- ✓ Extend the appropriate base class (`BasePage` or project equivalent)
+- ✓ All form fields defined as properties using the project's locator pattern
 - ✓ All user-facing methods implemented and return next page type
 - ✓ `pagePath` includes `*` for dynamic URL segments
-- ✓ Methods use `getByLabel`/`getByRole`/`getByPlaceholder` (accessibility-first)
-- ✓ USWDS quirks handled (hidden elements use `dispatchEvent`, etc.)
-- ✓ Proper async waits after forms (`.waitForURLtoMatchPagePath()` or `.waitForLoadState()`)
+- ✓ Methods use accessibility-first selectors (`getByLabel`, `getByRole`, etc.)
+- ✓ Project-specific patterns applied (check testing rules for quirks like hidden elements)
+- ✓ Proper async waits after forms
 
 ### Flows (if created)
 - ✓ 5+ steps in the workflow
@@ -337,7 +289,7 @@ Use this checklist **AFTER Step 6 validation passes** and **BEFORE Step 7 handof
 - ✓ Comments explain each step
 
 ### Exports
-- ✓ All new `.ts` files exported from barrel `index.ts`
+- ✓ Check your project's testing rules for export requirements
 - ✓ No import/module errors
 - ✓ No circular dependencies
 
@@ -350,11 +302,11 @@ Use this checklist **AFTER Step 6 validation passes** and **BEFORE Step 7 handof
 - ✓ Test name is descriptive: `<user role> can <action> and <outcome>`
 - ✓ No arbitrary `waitForTimeout()` — uses semantic waits instead
 - ✓ No vague selectors like `locator('div')` — uses `getByRole()`, `getByLabel()`, etc.
-- ✓ No assertions after navigation without `waitForURL` or `waitForLoadState`
+- ✓ No assertions after navigation without semantic wait
 - ✓ Error messages tested with `toContainText()` (not exact match)
-- ✓ All form inputs tested with correct patterns (not mixing `.fill()` and `.click()`)
+- ✓ All form inputs tested with correct patterns
 
 ### Test Execution
-- ✓ Test runs with: `APP_NAME=reporting-app npx playwright test reporting-app/tests/<filename>.spec.ts`
+- ✓ Test runs with the project's test command (see project testing rules)
 
 ---
