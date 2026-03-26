@@ -11,4 +11,53 @@
 
 Playwright end-to-end tests live in `e2e/` (TypeScript). Page Object pattern with flow fixtures:
 - **To create a new e2e test:** Use the `/e2e-test` skill. It guides you through planning (with plan mode approval), live app exploration via Playwright MCP, code generation, and two-phase validation (CLI test + localhost walkthrough).
-- **File Uploads:** When uploading a file, always use the selector `this.fileInput = page.locator('input[type="file"]');` in the Page Object.
+
+### Dev server
+
+- Default URL: `http://localhost:3000`
+- Start: `make start-container` (Docker) or `make start-native` (native Ruby)
+- If app image needs rebuild first: `make build`
+
+### Running tests
+
+```bash
+cd oscer/e2e
+APP_NAME=reporting-app npx playwright test reporting-app/tests/<filename>.spec.ts
+```
+
+### Directory layout
+
+```
+e2e/reporting-app/
+  tests/        ← spec files (<name>.spec.ts)
+  pages/        ← Page Object classes (<dir>/<Name>Page.ts)
+  flows/        ← Flow orchestrators (<Name>Flow.ts) for 5+ step sequences
+```
+
+### Page Object conventions
+
+- Extend `BasePage`; define abstract `pagePath` getter (use `*` for dynamic segments)
+- Declare all locators as `readonly Locator` properties in the constructor
+- Each method returns the next page object (enables chaining)
+- File uploads: always use `page.locator('input[type="file"]')` in the Page Object
+
+### USWDS patterns
+
+- CSS-hidden radio/checkbox inputs (USWDS default): use `.dispatchEvent('click')` instead of `.click()`
+- Target label text for hidden inputs: `getByLabel('Option label')`
+
+### Barrel exports (REQUIRED)
+
+Every new `.ts` file must be exported from its barrel `index.ts`, or imports will fail at runtime:
+
+```typescript
+// pages/members/index.ts — add new page
+export { NewPageName } from './NewPageName';
+
+// flows/index.ts — add new flow
+export { NewFlowName } from './NewFlowName';
+```
+
+Before validation, verify:
+- Every new file has a corresponding export in its barrel `index.ts`
+- Test imports use the barrel: `import { NewPage } from '../pages'`
