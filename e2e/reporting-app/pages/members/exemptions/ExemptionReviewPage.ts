@@ -1,10 +1,10 @@
 import { Locator, Page } from '@playwright/test';
 import { BasePage } from '../../BasePage';
-import { ExemptionApplicationShowPage } from './ExemptionApplicationShowPage';
+import { ExemptionShowPage } from './ExemptionShowPage';
 
-export class ExemptionApplicationReviewPage extends BasePage {
+export class ExemptionReviewPage extends BasePage {
   get pagePath() {
-    return '/exemption_application_forms/*/review';
+    return '**/exemption_application_forms/*/review';
   }
 
   readonly submitButton: Locator;
@@ -14,8 +14,8 @@ export class ExemptionApplicationReviewPage extends BasePage {
     this.submitButton = page.getByRole('button', { name: /submit exemption/i });
   }
 
-  async clickSubmitExemption() {
+  async submit() {
     await this.submitButton.click();
-    return new ExemptionApplicationShowPage(this.page).waitForURLtoMatchPagePath();
+    return new ExemptionShowPage(this.page).waitForURLtoMatchPagePath();
   }
 }

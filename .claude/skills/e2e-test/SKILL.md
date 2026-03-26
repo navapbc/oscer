@@ -39,30 +39,6 @@ The argument passed to this skill is a **description of the UI flow to test**.
 
 ---
 
-## Async & Timeout Patterns (Reference)
-
-See **`references/code-patterns-async-timeout.md`** for detailed timeout and wait patterns for different scenarios (email verification, document upload, background jobs, external APIs, etc.), timeout values, and usage examples.
-
----
-
-## Dynamic Content & Lists (Reference)
-
-See **`references/code-patterns-dynamic-content.md`** for handling dynamically rendered lists, tables, conditionally visible elements, and page object methods for working with dynamic content.
-
----
-
-## Modals & Dialogs (Reference)
-
-See **`references/code-patterns-modals.md`** for handling modal dialogs, confirmation popups, toast/alert notifications, and page object methods for modal interactions.
-
----
-
-## Form Input Patterns (Reference)
-
-See **`references/code-patterns-form-inputs.md`** for handling different form field types (text, email, select, radio, checkbox, date, file inputs), USWDS quirks, and complete page object examples.
-
----
-
 ## Step 1 — Check if localhost:3000 is running
 
 Use the Playwright MCP tool (`mcp__playwright__browser_navigate`) to navigate to
@@ -73,7 +49,7 @@ A connection error or timeout means it is not.
 1. Tell the user: "The local server isn't running. Let me build it first."
 2. Run in the terminal:
    ```bash
-   cd /Users/baonguyen/Documents/NavaGithub/oscer/reporting-app && make build
+   cd /oscer/reporting-app && make build
    ```
 3. Ask: "Would you like to start with `make start-container` (Docker) or `make start-native` (native Ruby)?"
 4. Instruct them to run the chosen command in a separate terminal, then confirm when it's up.
@@ -169,15 +145,9 @@ Generate all files needed:
 
 ### Test file — `e2e/reporting-app/tests/<name>.spec.ts`
 
-See **`references/code-templates-test-file.md`** for complete test file template with imports, timeout handling, test structure, assertion patterns, test naming conventions, and best practices.
-
 ### Page object — `e2e/reporting-app/pages/<dir>/<Name>Page.ts`
 
-See **`references/code-templates-page-object.md`** for complete page object template with locator patterns, method chaining, USWDS quirks (radio buttons, checkboxes, file inputs), and best practices.
-
 ### Flow class (if 5+ steps) — `e2e/reporting-app/flows/<Name>Flow.ts`
-
-See **`references/code-templates-flow.md`** for complete flow class template with examples (basic flow, parameterized flow, conditional branching), best practices, and test usage examples.
 
 ### Step 5c — Update barrel exports (REQUIRED)
 
@@ -213,13 +183,6 @@ export { NewFlowName } from './NewFlowName'; // ← ADD THIS
 
 ---
 
-## Reference — existing building blocks
-
-See `references/existing-pages-and-flows.md` for the full catalog of existing page objects and
-flow classes to reuse before creating new ones.
-
----
-
 ## Step 6 — Validate generated code (Two-Phase Validation)
 
 **CRITICAL:** Before presenting tests to the user, validate them in two phases:
@@ -228,7 +191,7 @@ flow classes to reuse before creating new ones.
 
 1. **Navigate to the e2e directory:**
    ```bash
-   cd /Users/baonguyen/Documents/NavaGithub/oscer/e2e
+   cd oscer/e2e
    ```
 
 2. **Run the generated test file against the live app:**
@@ -303,7 +266,7 @@ paths. Include a note that the test was **validated and passes on localhost**.
 Remind the user how to run the test:
 
 ```bash
-cd /Users/baonguyen/Documents/NavaGithub/oscer/e2e
+cd oscer/e2e
 APP_NAME=reporting-app npx playwright test reporting-app/tests/<filename>.spec.ts
 ```
 
@@ -345,20 +308,6 @@ and to check the timeout setting.
 - `test('activity report form fill')` ← Incomplete (missing expected outcome)
 
 **Pattern:** `<User role> can <action> and <expected outcome>`
-
----
-
-## Error Message Assertions (Reference)
-
-See **`references/code-patterns-error-handling.md`** for error assertion patterns, page object methods for error handling, test cases for validation errors, and network/server error handling.
-
----
-
-## Data-Driven Tests (Reference)
-
-See **`references/code-templates-data-driven.md`** for parameterized test examples (simple scenarios, activity reports, error scenarios, exemption claims), best practices, and templates for complex data-driven tests.
-
----
 
 ## Final Validation Checklist — Before Handing Off to User
 
@@ -405,7 +354,5 @@ Use this checklist **AFTER Step 6 validation passes** and **BEFORE Step 7 handof
 
 ### Test Execution
 - ✓ Test runs with: `APP_NAME=reporting-app npx playwright test reporting-app/tests/<filename>.spec.ts`
-- ✓ **Test passes on first run** (no manual fixes needed by user)
-- ✓ Test is stable (passes consistently across multiple runs if tested)
 
 ---
