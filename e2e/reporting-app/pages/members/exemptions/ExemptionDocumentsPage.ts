@@ -13,7 +13,7 @@ export class ExemptionDocumentsPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.fileInput = page.getByLabel(/upload supporting document/i);
+    this.fileInput = page.locator('input[type="file"]');
     this.uploadButton = page.getByRole('button', { name: /upload document/i });
     this.continueLink = page.getByRole('link', { name: /^continue$/i });
   }

@@ -10,7 +10,7 @@ test('member can apply for a medical exemption and submit the application', asyn
   page,
   emailService,
 }) => {
-  test.setTimeout(120000); // 2 minutes
+  test.slow();
 
   const email = emailService.generateEmailAddress(emailService.generateUsername());
   const password = 'testPassword';
