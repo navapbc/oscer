@@ -38,7 +38,7 @@ flowchart LR
 | `DocumentStagingController` | Feature flag guard — returns 404 when `Features.doc_ai_enabled?` is false. Auth (`authorize :document, :create?`), param handling, delegates to `DocumentStagingService#submit`. Redirects to `doc_ai_upload_status` polling page after submission. Controller is responsible only for: auth, param handling, HTTP flow. |
 | `DocumentStagingService` | Owns constants: `ALLOWED_CONTENT_TYPES` (`application/pdf`, `image/jpeg`, `image/png`, `image/tiff`), `MAX_FILE_SIZE_BYTES` (30 MB), `MAX_FILE_COUNT` (10), `SUPPORTED_RESULT_CLASSES`. `#submit(files:, user:)` validates files, calls `ImageToPdfConversionService`, submits async to DocAI via `DocAiAdapter#analyze_document_async`, stores `jobId` on `StagedDocument`, enqueues `FetchDocAiResultsJob` with 1-minute initial delay. `#fetch_results(staged_document_ids:)` called by background job: polls `DocAiAdapter#get_document_status`, updates `StagedDocument` status (validated/rejected/failed), returns early if all resolved. Constructor-injected `DocAiService` dependency. |
 | `ImageToPdfConversionService` | Uses `image_processing` gem (vips backend). `#convert(file)` converts JPEG/PNG/TIFF >5MB to PDF tempfile. Returns original file unchanged if PDF or if image ≤5MB. `IMAGE_SIZE_THRESHOLD = 5.megabytes`. Logs warning on conversion failure; returns original file (graceful degradation). |
-| `StagedDocument` | ActiveRecord: `has_one_attached :file`, `belongs_to :user`, `belongs_to :stageable, polymorphic: true`. Status enum: `pending`, `validated`, `rejected`, `failed`. `doc_ai_job_id` stores the job ID from async submission. `extracted_fields` JSONB stores full raw DocAI fields response (including confidence scores) when completed. `#average_confidence` returns Float (0.0–1.0) computed as mean of all field confidence values; `nil` if blank. Retained permanently as audit record. Never purged. |
+| `StagedDocument` | ActiveRecord: `has_one_attached :file`, `belongs_to :user`, `belongs_to :stageable, polymorphic: true`. Status enum: `pending`, `validated`, `rejected`, `failed`. `doc_ai_job_id` stores the job ID from async submission. `extracted_fields` JSONB stores full raw DocAI fields response (including confidence scores) when completed. `#average_confidence` returns Float (0.0–1.0) computed as mean of all field confidence values; `nil` if blank. Once attached to an `Activity` (`stageable` set), retained as part of the audit trail. Unattached rows older than the configured retention are removed by [staged document cleanup](#staged-document-cleanup) (record + ActiveStorage blob). |
 | `FetchDocAiResultsJob` | Background job (queued `:default`). `MAX_ATTEMPTS = 5`. Polls `DocAiService#check_status(jobId)` for each pending `StagedDocument`. When completed/failed, calls `update_from_result` to set final status + `extracted_fields`. If still pending after 5 attempts, bulk-updates all remaining docs to `failed`. Re-enqueues itself with 30-second wait between attempts. |
 | `DocAiAdapter` | Extends `DataIntegration::BaseAdapter`. `analyze_document_async(file:)` — POST to `/v1/documents` (no `wait` param), returns raw response with `jobId`. `get_document_status(job_id:)` — GET `/v1/documents/{job_id}` with `include_extracted_data=true`, returns full response envelope. Opens blob via `file.blob.open` → wraps in `Faraday::Multipart::FilePart`. Timeout: 60s (configurable). |
 | `DocAiService` | Extends `DataIntegration::BaseService`. `analyze_async(file:)` calls adapter, returns raw response hash. `check_status(job_id:)` calls adapter; dispatches on status: returns `DocAiResult` when completed, raises `ProcessingError` on failed, returns raw hash when still processing. `handle_integration_error` logs warning, returns `nil` (graceful degradation). |
@@ -69,6 +69,31 @@ doc_ai: {
 - Document staging endpoint is accessible
 - Member sees opt-in consent and AI disclaimer before upload
 - DocAI processes uploaded documents
+
+## Staged document cleanup
+
+Uploads create `StagedDocument` rows before an `Activity` exists; if the member abandons the flow, rows stay unattached (`stageable_type` is `NULL`) and accumulate. A scheduled task removes orphans past a configurable age so the database and object storage do not grow unbounded.
+
+| Setting | Environment variable | Default | Purpose |
+|--------|----------------------|---------|---------|
+| Enable/disable | `STAGED_DOCUMENT_CLEANUP_ENABLED` | `true` | When `false`, the rake task logs and exits without deleting |
+| Retention | `STAGED_DOCUMENT_RETENTION_DAYS` | `7` | Delete unattached documents with `created_at` strictly before _now − N days_ |
+| Schedule (documentation) | `STAGED_DOCUMENT_CLEANUP_SCHEDULE` | `0 2 * * *` | Intended cron timing (e.g. daily at 02:00); configure the host scheduler to match |
+
+Loaded in `config/initializers/doc_ai.rb` as `Rails.application.config.doc_ai` keys: `staged_document_cleanup_enabled`, `staged_document_retention_days`, `staged_document_cleanup_schedule`.
+
+**Rake task**: `bundle exec rake doc_ai:cleanup_staged_documents`
+
+- Deletes rows where `stageable_type IS NULL` and `created_at` is older than the retention window, for **all** statuses (`pending`, `validated`, `rejected`, `failed`).
+- For each row: `file.purge` (ActiveStorage blob + storage), then `destroy`.
+- Logs a single summary line to stdout and `Rails.logger` with count deleted and approximate bytes freed.
+- **Dry run**: `bundle exec rake doc_ai:cleanup_staged_documents -- --dry-run` (the `--` passes `--dry-run` through Rake). Computes the same scope and totals without purging or destroying.
+
+**Cron example** (align with `STAGED_DOCUMENT_CLEANUP_SCHEDULE`):
+
+```cron
+0 2 * * * cd /path/to/reporting-app && bundle exec rake doc_ai:cleanup_staged_documents
+```
 
 ## Member AI Consent & Disclaimer
 

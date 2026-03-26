@@ -17,3 +17,7 @@ Set the value of a feature flag for an environment by setting the `feature_flag_
 ## Query a feature flag value in the application
 
 To determine whether a particular feature should be enabled or disabled for a given user, check for an environment variable `FF_<FEATURE_FLAG_NAME>`. If the feature flag is enabled the environment variable will be set to the string `"true"`, otherwise it will be set to the string `"false"`.
+
+## DocAI operational configuration (not feature flags)
+
+Scheduled cleanup of orphaned uploaded documents uses separate environment variables (`STAGED_DOCUMENT_CLEANUP_ENABLED`, `STAGED_DOCUMENT_RETENTION_DAYS`, `STAGED_DOCUMENT_CLEANUP_SCHEDULE`). These are loaded in `config/initializers/doc_ai.rb` and documented in [DocAI integration](architecture/doc-ai-integration/doc-ai-api.md#staged-document-cleanup).
