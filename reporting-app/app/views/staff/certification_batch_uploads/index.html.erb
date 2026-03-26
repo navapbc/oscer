@@ -28,10 +28,6 @@
       </tbody>
     </table>
   <% else %>
-    <div class="usa-alert usa-alert--info margin-top-4" role="alert">
-      <div class="usa-alert__body">
-        <p class="usa-alert__text"><%= t(".no_uploads") %></p>
-      </div>
-    </div>
+    <%= render AlertComponent.new(type: AlertComponent::TYPES::INFO, message: t(".no_uploads"), classes: "margin-top-4") %>
   <% end %>
 <% end %>

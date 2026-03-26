@@ -3,11 +3,11 @@
 <% scope = "staff.certification_batch_uploads.show" %>
 <% if batch_upload.num_rows_errored.zero? %>
   <%= render "staff/certification_batch_uploads/status_alert",
-             type: "success", heading: t("success_heading", scope: scope),
+             type: AlertComponent::TYPES::SUCCESS, heading: t("success_heading", scope: scope),
              message: success_message %>
 <% else %>
   <%= render "staff/certification_batch_uploads/status_alert",
-             type: "warning", heading: t("partial_success_heading", scope: scope),
+             type: AlertComponent::TYPES::WARNING, heading: t("partial_success_heading", scope: scope),
              message: t("partial_success_message", scope: scope,
                         num_rows_succeeded: batch_upload.num_rows_succeeded,
                         num_rows_errored: batch_upload.num_rows_errored,

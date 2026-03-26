@@ -1,19 +1,14 @@
-<% # @TODO: Dry this up using a partial or something like View Components %>
 <% # https://api.rubyonrails.org/classes/ActionDispatch/Flash.html %>
 <% if flash[:notice] || flash[:errors] || alert || notice %>
   <div class="grid-row margin-bottom-3">
     <div class="grid-col-12">
       <% if flash[:notice] || notice %>
-        <div class="usa-alert usa-alert--success">
-          <div class="usa-alert__body">
-            <p class="usa-alert__text"><%= flash[:notice] || notice %></p>
-          </div>
-        </div>
+        <%= render AlertComponent.new(type: AlertComponent::TYPES::SUCCESS, message: flash[:notice] || notice) %>
       <% end %>
 
       <% if flash[:errors] || alert %>
-        <div class="usa-alert usa-alert--error" role="alert">
-          <div class="usa-alert__body">
+        <%= render AlertComponent.new(type: AlertComponent::TYPES::ERROR) do |c| %>
+          <% c.with_body do %>
             <% if flash[:errors] %>
               <h3 class="usa-alert__heading">
                 <%= t "flash.error_heading", count: flash[:errors].count %>
@@ -37,8 +32,8 @@
                 </ul>
               <% end %>
             </div>
-          </div>
-        </div>
+          <% end %>
+        <% end %>
       <% end %>
     </div>
   </div>

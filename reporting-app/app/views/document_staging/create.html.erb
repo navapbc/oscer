@@ -3,11 +3,7 @@
 <h1><%= t(".heading") %></h1>
 
 <% if @error %>
-  <div class="usa-alert usa-alert--error margin-bottom-3" role="alert">
-    <div class="usa-alert__body">
-      <p class="usa-alert__text"><%= @error %></p>
-    </div>
-  </div>
+  <%= render AlertComponent.new(type: AlertComponent::TYPES::ERROR, message: @error, classes: "margin-bottom-3") %>
 <% end %>
 
 <p>
