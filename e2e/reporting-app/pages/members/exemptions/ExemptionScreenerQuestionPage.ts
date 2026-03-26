@@ -1,6 +1,7 @@
 import { Locator, Page } from '@playwright/test';
 import { BasePage } from '../../BasePage';
 import { ExemptionMayQualifyPage } from './ExemptionMayQualifyPage';
+import { ExemptionScreenerCompletePage } from './ExemptionScreenerCompletePage';
 
 export class ExemptionScreenerQuestionPage extends BasePage {
   get pagePath() {
@@ -31,5 +32,12 @@ export class ExemptionScreenerQuestionPage extends BasePage {
     await this.noRadio.dispatchEvent('click');
     await this.continueButton.click();
     return new ExemptionScreenerQuestionPage(this.page).waitForURLtoMatchPagePath();
+  }
+
+  // Answer "No" on the final question — navigates to the complete page
+  async answerNoFinal() {
+    await this.noRadio.dispatchEvent('click');
+    await this.continueButton.click();
+    return new ExemptionScreenerCompletePage(this.page).waitForURLtoMatchPagePath();
   }
 }

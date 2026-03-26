@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test';
 import { DashboardPage } from '../pages/members/DashboardPage';
-import { ExemptionShowPage } from '../pages/members/exemptions';
+import { ExemptionScreenerCompletePage, ExemptionShowPage } from '../pages/members/exemptions';
 
 /**
  * Orchestrates the full exemption application flow for the medical_condition type:
@@ -37,5 +37,26 @@ export class ExemptionApplicationFlow {
 
     // 8. Submit the exemption → redirected to show page
     return reviewPage.submit();
+  }
+
+  /**
+   * Answers "No" to all 7 screener questions and lands on the complete page.
+   * Flow: Dashboard → Screener index → 7× No → /exemption-screener/complete
+   */
+  async runNoToAll(): Promise<ExemptionScreenerCompletePage> {
+    // 1. Navigate to dashboard and enter the screener
+    const dashboard = await new DashboardPage(this.page).go();
+    const screenerPage = await dashboard.clickGetStarted();
+
+    // 2. Start the screener
+    let questionPage = await screenerPage.clickStart();
+
+    // 3. Answer "No" to questions 1–6 (caregiver_disability through education_and_training)
+    for (let i = 0; i < 6; i++) {
+      questionPage = await questionPage.answerNo();
+    }
+
+    // 4. Answer "No" to question 7 (received_medical_care) → navigates to /complete
+    return questionPage.answerNoFinal();
   }
 }

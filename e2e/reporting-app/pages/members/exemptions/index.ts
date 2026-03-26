@@ -1,3 +1,4 @@
+export { ExemptionScreenerCompletePage } from './ExemptionScreenerCompletePage';
 export { ExemptionScreenerPage } from './ExemptionScreenerPage';
 export { ExemptionScreenerQuestionPage } from './ExemptionScreenerQuestionPage';
 export { ExemptionMayQualifyPage } from './ExemptionMayQualifyPage';
