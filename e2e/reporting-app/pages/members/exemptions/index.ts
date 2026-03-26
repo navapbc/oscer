@@ -1,5 +1,6 @@
-export { ExemptionApplicationNewPage } from './ExemptionApplicationNewPage';
-export { ExemptionApplicationTypePage } from './ExemptionApplicationTypePage';
-export { ExemptionApplicationDocumentsPage } from './ExemptionApplicationDocumentsPage';
-export { ExemptionApplicationReviewPage } from './ExemptionApplicationReviewPage';
-export { ExemptionApplicationShowPage } from './ExemptionApplicationShowPage';
+export { ExemptionScreenerPage } from './ExemptionScreenerPage';
+export { ExemptionScreenerQuestionPage } from './ExemptionScreenerQuestionPage';
+export { ExemptionMayQualifyPage } from './ExemptionMayQualifyPage';
+export { ExemptionDocumentsPage } from './ExemptionDocumentsPage';
+export { ExemptionReviewPage } from './ExemptionReviewPage';
+export { ExemptionShowPage } from './ExemptionShowPage';
