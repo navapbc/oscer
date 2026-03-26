@@ -16,88 +16,66 @@
 
   <%= strata_form_with(url: "#", method: :get) do |f| %>
     <%# Activity type %>
-    <div class="<%= field_classes %> padding-1 margin-bottom-2 radius-md">
-      <div class="display-flex flex-justify flex-align-start">
-        <div class="flex-fill">
-          <%= f.fieldset t("activities.edit.doc_ai_review.activity_type_label") do %>
-            <% ActivityCategories::ALL.each do |cat| %>
-              <%= f.radio_button :category, cat,
-                  label: t("activities.form.#{cat}_label"),
-                  checked: activity.category == cat,
-                  disabled: true,
-                  tile: false %>
-            <% end %>
-          <% end %>
-        </div>
-        <%= render "tasks/details/attribution_tag", icon_info: icon_info, label: attribution_label %>
-      </div>
-    </div>
+    <%= render layout: "tasks/details/attributed_field", locals: { field_classes: field_classes, icon_info: icon_info, attribution_label: attribution_label } do %>
+      <%= f.fieldset t("activities.edit.doc_ai_review.activity_type_label") do %>
+        <%= f.radio_button :category, activity.category,
+            label: t("activities.form.#{activity.category}_label"),
+            checked: true,
+            disabled: true,
+            tile: false %>
+      <% end %>
+    <% end %>
 
     <%# Reporting method %>
-    <div class="<%= field_classes %> padding-1 margin-bottom-2 radius-md">
-      <div class="display-flex flex-justify flex-align-start">
-        <div class="flex-fill">
-          <%= f.fieldset t("activities.edit.doc_ai_review.reporting_method_label") do %>
-            <%= f.radio_button :reporting_method, "hours",
-                label: t("activities.form.hours_label"),
-                checked: !activity.is_a?(IncomeActivity),
-                disabled: true,
-                tile: false %>
-            <%= f.radio_button :reporting_method, "income",
-                label: t("activities.edit.doc_ai_review.report_income_label"),
-                checked: activity.is_a?(IncomeActivity),
-                disabled: true,
-                tile: false %>
-          <% end %>
-        </div>
-        <%= render "tasks/details/attribution_tag", icon_info: icon_info, label: attribution_label %>
-      </div>
-    </div>
+    <%= render layout: "tasks/details/attributed_field", locals: { field_classes: field_classes, icon_info: icon_info, attribution_label: attribution_label } do %>
+      <% if activity.is_a?(IncomeActivity) %>
+        <%= f.fieldset t("activities.edit.doc_ai_review.reporting_method_label") do %>
+          <%= f.radio_button :reporting_method, "income",
+              label: t("activities.edit.doc_ai_review.report_income_label"),
+              checked: true,
+              disabled: true,
+              tile: false %>
+        <% end %>
+      <% else %>
+        <%= f.fieldset t("activities.edit.doc_ai_review.reporting_method_label") do %>
+          <%= f.radio_button :reporting_method, "hours",
+              label: t("activities.form.hours_label"),
+              checked: true,
+              disabled: true,
+              tile: false %>
+        <% end %>
+      <% end %>
+    <% end %>
 
     <%# Organization name %>
-    <div class="<%= field_classes %> padding-1 margin-bottom-2 radius-md">
-      <div class="display-flex flex-justify flex-align-start">
-        <div class="flex-fill">
-          <%= f.text_field :name,
-              label: t("activities.form.name"),
-              value: activity.name,
-              disabled: true %>
-        </div>
-        <%= render "tasks/details/attribution_tag", icon_info: icon_info, label: attribution_label %>
-      </div>
-    </div>
+    <%= render layout: "tasks/details/attributed_field", locals: { field_classes: field_classes, icon_info: icon_info, attribution_label: attribution_label } do %>
+      <%= f.text_field :name,
+          label: t("activities.form.name"),
+          value: activity.name,
+          disabled: true %>
+    <% end %>
 
     <%# Month %>
-    <div class="<%= field_classes %> padding-1 margin-bottom-2 radius-md">
-      <div class="display-flex flex-justify flex-align-start">
-        <div class="flex-fill">
-          <%= f.select :month,
-              [[activity.month&.strftime("%B %Y"), activity.month]],
-              { selected: activity.month },
-              { disabled: true, label: t("details.review_activity_report_task.document_preview.month_label") } %>
-        </div>
-        <%= render "tasks/details/attribution_tag", icon_info: icon_info, label: attribution_label %>
-      </div>
-    </div>
+    <%= render layout: "tasks/details/attributed_field", locals: { field_classes: field_classes, icon_info: icon_info, attribution_label: attribution_label } do %>
+      <%= f.select :month,
+          [[activity.month&.strftime("%B %Y"), activity.month]],
+          { selected: activity.month },
+          { disabled: true, label: t("details.review_activity_report_task.document_preview.month_label") } %>
+    <% end %>
 
     <%# Hours or Income %>
-    <div class="<%= field_classes %> padding-1 margin-bottom-2 radius-md">
-      <div class="display-flex flex-justify flex-align-start">
-        <div class="flex-fill">
-          <% if activity.is_a?(IncomeActivity) %>
-            <%= f.text_field :income,
-                label: t("activities.form.income_label"),
-                value: number_to_currency(activity.income&.dollar_amount, precision: 0),
-                disabled: true %>
-          <% else %>
-            <%= f.text_field :hours,
-                label: t("activities.form.hours_label"),
-                value: activity.hours,
-                disabled: true %>
-          <% end %>
-        </div>
-        <%= render "tasks/details/attribution_tag", icon_info: icon_info, label: attribution_label %>
-      </div>
-    </div>
+    <%= render layout: "tasks/details/attributed_field", locals: { field_classes: field_classes, icon_info: icon_info, attribution_label: attribution_label } do %>
+      <% if activity.is_a?(IncomeActivity) %>
+        <%= f.text_field :income,
+            label: t("activities.form.income_label"),
+            value: number_to_currency(activity.income&.dollar_amount, precision: 0),
+            disabled: true %>
+      <% else %>
+        <%= f.text_field :hours,
+            label: t("activities.form.hours_label"),
+            value: activity.hours,
+            disabled: true %>
+      <% end %>
+    <% end %>
   <% end %>
 </div>

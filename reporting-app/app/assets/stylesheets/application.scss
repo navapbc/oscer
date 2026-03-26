@@ -109,17 +109,23 @@ div.exemption-screener {
   }
 }
 
-.bg-attribution-primary {
-  background-color: color("blue-cool-5v") !important;
+@mixin attribution-field($color) {
+  background-color: rgba($color, 0.1) !important;
+  border: 2px solid $color !important;
+
+  .usa-radio__input:checked:disabled + [class*="__label"]::before {
+    background-color: $color !important;
+    box-shadow: 0 0 0 2px $color, inset 0 0 0 2px white !important;
+  }
 }
 
-.bg-attribution-gold {
-  background-color: color("gold-5v") !important;
-}
+$attribution-primary: #005ea2;
+$attribution-gold: #ddaa01;
+$attribution-green: #008817;
 
-.bg-attribution-green {
-  background-color: color("green-cool-5v") !important;
-}
+.bg-attribution-primary { @include attribution-field($attribution-primary); }
+.bg-attribution-gold { @include attribution-field($attribution-gold); }
+.bg-attribution-green { @include attribution-field($attribution-green); }
 
 .bg-attribution-error {
   background-color: color("red-cool-5v") !important;

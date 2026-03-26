@@ -9,9 +9,9 @@ module ActivitiesHelper
   }.freeze
 
   ATTRIBUTION_FIELD_CLASSES = {
-    ActivityAttributions::SELF_REPORTED => "border-1px border-primary bg-attribution-primary",
-    ActivityAttributions::AI_ASSISTED => "border-1px border-gold bg-attribution-gold",
-    ActivityAttributions::AI_ASSISTED_WITH_MEMBER_EDITS => "border-1px border-green bg-attribution-green",
+    ActivityAttributions::SELF_REPORTED => "bg-attribution-primary",
+    ActivityAttributions::AI_ASSISTED => "bg-attribution-gold",
+    ActivityAttributions::AI_ASSISTED_WITH_MEMBER_EDITS => "bg-attribution-green",
     ActivityAttributions::AI_REJECTED_MEMBER_OVERRIDE => "border-1px border-error bg-attribution-error"
   }.freeze
 

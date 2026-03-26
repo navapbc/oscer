@@ -104,6 +104,26 @@ RSpec.describe "/staff/tasks", type: :request do
           end
         end
 
+        it "renders the PDF container target and worker URL for canvas rendering" do
+          with_doc_ai_enabled do
+            get "/staff/tasks/#{activity_report_task.id}"
+
+            expect(response.body).to include('data-document-preview-target="pdfContainer"')
+            expect(response.body).to include('data-document-preview-worker-url-value=')
+            expect(response.body).to include("pdfjs-dist-worker")
+          end
+        end
+
+        it "renders attributed field wrappers with attribution tags in the prefill form" do
+          with_doc_ai_enabled do
+            get "/staff/tasks/#{activity_report_task.id}"
+
+            expect(response.body).to include("bg-attribution-")
+            expect(response.body).to include("position-absolute top-1 right-1 z-100")
+            expect(response.body).to include("text-ink")
+          end
+        end
+
         it "renders the prefill form with close button for the activity" do
           with_doc_ai_enabled do
             get "/staff/tasks/#{activity_report_task.id}"

@@ -1,27 +1,23 @@
 <div class="position-sticky top-2">
   <h3 data-document-preview-target="heading"
-      data-template="<%= t('details.review_activity_report_task.document_preview.heading', filename: '%{filename}') %>">
+    data-template="<%= t('details.review_activity_report_task.document_preview.heading', filename: '%{filename}') %>">
   </h3>
 
-  <iframe data-document-preview-target="iframe"
-          class="width-full border-1px border-base-light display-none"
-          style="min-height: 70vh;"
-          title=""
-          data-title-template="<%= t('details.review_activity_report_task.document_preview.iframe_title', filename: '%{filename}') %>">
-  </iframe>
+  <div data-document-preview-target="pdfContainer"
+     class="width-full border-1px border-base-light bg-white display-none"
+     style="max-height: 70vh; overflow-y: auto;">
+  </div>
 
   <img data-document-preview-target="image"
-       class="width-full border-1px border-base-light display-none"
-       src=""
-       alt=""
-       data-alt-template="<%= t('details.review_activity_report_task.document_preview.image_alt', filename: '%{filename}') %>" />
+     class="width-full border-1px border-base-light display-none"
+     src=""
+     alt=""
+     data-alt-template="<%= t('details.review_activity_report_task.document_preview.image_alt', filename: '%{filename}') %>" />
 
   <div data-document-preview-target="fallback"
-       class="padding-4 border-1px border-base-light bg-base-lightest display-none">
+     class="padding-4 border-1px border-base-light bg-base-lightest display-none">
     <p><%= t("details.review_activity_report_task.document_preview.no_preview") %></p>
-    <a data-document-preview-target="fallbackLink"
-       href="#"
-       class="usa-link">
+    <a data-document-preview-target="fallbackLink" href="#" class="usa-link">
       <%= t("details.review_activity_report_task.document_preview.download_link") %>
     </a>
   </div>

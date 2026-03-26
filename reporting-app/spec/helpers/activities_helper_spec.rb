@@ -62,22 +62,22 @@ RSpec.describe ActivitiesHelper, type: :helper do
   describe "#attribution_field_classes" do
     it "returns primary classes for nil evidence source" do
       result = helper.attribution_field_classes(nil)
-      expect(result).to eq("border-1px border-primary bg-attribution-primary")
+      expect(result).to eq("bg-attribution-primary")
     end
 
     it "returns primary classes for self_reported" do
       result = helper.attribution_field_classes(ActivityAttributions::SELF_REPORTED)
-      expect(result).to eq("border-1px border-primary bg-attribution-primary")
+      expect(result).to eq("bg-attribution-primary")
     end
 
     it "returns gold classes for ai_assisted" do
       result = helper.attribution_field_classes(ActivityAttributions::AI_ASSISTED)
-      expect(result).to eq("border-1px border-gold bg-attribution-gold")
+      expect(result).to eq("bg-attribution-gold")
     end
 
     it "returns green classes for ai_assisted_with_member_edits" do
       result = helper.attribution_field_classes(ActivityAttributions::AI_ASSISTED_WITH_MEMBER_EDITS)
-      expect(result).to eq("border-1px border-green bg-attribution-green")
+      expect(result).to eq("bg-attribution-green")
     end
 
     it "returns error classes for ai_rejected_member_override" do
