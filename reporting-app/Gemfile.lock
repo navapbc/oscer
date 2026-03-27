@@ -1,7 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: 802bc20986928d0f028e73201d5305ff6009d0c2
-  branch: jgavin/OSCER-349-add-taskRowComponent-to-strata-sdk-tasks-index
+  revision: 94721a4a9fcfc7cddb56a4025b9d1d8e1de0a653
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
