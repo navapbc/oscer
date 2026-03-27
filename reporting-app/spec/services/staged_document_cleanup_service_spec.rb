@@ -66,7 +66,7 @@ RSpec.describe StagedDocumentCleanupService do
           income: 200_000,
           month: Date.current.beginning_of_month,
           category: "employment",
-          evidence_source: "ai_assisted"
+          evidence_source: ActivityAttributions::AI_ASSISTED
         )
         create(:staged_document, :validated,
           stageable: activity,
