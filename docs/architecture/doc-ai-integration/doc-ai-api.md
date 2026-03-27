@@ -78,11 +78,13 @@ Uploads create `StagedDocument` rows before an `Activity` exists; if the member 
 |--------|----------------------|---------|---------|
 | Enable/disable | `STAGED_DOCUMENT_CLEANUP_ENABLED` | `true` | When `false`, the rake task logs and exits without deleting |
 | Retention | `STAGED_DOCUMENT_RETENTION_DAYS` | `7` | Delete unattached documents with `created_at` strictly before _now − N days_ |
-| Schedule (documentation) | `STAGED_DOCUMENT_CLEANUP_SCHEDULE` | `0 2 * * *` | Intended cron timing (e.g. daily at 02:00); configure the host scheduler to match |
+| Schedule | `STAGED_DOCUMENT_CLEANUP_SCHEDULE` | `0 2 * * *` | GoodJob cron for `CleanupStagedDocumentsJob` (`config/initializers/good_job.rb`); optional host cron can still run the rake task instead |
 
 Loaded in `config/initializers/doc_ai.rb` as `Rails.application.config.doc_ai` keys: `staged_document_cleanup_enabled`, `staged_document_retention_days`, `staged_document_cleanup_schedule`.
 
-**Rake task**: `bundle exec rake doc_ai:cleanup_staged_documents`
+**GoodJob**: `CleanupStagedDocumentsJob` runs on the schedule above (see [background jobs](../../reporting-app/background-jobs.md)). It calls the same logic as the rake task.
+
+**Rake task**: `bundle exec rake doc_ai:cleanup_staged_documents` (manual runs or non–GoodJob cron).
 
 - Deletes rows where `stageable_type IS NULL` and `created_at` is older than the retention window, for **all** statuses (`pending`, `validated`, `rejected`, `failed`).
 - For each row: `file.purge` (ActiveStorage blob + storage), then `destroy`.

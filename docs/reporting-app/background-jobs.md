@@ -23,6 +23,11 @@ config.good_job.cron = {
     class: "PurgeUnattachedBlobsJob",
     description: "Clean up orphaned Active Storage blobs from abandoned uploads"
   },
+  cleanup_staged_documents: {
+    cron: Rails.application.config.doc_ai[:staged_document_cleanup_schedule],
+    class: "CleanupStagedDocumentsJob",
+    description: "Delete orphaned DocAI StagedDocuments past retention"
+  },
   my_new_scheduled_job: {
     cron: "*/15 * * * *",             # Every 15 minutes
     class: "MyNewScheduledJob",

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Deletes orphaned StagedDocuments (no stageable) past the configured retention.
-# Invoked by +rake doc_ai:cleanup_staged_documents+ (typically from cron).
+# Invoked by +rake doc_ai:cleanup_staged_documents+ and +CleanupStagedDocumentsJob+.
 class StagedDocumentCleanupService
   Result = Data.define(:deleted_count, :bytes_freed, :dry_run)
 
