@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: 94721a4a9fcfc7cddb56a4025b9d1d8e1de0a653
+  revision: 47cae7d9d877761b8399609fcfc02258525e7258
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -139,7 +139,7 @@ GEM
     base64 (0.3.0)
     bcrypt (3.1.20)
     benchmark (0.5.0)
-    bigdecimal (4.0.1)
+    bigdecimal (4.1.0)
     bindata (2.5.1)
     bindex (0.8.1)
     bootsnap (1.19.0)
