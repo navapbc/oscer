@@ -33,6 +33,11 @@ Rails.application.configure do
       cron: "0 3 * * *",
       class: "PurgeUnattachedBlobsJob",
       description: "Clean up orphaned Active Storage blobs from abandoned uploads"
+    },
+    cleanup_staged_documents: {
+      cron: Rails.application.config.doc_ai[:staged_document_cleanup_schedule],
+      class: "CleanupStagedDocumentsJob",
+      description: "Delete orphaned StagedDocuments past retention (see STAGED_DOCUMENT_* env vars)"
     }
   }
 
