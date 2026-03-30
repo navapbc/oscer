@@ -20,6 +20,9 @@ export class DocAiStatusPage extends BasePage {
   // Waits for DocAI processing to complete (processing modal disappears, results appear).
   // DocAI processing takes ~1-2 minutes; use a generous timeout.
   async waitForResults(timeout = 180_000): Promise<void> {
+    // Wait for the processing modal to disappear first (covers both Turbo broadcast and polling)
+    await this.processingTitle.waitFor({ state: 'hidden', timeout });
+    // Then confirm the results section has rendered
     await this.selectedFilesSection.waitFor({ timeout });
   }
 

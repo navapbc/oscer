@@ -7,7 +7,10 @@ export class DocAiUploadFlow {
 
   // Runs the DocAI upload flow from the dashboard to the status results page.
   // Caller should assert the final URL after accept_doc_ai redirects.
-  async run(fixturePath: string, reportingPeriod: string = 'February 2026'): Promise<DocAiStatusPage> {
+  async run(
+    fixturePath: string,
+    reportingPeriod: string = 'February 2026'
+  ): Promise<DocAiStatusPage> {
     // 1. Navigate to the activity report new form without skipping DocAI
     const dashboard = await new DashboardPage(this.page).go();
     const beforeYouStartPage = await dashboard.clickReportActivities();
