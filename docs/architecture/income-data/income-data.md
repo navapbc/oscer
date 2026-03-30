@@ -60,11 +60,11 @@ OSCER does not pull or query external systems. States or their systems **send** 
 flowchart TB
     subgraph Intake
         CertAPI[Api::CertificationsController]
-        IncomeService[ExParteIncomeService]
+        IncomeService[IncomeService]
     end
 
     subgraph Data
-        ExParteIncome[ExParteIncome]
+        Income[Income]
         Determination[Determination]
     end
 
@@ -77,7 +77,7 @@ flowchart TB
     end
 
     CertAPI --> IncomeService
-    IncomeService --> ExParteIncome
+    IncomeService --> Income
     CertAPI --> IncomeComplianceService
     IncomeComplianceService --> Determination
     MemberStatus --> Determination
@@ -96,10 +96,10 @@ flowchart TB
 | Option                        | Description                                                | Pros                                                     | Cons                                            |
 | ----------------------------- | ---------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------- |
 | **A: Extend ExParteActivity** | Add `gross_income`, nullable `hours`; `type` discriminator | Single table, shared source attribution, simpler queries | Schema drift, mixed semantics, nullable columns |
-| **B: Parallel ExParteIncome** | New `ex_parte_incomes` table with income-specific columns  | Clear separation, type-safe, independent evolution       | Duplicate patterns, two aggregation paths       |
+| **B: Parallel Income**        | New `incomes` table with income-specific columns  | Clear separation, type-safe, independent evolution       | Duplicate patterns, two aggregation paths       |
 | **C: Polymorphic activity**   | Generic `ex_parte_verification` with `verifiable_type`     | Single aggregation, flexible                             | Complex, over-engineered for two types          |
 
-**Decision:** **Option B – Parallel `ExParteIncome` table.**
+**Decision:** **Option B – Parallel `Income` table.**
 
 **Rationale:**
 
@@ -173,11 +173,11 @@ Future: `state_ui_wage_records`, `payroll_api_argyle`, `payroll_api_truv`, etc.
 
 ---
 
-## ExParteIncome Model (Proposed)
+## Income Model (Proposed)
 
 ```ruby
-# db/migrate/YYYYMMDD_create_ex_parte_incomes.rb
-create_table :ex_parte_incomes, id: :uuid do |t|
+# db/migrate/YYYYMMDD_create_incomes.rb
+create_table :incomes, id: :uuid do |t|
   t.string :member_id, null: false
   t.uuid :certification_id
   t.string :category, null: false
@@ -207,7 +207,7 @@ end
 
 ### Aggregation
 
-1. Sum `gross_income` from all `ExParteIncome` records within certification lookback.
+1. Sum `gross_income` from all `Income` records within certification lookback.
 2. Include approved manual income activities (if present).
 3. Compare total to threshold.
 
@@ -225,10 +225,10 @@ end
   "calculation_type": "income_based",
   "total_income": 620.0,
   "target_income": 580.0,
-  "income_by_source": { "ex_parte": 620.0, "activity": 0 },
+  "income_by_source": { "income": 620.0, "activity": 0 },
   "period_start": "2025-01-01",
   "period_end": "2025-01-31",
-  "ex_parte_income_ids": ["uuid1"],
+  "income_ids": ["uuid1"],
   "calculation_method": "automated_income_intake"
 }
 ```
@@ -242,7 +242,7 @@ Mirror hours: income is saved **before** certification creation, and the busines
 **Flow:**
 
 1. API receives `member_data.activities` with `type: "income"`.
-2. Create `ExParteIncome` records (before certification).
+2. Create `Income` records (before certification).
 3. Create certification → triggers business process.
 4. At `EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP`:
    - If hours sufficient → existing hours path.
@@ -253,9 +253,9 @@ Mirror hours: income is saved **before** certification creation, and the busines
 
 ## Decisions
 
-### Parallel ExParteIncome table
+### Parallel Income table
 
-Use a dedicated `ex_parte_incomes` table instead of extending `ExParteActivity`. Keeps semantics clear and supports future income-specific rules (e.g., freshness by source). Tradeoff: two intake paths; mitigated by shared patterns.
+Use a dedicated `incomes` table instead of extending `ExParteActivity`. Keeps semantics clear and supports future income-specific rules (e.g., freshness by source). Tradeoff: two intake paths; mitigated by shared patterns.
 
 ### Income nested in member_data.activities
 
@@ -267,7 +267,7 @@ Use `CE_INCOME_THRESHOLD_MONTHLY` (default 580) so states can adjust. Tradeoff: 
 
 ### Source attribution on every record
 
-Store `source_type` and `source_id` on each `ExParteIncome` for audit. Tradeoff: redundant source data; required for traceability.
+Store `source_type` and `source_id` on each `Income` for audit. Tradeoff: redundant source data; required for traceability.
 
 ### Audit trail over hard immutability
 
@@ -275,7 +275,7 @@ Use an **audit trail** to satisfy the business requirement for traceable, trustw
 
 **Rationale:** Strict immutability is difficult to enforce reliably (triggers and hooks can be bypassed; raw SQL, console, or other services may change data). It also blocks legitimate cases: corrections after a bad load, transient states (e.g., pending verification), merges, backfills, or compliance-driven updates. The business need is **traceability**—who changed what, when, and why—plus **origin metadata** (source_type, source_id, reported_at). An audit log provides both and accommodates edge cases.
 
-**Approach:** Record all create/update/delete events for `ExParteIncome` in an audit store (e.g., `ex_parte_income_audit` or a generic audit table): old/new values, `changed_at`, `changed_by` (user or system), optional reason/context, and origin fields at time of event. Normal flows are append-only (create only); any update or delete goes through a defined process and is always audited. Optionally, model-level guards (e.g., `before_update` / `before_destroy` that raise or log) may be used as defense-in-depth; the primary guarantee is the audit log.
+**Approach:** Record all create/update/delete events for `Income` in an audit store (e.g., `income_audit` or a generic audit table): old/new values, `changed_at`, `changed_by` (user or system), optional reason/context, and origin fields at time of event. Normal flows are append-only (create only); any update or delete goes through a defined process and is always audited. Optionally, model-level guards (e.g., `before_update` / `before_destroy` that raise or log) may be used as defense-in-depth; the primary guarantee is the audit log.
 
 **Tradeoff:** Policy-based "do not update in normal flows" instead of technical enforcement. Mitigated by audit, code review, and optional model guards.
 
