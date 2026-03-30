@@ -37,6 +37,7 @@ class DocumentStagingController < ApplicationController
     end
 
     @all_complete = @staged_documents.any? && @staged_documents.none?(&:pending?)
+    @batch_key = Digest::SHA256.hexdigest(@staged_documents.map(&:id).sort.join(","))
     @activity_report_application_form_id = activity_report_application_form_id
 
     return unless @all_complete && @staged_documents.any?

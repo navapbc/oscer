@@ -31,7 +31,7 @@ class FetchDocAiResultsJob < ApplicationJob
       "document_staging_batch_#{batch_key}",
       target: "document_staging_status",
       partial: "document_staging/results",
-      locals: { staged_documents: staged_documents }
+      locals: { staged_documents: staged_documents, all_complete: true }
     )
   end
 end
