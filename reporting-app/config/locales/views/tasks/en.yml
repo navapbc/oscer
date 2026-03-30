@@ -45,7 +45,7 @@ en:
         download_link: "Download document"
         close: "Close preview"
         back_to_table: "Back to table"
-        prefill_heading: "Prefill"
+        prefill_heading: "Activity details"
         month_label: "Month"
     review_exemption_claim_task:
       intro: Review the exemption form

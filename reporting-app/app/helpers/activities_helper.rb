@@ -33,6 +33,44 @@ module ActivitiesHelper
     }
   end
 
+  # Returns per-field evidence source for an AI-sourced activity by comparing
+  # current values to the original AI-extracted values from StagedDocument.
+  # Fields not extracted by AI (category, name, reporting_method) are always self_reported.
+  # Returns a hash of { field_name => evidence_source_string }.
+  def field_attributions(activity, staged_document)
+    base = ActivityAttributions::SELF_REPORTED
+    result = {
+      category: base,
+      reporting_method: base,
+      name: base
+    }
+
+    return result.merge(month: base, income: base, hours: base) unless activity.ai_sourced? && staged_document
+
+    original = original_ai_values(activity, staged_document)
+
+    result[:month] = field_attribution_for(activity.month, original[:month])
+    if activity.is_a?(IncomeActivity)
+      result[:income] = field_attribution_for(activity.income&.cents, original[:income_cents])
+    else
+      # AI (payslip extraction) never populates hours — only income and month.
+      # Hours on an AI-sourced activity are always self-reported.
+      result[:hours] = base
+    end
+
+    result
+  end
+
+  # Returns the attributed_field partial locals for a specific field's evidence source.
+  def attribution_locals_for(evidence_source)
+    icon_info = evidence_source_icon(evidence_source)
+    {
+      field_classes: attribution_field_classes(evidence_source),
+      icon_info: icon_info,
+      attribution_label: icon_info[:label]
+    }
+  end
+
   def confidence_display(confidence)
     return nil if confidence.nil?
 
@@ -67,5 +105,38 @@ module ActivitiesHelper
 
     conf = confidence_display(confidence_by_case[case_id])
     { conf: conf, low: conf&.dig(:low) || false }
+  end
+
+  private
+
+  def field_attribution_for(current_value, original_value)
+    if current_value == original_value
+      ActivityAttributions::AI_ASSISTED
+    else
+      ActivityAttributions::AI_ASSISTED_WITH_MEMBER_EDITS
+    end
+  end
+
+  def original_ai_values(activity, staged_document)
+    fields = staged_document.extracted_fields
+    payslip = DocAiResult.from_response(
+      "matchedDocumentClass" => staged_document.doc_ai_matched_class,
+      "fields" => fields,
+      "status" => "completed"
+    )
+
+    month = parse_ai_month(payslip.pay_period_start_date&.value)
+    income_cents = payslip.current_gross_pay&.value&.then { |v| (v.to_f * 100).round }
+
+    { month: month, income_cents: income_cents, hours: nil }
+  end
+
+  def parse_ai_month(pay_period_start_date)
+    return nil if pay_period_start_date.nil?
+
+    date = Date.parse(pay_period_start_date.to_s)
+    Date.new(date.year, date.month, 1)
+  rescue ArgumentError, Date::Error
+    nil
   end
 end

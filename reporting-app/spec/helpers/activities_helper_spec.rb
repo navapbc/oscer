@@ -187,6 +187,143 @@ RSpec.describe ActivitiesHelper, type: :helper do
     end
   end
 
+  describe "#field_attributions" do
+    let(:month) { Date.new(2026, 2, 1) }
+
+    context "when activity is not AI-sourced" do
+      let(:activity) { build(:income_activity, evidence_source: "self_reported", month: month, income: 150_000) }
+
+      it "returns self_reported for all fields" do
+        result = helper.field_attributions(activity, nil)
+
+        expect(result[:category]).to eq(ActivityAttributions::SELF_REPORTED)
+        expect(result[:reporting_method]).to eq(ActivityAttributions::SELF_REPORTED)
+        expect(result[:name]).to eq(ActivityAttributions::SELF_REPORTED)
+        expect(result[:month]).to eq(ActivityAttributions::SELF_REPORTED)
+        expect(result[:income]).to eq(ActivityAttributions::SELF_REPORTED)
+      end
+    end
+
+    context "when activity is AI-sourced with no staged document" do
+      let(:activity) { build(:income_activity, :ai_assisted, month: month, income: 150_000) }
+
+      it "returns self_reported for all fields" do
+        result = helper.field_attributions(activity, nil)
+
+        expect(result[:month]).to eq(ActivityAttributions::SELF_REPORTED)
+        expect(result[:income]).to eq(ActivityAttributions::SELF_REPORTED)
+      end
+    end
+
+    context "when IncomeActivity has unchanged AI values" do
+      let(:activity) { build(:income_activity, :ai_assisted, month: month, income: 150_000) }
+      let(:staged_document) do
+        build(:staged_document, :validated, extracted_fields: {
+          "payperiodstartdate" => { "value" => "2026-02-01", "confidence" => 0.9 },
+          "currentgrosspay" => { "value" => 1500.0, "confidence" => 0.9 }
+        })
+      end
+
+      it "returns ai_assisted for month and income" do
+        result = helper.field_attributions(activity, staged_document)
+
+        expect(result[:month]).to eq(ActivityAttributions::AI_ASSISTED)
+        expect(result[:income]).to eq(ActivityAttributions::AI_ASSISTED)
+      end
+
+      it "returns self_reported for non-AI fields" do
+        result = helper.field_attributions(activity, staged_document)
+
+        expect(result[:category]).to eq(ActivityAttributions::SELF_REPORTED)
+        expect(result[:reporting_method]).to eq(ActivityAttributions::SELF_REPORTED)
+        expect(result[:name]).to eq(ActivityAttributions::SELF_REPORTED)
+      end
+    end
+
+    context "when IncomeActivity has member-edited income but unchanged month" do
+      let(:activity) { build(:income_activity, :ai_assisted, month: month, income: 200_000) }
+      let(:staged_document) do
+        build(:staged_document, :validated, extracted_fields: {
+          "payperiodstartdate" => { "value" => "2026-02-01", "confidence" => 0.9 },
+          "currentgrosspay" => { "value" => 1500.0, "confidence" => 0.9 }
+        })
+      end
+
+      it "returns ai_assisted_with_member_edits for income" do
+        result = helper.field_attributions(activity, staged_document)
+
+        expect(result[:income]).to eq(ActivityAttributions::AI_ASSISTED_WITH_MEMBER_EDITS)
+      end
+
+      it "returns ai_assisted for month" do
+        result = helper.field_attributions(activity, staged_document)
+
+        expect(result[:month]).to eq(ActivityAttributions::AI_ASSISTED)
+      end
+    end
+
+    context "when IncomeActivity has member-edited month but unchanged income" do
+      let(:activity) { build(:income_activity, :ai_assisted, month: Date.new(2026, 3, 1), income: 150_000) }
+      let(:staged_document) do
+        build(:staged_document, :validated, extracted_fields: {
+          "payperiodstartdate" => { "value" => "2026-02-15", "confidence" => 0.9 },
+          "currentgrosspay" => { "value" => 1500.0, "confidence" => 0.9 }
+        })
+      end
+
+      it "returns ai_assisted_with_member_edits for month" do
+        result = helper.field_attributions(activity, staged_document)
+
+        expect(result[:month]).to eq(ActivityAttributions::AI_ASSISTED_WITH_MEMBER_EDITS)
+      end
+
+      it "returns ai_assisted for income" do
+        result = helper.field_attributions(activity, staged_document)
+
+        expect(result[:income]).to eq(ActivityAttributions::AI_ASSISTED)
+      end
+    end
+
+    context "when activity is an AI-sourced HourlyActivity" do
+      let(:activity) { build(:hourly_activity, :ai_assisted, month: month, hours: 40) }
+      let(:staged_document) do
+        build(:staged_document, :validated, extracted_fields: {
+          "payperiodstartdate" => { "value" => "2026-02-01", "confidence" => 0.9 },
+          "currentgrosspay" => { "value" => 1500.0, "confidence" => 0.9 }
+        })
+      end
+
+      it "returns self_reported for hours since AI never extracts hours" do
+        result = helper.field_attributions(activity, staged_document)
+
+        expect(result[:hours]).to eq(ActivityAttributions::SELF_REPORTED)
+      end
+
+      it "returns ai_assisted for month" do
+        result = helper.field_attributions(activity, staged_document)
+
+        expect(result[:month]).to eq(ActivityAttributions::AI_ASSISTED)
+      end
+    end
+  end
+
+  describe "#attribution_locals_for" do
+    it "returns field_classes, icon_info, and attribution_label for a given evidence source" do
+      result = helper.attribution_locals_for(ActivityAttributions::AI_ASSISTED)
+
+      expect(result[:field_classes]).to eq("bg-attribution-gold")
+      expect(result[:icon_info][:icon]).to eq("insights")
+      expect(result[:attribution_label]).to eq("AI Assisted")
+    end
+
+    it "returns self_reported locals for nil" do
+      result = helper.attribution_locals_for(nil)
+
+      expect(result[:field_classes]).to eq("bg-attribution-primary")
+      expect(result[:attribution_label]).to eq("Self Reported")
+    end
+  end
+
   describe "#task_confidence" do
     before do
       allow(Rails.application.config).to receive(:doc_ai).and_return({ low_confidence_threshold: 0.7 })
