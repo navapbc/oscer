@@ -23,4 +23,10 @@ export class BeforeYouStartPage extends BasePage {
 
     return new ChooseMonthsPage(this.page).waitForURLtoMatchPagePath();
   }
+
+  async clickStartWithDocAi() {
+    // Don't check skipAiCheckbox — DocAI will process uploaded documents
+    await this.startButton.click();
+    return new ChooseMonthsPage(this.page).waitForURLtoMatchPagePath();
+  }
 }
