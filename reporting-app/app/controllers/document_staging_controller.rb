@@ -39,15 +39,6 @@ class DocumentStagingController < ApplicationController
     @all_complete = @staged_documents.any? && @staged_documents.none?(&:pending?)
     @batch_key = Digest::SHA256.hexdigest(@staged_documents.map(&:id).sort.join(","))
     @activity_report_application_form_id = activity_report_application_form_id
-
-    return unless @all_complete && @staged_documents.any?
-
-    validated = @staged_documents.select(&:validated?)
-    if validated.any?
-      flash.now[:notice] = t("document_staging.results.upload_success")
-    else
-      flash.now[:alert] = t("document_staging.results.upload_failure")
-    end
   end
 
   def lookup
