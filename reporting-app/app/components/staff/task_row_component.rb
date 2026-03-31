@@ -9,7 +9,7 @@ class Staff::TaskRowComponent < Strata::Tasks::TaskRowComponent
   end
 
   def self.columns
-    cols = Strata::Tasks::TaskRowComponent.columns
+    cols = super
     return cols unless Features.doc_ai_enabled?
     cols + [ :confidence ]
   end
