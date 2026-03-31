@@ -3,7 +3,7 @@ import { BasePage } from '../../BasePage';
 
 export class DocAiStatusPage extends BasePage {
   get pagePath() {
-    return '**/document_staging/doc_ai_upload_status*';
+    return '/document_staging/doc_ai_upload_status*';
   }
 
   readonly processingTitle: Locator;
