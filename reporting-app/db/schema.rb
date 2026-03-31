@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_13_000001) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_31_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -258,6 +258,23 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_13_000001) do
     t.index ["priority", "scheduled_at"], name: "index_good_jobs_on_priority_scheduled_at_unfinished_unlocked", where: "((finished_at IS NULL) AND (locked_by_id IS NULL))"
     t.index ["queue_name", "scheduled_at"], name: "index_good_jobs_on_queue_name_and_scheduled_at", where: "(finished_at IS NULL)"
     t.index ["scheduled_at"], name: "index_good_jobs_on_scheduled_at", where: "(finished_at IS NULL)"
+  end
+
+  create_table "incomes", id: :uuid, default: -> { "gen_random_uuid()" }, comment: "Income data from external sources (API/batch/QWD) for compliance calculation", force: :cascade do |t|
+    t.string "member_id", null: false, comment: "Member reference - always required (parallel to ExParteActivity; no certification FK)"
+    t.string "category", null: false, comment: "Activity category: employment, community_service, education"
+    t.decimal "gross_income", precision: 10, scale: 2, null: false, comment: "Gross income for the pay period"
+    t.date "period_start", null: false, comment: "Pay period start date"
+    t.date "period_end", null: false, comment: "Pay period end date"
+    t.string "source_type", null: false, comment: "Source type: api, quarterly_wage_data, or batch_upload"
+    t.string "source_id", comment: "Source record ID (e.g., batch upload ID)"
+    t.datetime "reported_at", null: false, comment: "When the income data was reported"
+    t.jsonb "metadata", default: {}, null: false, comment: "Additional structured fields (e.g., employer name)"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["member_id"], name: "index_incomes_on_member_id", comment: "Lookup entries by member"
+    t.index ["period_start", "period_end"], name: "index_incomes_on_period", comment: "Date range queries"
+    t.index ["source_type", "source_id"], name: "index_incomes_on_source", comment: "Source tracking (batch upload lookups)"
   end
 
   create_table "information_requests", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
