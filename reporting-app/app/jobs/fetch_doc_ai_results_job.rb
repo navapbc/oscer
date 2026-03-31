@@ -33,5 +33,11 @@ class FetchDocAiResultsJob < ApplicationJob
       partial: "document_staging/results",
       locals: { staged_documents: staged_documents }
     )
+    Turbo::StreamsChannel.broadcast_update_to(
+      "document_staging_batch_#{batch_key}",
+      target: "flash-messages",
+      partial: "document_staging/upload_notification",
+      locals: { all_validated: staged_documents.all?(&:validated?) }
+    )
   end
 end
