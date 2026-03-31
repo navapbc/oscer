@@ -12,6 +12,7 @@ RSpec.describe FetchDocAiResultsJob, type: :job do
   before do
     allow(DocumentStagingService).to receive(:new).and_return(service)
     allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
+    allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
   end
 
   describe "#perform" do
@@ -40,6 +41,34 @@ RSpec.describe FetchDocAiResultsJob, type: :job do
           locals: { staged_documents: anything }
         )
       end
+
+      context "when all documents are validated" do
+        let(:staged_doc) { create(:staged_document, :validated, user_id: user.id) }
+
+        it "broadcasts upload notification with all_validated: true" do
+          described_class.perform_now([ staged_doc.id ])
+          expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
+            "document_staging_batch_#{batch_key}",
+            target: "flash-messages",
+            partial: "document_staging/upload_notification",
+            locals: { all_validated: true }
+          )
+        end
+      end
+
+      context "when any document is not validated" do
+        let(:staged_doc) { create(:staged_document, :rejected, user_id: user.id) }
+
+        it "broadcasts upload notification with all_validated: false" do
+          described_class.perform_now([ staged_doc.id ])
+          expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
+            "document_staging_batch_#{batch_key}",
+            target: "flash-messages",
+            partial: "document_staging/upload_notification",
+            locals: { all_validated: false }
+          )
+        end
+      end
     end
 
     context "when some documents are still pending" do
@@ -56,6 +85,7 @@ RSpec.describe FetchDocAiResultsJob, type: :job do
       it "does not broadcast" do
         described_class.perform_now([ staged_doc.id ], attempt: 1)
         expect(Turbo::StreamsChannel).not_to have_received(:broadcast_replace_to)
+        expect(Turbo::StreamsChannel).not_to have_received(:broadcast_update_to)
       end
     end
 
@@ -83,6 +113,16 @@ RSpec.describe FetchDocAiResultsJob, type: :job do
           target: "document_staging_status",
           partial: "document_staging/results",
           locals: { staged_documents: anything }
+        )
+      end
+
+      it "broadcasts upload notification with all_validated: false" do
+        described_class.perform_now([ staged_doc.id ], attempt: 5)
+        expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
+          "document_staging_batch_#{batch_key}",
+          target: "flash-messages",
+          partial: "document_staging/upload_notification",
+          locals: { all_validated: false }
         )
       end
     end
