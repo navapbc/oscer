@@ -1,4 +1,4 @@
-import { Locator, Page } from '@playwright/test';
+import { expect, Locator, Page } from '@playwright/test';
 import { BasePage } from '../../BasePage';
 import { ChooseMonthsPage } from './ChooseMonthsPage';
 
@@ -21,6 +21,13 @@ export class BeforeYouStartPage extends BasePage {
     await this.skipAiCheckbox.check();
     await this.startButton.click();
 
+    return new ChooseMonthsPage(this.page).waitForURLtoMatchPagePath();
+  }
+
+  async clickStartWithDocAi() {
+    // Verify DocAI is not being skipped (checkbox must be unchecked by default)
+    await expect(this.page.locator('.usa-checkbox__input')).not.toBeChecked();
+    await this.startButton.click();
     return new ChooseMonthsPage(this.page).waitForURLtoMatchPagePath();
   }
 }

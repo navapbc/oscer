@@ -691,7 +691,6 @@ PLATFORMS
   x86_64-linux-musl
 
 DEPENDENCIES
-  actioncable
   active_storage_validations
   aws-actionmailer-ses
   aws-sdk-cognitoidentityprovider (~> 1.88)

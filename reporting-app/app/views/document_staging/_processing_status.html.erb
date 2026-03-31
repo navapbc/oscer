@@ -1,21 +1,20 @@
-<div class="usa-modal-wrapper is-visible" role="dialog" aria-labelledby="scanning-modal-heading" aria-describedby="scanning-modal-description">
-  <div class="usa-modal-overlay is-visible" aria-controls="scanning-modal">
-    <div class="usa-modal" id="scanning-modal" tabindex="-1" aria-labelledby="scanning-modal-heading" aria-describedby="scanning-modal-description">
-      <div class="usa-modal__content">
-        <div class="usa-modal__main">
-          <h2 class="usa-modal__heading" id="scanning-modal-heading">
-            <%= t("document_staging.processing.modal_title") %>
-          </h2>
-          <div class="usa-prose">
-            <p id="scanning-modal-description"><%= t("document_staging.processing.modal_body") %></p>
-            <p><%= t("document_staging.processing.time_warning") %></p>
+<div aria-hidden="true" style="position: fixed; inset: 0; background: rgba(0, 0, 0, 0.54); z-index: 399;"></div>
+<div role="dialog"
+     aria-modal="true"
+     aria-labelledby="scanning-modal-heading"
+     aria-describedby="scanning-modal-description"
+     style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 400;">
+  <div class="bg-white padding-4 radius-md shadow-5" style="max-width: 32rem; width: 100%;">
+    <h2 class="font-heading-xl margin-top-0" id="scanning-modal-heading">
+      <%= t("document_staging.processing.modal_title") %>
+    </h2>
+    <div class="usa-prose">
+      <p id="scanning-modal-description"><%= t("document_staging.processing.modal_body") %></p>
+      <p><%= t("document_staging.processing.time_warning") %></p>
 
-            <p class="text-bold margin-bottom-05"><%= t("document_staging.processing.scanning") %></p>
-            <div class="bg-base-lightest radius-pill overflow-hidden" style="height: 12px;">
-              <div class="bg-primary radius-pill" style="height: 100%; width: 40%; animation: scanning-progress 90s linear infinite;"></div>
-            </div>
-          </div>
-        </div>
+      <p class="text-bold margin-bottom-05"><%= t("document_staging.processing.scanning") %></p>
+      <div class="bg-base-lightest radius-pill overflow-hidden" style="height: 12px;">
+        <div class="bg-primary radius-pill" style="height: 100%; width: 40%; animation: scanning-progress 90s linear infinite;"></div>
       </div>
     </div>
   </div>

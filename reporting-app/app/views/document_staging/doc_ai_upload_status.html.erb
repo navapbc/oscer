@@ -13,12 +13,8 @@
 <h1><%= t(".title") %></h1>
 <p class="text-base"><%= t(".file_format_note") %></p>
 
-<%= turbo_frame_tag "document_staging_status",
-      data: {
-        controller: "auto-refresh",
-        auto_refresh_active_value: !@all_complete,
-        auto_refresh_interval_value: 5000
-      } do %>
+<%= turbo_stream_from "document_staging_batch_#{@batch_key}" unless @all_complete %>
+<%= turbo_frame_tag "document_staging_status" do %>
   <% if @all_complete %>
     <%= render partial: "results", locals: { staged_documents: @staged_documents } %>
   <% else %>
