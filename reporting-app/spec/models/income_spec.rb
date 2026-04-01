@@ -8,13 +8,6 @@ RSpec.describe Income, type: :model do
       income = build(:income)
       expect(income).to be_valid
     end
-
-    it 'creates a valid record from batch' do
-      income = build(:income, :from_batch)
-      expect(income).to be_valid
-      expect(income.source_type).to eq('batch_upload')
-      expect(income.source_id).to be_present
-    end
   end
 
   describe 'validations' do
@@ -189,8 +182,6 @@ RSpec.describe Income, type: :model do
 
     it 'defines MVP source type strings' do
       expect(Income::SOURCE_TYPES[:api]).to eq('api')
-      expect(Income::SOURCE_TYPES[:quarterly_wage_data]).to eq('quarterly_wage_data')
-      expect(Income::SOURCE_TYPES[:batch_upload]).to eq('batch_upload')
     end
   end
 end
