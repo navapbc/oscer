@@ -23,21 +23,19 @@ export class CertificationRequestPage extends BasePage {
     this.requestCertificationButton = page.getByRole('button', { name: /Request certification/i });
   }
 
-  async fillAndSubmit(email: string) {
+  async fillAndSubmit(email: string, certificationDate?: string) {
     // Generate a random 9-digit case number
     const caseNumber = String(
       Math.floor(Math.random() * (1_000_000_000 - 100_000_000)) + 100_000_000
     );
 
-    // Get today's date in MM-DD-YYYY format
-    const today = new Date();
-    const certificationDate = today.toLocaleDateString('en-US');
+    const date = certificationDate ?? new Date().toLocaleDateString('en-US');
 
     await this.emailField.fill(email);
     await this.firstNameField.fill('John');
     await this.lastNameField.fill('Doe');
     await this.caseNumberField.fill(caseNumber);
-    await this.certificationDateField.fill(certificationDate);
+    await this.certificationDateField.fill(date);
     await this.requestCertificationButton.click();
   }
 }

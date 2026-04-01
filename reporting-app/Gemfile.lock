@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: 47cae7d9d877761b8399609fcfc02258525e7258
+  revision: 6684caf553d466dbb985a6f496e20fd5ba25bd41
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -331,7 +331,7 @@ GEM
     mini_magick (5.3.1)
       logger
     mini_mime (1.1.5)
-    minitest (6.0.2)
+    minitest (6.0.3)
       drb (~> 2.0)
       prism (~> 1.5)
     msgpack (1.8.0)
@@ -445,7 +445,7 @@ GEM
       rspec-support (~> 3.12)
     raabro (1.4.0)
     racc (1.8.1)
-    rack (3.2.5)
+    rack (3.2.6)
     rack-oauth2 (2.3.0)
       activesupport
       attr_required
@@ -648,7 +648,7 @@ GEM
     validates_timeliness (7.1.0)
       activemodel (>= 7.0.0, < 8)
       timeliness (>= 0.3.10, < 1)
-    view_component (4.5.0)
+    view_component (4.6.0)
       actionview (>= 7.1.0)
       activesupport (>= 7.1.0)
       concurrent-ruby (~> 1)
@@ -691,7 +691,6 @@ PLATFORMS
   x86_64-linux-musl
 
 DEPENDENCIES
-  actioncable
   active_storage_validations
   aws-actionmailer-ses
   aws-sdk-cognitoidentityprovider (~> 1.88)

@@ -1,7 +1,7 @@
 <%= render partial: 'application/flash' %>
 <% has_document_preview = feature_enabled?(:doc_ai) && application_form.activities.any? { |a| a.supporting_documents.any? } %>
 
-<%= tag.div(data: has_document_preview ? { controller: "document-preview" } : {}) do %>
+<%= tag.div(data: has_document_preview ? { controller: "document-preview", document_preview_worker_url_value: asset_path("pdfjs-dist-worker.js") } : {}) do %>
   <%# Table view (visible by default, hidden when preview is open) %>
   <%= tag.div(data: has_document_preview ? { document_preview_target: "table" } : {}) do %>
     <h2><%= t(".intro") %></h2>
@@ -41,7 +41,7 @@
         <% end %>
       </div>
 
-      <%# Right column: document preview (iframe/img/fallback) %>
+      <%# Right column: document preview %>
       <div class="desktop:grid-col-6">
         <%= render partial: 'tasks/details/document_preview_panel' %>
       </div>

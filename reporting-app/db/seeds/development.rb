@@ -57,7 +57,7 @@ user = User.first || FactoryBot.create(:user, :as_admin, region: "Southeast", em
       { io: File.open(Rails.root.join("db/seeds/files/fake_paystub.png")), filename: "Courthouse Clerk Paystub.png", content_type: "image/png" }
     ]
   )
-  app_form.activities.create!(
+  outreach_activity = app_form.activities.create!(
     name: "Outreach Event",
     type: "HourlyActivity",
     category: "community_service",
@@ -70,16 +70,44 @@ user = User.first || FactoryBot.create(:user, :as_admin, region: "Southeast", em
       { io: File.open(Rails.root.join("db/seeds/files/fake_paystub.png")), filename: "Paystub3.png", content_type: "image/png" }
     ]
   )
-  app_form.activities.create!(
+  # StagedDocument with matching month so per-field attribution shows gold (AI-unchanged)
+  StagedDocument.create!(
+    user_id: user.id,
+    stageable: outreach_activity,
+    status: :validated,
+    doc_ai_matched_class: "Payslip",
+    extracted_fields: {
+      "payperiodstartdate" => { "value" => outreach_activity.month.iso8601, "confidence" => 0.95 },
+      "currentgrosspay" => { "value" => 1500.0, "confidence" => 0.92 }
+    },
+    file: { io: File.open(Rails.root.join("db/seeds/files/fake_paystub.pdf")), filename: "staged_paystub.pdf", content_type: "application/pdf" }
+  )
+
+  training_month = Date.today.prev_month.beginning_of_month
+  training_income = rand(15..300)
+  training_activity = app_form.activities.create!(
     name: "Training Session",
     type: "IncomeActivity",
     category: "education",
-    month: Date.today.prev_month.beginning_of_month,
-    income: rand(15..300),
+    month: training_month,
+    income: training_income,
     evidence_source: ActivityAttributions::AI_ASSISTED_WITH_MEMBER_EDITS,
     supporting_documents: [
       { io: File.open(Rails.root.join("db/seeds/files/fake_training_certificate.pdf")), filename: "Training Certificate.pdf", content_type: "application/pdf" }
     ]
+  )
+  # StagedDocument with different income so per-field attribution shows green (member-edited) for income
+  # but matching month so month stays gold (AI-unchanged)
+  StagedDocument.create!(
+    user_id: user.id,
+    stageable: training_activity,
+    status: :validated,
+    doc_ai_matched_class: "Payslip",
+    extracted_fields: {
+      "payperiodstartdate" => { "value" => training_month.iso8601, "confidence" => 0.88 },
+      "currentgrosspay" => { "value" => (training_income + 50) / 100.0, "confidence" => 0.75 }
+    },
+    file: { io: File.open(Rails.root.join("db/seeds/files/fake_training_certificate.pdf")), filename: "staged_certificate.pdf", content_type: "application/pdf" }
   )
   app_form.activities.create!(
     name: "Policy Discussion",
@@ -89,11 +117,12 @@ user = User.first || FactoryBot.create(:user, :as_admin, region: "Southeast", em
     hours: rand(1..10),
     evidence_source: ActivityAttributions::AI_REJECTED_MEMBER_OVERRIDE
   )
-  app_form.activities.create!(
+  volunteer_month = Date.today.prev_month.prev_month.beginning_of_month
+  volunteer_activity = app_form.activities.create!(
     name: "Volunteer Coordination",
     type: "HourlyActivity",
     category: "community_service",
-    month: Date.today.prev_month.prev_month.beginning_of_month,
+    month: volunteer_month,
     hours: rand(15..60),
     evidence_source: ActivityAttributions::AI_ASSISTED,
     supporting_documents: [
@@ -103,6 +132,17 @@ user = User.first || FactoryBot.create(:user, :as_admin, region: "Southeast", em
       { io: File.open(Rails.root.join("db/seeds/files/fake_paystub.png")), filename: "Food Bank Paystub 2.png", content_type: "image/png" },
       { io: File.open(Rails.root.join("db/seeds/files/fake_paystub.png")), filename: "Trash Pickup Paystub.png", content_type: "image/png" }
     ]
+  )
+  StagedDocument.create!(
+    user_id: user.id,
+    stageable: volunteer_activity,
+    status: :validated,
+    doc_ai_matched_class: "Payslip",
+    extracted_fields: {
+      "payperiodstartdate" => { "value" => volunteer_month.iso8601, "confidence" => 0.91 },
+      "currentgrosspay" => { "value" => 2000.0, "confidence" => 0.89 }
+    },
+    file: { io: File.open(Rails.root.join("db/seeds/files/fake_paystub.pdf")), filename: "staged_volunteer_paystub.pdf", content_type: "application/pdf" }
   )
 
   app_form.submit_application

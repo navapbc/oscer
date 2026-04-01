@@ -8,6 +8,7 @@ class TasksController < Strata::TasksController
   before_action :set_member, only: [ :show ]
   before_action :set_information_requests, only: [ :show ]
   before_action :set_confidence_by_activity, only: [ :show ]
+  before_action :set_staged_documents_by_activity, only: [ :show ]
 
   # Override parent index to use policy_scope for authorization.
   # The parent Strata::TasksController uses Strata::Task.all internally,
@@ -21,6 +22,8 @@ class TasksController < Strata::TasksController
       case_ids = @tasks.map(&:case_id).compact.uniq
       @confidence_by_case = DocAiConfidenceService.new.confidence_by_case_id(case_ids)
     end
+
+    render "strata/tasks/index", locals: tasks_index_locals
   end
 
   def assign
@@ -74,6 +77,17 @@ class TasksController < Strata::TasksController
 
   protected
 
+  # define #tasks_index_locals in all gem versions (it was added with TaskRowComponent).
+  def tasks_index_locals
+    {
+      tasks: @tasks,
+      task_types: @task_types,
+      unassigned_tasks: @unassigned_tasks,
+      task_row_component_class: Staff::TaskRowComponent,
+      task_row_component_options: { confidence_by_case: @confidence_by_case }
+    }
+  end
+
   def filter_tasks
     policy_scope super, policy_scope_class: Strata::TaskPolicy::Scope
   end
@@ -123,6 +137,17 @@ class TasksController < Strata::TasksController
 
     activity_ids = @application_form.activities.pluck(:id)
     @confidence_by_activity = DocAiConfidenceService.new.confidence_by_activity_id(activity_ids)
+  end
+
+  def set_staged_documents_by_activity
+    return unless Features.doc_ai_enabled? && @application_form.respond_to?(:activities)
+
+    activity_ids = @application_form.activities.select(&:ai_sourced?).map(&:id)
+    return if activity_ids.empty?
+
+    @staged_documents_by_activity = StagedDocument
+      .where(stageable_type: "Activity", stageable_id: activity_ids)
+      .index_by(&:stageable_id)
   end
 
   private
