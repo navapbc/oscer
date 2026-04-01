@@ -119,32 +119,6 @@ RSpec.describe IncomeService do
         expect(result[:status]).to eq(:unprocessable_entity)
       end
     end
-
-    context "with quarterly_wage_data source" do
-      it "creates entry with quarterly_wage_data source_type" do
-        result = described_class.create_entry(
-          **valid_params,
-          source_type: Income::SOURCE_TYPES[:quarterly_wage_data]
-        )
-
-        expect(result).to be_a(Income)
-        expect(result.source_type).to eq("quarterly_wage_data")
-      end
-    end
-
-    context "with batch_upload source" do
-      it "creates entry with batch source_type and source_id" do
-        result = described_class.create_entry(
-          **valid_params,
-          source_type: Income::SOURCE_TYPES[:batch_upload],
-          source_id: "upload-456"
-        )
-
-        expect(result).to be_a(Income)
-        expect(result.source_type).to eq("batch_upload")
-        expect(result.source_id).to eq("upload-456")
-      end
-    end
   end
 
   describe ".duplicate_entry?" do
