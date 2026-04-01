@@ -182,6 +182,8 @@ RSpec.describe Income, type: :model do
 
     it 'defines MVP source type strings' do
       expect(Income::SOURCE_TYPES[:api]).to eq('api')
+      expect(Income::SOURCE_TYPES[:quarterly_wage_data]).to eq('quarterly_wage_data')
+      expect(Income::SOURCE_TYPES[:batch_upload]).to eq('batch_upload')
     end
   end
 end

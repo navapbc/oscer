@@ -32,6 +32,24 @@ RSpec.describe IncomeService do
         expect(result.source_type).to eq("api")
       end
 
+      it "accepts quarterly_wage_data as source_type" do
+        result = described_class.create_entry(
+          **valid_params.merge(source_type: Income::SOURCE_TYPES[:quarterly_wage_data])
+        )
+
+        expect(result).to be_a(Income)
+        expect(result.source_type).to eq("quarterly_wage_data")
+      end
+
+      it "accepts batch_upload as source_type" do
+        result = described_class.create_entry(
+          **valid_params.merge(source_type: Income::SOURCE_TYPES[:batch_upload])
+        )
+
+        expect(result).to be_a(Income)
+        expect(result.source_type).to eq("batch_upload")
+      end
+
       it "sets optional source_id when provided" do
         result = described_class.create_entry(**valid_params, source_id: "batch-123")
 
