@@ -8,6 +8,7 @@ class TasksController < Strata::TasksController
   before_action :set_member, only: [ :show ]
   before_action :set_information_requests, only: [ :show ]
   before_action :set_confidence_by_activity, only: [ :show ]
+  before_action :set_staged_documents_by_activity, only: [ :show ]
 
   # Override parent index to use policy_scope for authorization.
   # The parent Strata::TasksController uses Strata::Task.all internally,
@@ -136,6 +137,17 @@ class TasksController < Strata::TasksController
 
     activity_ids = @application_form.activities.pluck(:id)
     @confidence_by_activity = DocAiConfidenceService.new.confidence_by_activity_id(activity_ids)
+  end
+
+  def set_staged_documents_by_activity
+    return unless Features.doc_ai_enabled? && @application_form.respond_to?(:activities)
+
+    activity_ids = @application_form.activities.select(&:ai_sourced?).map(&:id)
+    return if activity_ids.empty?
+
+    @staged_documents_by_activity = StagedDocument
+      .where(stageable_type: "Activity", stageable_id: activity_ids)
+      .index_by(&:stageable_id)
   end
 
   private

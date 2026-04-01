@@ -1,0 +1,12 @@
+<%# Wraps a form field with attribution styling and an optional positioned attribution tag.
+     Accepts: field_classes, icon_info, attribution_label, and a block for the field content.
+     Pass show_tag: false to render just the colored box without the attribution icon/label. %>
+<% show_tag = local_assigns.fetch(:show_tag, true) %>
+<div class="<%= field_classes %> padding-1 margin-bottom-2 radius-md<%= " position-relative" if show_tag %>">
+  <% if show_tag %>
+    <div class="position-absolute top-1 right-1 z-100">
+      <%= render "tasks/details/attribution_tag", icon_info: icon_info, label: attribution_label %>
+    </div>
+  <% end %>
+  <%= yield %>
+</div>
