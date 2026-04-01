@@ -23,14 +23,5 @@ FactoryBot.define do
     trait :education do
       category { 'education' }
     end
-
-    trait :from_batch do
-      source_type { Income::SOURCE_TYPES[:batch_upload] }
-      source_id { SecureRandom.uuid }
-    end
-
-    trait :from_quarterly_wage_data do
-      source_type { Income::SOURCE_TYPES[:quarterly_wage_data] }
-    end
   end
 end
