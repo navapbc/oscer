@@ -19,8 +19,6 @@ class IncomeService
         return { error: "Duplicate entry" }
       end
 
-      merged_metadata = merge_metadata(metadata, employer)
-
       entry = Income.new(
         member_id: member_id,
         category: category,
@@ -30,7 +28,7 @@ class IncomeService
         source_type: source_type,
         source_id: source_id,
         reported_at: reported_at,
-        metadata: merged_metadata
+        metadata: (metadata || {}).merge(employer.present? ? { "employer" => employer } : {})
       )
 
       if entry.save
@@ -51,13 +49,6 @@ class IncomeService
         period_start: period_start,
         period_end: period_end
       )
-    end
-
-    def merge_metadata(metadata, employer)
-      base = {}.merge(metadata || {})
-      return base unless employer.present?
-
-      base.merge("employer" => employer)
     end
   end
 end
