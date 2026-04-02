@@ -53,4 +53,36 @@ RSpec.describe SsoHelper, type: :helper do
       end
     end
   end
+
+  describe "#member_oidc_enabled?" do
+    context "when member OIDC is enabled" do
+      before do
+        allow(Rails.application.config).to receive(:member_oidc).and_return({ enabled: true })
+      end
+
+      it "returns true" do
+        expect(helper.member_oidc_enabled?).to be true
+      end
+    end
+
+    context "when member OIDC is disabled" do
+      before do
+        allow(Rails.application.config).to receive(:member_oidc).and_return({ enabled: false })
+      end
+
+      it "returns false" do
+        expect(helper.member_oidc_enabled?).to be false
+      end
+    end
+
+    context "when member_oidc config is not set" do
+      before do
+        allow(Rails.application.config).to receive(:member_oidc).and_raise(NoMethodError)
+      end
+
+      it "returns false" do
+        expect(helper.member_oidc_enabled?).to be false
+      end
+    end
+  end
 end

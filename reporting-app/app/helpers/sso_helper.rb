@@ -10,4 +10,11 @@ module SsoHelper
     # SSO config not loaded (e.g., in tests without SSO setup)
     false
   end
+
+  # Public member IdP sign-in (member OIDC). See docs/architecture/staff-sso/member-sso.md
+  def member_oidc_enabled?
+    Rails.application.config.member_oidc[:enabled] == true
+  rescue NoMethodError
+    false
+  end
 end
