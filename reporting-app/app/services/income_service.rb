@@ -9,11 +9,6 @@ class IncomeService
     # @return [Hash] with :error, :status keys on failure
     def create_entry(member_id:, category:, gross_income:, period_start:, period_end:,
                      source_type:, source_id: nil, reported_at: Time.current, metadata: {}, employer: nil)
-      resolved_source_type = normalize_source_type(source_type)
-      unless resolved_source_type
-        return { error: "Source type is not included in the list", status: :unprocessable_entity }
-      end
-
       if duplicate_entry?(
         member_id: member_id,
         category: category,
@@ -32,7 +27,7 @@ class IncomeService
         gross_income: gross_income,
         period_start: period_start,
         period_end: period_end,
-        source_type: resolved_source_type,
+        source_type: source_type,
         source_id: source_id,
         reported_at: reported_at,
         metadata: merged_metadata
@@ -58,17 +53,6 @@ class IncomeService
     end
 
     private
-
-    # @return [String, nil] canonical source_type value, or nil if unknown
-    def normalize_source_type(api_value)
-      return nil if api_value.nil?
-
-      raw = api_value.to_s.strip
-      return raw if Income::ALLOWED_SOURCE_TYPES.include?(raw)
-
-      key = raw.downcase.tr("-", "_").to_sym
-      Income::SOURCE_TYPES[key]
-    end
 
     def merge_metadata(metadata, employer)
       base = {}.merge(metadata || {})
