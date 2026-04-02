@@ -26,7 +26,9 @@
         <div class="grid-col-fill <%= yield :main_col_class %>">
           <section class="usa-section padding-y-4">
             <div class="grid-container">
-              <%= render partial: 'application/flash' %>
+              <div id="flash-messages">
+                <%= render partial: 'application/flash' %>
+              </div>
             </div>
           </section>
 

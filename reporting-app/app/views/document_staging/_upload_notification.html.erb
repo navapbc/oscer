@@ -1,0 +1,9 @@
+<div class="grid-row margin-bottom-3">
+  <div class="grid-col-12">
+    <% if all_validated %>
+      <%= render AlertComponent.new(type: AlertComponent::TYPES::SUCCESS, message: t("document_staging.results.upload_success")) %>
+    <% else %>
+      <%= render AlertComponent.new(type: AlertComponent::TYPES::ERROR, message: t("document_staging.results.upload_failure")) %>
+    <% end %>
+  </div>
+</div>

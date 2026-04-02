@@ -5,3 +5,5 @@ export { ActivityTypePage } from './ActivityTypePage';
 export { ActivityDetailsPage } from './ActivityDetailsPage';
 export { SupportingDocumentsPage } from './SupportingDocumentsPage';
 export { ReviewAndSubmitPage } from './ReviewAndSubmitPage';
+export { DocAiUploadPage } from './DocAiUploadPage';
+export { DocAiStatusPage } from './DocAiStatusPage';

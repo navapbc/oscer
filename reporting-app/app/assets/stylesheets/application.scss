@@ -107,18 +107,38 @@ div.exemption-screener {
   .usa-select {
     background-color: white !important;
   }
+
+  // Override disabled radio/checkbox label color to keep text readable
+  .usa-radio__input:disabled + [class*="__label"],
+  .usa-checkbox__input:disabled + [class*="__label"] {
+    color: color("ink") !important;
+  }
 }
 
-.bg-attribution-primary {
-  background-color: color("blue-cool-5v") !important;
+@mixin attribution-field($color) {
+  background-color: rgba($color, 0.1) !important;
+  border: 2px solid $color !important;
+
+  .usa-radio__input:checked:disabled + [class*="__label"]::before {
+    background-color: $color !important;
+    box-shadow: 0 0 0 2px $color, inset 0 0 0 2px white !important;
+  }
 }
 
+$attribution-primary: #005ea2;
+$attribution-gold: #ddaa01;
+$attribution-gold-bg: #FFF5C2;
+$attribution-green: #008817;
+$attribution-green-bg: #DDF9C7;
+
+.bg-attribution-primary { @include attribution-field($attribution-primary); }
 .bg-attribution-gold {
-  background-color: color("gold-5v") !important;
+  @include attribution-field($attribution-gold);
+  background-color: $attribution-gold-bg !important;
 }
-
 .bg-attribution-green {
-  background-color: color("green-cool-5v") !important;
+  @include attribution-field($attribution-green);
+  background-color: $attribution-green-bg !important;
 }
 
 .bg-attribution-error {

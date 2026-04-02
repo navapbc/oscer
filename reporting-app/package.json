@@ -3,10 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "build:css": "sass ./app/assets/stylesheets/application.scss:./app/assets/builds/application.css --load-path=node_modules --load-path=node_modules/@uswds/uswds/packages"
+    "build:css": "sass ./app/assets/stylesheets/application.scss:./app/assets/builds/application.css --load-path=node_modules --load-path=node_modules/@uswds/uswds/packages",
+    "postinstall": "mkdir -p vendor/javascript && sed '1s/^\\xEF\\xBB\\xBF//' node_modules/pdfjs-dist/build/pdf.min.mjs > vendor/javascript/pdfjs-dist.js && sed '1s/^\\xEF\\xBB\\xBF//' node_modules/pdfjs-dist/build/pdf.worker.min.mjs > vendor/javascript/pdfjs-dist-worker.js"
   },
   "dependencies": {
-    "@uswds/uswds": "^3.7.1"
+    "@uswds/uswds": "^3.7.1",
+    "pdfjs-dist": "^5.5.207"
   },
   "devDependencies": {
     "sass": "^1.71.1"

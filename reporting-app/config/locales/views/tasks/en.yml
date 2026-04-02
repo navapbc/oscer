@@ -40,13 +40,12 @@ en:
         submit_button: "Submit"
       document_preview:
         heading: "Document: %{filename}"
-        iframe_title: "Preview of %{filename}"
         image_alt: "Preview of %{filename}"
         no_preview: "Preview not available for this file type."
         download_link: "Download document"
         close: "Close preview"
         back_to_table: "Back to table"
-        prefill_heading: "Prefill"
+        prefill_heading: "Activity details"
         month_label: "Month"
     review_exemption_claim_task:
       intro: Review the exemption form
