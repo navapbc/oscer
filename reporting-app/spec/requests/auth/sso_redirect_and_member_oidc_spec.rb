@@ -52,9 +52,9 @@ RSpec.describe "OIDC redirect URI and member_oidc config (Story 1)", type: :requ
   end
 
   describe "Rails.application.config.member_oidc" do
-    it "has enabled and claims keys" do
+    it "has enabled, member_auth_only, and claims keys" do
       config = Rails.application.config.member_oidc
-      expect(config).to include(:enabled, :claims)
+      expect(config).to include(:enabled, :member_auth_only, :claims)
     end
 
     it "has enabled false by default (MEMBER_OIDC_ENABLED not set)" do

@@ -53,4 +53,52 @@ RSpec.describe SsoHelper, type: :helper do
       end
     end
   end
+
+  describe "#member_oidc_enabled?" do
+    context "when member OIDC is enabled" do
+      before do
+        allow(Rails.application.config).to receive(:member_oidc).and_return({ enabled: true })
+      end
+
+      it "returns true" do
+        expect(helper.member_oidc_enabled?).to be true
+      end
+    end
+
+    context "when member OIDC is disabled" do
+      before do
+        allow(Rails.application.config).to receive(:member_oidc).and_return({ enabled: false })
+      end
+
+      it "returns false" do
+        expect(helper.member_oidc_enabled?).to be false
+      end
+    end
+  end
+
+  describe "#member_oidc_member_auth_only?" do
+    context "when member OIDC is enabled and member_auth_only is true" do
+      before do
+        allow(Rails.application.config).to receive(:member_oidc).and_return(
+          { enabled: true, member_auth_only: true }
+        )
+      end
+
+      it "returns true" do
+        expect(helper.member_oidc_member_auth_only?).to be true
+      end
+    end
+
+    context "when member OIDC is disabled" do
+      before do
+        allow(Rails.application.config).to receive(:member_oidc).and_return(
+          { enabled: false, member_auth_only: true }
+        )
+      end
+
+      it "returns false" do
+        expect(helper.member_oidc_member_auth_only?).to be false
+      end
+    end
+  end
 end

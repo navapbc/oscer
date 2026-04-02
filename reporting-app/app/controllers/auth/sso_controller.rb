@@ -55,12 +55,18 @@ class Auth::SsoController < ApplicationController
     redirect_to root_path, alert: e.message
   end
 
-  # GET /auth/sso/failure
-  # Handles OmniAuth authentication failures
+  # GET /auth/failure (OmniAuth default; also /auth/sso/failure if routed)
+  # Handles OmniAuth authentication failures for staff SSO and delegates member_oidc to member sign-in.
   def failure
-    message = sanitized_failure_message(params[:message])
-    Rails.logger.error("SSO authentication failed: #{message}")
-    redirect_to root_path, alert: t("auth.sso.authentication_failed")
+    if params[:strategy].to_s == "member_oidc"
+      message = sanitized_failure_message(params[:message])
+      Rails.logger.error("Member OIDC authentication failed: #{message}")
+      redirect_to new_user_session_path, alert: t("auth.member_oidc.authentication_failed")
+    else
+      message = sanitized_failure_message(params[:message])
+      Rails.logger.error("SSO authentication failed: #{message}")
+      redirect_to root_path, alert: t("auth.sso.authentication_failed")
+    end
   end
 
   # DELETE /auth/sso/logout

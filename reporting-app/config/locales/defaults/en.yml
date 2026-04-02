@@ -52,6 +52,8 @@ en:
       javascript_required: "JavaScript is required for automatic redirect. Click below to continue."
       continue_button: "Continue to Sign In"
     member_oidc:
+      sign_in_button: "Sign in with your account"
+      sign_in_description: "Use the account you use for other state services."
       login_success: "Successfully signed in"
       authentication_failed: "Authentication failed. Please try again."
       not_enabled: "Sign in with your account is not available."
