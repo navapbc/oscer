@@ -40,8 +40,9 @@ class IncomeService
       end
     end
 
-    # Check for exact duplicate entry (same shape as ExParteActivityService; source_type is not part of the key)
-    # @return [Boolean]
+    private
+
+    # Same dimensions as ExParteActivityService duplicate check; source_type is not part of the key.
     def duplicate_entry?(member_id:, category:, gross_income:, period_start:, period_end:)
       Income.exists?(
         member_id: member_id,
@@ -51,8 +52,6 @@ class IncomeService
         period_end: period_end
       )
     end
-
-    private
 
     def merge_metadata(metadata, employer)
       base = {}.merge(metadata || {})

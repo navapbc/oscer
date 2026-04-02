@@ -115,12 +115,16 @@ RSpec.describe IncomeService do
     end
   end
 
-  describe ".duplicate_entry?" do
+  describe "duplicate_entry? (private)" do
     let(:existing_entry) { create(:income, :employment) }
+
+    def duplicate_entry?(**)
+      described_class.send(:duplicate_entry?, **)
+    end
 
     context "with exact match" do
       it "returns true" do
-        result = described_class.duplicate_entry?(
+        result = duplicate_entry?(
           member_id: existing_entry.member_id,
           category: existing_entry.category,
           gross_income: existing_entry.gross_income,
@@ -134,7 +138,7 @@ RSpec.describe IncomeService do
 
     context "with different member_id" do
       it "returns false" do
-        result = described_class.duplicate_entry?(
+        result = duplicate_entry?(
           member_id: "different-member",
           category: existing_entry.category,
           gross_income: existing_entry.gross_income,
@@ -148,7 +152,7 @@ RSpec.describe IncomeService do
 
     context "with different category" do
       it "returns false" do
-        result = described_class.duplicate_entry?(
+        result = duplicate_entry?(
           member_id: existing_entry.member_id,
           category: "education",
           gross_income: existing_entry.gross_income,
@@ -162,7 +166,7 @@ RSpec.describe IncomeService do
 
     context "with different gross_income" do
       it "returns false" do
-        result = described_class.duplicate_entry?(
+        result = duplicate_entry?(
           member_id: existing_entry.member_id,
           category: existing_entry.category,
           gross_income: existing_entry.gross_income + 1,
@@ -176,7 +180,7 @@ RSpec.describe IncomeService do
 
     context "with different period" do
       it "returns false for different start date" do
-        result = described_class.duplicate_entry?(
+        result = duplicate_entry?(
           member_id: existing_entry.member_id,
           category: existing_entry.category,
           gross_income: existing_entry.gross_income,
@@ -188,7 +192,7 @@ RSpec.describe IncomeService do
       end
 
       it "returns false for different end date" do
-        result = described_class.duplicate_entry?(
+        result = duplicate_entry?(
           member_id: existing_entry.member_id,
           category: existing_entry.category,
           gross_income: existing_entry.gross_income,
@@ -202,7 +206,7 @@ RSpec.describe IncomeService do
 
     context "with no existing entries" do
       it "returns false" do
-        result = described_class.duplicate_entry?(
+        result = duplicate_entry?(
           member_id: "new-member",
           category: "employment",
           gross_income: 100.0,
