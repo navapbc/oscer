@@ -6,7 +6,7 @@ class IncomeService
   class << self
     # Create income data entry for a member
     # @return [Income] on success
-    # @return [Hash] with :error, :status keys on failure
+    # @return [Hash] with :error key on failure
     def create_entry(member_id:, category:, gross_income:, period_start:, period_end:,
                      source_type:, source_id: nil, reported_at: Time.current, metadata: {}, employer: nil)
       if duplicate_entry?(
@@ -16,7 +16,7 @@ class IncomeService
         period_start: period_start,
         period_end: period_end
       )
-        return { error: "Duplicate entry", status: :conflict }
+        return { error: "Duplicate entry" }
       end
 
       merged_metadata = merge_metadata(metadata, employer)
@@ -36,7 +36,7 @@ class IncomeService
       if entry.save
         entry
       else
-        { error: entry.errors.full_messages.join(", "), status: :unprocessable_entity }
+        { error: entry.errors.full_messages.join(", ") }
       end
     end
 

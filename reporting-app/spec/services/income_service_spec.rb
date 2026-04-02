@@ -68,7 +68,6 @@ RSpec.describe IncomeService do
 
         expect(result).to be_a(Hash)
         expect(result[:error]).to eq("Duplicate entry")
-        expect(result[:status]).to eq(:conflict)
       end
 
       it "does not create a new entry" do
@@ -84,7 +83,6 @@ RSpec.describe IncomeService do
 
         expect(result).to be_a(Hash)
         expect(result[:error]).to include("Member")
-        expect(result[:status]).to eq(:unprocessable_entity)
       end
 
       it "returns error for invalid category" do
@@ -92,7 +90,6 @@ RSpec.describe IncomeService do
 
         expect(result).to be_a(Hash)
         expect(result[:error]).to include("Category")
-        expect(result[:status]).to eq(:unprocessable_entity)
       end
 
       it "returns error for zero gross_income" do
@@ -100,7 +97,6 @@ RSpec.describe IncomeService do
 
         expect(result).to be_a(Hash)
         expect(result[:error]).to include("Gross income")
-        expect(result[:status]).to eq(:unprocessable_entity)
       end
 
       it "returns error for negative gross_income" do
@@ -108,7 +104,6 @@ RSpec.describe IncomeService do
 
         expect(result).to be_a(Hash)
         expect(result[:error]).to include("Gross income")
-        expect(result[:status]).to eq(:unprocessable_entity)
       end
 
       it "returns error for invalid source_type" do
@@ -116,7 +111,6 @@ RSpec.describe IncomeService do
 
         expect(result).to be_a(Hash)
         expect(result[:error]).to include("Source type")
-        expect(result[:status]).to eq(:unprocessable_entity)
       end
     end
   end
