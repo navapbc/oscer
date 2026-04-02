@@ -54,9 +54,12 @@ Rails.application.config.sso = {
 #   MEMBER_OIDC_CLAIM_EMAIL    - Claim key for email (default: "email")
 #   MEMBER_OIDC_CLAIM_NAME     - Claim key for name (default: "name")
 #   MEMBER_OIDC_CLAIM_UID     - Claim key for unique id (default: "sub")
+#   MEMBER_OIDC_MEMBER_AUTH_ONLY - When true with MEMBER_OIDC_ENABLED, unauthenticated visits to
+#                                  the member sign-in page redirect to the member OIDC flow (no email/password form).
 
 Rails.application.config.member_oidc = {
   enabled: ENV.fetch("MEMBER_OIDC_ENABLED", "false") == "true",
+  member_auth_only: ENV.fetch("MEMBER_OIDC_MEMBER_AUTH_ONLY", "false") == "true",
   claims: {
     email: ENV.fetch("MEMBER_OIDC_CLAIM_EMAIL", "email"),
     name: ENV.fetch("MEMBER_OIDC_CLAIM_NAME", "name"),

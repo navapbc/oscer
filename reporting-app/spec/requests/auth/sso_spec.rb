@@ -164,7 +164,7 @@ RSpec.describe "Auth::Sso", type: :request do
     end
 
     context "when OmniAuth failure is for member_oidc" do
-      it "redirects to member sign-in with member OIDC flash copy" do
+      it "redirects to member sign-in with member OIDC flash message" do
         get "/auth/failure", params: { message: "invalid_credentials", strategy: "member_oidc" }
 
         expect(response).to have_http_status(:redirect)

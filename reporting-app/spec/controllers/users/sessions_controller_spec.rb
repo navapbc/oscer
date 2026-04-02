@@ -25,6 +25,25 @@ RSpec.describe Users::SessionsController do
 
       expect(response.body).to have_selector("h1", text: /sign in/i)
     end
+
+    context "when member OIDC is the only configured member auth" do
+      before do
+        allow(Rails.application.config).to receive(:member_oidc).and_return(
+          {
+            enabled: true,
+            member_auth_only: true,
+            claims: { email: "email", name: "name", unique_id: "sub" }
+          }
+        )
+      end
+
+      it "redirects to member OIDC login" do
+        get :new, params: { locale: "en" }
+
+        expect(response).to have_http_status(:redirect)
+        expect(response.location).to match(/member_oidc\/login/)
+      end
+    end
   end
 
   describe "POST create" do
