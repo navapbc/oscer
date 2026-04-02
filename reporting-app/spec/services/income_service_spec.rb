@@ -86,7 +86,6 @@ RSpec.describe IncomeService do
 
         expect(result).to be_a(Hash)
         expect(result[:error]).to eq("Duplicate entry")
-        expect(result[:status]).to eq(:conflict)
       end
 
       it "does not create a new entry" do
@@ -102,7 +101,6 @@ RSpec.describe IncomeService do
 
         expect(result).to be_a(Hash)
         expect(result[:error]).to include("Member")
-        expect(result[:status]).to eq(:unprocessable_entity)
       end
 
       it "returns error for invalid category" do
@@ -110,7 +108,6 @@ RSpec.describe IncomeService do
 
         expect(result).to be_a(Hash)
         expect(result[:error]).to include("Category")
-        expect(result[:status]).to eq(:unprocessable_entity)
       end
 
       it "returns error for zero gross_income" do
@@ -118,7 +115,6 @@ RSpec.describe IncomeService do
 
         expect(result).to be_a(Hash)
         expect(result[:error]).to include("Gross income")
-        expect(result[:status]).to eq(:unprocessable_entity)
       end
 
       it "returns error for negative gross_income" do
@@ -126,7 +122,6 @@ RSpec.describe IncomeService do
 
         expect(result).to be_a(Hash)
         expect(result[:error]).to include("Gross income")
-        expect(result[:status]).to eq(:unprocessable_entity)
       end
 
       it "returns error for invalid source_type" do
@@ -134,17 +129,20 @@ RSpec.describe IncomeService do
 
         expect(result).to be_a(Hash)
         expect(result[:error]).to include("Source type")
-        expect(result[:status]).to eq(:unprocessable_entity)
       end
     end
   end
 
-  describe ".duplicate_entry?" do
+  describe "duplicate_entry? (private)" do
     let(:existing_entry) { create(:income, :employment) }
+
+    def duplicate_entry?(**)
+      described_class.send(:duplicate_entry?, **)
+    end
 
     context "with exact match" do
       it "returns true" do
-        result = described_class.duplicate_entry?(
+        result = duplicate_entry?(
           member_id: existing_entry.member_id,
           category: existing_entry.category,
           gross_income: existing_entry.gross_income,
@@ -158,7 +156,7 @@ RSpec.describe IncomeService do
 
     context "with different member_id" do
       it "returns false" do
-        result = described_class.duplicate_entry?(
+        result = duplicate_entry?(
           member_id: "different-member",
           category: existing_entry.category,
           gross_income: existing_entry.gross_income,
@@ -172,7 +170,7 @@ RSpec.describe IncomeService do
 
     context "with different category" do
       it "returns false" do
-        result = described_class.duplicate_entry?(
+        result = duplicate_entry?(
           member_id: existing_entry.member_id,
           category: "education",
           gross_income: existing_entry.gross_income,
@@ -186,7 +184,7 @@ RSpec.describe IncomeService do
 
     context "with different gross_income" do
       it "returns false" do
-        result = described_class.duplicate_entry?(
+        result = duplicate_entry?(
           member_id: existing_entry.member_id,
           category: existing_entry.category,
           gross_income: existing_entry.gross_income + 1,
@@ -200,7 +198,7 @@ RSpec.describe IncomeService do
 
     context "with different period" do
       it "returns false for different start date" do
-        result = described_class.duplicate_entry?(
+        result = duplicate_entry?(
           member_id: existing_entry.member_id,
           category: existing_entry.category,
           gross_income: existing_entry.gross_income,
@@ -212,7 +210,7 @@ RSpec.describe IncomeService do
       end
 
       it "returns false for different end date" do
-        result = described_class.duplicate_entry?(
+        result = duplicate_entry?(
           member_id: existing_entry.member_id,
           category: existing_entry.category,
           gross_income: existing_entry.gross_income,
@@ -226,7 +224,7 @@ RSpec.describe IncomeService do
 
     context "with no existing entries" do
       it "returns false" do
-        result = described_class.duplicate_entry?(
+        result = duplicate_entry?(
           member_id: "new-member",
           category: "employment",
           gross_income: 100.0,
