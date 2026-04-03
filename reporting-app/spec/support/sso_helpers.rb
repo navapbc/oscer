@@ -126,6 +126,7 @@ module SsoHelpers
   def mock_member_oidc_config(overrides = {})
     {
       enabled: true,
+      member_auth_only: false,
       claims: {
         email: "email",
         name: "name",

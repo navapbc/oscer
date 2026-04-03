@@ -162,6 +162,17 @@ RSpec.describe "Auth::Sso", type: :request do
       follow_redirect!
       expect(response.body).to include("Authentication failed")
     end
+
+    context "when OmniAuth failure is for member_oidc" do
+      it "redirects to member sign-in with member OIDC message" do
+        get "/auth/failure", params: { message: "invalid_credentials", strategy: "member_oidc" }
+
+        expect(response).to have_http_status(:redirect)
+        expect(response.location).to match(/sign_in/)
+        follow_redirect!
+        expect(response.body).to include("Authentication failed")
+      end
+    end
   end
 
   describe "DELETE /auth/sso/logout" do

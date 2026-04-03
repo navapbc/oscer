@@ -1,10 +1,16 @@
 # frozen_string_literal: true
 
 class Users::SessionsController < Devise::SessionsController
+  include SsoHelper
+
   layout "users"
   skip_after_action :verify_authorized
 
   def new
+    if member_oidc_member_auth_only?
+      redirect_to member_oidc_login_path and return
+    end
+
     @form = Users::NewSessionForm.new
   end
 
