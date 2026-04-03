@@ -12,10 +12,10 @@ Applications may need application specific configuration as environment variable
 
 The Rails app reads these optional variables at boot. Omit them to use defaults; set them in `default_extra_environment_variables` or per-environment overrides (see below) when a state’s policy differs.
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `CE_TARGET_MONTHLY_HOURS` | `80` | Minimum qualifying hours per month (`HoursComplianceDeterminationService::TARGET_HOURS`). |
-| `CE_INCOME_THRESHOLD_MONTHLY` | `580` | Minimum qualifying gross income per month in dollars (`IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY`). Must be a positive number or the application will fail to boot. |
+| Variable                      | Default | Purpose                                                                                   |
+|-------------------------------|---------|-------------------------------------------------------------------------------------------|
+| `CE_TARGET_MONTHLY_HOURS`     | `80`    | Minimum qualifying hours per month (`HoursComplianceDeterminationService::TARGET_HOURS`). |
+| `CE_INCOME_THRESHOLD_MONTHLY` | `580`   | Minimum qualifying gross income per month in dollars (`IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY`). Must be a positive number or the application will fail to boot. |
 
 Environment variables are defined in `infra/<APP_NAME>/app-config/env-config/environment_variables.tf`. Modify the `default_extra_environment_variables` map to define extra environment variables specific to the application. Map keys define the environment variable name, and values define the default value for the variable across application environments. For example:
 
