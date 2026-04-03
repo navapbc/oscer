@@ -93,5 +93,22 @@ FactoryBot.define do
         ]
       }
     end
+
+    trait :with_income_activity do
+      with_no_exemptions
+      activities {
+        [
+          {
+            "type": "income",
+            "category": "employment",
+            "gross_income": 620.0,
+            "period_start": cert_date.beginning_of_month,
+            "period_end": cert_date.end_of_month,
+            "source": "quarterly_wage_data",
+            "employer": "Acme Corp"
+          }
+        ]
+      }
+    end
   end
 end

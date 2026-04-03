@@ -16,6 +16,7 @@ class Certifications::CreationService
     ActiveRecord::Base.transaction do
       # Create ex parte activities FIRST (before certification)
       create_ex_parte_activities
+      create_incomes
 
       # Save certification
       unless certification.save
@@ -61,6 +62,32 @@ class Certifications::CreationService
         activity = ExParteActivity.new
         activity.errors.add(:base, result[:error])
         raise ActiveRecord::RecordInvalid.new(activity)
+      end
+    end
+  end
+
+  def create_incomes
+    return unless certification.member_data&.activities.present?
+
+    income_activities = certification.member_data.activities.select { |a| a.type == "income" }
+
+    income_activities.each do |activity_data|
+      result = IncomeService.create_entry(
+        member_id: certification.member_id,
+        category: activity_data.category,
+        gross_income: activity_data.gross_income,
+        period_start: activity_data.period_start,
+        period_end: activity_data.period_end,
+        source_type: activity_data.source,
+        source_id: nil,
+        reported_at: activity_data.reported_at || Time.current,
+        employer: activity_data.employer
+      )
+
+      if result.is_a?(Hash) && result[:error]
+        row = Income.new
+        row.errors.add(:base, result[:error])
+        raise ActiveRecord::RecordInvalid.new(row)
       end
     end
   end
