@@ -8,6 +8,15 @@ Applications may need application specific configuration as environment variable
 
 > ⚠️ Note: Do not put sensitive information such as credentials as regular environment variables. The method described in this section will embed the environment variables and their values in the ECS task definition's container definitions, so anyone with access to view the task definition will be able to see the values of the environment variables. For configuring secrets, see the section below on [Secrets](#secrets)
 
+## Community engagement (CE) thresholds (reporting-app)
+
+The Rails app reads these optional variables at boot. Omit them to use defaults; set them in `default_extra_environment_variables` or per-environment overrides (see below) when a state’s policy differs.
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `CE_TARGET_MONTHLY_HOURS` | `80` | Minimum qualifying hours per month (`HoursComplianceDeterminationService::TARGET_HOURS`). |
+| `CE_INCOME_THRESHOLD_MONTHLY` | `580` | Minimum qualifying gross income per month in dollars (`IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY`). Must be a positive number or the application will fail to boot. |
+
 Environment variables are defined in `infra/<APP_NAME>/app-config/env-config/environment_variables.tf`. Modify the `default_extra_environment_variables` map to define extra environment variables specific to the application. Map keys define the environment variable name, and values define the default value for the variable across application environments. For example:
 
 ```terraform
