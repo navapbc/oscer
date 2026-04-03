@@ -134,9 +134,11 @@ RSpec.describe Certifications::CreationService, type: :service do
             {
               "type" => "income",
               "category" => "employment",
-              "hours" => 40,
+              "gross_income" => 620,
               "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month
+              "period_end" => certification_date.end_of_month,
+              "source" => "quarterly_wage_data",
+              "employer" => "Acme Corp"
             }
           ]
         )
@@ -146,6 +148,21 @@ RSpec.describe Certifications::CreationService, type: :service do
         expect {
           service.call
         }.not_to change(ExParteActivity, :count)
+      end
+
+      it "creates Income records for income activities" do
+        expect {
+          service.call
+        }.to change(Income, :count).from(0).to(1)
+
+        income = Income.last
+        expect(income.member_id).to eq(member_id)
+        expect(income.category).to eq("employment")
+        expect(income.gross_income).to eq(620)
+        expect(income.source_type).to eq("quarterly_wage_data")
+        expect(income.period_start).to eq(certification_date.beginning_of_month)
+        expect(income.period_end).to eq(certification_date.end_of_month)
+        expect(income.metadata).to include("employer" => "Acme Corp")
       end
 
       it "still creates the certification" do
@@ -171,21 +188,27 @@ RSpec.describe Certifications::CreationService, type: :service do
             {
               "type" => "income",
               "category" => "employment",
-              "hours" => 20,
+              "gross_income" => 580,
               "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month
+              "period_end" => certification_date.end_of_month,
+              "source" => "api"
             }
           ]
         )
       end
 
-      it "creates ExParteActivity only for hourly activities" do
+      it "creates ExParteActivity for hourly activities and Income for income activities" do
         expect {
           service.call
         }.to change(ExParteActivity, :count).from(0).to(1)
+          .and change(Income, :count).from(0).to(1)
 
-        activity = ExParteActivity.last
-        expect(activity.hours).to eq(40)
+        epa = ExParteActivity.last
+        expect(epa.hours).to eq(40)
+
+        income = Income.last
+        expect(income.gross_income).to eq(580)
+        expect(income.source_type).to eq("api")
       end
     end
 
@@ -255,6 +278,42 @@ RSpec.describe Certifications::CreationService, type: :service do
 
         expect(Certification.count).to eq(0)
         expect(ExParteActivity.count).to eq(0)
+        expect(Income.count).to eq(0)
+        expect(CertificationOrigin.count).to eq(0)
+      end
+    end
+
+    context "when IncomeService fails (duplicate income in same request)" do
+      let(:member_data) do
+        build(:certification_member_data,
+          :with_full_name,
+          :with_account_email,
+          activities: [
+            {
+              "type" => "income",
+              "category" => "employment",
+              "gross_income" => 500,
+              "period_start" => certification_date.beginning_of_month,
+              "period_end" => certification_date.end_of_month,
+              "source" => "api"
+            },
+            {
+              "type" => "income",
+              "category" => "employment",
+              "gross_income" => 500,
+              "period_start" => certification_date.beginning_of_month,
+              "period_end" => certification_date.end_of_month,
+              "source" => "api"
+            }
+          ]
+        )
+      end
+
+      it "raises ActiveRecord::RecordInvalid and rolls back certification and partial income" do
+        expect { service.call }.to raise_error(ActiveRecord::RecordInvalid)
+
+        expect(Certification.count).to eq(0)
+        expect(Income.count).to eq(0)
         expect(CertificationOrigin.count).to eq(0)
       end
     end
