@@ -33,14 +33,21 @@ class Certifications::MemberData < ValueObject
     attribute :type, :string
     attribute :category, :string
     attribute :hours, :decimal
+    attribute :gross_income, :decimal
     attribute :period_start, :date
     attribute :period_end, :date
+    attribute :source, :string
+    attribute :reported_at, :datetime
     attribute :employer, :string
     attribute :verification_status, :string
 
     validates :type, presence: true, inclusion: { in: ACTIVITY_TYPES }
     validates :category, presence: true, inclusion: { in: ::Activity::ALLOWED_CATEGORIES }
-    validates :hours, presence: true
+    validates :hours, presence: true, if: -> { type == "hourly" }
+    validates :gross_income, presence: true,
+                             numericality: { greater_than: 0 },
+                             if: -> { type == "income" }
+    validates :source, presence: true, if: -> { type == "income" }
     validates :period_start, presence: true
     validates :period_end, presence: true
     validates :verification_status, inclusion: { in: VERIFICATION_STATUSES }, allow_nil: true
