@@ -29,7 +29,7 @@ class Certifications::MemberData < ValueObject
 
     TYPE_HOURLY = "hourly"
     TYPE_INCOME = "income"
-    ACTIVITY_TYPES = [TYPE_HOURLY, TYPE_INCOME].freeze
+    ACTIVITY_TYPES = [ TYPE_HOURLY, TYPE_INCOME ].freeze
     VERIFICATION_STATUSES = %w[verified self_attested pending].freeze
 
     attribute :type, :string
