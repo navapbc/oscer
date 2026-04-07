@@ -289,16 +289,15 @@ components:
       required:
       - period_start
       - period_end
-    CertificationMemberDataActivity:
+    CertificationMemberDataHourlyActivity:
       type: object
-      description: Description of an activity
+      description: Hourly community engagement activity
       properties:
         type:
           type: string
           enum:
           - hourly
-          - income
-          description: The type of activity (currently only 'hourly' is used)
+          description: Hourly activity
         category:
           type: string
           enum:
@@ -339,6 +338,72 @@ components:
       - hours
       - period_start
       - period_end
+    CertificationMemberDataIncomeActivity:
+      type: object
+      description: Income-based community engagement activity
+      properties:
+        type:
+          type: string
+          enum:
+          - income
+          description: Income activity
+        category:
+          type: string
+          enum:
+          - employment
+          - community_service
+          - education
+          description: The category of activity
+        gross_income:
+          type: string
+          format: decimal
+          description: Gross income for the pay period
+        period_start:
+          type: string
+          format: date
+          description: Start date of the activity period
+        period_end:
+          type: string
+          format: date
+          description: End date of the activity period
+        source:
+          type: string
+          enum:
+          - api
+          description: Income source type; certification API intake currently requires
+            api
+        reported_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          description: When the income data was reported
+        employer:
+          type:
+          - string
+          - 'null'
+          description: Employer or organization associated with the activity
+        verification_status:
+          type:
+          - string
+          - 'null'
+          enum:
+          - verified
+          - self_attested
+          - pending
+          -
+          description: Verification status of the activity
+      required:
+      - type
+      - category
+      - gross_income
+      - period_start
+      - period_end
+      - source
+    CertificationMemberDataActivity:
+      oneOf:
+      - "$ref": "#/components/schemas/CertificationMemberDataHourlyActivity"
+      - "$ref": "#/components/schemas/CertificationMemberDataIncomeActivity"
     CertificationResponseBody:
       type: object
       properties:
@@ -440,43 +505,43 @@ components:
       required:
       - status
   responses:
-    4b6831c29339b7554496297ad925a8f5:
+    93b84fb5ea642d20d03cb83ecf93e8d2:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    12dc15e1bad7a054ce75fe5a74d1bbda:
+    0d62e2c415ff0276574efd7877350474:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    540486926bbe713e558412e4aab65792:
+    4f1053866ab644e869f4ccb2cd8ec04e:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    7b3083892336e7a9c3f8f186f430c19c:
+    19c79a71a8b091baf35673b6eaa144e5:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    59e11d3fb13f83a125387114599daf1e:
+    3a351b704e155cc0bcd5bd8409cc4446:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    7b97cf0dd0874975e3185b2abc0a2de2:
+    1f1c250a345d118151d1c01487d7296a:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    ad6e359815fd944914df3153cbdc1cf0:
+    d96ffbc1384c2bd12a78fe1e1bd796ba:
       description: Response
       content:
         application/json:
@@ -500,7 +565,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    f48afd90ef67b56113431041f9b78880:
+    c5fef3e784a2d6a931c2f44aa9e2d004:
       description: The Certification data.
       content:
         application/json:
@@ -590,14 +655,14 @@ paths:
       description: "#"
       operationId: POST__api_certifications
       requestBody:
-        "$ref": "#/components/requestBodies/f48afd90ef67b56113431041f9b78880"
+        "$ref": "#/components/requestBodies/c5fef3e784a2d6a931c2f44aa9e2d004"
       responses:
         '201':
-          "$ref": "#/components/responses/4b6831c29339b7554496297ad925a8f5"
+          "$ref": "#/components/responses/93b84fb5ea642d20d03cb83ecf93e8d2"
         '400':
-          "$ref": "#/components/responses/12dc15e1bad7a054ce75fe5a74d1bbda"
+          "$ref": "#/components/responses/0d62e2c415ff0276574efd7877350474"
         '422':
-          "$ref": "#/components/responses/540486926bbe713e558412e4aab65792"
+          "$ref": "#/components/responses/4f1053866ab644e869f4ccb2cd8ec04e"
       security:
       - hmac: []
   "/api/certifications/{id}":
@@ -611,9 +676,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/7b3083892336e7a9c3f8f186f430c19c"
+          "$ref": "#/components/responses/19c79a71a8b091baf35673b6eaa144e5"
         '404':
-          "$ref": "#/components/responses/59e11d3fb13f83a125387114599daf1e"
+          "$ref": "#/components/responses/3a351b704e155cc0bcd5bd8409cc4446"
       security:
       - hmac: []
   "/api/certification_batch_uploads":
@@ -645,9 +710,9 @@ paths:
       operationId: GET__api_health
       responses:
         '200':
-          "$ref": "#/components/responses/7b97cf0dd0874975e3185b2abc0a2de2"
+          "$ref": "#/components/responses/1f1c250a345d118151d1c01487d7296a"
         '503':
-          "$ref": "#/components/responses/ad6e359815fd944914df3153cbdc1cf0"
+          "$ref": "#/components/responses/d96ffbc1384c2bd12a78fe1e1bd796ba"
       security:
       - hmac: []
   "/api/direct_uploads":
