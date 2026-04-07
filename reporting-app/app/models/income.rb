@@ -16,7 +16,9 @@ class Income < ApplicationRecord
 
   ALLOWED_CATEGORIES = ActivityCategories::ALL
 
-  SOURCE_TYPES = { api: "api" }.freeze
+  SOURCE_TYPES = {
+    api: "api"
+  }.freeze
   ALLOWED_SOURCE_TYPES = SOURCE_TYPES.values.freeze
 
   # --- Strata Attributes ---
