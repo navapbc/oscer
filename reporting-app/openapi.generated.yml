@@ -370,9 +370,7 @@ components:
           type: string
           enum:
           - api
-          - quarterly_wage_data
-          - batch_upload
-          description: Source system for the income data
+          description: Income source type; certification API intake currently requires api
         reported_at:
           type:
           - string

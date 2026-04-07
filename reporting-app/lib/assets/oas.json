@@ -413,8 +413,8 @@
           },
           "source": {
             "type": "string",
-            "enum": ["api", "quarterly_wage_data", "batch_upload"],
-            "description": "Source system for the income data"
+            "enum": ["api"],
+            "description": "Income source type; certification API intake currently requires api"
           },
           "reported_at": {
             "type": ["string", "null"],
