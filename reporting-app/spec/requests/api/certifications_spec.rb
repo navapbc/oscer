@@ -282,7 +282,7 @@ RSpec.describe "/api/certifications", type: :request do
               "gross_income" => 620,
               "period_start" => certification_date.beginning_of_month,
               "period_end" => certification_date.end_of_month,
-              "source" => "quarterly_wage_data",
+              "source" => "api",
               "employer" => "Acme Corp"
             }
           ]
@@ -303,14 +303,12 @@ RSpec.describe "/api/certifications", type: :request do
         expect(response).to have_http_status(:created)
         expect(ExParteActivity.where(member_id: member_id)).to be_empty
 
-        income = Income.last
-        expect(income.member_id).to eq(member_id)
-        expect(income.category).to eq("employment")
-        expect(income.gross_income).to eq(620)
-        expect(income.source_type).to eq("quarterly_wage_data")
-        expect(income.period_start).to eq(certification_date.beginning_of_month)
-        expect(income.period_end).to eq(certification_date.end_of_month)
-        expect(income.metadata).to include("employer" => "Acme Corp")
+        expect(Income.pluck(:member_id, :category, :gross_income, :source_type, :period_start, :period_end)).to eq(
+          [
+            [member_id, "employment", 620, "api", certification_date.beginning_of_month, certification_date.end_of_month]
+          ]
+        )
+        expect(Income.pick(:metadata)).to include("employer" => "Acme Corp")
       end
 
       it "creates ExParteActivity for hourly and Income for income in mixed types" do

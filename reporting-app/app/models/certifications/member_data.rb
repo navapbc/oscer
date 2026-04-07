@@ -27,7 +27,9 @@ class Certifications::MemberData < ValueObject
   class Activity < ValueObject
     include ActiveModel::AsJsonAttributeType
 
-    ACTIVITY_TYPES = %w[hourly income].freeze
+    TYPE_HOURLY = "hourly"
+    TYPE_INCOME = "income"
+    ACTIVITY_TYPES = [TYPE_HOURLY, TYPE_INCOME].freeze
     VERIFICATION_STATUSES = %w[verified self_attested pending].freeze
 
     attribute :type, :string
@@ -43,11 +45,14 @@ class Certifications::MemberData < ValueObject
 
     validates :type, presence: true, inclusion: { in: ACTIVITY_TYPES }
     validates :category, presence: true, inclusion: { in: ::Activity::ALLOWED_CATEGORIES }
-    validates :hours, presence: true, if: -> { type == "hourly" }
+    validates :hours, presence: true, if: -> { type == TYPE_HOURLY }
     validates :gross_income, presence: true,
                              numericality: { greater_than: 0 },
-                             if: -> { type == "income" }
-    validates :source, presence: true, if: -> { type == "income" }
+                             if: -> { type == TYPE_INCOME }
+    validates :source,
+              presence: true,
+              inclusion: { in: Income::SOURCE_TYPES.values },
+              if: -> { type == TYPE_INCOME }
     validates :period_start, presence: true
     validates :period_end, presence: true
     validates :verification_status, inclusion: { in: VERIFICATION_STATUSES }, allow_nil: true
