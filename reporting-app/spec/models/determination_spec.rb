@@ -34,6 +34,7 @@ RSpec.describe Determination, type: :model do
           pregnancy_exempt
           american_indian_alaska_native_exempt
           income_reported_compliant
+          income_reported_insufficient
           hours_reported_compliant
           hours_reported_insufficient
           exemption_request_compliant

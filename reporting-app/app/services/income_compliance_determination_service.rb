@@ -1,12 +1,95 @@
 # frozen_string_literal: true
 
-# Single source for the monthly income threshold used in CE compliance UI and statistics
-# (parity with HoursComplianceDeterminationService::TARGET_HOURS).
+# Aggregates verified income for a certification lookback, compares to the monthly threshold,
+# and (via CertificationCase#record_income_compliance) persists automated determinations.
+# Mirrors HoursComplianceDeterminationService: no mailers here; events optional for workflow/notifications.
 class IncomeComplianceDeterminationService
   TARGET_INCOME_MONTHLY = BigDecimal(ENV.fetch("CE_INCOME_THRESHOLD_MONTHLY", "580")).freeze
 
   unless TARGET_INCOME_MONTHLY.positive?
     raise ArgumentError,
           "CE_INCOME_THRESHOLD_MONTHLY must be positive, got #{TARGET_INCOME_MONTHLY.inspect}"
+  end
+
+  class << self
+    # Called by the business process at the ex parte CE check when the income path runs.
+    # Publishes the same event names as the hours path so transitions/notifications can stay aligned
+    # until income-specific events are approved.
+    # @param kase [CertificationCase]
+    def determine(kase)
+      certification = Certification.find(kase.certification_id)
+      income_data = aggregate_income_for_certification(certification)
+      outcome = determine_outcome(income_data[:total_income])
+
+      kase.record_income_compliance(outcome, income_data)
+
+      if outcome == :compliant
+        Strata::EventManager.publish("DeterminedHoursMet", {
+          case_id: kase.id,
+          certification_id: certification.id
+        })
+      elsif income_data[:income_by_source][:income].positive?
+        Strata::EventManager.publish("DeterminedHoursInsufficient", {
+          case_id: kase.id,
+          certification_id: certification.id,
+          income_data: income_data
+        })
+      else
+        Strata::EventManager.publish("DeterminedActionRequired", {
+          case_id: kase.id,
+          certification_id: certification.id
+        })
+      end
+    end
+
+    # Silent recalculation (e.g. jobs) — records determination without publishing workflow events.
+    # @param certification_id [String]
+    # @return [void]
+    def calculate(certification_id)
+      certification = Certification.find(certification_id)
+      kase = CertificationCase.find_by!(certification_id: certification_id)
+
+      income_data = aggregate_income_for_certification(certification)
+      outcome = determine_outcome(income_data[:total_income])
+
+      kase.record_income_compliance(outcome, income_data)
+    end
+
+    # Same lookback and query shape as ActivityAggregator#fetch_ex_parte_activities /
+    # Income.for_member(...).within_period(lookback) as used for ex parte hours parity.
+    # @param certification [Certification]
+    # @return [Hash]
+    def aggregate_income_for_certification(certification)
+      lookback = certification.certification_requirements.continuous_lookback_period
+      rows = Income.for_member(certification.member_id).within_period(lookback)
+
+      ex_total = BigDecimal(rows.sum(:gross_income).to_s)
+      member_total = member_reported_income_total(certification)
+
+      {
+        total_income: ex_total + member_total,
+        income_by_source: {
+          income: ex_total,
+          activity: member_total
+        },
+        income_ids: rows.pluck(:id),
+        period_start: lookback&.start,
+        period_end: lookback&.end
+      }
+    end
+
+    private
+
+    def determine_outcome(total_income)
+      total_income >= TARGET_INCOME_MONTHLY ? :compliant : :not_compliant
+    end
+
+    # Approved member-reported income (e.g. from activity report) — stub until modeled.
+    # @param _certification [Certification]
+    # @return [BigDecimal]
+    def member_reported_income_total(_certification)
+      # TODO(OSCER-405): Sum approved member income activities when that model/workflow exists.
+      BigDecimal("0")
+    end
   end
 end
