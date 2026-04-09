@@ -3,6 +3,8 @@
 # Aggregates verified income for a certification lookback, compares to the monthly threshold,
 # and (via CertificationCase#record_income_compliance) persists automated determinations.
 # Mirrors HoursComplianceDeterminationService: no mailers here; events optional for workflow/notifications.
+# Single source for TARGET_INCOME_MONTHLY (CE compliance UI and statistics; parity with
+# HoursComplianceDeterminationService::TARGET_HOURS) via Rails.application.config.ce_compliance.
 class IncomeComplianceDeterminationService
   TARGET_INCOME_MONTHLY = Rails.application.config.ce_compliance[:income_threshold_monthly]
 
