@@ -70,6 +70,15 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
       expect(response).to be_client_error
     end
 
+    context "when user skipped edit page" do
+      it 'has user submit reporting periods' do
+        activity_report_application_form = ActivityReportApplicationForm.create! valid_db_attributes.merge(reporting_periods: [])
+        get activity_report_application_form_url(activity_report_application_form)
+        expect(response).to be_successful
+        expect(response.body).to include("Choose which month to report")
+      end
+    end
+
     context "with ex_parte activities" do
       let(:member_id) { "MEMBER123" }
       let(:certification_with_member) do
@@ -186,7 +195,7 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
           expect(response).to redirect_to(edit_activity_report_application_form_url(ActivityReportApplicationForm.last))
           follow_redirect!
           expect(response).to have_http_status(:ok)
-          expect(response.body).to include("Select reporting period")
+          expect(response.body).to include("Choose which month to report")
         end
       end
 
@@ -235,6 +244,7 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
     it "renders a successful response" do
       get edit_activity_report_application_form_url(activity_report_application_form)
       expect(response).to be_successful
+      expect(response.body).to include("Choose which month to report")
     end
 
     it "renders an error response for non-owning user" do
