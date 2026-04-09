@@ -24,6 +24,12 @@ module TemplateApplicationRails
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 7.2
 
+    # Configured here (not in initializers/) so the acronym is registered before initializers run,
+    # allowing Zeitwerk to autoload CECompliance without an explicit require.
+    ActiveSupport::Inflector.inflections(:en) do |inflect|
+      inflect.acronym "CE"
+    end
+
     config.time_zone = ENV["TIME_ZONE"] || "Eastern Time (US & Canada)" # Convenient for time display in local development
 
     config.view_component.previews.paths = [ "app/previews" ]
