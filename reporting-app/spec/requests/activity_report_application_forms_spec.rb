@@ -74,8 +74,7 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
       it 'has user submit reporting periods' do
         activity_report_application_form = ActivityReportApplicationForm.create! valid_db_attributes.merge(reporting_periods: [])
         get activity_report_application_form_url(activity_report_application_form)
-        expect(response).to be_successful
-        expect(response.body).to include("Choose which month to report")
+        expect(response).to redirect_to(edit_activity_report_application_form_url(activity_report_application_form))
       end
     end
 

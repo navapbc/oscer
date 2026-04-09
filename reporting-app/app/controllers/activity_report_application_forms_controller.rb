@@ -18,7 +18,7 @@ class ActivityReportApplicationFormsController < ApplicationController
 
   # GET /activity_report_application_forms/1 or /activity_report_application_forms/1.json
   def show
-    edit if @activity_report_application_form.reporting_periods.empty?
+    redirect_to edit_activity_report_application_form_path(@activity_report_application_form) if @activity_report_application_form.reporting_periods.empty?
   end
 
   # GET /activity_report_application_forms/new
@@ -57,7 +57,7 @@ class ActivityReportApplicationFormsController < ApplicationController
     @certification_requirements = @certification_case.certification.certification_requirements
 
     respond_to do |format|
-      format.html { render :edit }
+      format.html
       format.json { render json: @activity_report_application_form.as_json }
     end
   end
