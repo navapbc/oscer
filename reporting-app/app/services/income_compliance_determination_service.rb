@@ -4,12 +4,7 @@
 # and (via CertificationCase#record_income_compliance) persists automated determinations.
 # Mirrors HoursComplianceDeterminationService: no mailers here; events optional for workflow/notifications.
 class IncomeComplianceDeterminationService
-  TARGET_INCOME_MONTHLY = BigDecimal(ENV.fetch("CE_INCOME_THRESHOLD_MONTHLY", "580")).freeze
-
-  unless TARGET_INCOME_MONTHLY.positive?
-    raise ArgumentError,
-          "CE_INCOME_THRESHOLD_MONTHLY must be positive, got #{TARGET_INCOME_MONTHLY.inspect}"
-  end
+  TARGET_INCOME_MONTHLY = Rails.application.config.ce_compliance[:income_threshold_monthly]
 
   class << self
     # Called by the business process at the ex parte CE check when the income path runs.
