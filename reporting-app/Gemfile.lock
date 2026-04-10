@@ -137,7 +137,7 @@ GEM
       cgi
       rexml
     base64 (0.3.0)
-    bcrypt (3.1.20)
+    bcrypt (3.1.22)
     benchmark (0.5.0)
     bigdecimal (4.1.0)
     bindata (2.5.1)
@@ -206,7 +206,7 @@ GEM
       railties (>= 6.1.0)
     faker (3.5.2)
       i18n (>= 1.8.11, < 2)
-    faraday (2.14.0)
+    faraday (2.14.1)
       faraday-net_http (>= 2.0, < 3.5)
       json
       logger
@@ -279,7 +279,7 @@ GEM
       actionview (>= 7.0.0)
       activesupport (>= 7.0.0)
     jmespath (1.6.2)
-    json (2.16.0)
+    json (2.19.3)
     json-jwt (1.17.0)
       activesupport (>= 4.2)
       aes_key_wrap
@@ -588,7 +588,7 @@ GEM
       rubocop-rspec (~> 3.5)
     ruby-graphviz (1.2.5)
       rexml
-    ruby-lsp (0.26.1)
+    ruby-lsp (0.26.9)
       language_server-protocol (~> 3.17.0)
       prism (>= 1.2, < 2.0)
       rbs (>= 3, < 5)
