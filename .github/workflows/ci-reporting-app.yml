@@ -34,6 +34,19 @@ jobs:
 
       - run: make lint-ci
 
+  security:
+    name: Security audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create required env files
+        working-directory: ./
+        run: |
+          touch ./reporting-app/.env
+
+      - run: make audit
+
   test:
     name: Test
     runs-on: ubuntu-latest

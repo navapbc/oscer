@@ -99,6 +99,7 @@ gem "lookbook", ">= 2.3.9"
 gem "oas_rails"
 
 group :development, :test do
+  gem "bundler-audit", require: false
   gem "guard-rspec", require: false
 
   # Support .env files

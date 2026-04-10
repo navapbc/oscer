@@ -145,6 +145,9 @@ GEM
     bootsnap (1.19.0)
       msgpack (~> 1.2)
     builder (3.3.0)
+    bundler-audit (0.9.3)
+      bundler (>= 1.2.0)
+      thor (~> 1.0)
     capybara (3.40.0)
       addressable
       matrix
@@ -698,6 +701,7 @@ DEPENDENCIES
   aws-sdk-s3
   azure-blob
   bootsnap
+  bundler-audit
   capybara
   cssbundling-rails (~> 1.4)
   csv
