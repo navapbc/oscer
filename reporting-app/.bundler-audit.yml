@@ -1,0 +1,6 @@
+---
+ignore:
+  # Devise 4.9.4 → 5.0.3 (CVE-2026-32700): Confirmable "change email" race condition.
+  # Major version upgrade requiring careful testing of auth flows.
+  # Tracked for resolution as a separate effort.
+  - CVE-2026-32700
