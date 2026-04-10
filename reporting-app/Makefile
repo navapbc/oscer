@@ -188,7 +188,7 @@ lint-ci: ## Run the linter, but don't fix anything
 	$(RUBY_RUN_CMD) ./bin/rubocop
 
 audit: ## Check for known gem vulnerabilities
-	$(RUBY_RUN_CMD) ./bin/bundle audit check
+	$(RUBY_RUN_CMD) ./bin/bundle exec bundler-audit check --update
 
 ##################################################
 # Rails
