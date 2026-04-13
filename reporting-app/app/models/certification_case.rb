@@ -124,20 +124,12 @@ class CertificationCase < Strata::Case
   # @param outcome [Symbol] :compliant or :not_compliant
   # @param hours_data [Hash] aggregated hours data
   def record_hours_compliance(outcome, hours_data)
-    certification = Certification.find(certification_id)
-    reason_code = outcome == :compliant ? :hours_reported_compliant : :hours_reported_insufficient
-
-    transaction do
-      close! if outcome == :compliant
-
-      certification.record_determination!(
-        decision_method: :automated,
-        reasons: [ Determination::REASON_CODE_MAPPING[reason_code] ],
-        outcome: outcome,
-        determination_data: build_hours_determination_data(hours_data),
-        determined_at: certification.certification_requirements.certification_date
-      )
-    end
+    record_automated_ce_compliance(
+      outcome,
+      build_hours_determination_data(hours_data),
+      compliant_reason: :hours_reported_compliant,
+      not_compliant_reason: :hours_reported_insufficient
+    )
   end
 
   # Called by IncomeComplianceDeterminationService to record income-based CE determination.
@@ -145,8 +137,27 @@ class CertificationCase < Strata::Case
   # @param outcome [Symbol] :compliant or :not_compliant
   # @param income_data [Hash] aggregated income data from IncomeComplianceDeterminationService
   def record_income_compliance(outcome, income_data)
+    record_automated_ce_compliance(
+      outcome,
+      build_income_determination_data(income_data),
+      compliant_reason: :income_reported_compliant,
+      not_compliant_reason: :income_reported_insufficient
+    )
+  end
+
+  def member_status
+    MemberStatusService.determine(self).status
+  end
+
+  private
+
+  # @param outcome [Symbol] :compliant or :not_compliant
+  # @param determination_data [Hash] payload for +record_determination!+
+  # @param compliant_reason [Symbol] key into +Determination::REASON_CODE_MAPPING+ when compliant
+  # @param not_compliant_reason [Symbol] key into +Determination::REASON_CODE_MAPPING+ when not compliant
+  def record_automated_ce_compliance(outcome, determination_data, compliant_reason:, not_compliant_reason:)
     certification = Certification.find(certification_id)
-    reason_code = outcome == :compliant ? :income_reported_compliant : :income_reported_insufficient
+    reason_code = outcome == :compliant ? compliant_reason : not_compliant_reason
 
     transaction do
       close! if outcome == :compliant
@@ -155,17 +166,11 @@ class CertificationCase < Strata::Case
         decision_method: :automated,
         reasons: [ Determination::REASON_CODE_MAPPING[reason_code] ],
         outcome: outcome,
-        determination_data: build_income_determination_data(income_data),
+        determination_data: determination_data,
         determined_at: certification.certification_requirements.certification_date
       )
     end
   end
-
-  def member_status
-    MemberStatusService.determine(self).status
-  end
-
-  private
 
   def build_hours_determination_data(hours_data)
     {
