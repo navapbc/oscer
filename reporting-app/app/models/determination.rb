@@ -31,12 +31,18 @@
 # @see Strata::Determinable for the +record_determination!+ method to use in models
 #
 class Determination < Strata::Determination
+  # Stored in +determination_data+ JSON for CE compliance automated calculations.
+  CALCULATION_TYPE_HOURS_BASED = "hours_based"
+  CALCULATION_TYPE_INCOME_BASED = "income_based"
+  CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE = "automated_income_intake"
+
   REASON_CODE_MAPPING = {
     age_under_19: "age_under_19_exempt",
     age_over_65: "age_over_65_exempt",
     is_pregnant: "pregnancy_exempt",
     is_american_indian_or_alaska_native: "american_indian_alaska_native_exempt",
     income_reported_compliant: "income_reported_compliant",
+    income_reported_insufficient: "income_reported_insufficient",
     hours_reported_compliant: "hours_reported_compliant",
     hours_reported_insufficient: "hours_reported_insufficient",
     exemption_request_compliant: "exemption_request_compliant",
