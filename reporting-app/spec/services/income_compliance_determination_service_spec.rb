@@ -3,6 +3,12 @@
 require "rails_helper"
 
 RSpec.describe IncomeComplianceDeterminationService do
+  def expect_no_ce_workflow_events_published
+    expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedHoursMet", anything)
+    expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedHoursInsufficient", anything)
+    expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedActionRequired", anything)
+  end
+
   # Income rows aligned with the certification's continuous lookback (parity with hours ex parte helper).
   def create_income_for(certification, gross_income:, **attrs)
     lookback = certification.certification_requirements.continuous_lookback_period
@@ -156,6 +162,7 @@ RSpec.describe IncomeComplianceDeterminationService do
         expect(determination.outcome).to eq("compliant")
         expect(determination.reasons).to include("income_reported_compliant")
         expect(determination.decision_method).to eq("automated")
+        expect_no_ce_workflow_events_published
       end
     end
 
@@ -170,6 +177,7 @@ RSpec.describe IncomeComplianceDeterminationService do
         determination = Determination.where(subject_id: certification.id).last
         expect(determination.outcome).to eq("not_compliant")
         expect(determination.reasons).to include("income_reported_insufficient")
+        expect_no_ce_workflow_events_published
       end
     end
   end
@@ -238,6 +246,7 @@ RSpec.describe IncomeComplianceDeterminationService do
 
       expect(agg[:income_by_source][:activity]).to eq(BigDecimal("0"))
       expect(agg[:total_income]).to eq(BigDecimal("100"))
+      expect_no_ce_workflow_events_published
     end
   end
 end
