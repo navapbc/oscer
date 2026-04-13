@@ -169,7 +169,7 @@ class CertificationCase < Strata::Case
 
   def build_hours_determination_data(hours_data)
     {
-      calculation_type: "hours_based",
+      calculation_type: Determination::CALCULATION_TYPE_HOURS_BASED,
       total_hours: hours_data[:total_hours],
       target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
       hours_by_category: hours_data[:hours_by_category],
@@ -186,7 +186,7 @@ class CertificationCase < Strata::Case
     period_end = income_data[:period_end]
 
     {
-      calculation_type: "income_based",
+      calculation_type: Determination::CALCULATION_TYPE_INCOME_BASED,
       total_income: income_data[:total_income].to_f,
       target_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY.to_f,
       income_by_source: {
@@ -196,7 +196,7 @@ class CertificationCase < Strata::Case
       period_start: period_start&.respond_to?(:iso8601) ? period_start.iso8601 : period_start&.to_s,
       period_end: period_end&.respond_to?(:iso8601) ? period_end.iso8601 : period_end&.to_s,
       income_ids: income_data[:income_ids],
-      calculation_method: "automated_income_intake",
+      calculation_method: Determination::CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE,
       calculated_at: Time.current.iso8601
     }
   end

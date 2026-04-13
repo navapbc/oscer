@@ -62,10 +62,10 @@ RSpec.describe IncomeComplianceDeterminationService do
         determination = Determination.where(subject_id: certification.id).last
         data = determination.determination_data
 
-        expect(data["calculation_type"]).to eq("income_based")
+        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_INCOME_BASED)
         expect(data["total_income"]).to eq(620.0)
         expect(data["target_income"]).to eq(580.0)
-        expect(data["calculation_method"]).to eq("automated_income_intake")
+        expect(data["calculation_method"]).to eq(Determination::CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE)
         expect(data["income_by_source"]).to eq("income" => 620.0, "activity" => 0.0)
       end
     end
