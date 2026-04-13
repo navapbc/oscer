@@ -20,6 +20,11 @@ class IncomeComplianceDeterminationService
 
       kase.record_income_compliance(outcome, income_data)
 
+      # TODO(OSCER-405): Publish income-specific Strata events when product/sign-off names them
+      # (e.g. DeterminedIncomeMet, DeterminedIncomeInsufficient, DeterminedIncomeActionRequired) and
+      # subscribe in NotificationsEventListener / CertificationBusinessProcess. Do not raise here in the
+      # interim — hours-named events are intentional for workflow parity; switching without updating
+      # subscribers would drop notifications or break transitions.
       if outcome == :compliant
         Strata::EventManager.publish("DeterminedHoursMet", {
           case_id: kase.id,
