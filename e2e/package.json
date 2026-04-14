@@ -13,8 +13,8 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
     "@playwright/test": "^1.59.1",
-    "@types/node": "^22.10.1",
+    "@types/node": "^25.6.0",
     "prettier": "^3.8.2",
-    "typescript": "^5.8.2"
+    "typescript": "^6.0.2"
   }
 }
