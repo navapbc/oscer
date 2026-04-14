@@ -44,6 +44,14 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedActionRequired", REPORT_ACTIVITIES_STEP)
   transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedHoursInsufficient", REPORT_ACTIVITIES_STEP)
 
+  # --- Transitions: Ex parte income check (same next steps as hours events) ---
+  # DeterminedIncomeMet: Income threshold satisfied
+  # DeterminedIncomeActionRequired: No ex parte income rows, member must report
+  # DeterminedIncomeInsufficient: Some ex parte income but below threshold
+  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedIncomeMet", END_STEP)
+  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedIncomeActionRequired", REPORT_ACTIVITIES_STEP)
+  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedIncomeInsufficient", REPORT_ACTIVITIES_STEP)
+
   # --- Transitions: Activity report workflow ---
   # Reviewer determines compliance: approved = compliant, denied = not compliant
   # Both outcomes close the case

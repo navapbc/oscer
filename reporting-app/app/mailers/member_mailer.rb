@@ -44,4 +44,21 @@ class MemberMailer < ApplicationMailer
 
     mail(to: certification.member_email, subject: t(".subject", hours_needed: @hours_needed, deadline: @deadline))
   end
+
+  def insufficient_income_email
+    certification = params[:certification]
+    income_data = params[:income_data]
+    target_income = params[:target_income] || IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY
+
+    @first_name = certification.member_name.first
+    reported = income_data[:total_income].to_d
+    target = target_income.to_d
+    @income_reported = reported.round
+    @income_needed = [ target - reported, 0 ].max.round
+    @deadline = certification.certification_requirements.due_date.strftime("%B %d, %Y")
+    @login_url = root_url
+    income_needed_display = helpers.number_to_currency(@income_needed, precision: 0)
+
+    mail(to: certification.member_email, subject: t(".subject", income_needed: income_needed_display, deadline: @deadline))
+  end
 end

@@ -7,6 +7,9 @@ RSpec.describe IncomeComplianceDeterminationService do
     expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedHoursMet", anything)
     expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedHoursInsufficient", anything)
     expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedActionRequired", anything)
+    expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedIncomeMet", anything)
+    expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedIncomeInsufficient", anything)
+    expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedIncomeActionRequired", anything)
   end
 
   # Income rows aligned with the certification's continuous lookback (parity with hours ex parte helper).
@@ -39,11 +42,19 @@ RSpec.describe IncomeComplianceDeterminationService do
         create_income_for(certification, gross_income: 620)
       end
 
-      it "publishes DeterminedHoursMet event" do
+      it "does not publish hours-path CE events (income uses income-specific names)" do
+        described_class.determine(certification_case)
+
+        expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedHoursMet", anything)
+        expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedHoursInsufficient", anything)
+        expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedActionRequired", anything)
+      end
+
+      it "publishes DeterminedIncomeMet event" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedHoursMet",
+          "DeterminedIncomeMet",
           hash_including(case_id: certification_case.id)
         )
       end
@@ -81,11 +92,11 @@ RSpec.describe IncomeComplianceDeterminationService do
         create_income_for(certification, gross_income: 400)
       end
 
-      it "publishes DeterminedHoursInsufficient with income_data" do
+      it "publishes DeterminedIncomeInsufficient with income_data" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedHoursInsufficient",
+          "DeterminedIncomeInsufficient",
           hash_including(
             case_id: certification_case.id,
             income_data: hash_including(:total_income)
@@ -109,11 +120,11 @@ RSpec.describe IncomeComplianceDeterminationService do
     end
 
     context "when income is below target with NO income rows" do
-      it "publishes DeterminedActionRequired" do
+      it "publishes DeterminedIncomeActionRequired" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedActionRequired",
+          "DeterminedIncomeActionRequired",
           hash_including(case_id: certification_case.id)
         )
       end

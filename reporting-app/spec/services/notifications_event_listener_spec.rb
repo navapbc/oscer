@@ -27,8 +27,11 @@ RSpec.describe NotificationsEventListener, type: :service do
 
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedExempt", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedHoursMet", anything)
+      expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedIncomeMet", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedActionRequired", anything)
+      expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedIncomeActionRequired", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedHoursInsufficient", anything)
+      expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedIncomeInsufficient", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("ActivityReportApproved", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("ActivityReportDenied", anything)
     end
@@ -90,6 +93,42 @@ RSpec.describe NotificationsEventListener, type: :service do
           :action_required_email,
           [ certification.member_email ]
         )
+      end
+    end
+
+    describe "#handle_insufficient_income" do
+      it "sends insufficient_income_email with income_data (not hours aggregate)" do
+        allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
+
+        income_data = {
+          total_income: BigDecimal("400"),
+          income_by_source: { income: BigDecimal("400"), activity: BigDecimal("0") },
+          income_ids: [],
+          period_start: Date.current,
+          period_end: Date.current
+        }
+
+        event = {
+          payload: {
+            case_id: certification_case.id,
+            certification_id: certification.id,
+            income_data: income_data
+          }
+        }
+
+        described_class.send(:handle_insufficient_income, event)
+
+        expect(NotificationService).to have_received(:send_email_notification).with(
+          MemberMailer,
+          {
+            certification: certification,
+            income_data: income_data,
+            target_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY
+          },
+          :insufficient_income_email,
+          [ certification.member_email ]
+        )
+        expect(HoursComplianceDeterminationService).not_to have_received(:aggregate_hours_for_certification)
       end
     end
 

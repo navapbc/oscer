@@ -124,4 +124,41 @@ RSpec.describe MemberMailer, type: :mailer do
       expect(mail.body.encoded).to include("Medicaid coverage may end")
     end
   end
+
+  describe "#insufficient_income_email" do
+    let(:income_data) do
+      {
+        total_income: BigDecimal("400"),
+        income_by_source: { income: BigDecimal("400"), activity: BigDecimal("0") },
+        income_ids: [],
+        period_start: Date.current,
+        period_end: Date.current
+      }
+    end
+    let(:target_income) { IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY }
+    let(:mail) do
+      described_class.with(
+        certification: certification,
+        income_data: income_data,
+        target_income: target_income
+      ).insufficient_income_email
+    end
+
+    it "renders the headers" do
+      expect(mail.subject).to match(/Action needed/)
+      expect(mail.to).to eq([ certification.member_email ])
+    end
+
+    it "includes income shortfall in subject" do
+      expect(mail.subject).to include("$180")
+    end
+
+    it "renders the body" do
+      expect(mail.body.encoded).to be_present
+    end
+
+    it "includes income reported in body" do
+      expect(mail.body.encoded).to include("$400")
+    end
+  end
 end
