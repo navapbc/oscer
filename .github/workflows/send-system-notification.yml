@@ -27,7 +27,7 @@ jobs:
     name: Notify
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Terraform
         uses: ./.github/actions/setup-terraform
@@ -63,7 +63,7 @@ jobs:
 
       - name: Send Slack message
         if: ${{ steps.get-channel-type.outputs.channel_type == 'slack' }}
-        uses: slackapi/slack-github-action@v2.0.0
+        uses: slackapi/slack-github-action@v3.0.1
         with:
           method: chat.postMessage
           token: ${{ secrets[env.SLACK_TOKEN_SECRET_NAME] }}
