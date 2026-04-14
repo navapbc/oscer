@@ -57,7 +57,7 @@ class MemberMailer < ApplicationMailer
     @income_needed = [ target - reported, 0 ].max.round
     @deadline = certification.certification_requirements.due_date.strftime("%B %d, %Y")
     @login_url = root_url
-    income_needed_display = helpers.number_to_currency(@income_needed, precision: 0)
+    income_needed_display = ActionController::Base.helpers.number_to_currency(@income_needed, precision: 0)
 
     mail(to: certification.member_email, subject: t(".subject", income_needed: income_needed_display, deadline: @deadline))
   end
