@@ -36,4 +36,10 @@ module StaffHelper
       }
     ]
   end
+
+  def time_to_close_days(data)
+    return "no data" unless data[:time_to_close_seconds].present?
+
+    pluralize((data[:time_to_close_seconds]/(60*60*24)).round(2), "day")
+  end
 end

@@ -95,5 +95,34 @@ RSpec.describe "/staff", type: :request do
         expect(response.body).to include("No pending tasks")
       end
     end
+
+    describe "metrics" do
+      context "when admin" do
+        it "shows no data when no data" do
+          get "/staff"
+          expect(response.body).to include("Metrics")
+          expect(response.body).to include("no data")
+        end
+
+        it "shows metrics when present" do
+          submission_date = 6.days.ago
+          determination_date = submission_date + 1.1.day
+          application_form = create(:activity_report_application_form, submitted_at: submission_date)
+          create(:determination, subject: application_form.certification, determined_at: determination_date, determined_by_id: other_user.id)
+          get "/staff"
+          expect(response.body).to include("Metrics")
+          expect(response.body).to include("1.1 days")
+        end
+      end
+
+      context "when caseworker" do
+        before { login_as other_user }
+
+        it "does not show metrics" do
+          get "/staff"
+          expect(response.body).not_to include("Metrics")
+        end
+      end
+    end
   end
 end
