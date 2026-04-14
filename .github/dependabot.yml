@@ -40,6 +40,26 @@ updates:
       major:
         update-types: ["major"]
 
+  - package-ecosystem: "docker"
+    directory: "/reporting-app"
+    schedule:
+      interval: "weekly"
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+      major:
+        update-types: ["major"]
+
+  - package-ecosystem: "docker"
+    directory: "/e2e"
+    schedule:
+      interval: "weekly"
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+      major:
+        update-types: ["major"]
+
   - package-ecosystem: "terraform"
     directory: "/infra"
     schedule:
