@@ -28,17 +28,18 @@ flowchart LR
     Adapter -->|"GET /v1/documents/{jobId}"| DocAI
     Job -->|"update StagedDocument"| DB
     DB -->|"update!(validated/rejected/failed)"| S3
-    Controller -->|"redirect to"| StatusPage["doc_ai_upload_status\n(browser polls for completion)"]
+    Controller -->|"redirect to"| StatusPage["doc_ai_upload_status\n(Turbo Streams push via ActionCable)"]
+    StatusPage -->|"POST accept_doc_ai"| Confirm["Attach blob to Activity\n(accept_doc_ai)"]
 ```
 
 ## Components
 
 | Component | Responsibility |
 |-----------|---------------|
-| `DocumentStagingController` | Feature flag guard — returns 404 when `Features.doc_ai_enabled?` is false. Auth (`authorize :document, :create?`), param handling, delegates to `DocumentStagingService#submit`. Redirects to `doc_ai_upload_status` polling page after submission. Controller is responsible only for: auth, param handling, HTTP flow. |
+| `DocumentStagingController` | Three actions: `create` (upload), `doc_ai_upload_status` (status page), `lookup` (retrieve existing staged documents by ID). Auth via `StagedDocumentPolicy` (`authorize StagedDocument`), param handling, delegates to `DocumentStagingService#submit`. Redirects to `doc_ai_upload_status` after submission. Controller is responsible only for: auth, param handling, HTTP flow. |
 | `DocumentStagingService` | Owns constants: `ALLOWED_CONTENT_TYPES` (`application/pdf`, `image/jpeg`, `image/png`, `image/tiff`), `MAX_FILE_SIZE_BYTES` (30 MB), `MAX_FILE_COUNT` (10), `SUPPORTED_RESULT_CLASSES`. `#submit(files:, user:)` validates files, calls `ImageToPdfConversionService`, submits async to DocAI via `DocAiAdapter#analyze_document_async`, stores `jobId` on `StagedDocument`, enqueues `FetchDocAiResultsJob` with 1-minute initial delay. `#fetch_results(staged_document_ids:)` called by background job: polls `DocAiAdapter#get_document_status`, updates `StagedDocument` status (validated/rejected/failed), returns early if all resolved. Constructor-injected `DocAiService` dependency. |
 | `ImageToPdfConversionService` | Uses `image_processing` gem (vips backend). `#convert(file)` converts JPEG/PNG/TIFF >5MB to PDF tempfile. Returns original file unchanged if PDF or if image ≤5MB. `IMAGE_SIZE_THRESHOLD = 5.megabytes`. Logs warning on conversion failure; returns original file (graceful degradation). |
-| `StagedDocument` | ActiveRecord: `has_one_attached :file`, `belongs_to :user`, `belongs_to :stageable, polymorphic: true`. Status enum: `pending`, `validated`, `rejected`, `failed`. `doc_ai_job_id` stores the job ID from async submission. `extracted_fields` JSONB stores full raw DocAI fields response (including confidence scores) when completed. `#average_confidence` returns Float (0.0–1.0) computed as mean of all field confidence values; `nil` if blank. Once attached to an `Activity` (`stageable` set), retained as part of the audit trail. Unattached rows older than the configured retention are removed by [staged document cleanup](#staged-document-cleanup) (record + ActiveStorage blob). |
+| `StagedDocument` | ActiveRecord: `has_one_attached :file`, `belongs_to :user`, `belongs_to :stageable, polymorphic: true`. Status enum: `pending`, `validated`, `rejected`, `failed`. `doc_ai_job_id` stores the job ID from async submission. `doc_ai_matched_class` stores the matched document class name returned by DocAI (e.g. `"Payslip"`). `extracted_fields` JSONB stores full raw DocAI fields response (including confidence scores) when completed. `validated_at` records when the document reached `validated` status. `#average_confidence` returns Float (0.0–1.0) computed as mean of all field confidence values; `nil` if blank. Once attached to an `Activity` (`stageable` set), retained as part of the audit trail. Unattached rows older than the configured retention are removed by [staged document cleanup](#staged-document-cleanup) (record + ActiveStorage blob). |
 | `FetchDocAiResultsJob` | Background job (queued `:default`). `MAX_ATTEMPTS = 5`. Polls `DocAiService#check_status(jobId)` for each pending `StagedDocument`. When completed/failed, calls `update_from_result` to set final status + `extracted_fields`. If still pending after 5 attempts, bulk-updates all remaining docs to `failed`. Re-enqueues itself with 30-second wait between attempts. |
 | `DocAiAdapter` | Extends `DataIntegration::BaseAdapter`. `analyze_document_async(file:)` — POST to `/v1/documents` (no `wait` param), returns raw response with `jobId`. `get_document_status(job_id:)` — GET `/v1/documents/{job_id}` with `include_extracted_data=true`, returns full response envelope. Opens blob via `file.blob.open` → wraps in `Faraday::Multipart::FilePart`. Timeout: 60s (configurable). |
 | `DocAiService` | Extends `DataIntegration::BaseService`. `analyze_async(file:)` calls adapter, returns raw response hash. `check_status(job_id:)` calls adapter; dispatches on status: returns `DocAiResult` when completed, raises `ProcessingError` on failed, returns raw hash when still processing. `handle_integration_error` logs warning, returns `nil` (graceful degradation). |
@@ -170,48 +171,27 @@ Five evidence-source statuses provide CMS-auditable tracking of how activity dat
 
 ## Activity Attachment Flow
 
-After DocAI validates files, `DocumentStagingController` renders hidden signed ID fields (HMAC-signed, 1-hour expiry via `ActiveRecord::SignedId`):
+After DocAI validates files, `doc_ai_upload_status` renders `_results.html.erb` listing the validated documents. The member confirms and submits a form that POSTs to `activity_report_application_forms/:id/accept_doc_ai` (`ActivityReportApplicationFormsController#accept_doc_ai`), which:
 
-```html
-<input type="hidden" name="activity[staged_document_signed_ids][]" value="signed_id_1">
-<input type="hidden" name="activity[staged_document_signed_ids][]" value="signed_id_2">
-```
+1. Resolves the validated `StagedDocument` records from hidden `staged_document_ids[]` inputs
+2. Attaches their blobs to the relevant activity (no S3 copy — same blob shared via `attach(staged.file.blob)`)
+3. Sets `stageable` on each `StagedDocument` (marks as consumed; prevents premature cleanup)
+4. Redirects to the next step in the activity report flow
 
-`ActivitiesController#create` iterates signed IDs, resolves via `find_signed`, attaches blob to activity (no S3 copy — same blob shared), marks staged doc consumed, skips documents upload page:
-
-```ruby
-if (signed_ids = activity_params[:staged_document_signed_ids]).present?
-  signed_ids.each do |sid|
-    staged = StagedDocument.find_signed(sid)
-    next unless staged&.validated?
-    @activity.supporting_documents.attach(staged.file.blob)
-    staged.update!(stageable: @activity)
-  end
-  redirect_to activity_report_application_form_path(@activity_report_application_form),
-              notice: t(".created_with_document")
-else
-  redirect_to documents_activity_report_application_form_activity_path(
-                @activity_report_application_form, @activity)
-end
-```
-
-Permitted params addition:
-```ruby
-def activity_params
-  params.require(:activity).permit(
-    :month, :name, :hours, :income, :activity_type, :category,
-    staged_document_signed_ids: []
-  )
-end
-```
-
-Expired/non-validated signed IDs are skipped gracefully. Fallback to manual upload page preserved when no signed IDs present.
+Members can also use an "upload more" form (POST back to `document_staging`) to add additional documents before confirming.
 
 ## API Interface
 
-### Turbo Frames Polling Reference
+### Status Updates — Server-Side Push via Turbo Streams
 
-For implementation details on how to use Turbo Frames to auto-refresh a page that polls for document upload status, see the [Turbo Frames Polling Reference](./references/turbo-frames-polling.md).
+`DocumentStagingController#doc_ai_upload_status` renders the waiting page. There is no client-side polling.
+
+- The view subscribes to a per-batch ActionCable channel via `turbo_stream_from "document_staging_batch_#{@batch_key}"` (only active while processing).
+- A `<turbo-frame id="document_staging_status">` wraps the status content (processing modal or results partial).
+- When `FetchDocAiResultsJob` completes, it broadcasts two Turbo Stream updates over WebSocket:
+  1. `Turbo::StreamsChannel.broadcast_replace_to("document_staging_batch_#{batch_key}", target: "document_staging_status", partial: "document_staging/results", ...)` — replaces the frame with the results view.
+  2. `broadcast_update_to(...)` with target `flash-messages` — renders the upload notification partial.
+- No page reload or redirect is needed; the push updates the frame in-place.
 
 ### Synchronous (wait=true)
 
@@ -406,12 +386,24 @@ Key boundary: DocAI has **no knowledge** of OSCER's eligibility rules. The servi
 
 `SUPPORTED_RESULT_CLASSES`: `[DocAiResult::Payslip]`
 
-## Route
+## Routes
 
 ```ruby
-# config/routes.rb (inside localized block)
-resource :document_staging, only: [:create], controller: "document_staging"
-# → POST /document_staging → DocumentStagingController#create
+# config/routes.rb
+
+# ActivityReportApplicationForm member routes (DocAI entry/exit):
+resources :activity_report_application_forms do
+  member do
+    get  :doc_ai_upload   # → ActivityReportApplicationFormsController#doc_ai_upload
+    post :accept_doc_ai   # → ActivityReportApplicationFormsController#accept_doc_ai
+  end
+end
+
+# Document staging resource (standalone upload + status):
+resource :document_staging, only: [:create], controller: "document_staging" do
+  get :lookup, on: :collection           # → DocumentStagingController#lookup
+  get :doc_ai_upload_status, on: :collection  # → DocumentStagingController#doc_ai_upload_status
+end
 ```
 
 ## Configuration
@@ -465,7 +457,7 @@ Core DocAI files implemented:
 | `app/models/activity_attributions.rb` | String constants: `SELF_REPORTED`, `AI_ASSISTED`, `AI_ASSISTED_WITH_MEMBER_EDITS`, `AI_REJECTED_MEMBER_OVERRIDE`, `STATE_PROVIDED` |
 | `app/services/doc_ai_confidence_service.rb` | Batch confidence lookup by activity or case ID |
 | `app/models/activity.rb` | `evidence_source` string column, `AI_SOURCED_EVIDENCE_SOURCES` / `NON_AI_EVIDENCE_SOURCES` grouping, `has_many :staged_documents, as: :stageable` |
-| `app/policies/document_policy.rb` | Pundit authorization: `authorize :document, :create?` |
+| `app/policies/staged_document_policy.rb` | Pundit authorization: actions `create?`, `lookup?`, `doc_ai_upload_status?` |
 | `config/initializers/doc_ai.rb` | Loads `api_host`, `timeout_seconds`, `low_confidence_threshold` from ENV |
 | Gemfile | `faraday-multipart` gem for multipart HTTP uploads |
 
