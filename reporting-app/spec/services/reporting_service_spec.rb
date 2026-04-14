@@ -3,8 +3,7 @@
 require "rails_helper"
 
 RSpec.describe ReportingService do
-  let(:dummy_class) { Class.new { include ReportingService } }
-  let(:instance) { dummy_class.new }
+  let(:instance) { described_class.new }
 
   describe "time_to_close" do
     let(:caseworker) { create(:user, :as_caseworker) }

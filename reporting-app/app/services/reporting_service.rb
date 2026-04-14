@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module ReportingService
+class ReportingService
   def time_to_close(cutoff)
     application_form_delta_generator = time_to_close_sql_generator(ActivityReportApplicationForm.arel_table, cutoff)
     exemption_form_delta_generator = time_to_close_sql_generator(ExemptionApplicationForm.arel_table, cutoff)
