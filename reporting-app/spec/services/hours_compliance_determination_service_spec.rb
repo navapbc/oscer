@@ -57,7 +57,7 @@ RSpec.describe HoursComplianceDeterminationService do
         determination = Determination.where(subject_id: certification.id).last
         data = determination.determination_data
 
-        expect(data["calculation_type"]).to eq("hours_based")
+        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_HOURS_BASED)
         expect(data["total_hours"]).to eq(85.0)
         expect(data["target_hours"]).to eq(80)
       end
@@ -170,7 +170,7 @@ RSpec.describe HoursComplianceDeterminationService do
         determination = Determination.where(subject_id: certification.id).last
         data = determination.determination_data
 
-        expect(data["calculation_type"]).to eq("hours_based")
+        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_HOURS_BASED)
         expect(data["total_hours"]).to eq(90.0)
         expect(data["target_hours"]).to eq(80)
       end
