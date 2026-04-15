@@ -113,7 +113,7 @@ RSpec.describe "/staff", type: :request do
         end
 
         it "shows metrics when present" do
-          allow(reporting_service).to receive(:time_to_close).and_return(95040.0)
+          allow(reporting_service).to receive(:time_to_close).and_return(1.1.days)
           get "/staff"
           expect(response.body).to include(I18n.t("staff.dashboard.index.metrics"))
           expect(response.body).to include(I18n.t("staff.dashboard.index.time_to_close", count: 1.1))

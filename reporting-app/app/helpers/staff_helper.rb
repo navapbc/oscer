@@ -40,6 +40,6 @@ module StaffHelper
   def time_to_close_days(data)
     return 0 unless data[:time_to_close_seconds].present?
 
-    (data[:time_to_close_seconds]/(60*60*24)).round(2)
+    (data[:time_to_close_seconds]/1.day).round(2)
   end
 end
