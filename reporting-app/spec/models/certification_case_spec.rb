@@ -5,6 +5,17 @@ require 'rails_helper'
 RSpec.describe CertificationCase, type: :model do
   let(:certification_case) { create(:certification_case) }
 
+  # Prevent real ex parte CE from recording a compliant determination during certification bootstrap
+  # (Income aggregate can meet threshold and close the case before examples run).
+  before do
+    allow(CertificationBusinessProcess).to receive(:run_ex_parte_community_engagement_check) do |kase|
+      Strata::EventManager.publish("DeterminedActionRequired", {
+        case_id: kase.id,
+        certification_id: kase.certification_id
+      })
+    end
+  end
+
   describe '#accept_activity_report' do
     before do
       allow(Strata::EventManager).to receive(:publish)
@@ -194,6 +205,62 @@ RSpec.describe CertificationCase, type: :model do
 
       expect(determination.reasons).to include("age_under_19_exempt", "pregnancy_exempt")
       expect(determination.outcome).to eq("exempt")
+    end
+  end
+
+  describe "#record_ex_parte_ce_combined_assessment" do
+    def latest_determination_for(certification_id)
+      Determination.unscope(:order).where(subject_id: certification_id).order(created_at: :desc).first
+    end
+
+    let(:hours_data) do
+      {
+        total_hours: 50,
+        hours_by_category: {},
+        hours_by_source: { ex_parte: 40.0, activity: 10.0 },
+        ex_parte_activity_ids: [],
+        activity_ids: []
+      }
+    end
+    let(:income_data) do
+      {
+        total_income: BigDecimal("400"),
+        income_by_source: { income: BigDecimal("400"), activity: BigDecimal("0") },
+        income_ids: [],
+        period_start: Date.current,
+        period_end: Date.current
+      }
+    end
+
+    it "stores not_compliant with both insufficient reasons when both tracks fail" do
+      certification_case.record_ex_parte_ce_combined_assessment(
+        hours_data: hours_data,
+        income_data: income_data,
+        hours_ok: false,
+        income_ok: false
+      )
+
+      determination = latest_determination_for(certification_case.certification_id)
+      expect(determination.outcome).to eq("not_compliant")
+      expect(determination.reasons).to contain_exactly(
+        "hours_reported_insufficient",
+        "income_reported_insufficient"
+      )
+      expect(determination.determination_data["satisfied_by"]).to eq("neither")
+    end
+
+    it "stores compliant when only income_ok" do
+      certification_case.record_ex_parte_ce_combined_assessment(
+        hours_data: hours_data,
+        income_data: income_data,
+        hours_ok: false,
+        income_ok: true
+      )
+
+      determination = latest_determination_for(certification_case.certification_id)
+      expect(determination.outcome).to eq("compliant")
+      expect(determination.reasons).to eq([ "income_reported_compliant" ])
+      expect(certification_case.reload).to be_closed
     end
   end
 end

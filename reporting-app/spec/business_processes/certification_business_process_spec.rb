@@ -11,8 +11,10 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     allow(Strata::EventManager).to receive(:publish).and_call_original
     allow(NotificationService).to receive(:send_email_notification)
 
-    # Stub hours compliance service for initial check
-    allow(HoursComplianceDeterminationService).to receive(:determine) do |kase|
+    # Avoid persisting real ex parte CE combined determinations during factory/BP bootstrap (would
+    # close the case / mark compliant when income aggregate meets threshold). Mirrors legacy stub of
+    # HoursComplianceDeterminationService.determine publishing DeterminedActionRequired only.
+    allow(CertificationBusinessProcess).to receive(:run_ex_parte_community_engagement_check) do |kase|
       Strata::EventManager.publish("DeterminedActionRequired", {
         case_id: kase.id,
         certification_id: kase.certification_id
@@ -260,13 +262,13 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
   end
 
   describe ".run_ex_parte_community_engagement_check" do
-    # Override top-level stubs so aggregation and determination run for real.
+    # Override top-level stubs so the real combined CE path runs.
     before do
       allow(Strata::EventManager).to receive(:publish)
       allow(NotificationService).to receive(:send_email_notification)
-      allow(HoursComplianceDeterminationService).to receive(:determine).and_call_original
+      allow(CertificationBusinessProcess).to receive(:run_ex_parte_community_engagement_check).and_call_original
       allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_call_original
-      allow(IncomeComplianceDeterminationService).to receive(:determine).and_call_original
+      allow(IncomeComplianceDeterminationService).to receive(:aggregate_income_for_certification).and_call_original
     end
 
     let(:certification) { create(:certification) }
@@ -295,12 +297,17 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         create_ex_parte_activity_for(certification, hours: 85)
       end
 
-      it "runs hours determination and records hours-based reasons" do
+      it "records combined determination with hours satisfied and income assessed" do
         described_class.run_ex_parte_community_engagement_check(certification_case)
 
         determination = Determination.where(subject_id: certification.id).last
-        expect(determination.reasons).to include("hours_reported_compliant")
-        expect(determination.determination_data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_HOURS_BASED)
+        expect(determination.outcome).to eq("compliant")
+        expect(determination.reasons).to eq([ "hours_reported_compliant" ])
+        data = determination.determination_data
+        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EX_PARTE_CE_COMBINED)
+        expect(data["satisfied_by"]).to eq("hours")
+        expect(data["hours"]["compliant"]).to be true
+        expect(data["income"]["compliant"]).to be false
       end
 
       it "publishes DeterminedHoursMet" do
@@ -319,12 +326,16 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         create_income_for(certification, gross_income: 600)
       end
 
-      it "runs income determination and records income-based reasons" do
+      it "records combined determination with income satisfied" do
         described_class.run_ex_parte_community_engagement_check(certification_case)
 
         determination = Determination.where(subject_id: certification.id).last
-        expect(determination.reasons).to include("income_reported_compliant")
-        expect(determination.determination_data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_INCOME_BASED)
+        expect(determination.outcome).to eq("compliant")
+        expect(determination.reasons).to eq([ "income_reported_compliant" ])
+        data = determination.determination_data
+        expect(data["satisfied_by"]).to eq("income")
+        expect(data["hours"]["compliant"]).to be false
+        expect(data["income"]["compliant"]).to be true
       end
 
       it "publishes DeterminedHoursMet for workflow parity" do
@@ -337,40 +348,70 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       end
     end
 
-    context "when both hours and income would pass (hours-first: hours path only)" do
+    context "when both hours and income meet targets" do
       before do
         create_ex_parte_activity_for(certification, hours: 90)
         create_income_for(certification, gross_income: 700)
       end
 
-      it "uses hours determination only" do
+      it "records both compliant reason codes and satisfied_by both" do
         described_class.run_ex_parte_community_engagement_check(certification_case)
 
         determination = Determination.where(subject_id: certification.id).last
-        expect(determination.reasons).to include("hours_reported_compliant")
-        expect(determination.determination_data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_HOURS_BASED)
+        expect(determination.outcome).to eq("compliant")
+        expect(determination.reasons).to contain_exactly("hours_reported_compliant", "income_reported_compliant")
+        expect(determination.determination_data["satisfied_by"]).to eq("both")
+        expect(determination.determination_data["hours"]["compliant"]).to be true
+        expect(determination.determination_data["income"]["compliant"]).to be true
       end
     end
 
-    context "when neither hours nor income meet targets" do
+    context "when neither hours nor income meet targets with some ex parte hours" do
       before do
         create_ex_parte_activity_for(certification, hours: 40)
         create_income_for(certification, gross_income: 400)
       end
 
-      it "delegates to hours determination (insufficient hours path)" do
+      it "records not_compliant with both insufficient reason codes" do
         described_class.run_ex_parte_community_engagement_check(certification_case)
 
         determination = Determination.where(subject_id: certification.id).last
-        expect(determination.reasons).to include("hours_reported_insufficient")
-        expect(determination.determination_data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_HOURS_BASED)
+        expect(determination.outcome).to eq("not_compliant")
+        expect(determination.reasons).to contain_exactly(
+          "hours_reported_insufficient",
+          "income_reported_insufficient"
+        )
+        data = determination.determination_data
+        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EX_PARTE_CE_COMBINED)
+        expect(data["satisfied_by"]).to eq("neither")
+        expect(data["hours"]["compliant"]).to be false
+        expect(data["income"]["compliant"]).to be false
       end
 
-      it "publishes DeterminedHoursInsufficient" do
+      it "publishes DeterminedHoursInsufficient with hours and income payload" do
         described_class.run_ex_parte_community_engagement_check(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
           "DeterminedHoursInsufficient",
+          hash_including(
+            case_id: certification_case.id,
+            hours_data: kind_of(Hash),
+            income_data: kind_of(Hash)
+          )
+        )
+      end
+    end
+
+    context "when neither track passes and there are no ex parte hours" do
+      before do
+        create_income_for(certification, gross_income: 100)
+      end
+
+      it "publishes DeterminedActionRequired" do
+        described_class.run_ex_parte_community_engagement_check(certification_case)
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DeterminedActionRequired",
           hash_including(case_id: certification_case.id)
         )
       end
@@ -381,12 +422,12 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         create_ex_parte_activity_for(certification, hours: HoursComplianceDeterminationService::TARGET_HOURS)
       end
 
-      it "uses hours determination (inclusive threshold)" do
+      it "treats hours as compliant (inclusive threshold)" do
         described_class.run_ex_parte_community_engagement_check(certification_case)
 
         determination = Determination.where(subject_id: certification.id).last
-        expect(determination.reasons).to include("hours_reported_compliant")
-        expect(determination.determination_data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_HOURS_BASED)
+        expect(determination.outcome).to eq("compliant")
+        expect(determination.determination_data["hours"]["compliant"]).to be true
       end
     end
 
@@ -396,12 +437,12 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         create_income_for(certification, gross_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY)
       end
 
-      it "uses income determination (inclusive threshold)" do
+      it "treats income as compliant (inclusive threshold)" do
         described_class.run_ex_parte_community_engagement_check(certification_case)
 
         determination = Determination.where(subject_id: certification.id).last
-        expect(determination.reasons).to include("income_reported_compliant")
-        expect(determination.determination_data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_INCOME_BASED)
+        expect(determination.outcome).to eq("compliant")
+        expect(determination.determination_data["income"]["compliant"]).to be true
       end
     end
   end

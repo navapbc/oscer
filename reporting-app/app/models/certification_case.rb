@@ -145,6 +145,38 @@ class CertificationCase < Strata::Case
     )
   end
 
+  # Ex parte CE check: one automated determination with both tracks in +determination_data+.
+  # Member is compliant if either +hours_ok+ or +income_ok+; not compliant only when both are false.
+  # Events/notifications are published by CertificationBusinessProcess.
+  #
+  # @param hours_data [Hash] from HoursComplianceDeterminationService.aggregate_hours_for_certification
+  # @param income_data [Hash] from IncomeComplianceDeterminationService.aggregate_income_for_certification
+  # @param hours_ok [Boolean]
+  # @param income_ok [Boolean]
+  def record_ex_parte_ce_combined_assessment(hours_data:, income_data:, hours_ok:, income_ok:)
+    outcome = (hours_ok || income_ok) ? :compliant : :not_compliant
+    reasons = ex_parte_ce_combined_reason_codes(outcome: outcome, hours_ok: hours_ok, income_ok: income_ok)
+    determination_data = build_ex_parte_ce_combined_determination_data(
+      hours_data: hours_data,
+      income_data: income_data,
+      hours_ok: hours_ok,
+      income_ok: income_ok
+    )
+
+    certification = Certification.find(certification_id)
+    transaction do
+      close! if outcome == :compliant
+
+      certification.record_determination!(
+        decision_method: :automated,
+        reasons: reasons,
+        outcome: outcome,
+        determination_data: determination_data,
+        determined_at: certification.certification_requirements.certification_date
+      )
+    end
+  end
+
   def member_status
     MemberStatusService.determine(self).status
   end
@@ -202,6 +234,40 @@ class CertificationCase < Strata::Case
       period_end: period_end&.respond_to?(:iso8601) ? period_end.iso8601 : period_end&.to_s,
       income_ids: income_data[:income_ids],
       calculation_method: Determination::CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE,
+      calculated_at: Time.current.iso8601
+    }
+  end
+
+  def ex_parte_ce_combined_reason_codes(outcome:, hours_ok:, income_ok:)
+    if outcome == :compliant
+      [].tap do |codes|
+        codes << Determination::REASON_CODE_MAPPING[:hours_reported_compliant] if hours_ok
+        codes << Determination::REASON_CODE_MAPPING[:income_reported_compliant] if income_ok
+      end
+    else
+      [
+        Determination::REASON_CODE_MAPPING[:hours_reported_insufficient],
+        Determination::REASON_CODE_MAPPING[:income_reported_insufficient]
+      ]
+    end
+  end
+
+  def build_ex_parte_ce_combined_determination_data(hours_data:, income_data:, hours_ok:, income_ok:)
+    satisfied_by = if hours_ok && income_ok
+      "both"
+    elsif hours_ok
+      "hours"
+    elsif income_ok
+      "income"
+    else
+      "neither"
+    end
+
+    {
+      calculation_type: Determination::CALCULATION_TYPE_EX_PARTE_CE_COMBINED,
+      satisfied_by: satisfied_by,
+      hours: build_hours_determination_data(hours_data).merge(compliant: hours_ok),
+      income: build_income_determination_data(income_data).merge(compliant: income_ok),
       calculated_at: Time.current.iso8601
     }
   end

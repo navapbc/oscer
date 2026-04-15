@@ -34,6 +34,8 @@ class Determination < Strata::Determination
   # Stored in +determination_data+ JSON for CE compliance automated calculations.
   CALCULATION_TYPE_HOURS_BASED = "hours_based"
   CALCULATION_TYPE_INCOME_BASED = "income_based"
+  # Ex parte CE step: one determination with both hours and income assessments (OR compliant).
+  CALCULATION_TYPE_EX_PARTE_CE_COMBINED = "ex_parte_ce_combined"
   CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE = "automated_income_intake"
 
   REASON_CODE_MAPPING = {
