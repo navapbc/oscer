@@ -4,6 +4,13 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # tfsec is deprecated (migrated to Trivy); the action can no longer download binaries.
+      # Remove after migrating to Trivy. See https://github.com/navapbc/oscer/issues/456
+      - dependency-name: "aquasecurity/tfsec-pr-commenter-action"
+      # checkov v12.3096.0+ introduces 14 new findings against existing infra.
+      # Remove after addressing findings. See https://github.com/navapbc/oscer/issues/457
+      - dependency-name: "bridgecrewio/checkov-action"
     groups:
       minor-and-patch:
         update-types: ["minor", "patch"]
