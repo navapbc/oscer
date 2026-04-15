@@ -292,6 +292,10 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
              period_start: period_start, period_end: period_end, gross_income: gross_income, **attrs)
     end
 
+    def latest_determination_for(certification_id)
+      Determination.unscope(:order).where(subject_id: certification_id).order(created_at: :desc).first
+    end
+
     context "when hours meet target (hours-only pass)" do
       before do
         create_ex_parte_activity_for(certification, hours: 85)
@@ -300,7 +304,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       it "records combined determination with hours satisfied and income assessed" do
         described_class.run_ex_parte_community_engagement_check(certification_case)
 
-        determination = Determination.where(subject_id: certification.id).last
+        determination = latest_determination_for(certification.id)
         expect(determination.outcome).to eq("compliant")
         expect(determination.reasons).to eq([ "hours_reported_compliant" ])
         data = determination.determination_data
@@ -329,7 +333,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       it "records combined determination with income satisfied" do
         described_class.run_ex_parte_community_engagement_check(certification_case)
 
-        determination = Determination.where(subject_id: certification.id).last
+        determination = latest_determination_for(certification.id)
         expect(determination.outcome).to eq("compliant")
         expect(determination.reasons).to eq([ "income_reported_compliant" ])
         data = determination.determination_data
@@ -357,7 +361,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       it "records both compliant reason codes and satisfied_by both" do
         described_class.run_ex_parte_community_engagement_check(certification_case)
 
-        determination = Determination.where(subject_id: certification.id).last
+        determination = latest_determination_for(certification.id)
         expect(determination.outcome).to eq("compliant")
         expect(determination.reasons).to contain_exactly("hours_reported_compliant", "income_reported_compliant")
         expect(determination.determination_data["satisfied_by"]).to eq("both")
@@ -375,7 +379,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       it "records not_compliant with both insufficient reason codes" do
         described_class.run_ex_parte_community_engagement_check(certification_case)
 
-        determination = Determination.where(subject_id: certification.id).last
+        determination = latest_determination_for(certification.id)
         expect(determination.outcome).to eq("not_compliant")
         expect(determination.reasons).to contain_exactly(
           "hours_reported_insufficient",
@@ -425,7 +429,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       it "treats hours as compliant (inclusive threshold)" do
         described_class.run_ex_parte_community_engagement_check(certification_case)
 
-        determination = Determination.where(subject_id: certification.id).last
+        determination = latest_determination_for(certification.id)
         expect(determination.outcome).to eq("compliant")
         expect(determination.determination_data["hours"]["compliant"]).to be true
       end
@@ -440,7 +444,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       it "treats income as compliant (inclusive threshold)" do
         described_class.run_ex_parte_community_engagement_check(certification_case)
 
-        determination = Determination.where(subject_id: certification.id).last
+        determination = latest_determination_for(certification.id)
         expect(determination.outcome).to eq("compliant")
         expect(determination.determination_data["income"]["compliant"]).to be true
       end
