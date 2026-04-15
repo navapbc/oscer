@@ -97,18 +97,23 @@ RSpec.describe "/staff", type: :request do
     end
 
     describe "metrics" do
+      let(:reporting_service) { instance_double(ReportingService) }
+
+      before do
+        allow(ReportingService).to receive(:new).and_return(reporting_service)
+      end
+
       context "when admin" do
         it "shows no data when no data" do
+          allow(reporting_service).to receive(:time_to_close).and_return(nil)
+
           get "/staff"
           expect(response.body).to include("Metrics")
           expect(response.body).to include("no data")
         end
 
         it "shows metrics when present" do
-          submission_date = 6.days.ago
-          determination_date = submission_date + 1.1.day
-          application_form = create(:activity_report_application_form, submitted_at: submission_date)
-          create(:determination, subject: application_form.certification, determined_at: determination_date, determined_by_id: other_user.id)
+          allow(reporting_service).to receive(:time_to_close).and_return(95040.0)
           get "/staff"
           expect(response.body).to include("Metrics")
           expect(response.body).to include("1.1 days")
@@ -119,8 +124,10 @@ RSpec.describe "/staff", type: :request do
         before { login_as other_user }
 
         it "does not show metrics" do
+          allow(reporting_service).to receive(:time_to_close)
           get "/staff"
           expect(response.body).not_to include("Metrics")
+          expect(reporting_service).not_to have_received(:time_to_close)
         end
       end
     end

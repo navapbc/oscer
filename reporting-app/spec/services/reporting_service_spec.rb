@@ -13,67 +13,51 @@ RSpec.describe ReportingService do
     end
 
     it "returns time difference with one matching ActivityReportApplicationForm" do
-      submission_date = 6.days.ago
-      determination_date = submission_date + 1.day
-      application_form = create(:activity_report_application_form, submitted_at: submission_date)
-      determination = create(:determination, subject: application_form.certification, determined_at: determination_date, determined_by_id: caseworker.id)
+      make_application_form_with_determination(:activity_report_application_form, 1.day)
       time_to_close = instance.time_to_close(7.days.ago)
       expect(time_to_close).to eq(1.day)
     end
 
     it "returns time difference with one matching ExemptionApplicationForm" do
-      submission_date = 6.days.ago
-      determination_date = submission_date + 1.day
-      application_form = create(:exemption_application_form, submitted_at: submission_date)
-      certification = Certification.find(CertificationCase.find(application_form.certification_case_id).certification_id)
-      determination = create(:determination, subject: certification, determined_at: determination_date, determined_by_id: caseworker.id)
+      make_application_form_with_determination(:exemption_application_form, 1.day)
       time_to_close = instance.time_to_close(7.days.ago)
       expect(time_to_close).to eq(1.day)
     end
 
     it "returns average time difference with two matching ActivityReportApplicationForms" do
-      submission_date = 6.days.ago
-      2.times do |count|
-        application_form = create(:activity_report_application_form, submitted_at: submission_date + count.days)
-        determination_date = submission_date + 2.days
-        determination = create(:determination, subject: application_form.certification, determined_at: determination_date, determined_by_id: caseworker.id)
-      end
+      make_application_form_with_determination(:activity_report_application_form, 1.day)
+      make_application_form_with_determination(:activity_report_application_form, 2.day)
       time_to_close = instance.time_to_close(7.days.ago)
       expect(time_to_close).to eq(1.5.day)
     end
 
     it "returns average time difference with two matching ExemptionApplicationForms" do
-      submission_date = 6.days.ago
-      2.times do |count|
-        application_form = create(:exemption_application_form, submitted_at: submission_date + count.days)
-        determination_date = submission_date + 2.days
-        certification = Certification.find(CertificationCase.find(application_form.certification_case_id).certification_id)
-        determination = create(:determination, subject: certification, determined_at: determination_date, determined_by_id: caseworker.id)
-      end
+      make_application_form_with_determination(:exemption_application_form, 1.day)
+      make_application_form_with_determination(:exemption_application_form, 2.day)
       time_to_close = instance.time_to_close(7.days.ago)
       expect(time_to_close).to eq(1.5.day)
     end
 
     it "returns average time difference with matching ActivityReportApplicationForms and ExemptionApplicationForms" do
-      submission_date = 6.days.ago
-      activity_report_application_form = create(:activity_report_application_form, submitted_at: submission_date)
-      create(:determination, subject: activity_report_application_form.certification, determined_at: submission_date + 1.day, determined_by_id: caseworker.id)
-      exemption_application_form = create(:exemption_application_form, submitted_at: submission_date)
-      certification = Certification.find(CertificationCase.find(exemption_application_form.certification_case_id).certification_id)
-      create(:determination, subject: certification, determined_at: submission_date + 2.days, determined_by_id: caseworker.id)
+      make_application_form_with_determination(:activity_report_application_form, 1.day)
+      make_application_form_with_determination(:exemption_application_form, 2.day)
       time_to_close = instance.time_to_close(7.days.ago)
       expect(time_to_close).to eq(1.5.days)
     end
 
     it "excludes records outside cutoff" do
-      submission_date = 6.days.ago
-      activity_report_application_form = create(:activity_report_application_form, submitted_at: submission_date)
-      create(:determination, subject: activity_report_application_form.certification, determined_at: submission_date + 1.day, determined_by_id: caseworker.id)
-      exemption_application_form = create(:exemption_application_form, submitted_at: submission_date)
-      certification = Certification.find(CertificationCase.find(exemption_application_form.certification_case_id).certification_id)
-      create(:determination, subject: certification, determined_at: submission_date + 2.days, determined_by_id: caseworker.id)
+      make_application_form_with_determination(:activity_report_application_form, 1.day)
+      make_application_form_with_determination(:exemption_application_form, 2.day)
       time_to_close = instance.time_to_close(1.day.ago)
       expect(time_to_close).to be_nil
     end
+  end
+
+  def make_application_form_with_determination(form_type, time_delta)
+    submission_date = 6.days.ago
+    determination_date = submission_date + time_delta
+    application_form = create(form_type, submitted_at: submission_date)
+    certification = Certification.find(CertificationCase.find(application_form.certification_case_id).certification_id)
+    determination = create(:determination, subject: certification, determined_at: determination_date, determined_by_id: caseworker.id)
   end
 end
