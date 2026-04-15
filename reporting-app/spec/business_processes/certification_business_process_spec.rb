@@ -14,7 +14,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     # Avoid persisting real ex parte CE combined determinations during factory/BP bootstrap (would
     # close the case / mark compliant when income aggregate meets threshold). Mirrors legacy stub of
     # HoursComplianceDeterminationService.determine publishing DeterminedActionRequired only.
-    allow(CertificationBusinessProcess).to receive(:run_ex_parte_community_engagement_check) do |kase|
+    allow(described_class).to receive(:run_ex_parte_community_engagement_check) do |kase|
       Strata::EventManager.publish("DeterminedActionRequired", {
         case_id: kase.id,
         certification_id: kase.certification_id
@@ -266,7 +266,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     before do
       allow(Strata::EventManager).to receive(:publish)
       allow(NotificationService).to receive(:send_email_notification)
-      allow(CertificationBusinessProcess).to receive(:run_ex_parte_community_engagement_check).and_call_original
+      allow(described_class).to receive(:run_ex_parte_community_engagement_check).and_call_original
       allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_call_original
       allow(IncomeComplianceDeterminationService).to receive(:aggregate_income_for_certification).and_call_original
     end
