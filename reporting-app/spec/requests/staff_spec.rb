@@ -108,15 +108,15 @@ RSpec.describe "/staff", type: :request do
           allow(reporting_service).to receive(:time_to_close).and_return(nil)
 
           get "/staff"
-          expect(response.body).to include("Metrics")
-          expect(response.body).to include("no data")
+          expect(response.body).to include(I18n.t("staff.dashboard.index.metrics"))
+          expect(response.body).to include(I18n.t("staff.dashboard.index.time_to_close", count: 0))
         end
 
         it "shows metrics when present" do
           allow(reporting_service).to receive(:time_to_close).and_return(95040.0)
           get "/staff"
-          expect(response.body).to include("Metrics")
-          expect(response.body).to include("1.1 days")
+          expect(response.body).to include(I18n.t("staff.dashboard.index.metrics"))
+          expect(response.body).to include(I18n.t("staff.dashboard.index.time_to_close", count: 1.1))
         end
       end
 
@@ -126,7 +126,7 @@ RSpec.describe "/staff", type: :request do
         it "does not show metrics" do
           allow(reporting_service).to receive(:time_to_close)
           get "/staff"
-          expect(response.body).not_to include("Metrics")
+          expect(response.body).not_to include(I18n.t("staff.dashboard.index.metrics"))
           expect(reporting_service).not_to have_received(:time_to_close)
         end
       end

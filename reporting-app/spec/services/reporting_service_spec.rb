@@ -28,14 +28,14 @@ RSpec.describe ReportingService do
       make_application_form_with_determination(:activity_report_application_form, 1.day)
       make_application_form_with_determination(:activity_report_application_form, 2.day)
       time_to_close = instance.time_to_close(7.days.ago)
-      expect(time_to_close).to eq(1.5.day)
+      expect(time_to_close).to eq(1.5.days)
     end
 
     it "returns average time difference with two matching ExemptionApplicationForms" do
       make_application_form_with_determination(:exemption_application_form, 1.day)
       make_application_form_with_determination(:exemption_application_form, 2.day)
       time_to_close = instance.time_to_close(7.days.ago)
-      expect(time_to_close).to eq(1.5.day)
+      expect(time_to_close).to eq(1.5.days)
     end
 
     it "returns average time difference with matching ActivityReportApplicationForms and ExemptionApplicationForms" do
