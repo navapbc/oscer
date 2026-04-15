@@ -80,10 +80,18 @@ class IncomeComplianceDeterminationService
       }
     end
 
+    # Whether aggregated income meets the monthly CE threshold. Single source for comparison
+    # with +determine_outcome+ and +CertificationBusinessProcess.run_ex_parte_community_engagement_check+.
+    # @param total_income [Numeric]
+    # @return [Boolean]
+    def compliant_for_total_income?(total_income)
+      total_income >= TARGET_INCOME_MONTHLY
+    end
+
     private
 
     def determine_outcome(total_income)
-      total_income >= TARGET_INCOME_MONTHLY ? :compliant : :not_compliant
+      compliant_for_total_income?(total_income) ? :compliant : :not_compliant
     end
 
     # Approved member-reported income (e.g. from activity report) — stub until modeled.

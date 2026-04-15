@@ -258,4 +258,151 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       }.to have_published_event("DeterminedExempt")
     end
   end
+
+  describe ".run_ex_parte_community_engagement_check" do
+    # Override top-level stubs so aggregation and determination run for real.
+    before do
+      allow(Strata::EventManager).to receive(:publish)
+      allow(NotificationService).to receive(:send_email_notification)
+      allow(HoursComplianceDeterminationService).to receive(:determine).and_call_original
+      allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_call_original
+      allow(IncomeComplianceDeterminationService).to receive(:determine).and_call_original
+    end
+
+    let(:certification) { create(:certification) }
+    let(:certification_case) { create(:certification_case, certification: certification) }
+
+    def create_ex_parte_activity_for(certification, **attrs)
+      lookback = certification.certification_requirements.continuous_lookback_period
+      period_start = lookback.start.to_date
+      period_end = lookback.start.to_date.end_of_month
+
+      create(:ex_parte_activity, member_id: certification.member_id,
+             period_start: period_start, period_end: period_end, **attrs)
+    end
+
+    def create_income_for(certification, gross_income:, **attrs)
+      lookback = certification.certification_requirements.continuous_lookback_period
+      period_start = lookback.start.to_date
+      period_end = lookback.start.to_date.end_of_month
+
+      create(:income, member_id: certification.member_id,
+             period_start: period_start, period_end: period_end, gross_income: gross_income, **attrs)
+    end
+
+    context "when hours meet target (hours-only pass)" do
+      before do
+        create_ex_parte_activity_for(certification, hours: 85)
+      end
+
+      it "runs hours determination and records hours-based reasons" do
+        described_class.run_ex_parte_community_engagement_check(certification_case)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.reasons).to include("hours_reported_compliant")
+        expect(determination.determination_data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_HOURS_BASED)
+      end
+
+      it "publishes DeterminedHoursMet" do
+        described_class.run_ex_parte_community_engagement_check(certification_case)
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DeterminedHoursMet",
+          hash_including(case_id: certification_case.id)
+        )
+      end
+    end
+
+    context "when hours are below target but income meets threshold (income-only pass)" do
+      before do
+        create_ex_parte_activity_for(certification, hours: 40)
+        create_income_for(certification, gross_income: 600)
+      end
+
+      it "runs income determination and records income-based reasons" do
+        described_class.run_ex_parte_community_engagement_check(certification_case)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.reasons).to include("income_reported_compliant")
+        expect(determination.determination_data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_INCOME_BASED)
+      end
+
+      it "publishes DeterminedHoursMet for workflow parity" do
+        described_class.run_ex_parte_community_engagement_check(certification_case)
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DeterminedHoursMet",
+          hash_including(case_id: certification_case.id)
+        )
+      end
+    end
+
+    context "when both hours and income would pass (hours-first: hours path only)" do
+      before do
+        create_ex_parte_activity_for(certification, hours: 90)
+        create_income_for(certification, gross_income: 700)
+      end
+
+      it "uses hours determination only" do
+        described_class.run_ex_parte_community_engagement_check(certification_case)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.reasons).to include("hours_reported_compliant")
+        expect(determination.determination_data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_HOURS_BASED)
+      end
+    end
+
+    context "when neither hours nor income meet targets" do
+      before do
+        create_ex_parte_activity_for(certification, hours: 40)
+        create_income_for(certification, gross_income: 400)
+      end
+
+      it "delegates to hours determination (insufficient hours path)" do
+        described_class.run_ex_parte_community_engagement_check(certification_case)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.reasons).to include("hours_reported_insufficient")
+        expect(determination.determination_data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_HOURS_BASED)
+      end
+
+      it "publishes DeterminedHoursInsufficient" do
+        described_class.run_ex_parte_community_engagement_check(certification_case)
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DeterminedHoursInsufficient",
+          hash_including(case_id: certification_case.id)
+        )
+      end
+    end
+
+    context "when total hours exactly equal TARGET_HOURS" do
+      before do
+        create_ex_parte_activity_for(certification, hours: HoursComplianceDeterminationService::TARGET_HOURS)
+      end
+
+      it "uses hours determination (inclusive threshold)" do
+        described_class.run_ex_parte_community_engagement_check(certification_case)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.reasons).to include("hours_reported_compliant")
+        expect(determination.determination_data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_HOURS_BASED)
+      end
+    end
+
+    context "when total income exactly equals TARGET_INCOME_MONTHLY and hours are below target" do
+      before do
+        create_ex_parte_activity_for(certification, hours: 40)
+        create_income_for(certification, gross_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY)
+      end
+
+      it "uses income determination (inclusive threshold)" do
+        described_class.run_ex_parte_community_engagement_check(certification_case)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.reasons).to include("income_reported_compliant")
+        expect(determination.determination_data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_INCOME_BASED)
+      end
+    end
+  end
 end

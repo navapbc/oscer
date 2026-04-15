@@ -25,6 +25,16 @@ RSpec.describe IncomeComplianceDeterminationService do
     end
   end
 
+  describe ".compliant_for_total_income?" do
+    it "is true when total meets threshold exactly" do
+      expect(described_class.compliant_for_total_income?(described_class::TARGET_INCOME_MONTHLY)).to be true
+    end
+
+    it "is false when just below threshold" do
+      expect(described_class.compliant_for_total_income?(described_class::TARGET_INCOME_MONTHLY - 1)).to be false
+    end
+  end
+
   describe ".determine" do
     before do
       allow(Strata::EventManager).to receive(:publish)
