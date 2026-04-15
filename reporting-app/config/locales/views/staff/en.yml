@@ -8,6 +8,11 @@ en:
         my_tasks: "My tasks"
         task_type: "Task type"
         title: "Dashboard"
+        metrics: "Metrics"
+        time_to_close:
+          zero: "Time to close: no data"
+          one: "Time to close: %{count} day"
+          other: "Time to close: %{count} days"
     tasks:
       index:
         confidence: "Confidence level"
