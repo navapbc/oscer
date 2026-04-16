@@ -37,7 +37,7 @@ module StaffHelper
     ]
   end
 
-  def time_to_close_days(data)
+  def median_time_to_close(data)
     precision = 2
 
     time_to_close_seconds = data[:time_to_close_seconds]

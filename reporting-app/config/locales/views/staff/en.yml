@@ -10,12 +10,12 @@ en:
         title: "Dashboard"
         metrics: "Metrics"
         time_to_close_hours:
-          zero: "Time to close: no data"
-          one: "Time to close: %{count} hour"
-          other: "Time to close: %{count} hours"
+          zero: "Median time to close: no data"
+          one: "Median time to close: %{count} hour"
+          other: "Median time to close: %{count} hours"
         time_to_close_days:
-          one: "Time to close: %{count} day"
-          other: "Time to close: %{count} days"
+          one: "Median time to close: %{count} day"
+          other: "Median time to close: %{count} days"
     tasks:
       index:
         confidence: "Confidence level"
