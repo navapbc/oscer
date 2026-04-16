@@ -505,43 +505,43 @@ components:
       required:
       - status
   responses:
-    93b84fb5ea642d20d03cb83ecf93e8d2:
+    7de8812ae8625a47857a51b502a6c9d8:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    0d62e2c415ff0276574efd7877350474:
+    c593699da8963fdcd15a2a70ad4ec062:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    4f1053866ab644e869f4ccb2cd8ec04e:
+    3a0f777337a31e3c47929387b05368f1:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    19c79a71a8b091baf35673b6eaa144e5:
+    1978bf0fec01a90fd8728de6caa22cb2:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    3a351b704e155cc0bcd5bd8409cc4446:
+    394ae7cda7f2ce52eb5212c26daead7a:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    1f1c250a345d118151d1c01487d7296a:
+    0b12031f9f8d4bc27e0b107eedfe5aa7:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    d96ffbc1384c2bd12a78fe1e1bd796ba:
+    186da1d1fa8d123773d2df0dafde08ae:
       description: Response
       content:
         application/json:
@@ -565,7 +565,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    c5fef3e784a2d6a931c2f44aa9e2d004:
+    bfbfcb93cbb5f7ad2ad8c225969929bb:
       description: The Certification data.
       content:
         application/json:
@@ -583,7 +583,7 @@ components:
   examples: {}
   links: {}
   callbacks: {}
-openapi: 3.1.0
+openapi: 3.2.0
 info:
   title: Community Engagement Medicaid
   summary: System for tracking and certifying community engagement requirements for
@@ -653,76 +653,82 @@ paths:
       - Certifications
       summary: Create a Certification record
       description: "#"
-      operationId: POST__api_certifications
+      operationId: POST_api_certifications
       requestBody:
-        "$ref": "#/components/requestBodies/c5fef3e784a2d6a931c2f44aa9e2d004"
+        "$ref": "#/components/requestBodies/bfbfcb93cbb5f7ad2ad8c225969929bb"
       responses:
         '201':
-          "$ref": "#/components/responses/93b84fb5ea642d20d03cb83ecf93e8d2"
+          "$ref": "#/components/responses/7de8812ae8625a47857a51b502a6c9d8"
         '400':
-          "$ref": "#/components/responses/0d62e2c415ff0276574efd7877350474"
+          "$ref": "#/components/responses/c593699da8963fdcd15a2a70ad4ec062"
         '422':
-          "$ref": "#/components/responses/4f1053866ab644e869f4ccb2cd8ec04e"
+          "$ref": "#/components/responses/3a0f777337a31e3c47929387b05368f1"
       security:
       - hmac: []
+      deprecated: false
   "/api/certifications/{id}":
     get:
       tags:
       - Certifications
       summary: Retrieve a Certification record
       description: "#"
-      operationId: GET__api_certifications_{id}
+      operationId: GET_api_certifications_id
       parameters:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/19c79a71a8b091baf35673b6eaa144e5"
+          "$ref": "#/components/responses/1978bf0fec01a90fd8728de6caa22cb2"
         '404':
-          "$ref": "#/components/responses/3a351b704e155cc0bcd5bd8409cc4446"
+          "$ref": "#/components/responses/394ae7cda7f2ce52eb5212c26daead7a"
       security:
       - hmac: []
+      deprecated: false
   "/api/certification_batch_uploads":
     post:
       tags:
       - Api
       summary: Create
       description: ''
-      operationId: POST__api_certification_batch_uploads
+      operationId: POST_api_certification_batch_uploads
       security:
       - hmac: []
+      deprecated: false
   "/api/certification_batch_uploads/{id}":
     get:
       tags:
       - Api
       summary: View
       description: ''
-      operationId: GET__api_certification_batch_uploads_{id}
+      operationId: GET_api_certification_batch_uploads_id
       parameters:
       - "$ref": "#/components/parameters/8973e06a33e4a0e5595d813ac576e9d9"
       security:
       - hmac: []
+      deprecated: false
   "/api/health":
     get:
       tags:
       - Healthcheck
       summary: Check service health
       description: "#"
-      operationId: GET__api_health
+      operationId: GET_api_health
       responses:
         '200':
-          "$ref": "#/components/responses/1f1c250a345d118151d1c01487d7296a"
+          "$ref": "#/components/responses/0b12031f9f8d4bc27e0b107eedfe5aa7"
         '503':
-          "$ref": "#/components/responses/d96ffbc1384c2bd12a78fe1e1bd796ba"
+          "$ref": "#/components/responses/186da1d1fa8d123773d2df0dafde08ae"
       security:
       - hmac: []
+      deprecated: false
   "/api/direct_uploads":
     post:
       tags:
       - Api
       summary: Create
       description: ''
-      operationId: POST__api_direct_uploads
+      operationId: POST_api_direct_uploads
       security:
       - hmac: []
+      deprecated: false
 security:
 - hmac: []
