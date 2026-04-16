@@ -4,6 +4,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
     ignore:
       # tfsec is deprecated (migrated to Trivy); the action can no longer download binaries.
       # Remove after migrating to Trivy. See https://github.com/navapbc/oscer/issues/456
@@ -21,9 +22,14 @@ updates:
     directory: "/reporting-app"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
     groups:
       minor-and-patch:
         update-types: ["minor", "patch"]
+        # Rails uses 4-segment versioning (e.g. 7.2.3.1) which caused Dependabot to
+        # misclassify a 7→8 major bump as minor. Excluding it from the group ensures
+        # Rails updates come as standalone PRs for intentional review.
+        exclude-patterns: ["rails"]
       major:
         update-types: ["major"]
 
@@ -31,6 +37,7 @@ updates:
     directory: "/reporting-app"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
     groups:
       minor-and-patch:
         update-types: ["minor", "patch"]
@@ -41,6 +48,7 @@ updates:
     directory: "/e2e"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
     groups:
       minor-and-patch:
         update-types: ["minor", "patch"]
@@ -51,6 +59,7 @@ updates:
     directory: "/reporting-app"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
     groups:
       minor-and-patch:
         update-types: ["minor", "patch"]
@@ -61,6 +70,7 @@ updates:
     directory: "/e2e"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
     groups:
       minor-and-patch:
         update-types: ["minor", "patch"]
@@ -68,9 +78,10 @@ updates:
         update-types: ["major"]
 
   - package-ecosystem: "terraform"
-    directory: "/infra"
+    directory: "/infra/reporting-app/service"
     schedule:
       interval: "monthly"
+    open-pull-requests-limit: 3
     groups:
       minor-and-patch:
         update-types: ["minor", "patch"]
