@@ -84,11 +84,11 @@ RSpec.describe "/staff/tasks", type: :request do
           )
         end
 
-        it "displays document links" do
+        it "displays document filenames" do
           get "/staff/tasks/#{activity_report_task.id}"
 
           expect(response.body).to include("test_document_1.pdf")
-          expect(response.body).to include("usa-link")
+          expect(response.body).not_to include("usa-link")
         end
 
         it "renders the document preview panel with Stimulus targets" do
@@ -135,12 +135,22 @@ RSpec.describe "/staff/tasks", type: :request do
           end
         end
 
-        it "renders document links without preview panel when doc_ai is disabled" do
+        it "renders preview icon when doc_ai is enabled" do
+          with_doc_ai_enabled do
+            get "/staff/tasks/#{activity_report_task.id}"
+
+            expect(response.body).to include('data-action="document-preview#select')
+            expect(response.body).to include('aria-label="Preview test_document_1.pdf')
+            expect(response.body).to include("visibility")
+          end
+        end
+
+        it "renders document filenames without preview panel when doc_ai is disabled" do
           with_doc_ai_disabled do
             get "/staff/tasks/#{activity_report_task.id}"
 
             expect(response.body).to include("test_document_1.pdf")
-            expect(response.body).to include("usa-link")
+            expect(response.body).not_to include("usa-link")
             expect(response.body).not_to include('data-controller="document-preview"')
           end
         end
