@@ -11,7 +11,7 @@ class ReportingService
 
     final_query = Arel::SelectManager.new(Arel::Table.engine)
                     .from(alias_table)
-                    .project("EXTRACT(EPOCH from AVG(delta)) as result")
+                    .project("EXTRACT(EPOCH FROM PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY delta)) AS result")
     result = ActiveRecord::Base.connection.exec_query(final_query.to_sql)
 
     result.first["result"]

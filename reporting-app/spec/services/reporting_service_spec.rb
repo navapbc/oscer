@@ -8,7 +8,7 @@ RSpec.describe ReportingService do
   describe "time_to_close" do
     let(:caseworker) { create(:user, :as_caseworker) }
 
-    it "returns 0 with no records" do
+    it "returns nil with no records" do
       expect(instance.time_to_close(7.days.ago)).to be_nil
     end
 
@@ -24,21 +24,29 @@ RSpec.describe ReportingService do
       expect(time_to_close).to eq(1.day)
     end
 
-    it "returns average time difference with two matching ActivityReportApplicationForms" do
+    it "returns median time difference with two matching ActivityReportApplicationForms" do
       make_application_form_with_determination(:activity_report_application_form, 1.day)
       make_application_form_with_determination(:activity_report_application_form, 2.day)
       time_to_close = instance.time_to_close(7.days.ago)
       expect(time_to_close).to eq(1.5.days)
     end
 
-    it "returns average time difference with two matching ExemptionApplicationForms" do
+    it "returns median time difference with three matching ActivityReportApplicationForms" do
+      make_application_form_with_determination(:activity_report_application_form, 1.day)
+      make_application_form_with_determination(:activity_report_application_form, 2.day)
+      make_application_form_with_determination(:activity_report_application_form, 6.day)
+      time_to_close = instance.time_to_close(7.days.ago)
+      expect(time_to_close).to eq(2.days)
+    end
+
+    it "returns median time difference with two matching ExemptionApplicationForms" do
       make_application_form_with_determination(:exemption_application_form, 1.day)
       make_application_form_with_determination(:exemption_application_form, 2.day)
       time_to_close = instance.time_to_close(7.days.ago)
       expect(time_to_close).to eq(1.5.days)
     end
 
-    it "returns average time difference with matching ActivityReportApplicationForms and ExemptionApplicationForms" do
+    it "returns median time difference with matching ActivityReportApplicationForms and ExemptionApplicationForms" do
       make_application_form_with_determination(:activity_report_application_form, 1.day)
       make_application_form_with_determination(:exemption_application_form, 2.day)
       time_to_close = instance.time_to_close(7.days.ago)

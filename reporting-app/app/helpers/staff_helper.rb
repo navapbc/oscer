@@ -38,8 +38,15 @@ module StaffHelper
   end
 
   def time_to_close_days(data)
-    return 0 unless data[:time_to_close_seconds].present?
+    precision = 2
 
-    (data[:time_to_close_seconds]/1.day).round(2)
+    time_to_close_seconds = data[:time_to_close_seconds]
+    return t("staff.dashboard.index.time_to_close_hours", count: 0) unless time_to_close_seconds.present?
+
+    if time_to_close_seconds < 1.day
+      t("staff.dashboard.index.time_to_close_hours", count: (time_to_close_seconds/1.hour).round(precision))
+    else
+      t("staff.dashboard.index.time_to_close_days", count: (time_to_close_seconds/1.day).round(precision))
+    end
   end
 end
