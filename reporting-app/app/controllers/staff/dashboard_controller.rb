@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Staff::DashboardController < StaffController
-  TIME_TO_CLOSE_LOOKBACK_DAYS = 7.freeze
+  TIME_TO_CLOSE_LOOKBACK_DAYS = 360.freeze
   def index
     # TODO: Move to a scope in Strata::Task
     # Strata::Task.for_assignee(current_user.id)
