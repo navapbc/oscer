@@ -213,6 +213,8 @@ RSpec.describe CertificationCase, type: :model do
       Determination.unscope(:order).where(subject_id: certification_id).order(created_at: :desc).first
     end
 
+    let(:certification) { Certification.find(certification_case.certification_id) }
+
     let(:hours_data) do
       {
         total_hours: 50,
@@ -234,6 +236,7 @@ RSpec.describe CertificationCase, type: :model do
 
     it "stores not_compliant with both insufficient reasons when both tracks fail" do
       certification_case.record_ex_parte_ce_combined_assessment(
+        certification: certification,
         hours_data: hours_data,
         income_data: income_data,
         hours_ok: false,
@@ -246,11 +249,12 @@ RSpec.describe CertificationCase, type: :model do
         "hours_reported_insufficient",
         "income_reported_insufficient"
       )
-      expect(determination.determination_data["satisfied_by"]).to eq("neither")
+      expect(determination.determination_data["satisfied_by"]).to eq(Determination::SATISFIED_BY_NEITHER)
     end
 
     it "stores compliant when only income_ok" do
       certification_case.record_ex_parte_ce_combined_assessment(
+        certification: certification,
         hours_data: hours_data,
         income_data: income_data,
         hours_ok: false,

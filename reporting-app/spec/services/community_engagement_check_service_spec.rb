@@ -49,7 +49,7 @@ RSpec.describe CommunityEngagementCheckService do
         expect(determination.reasons).to eq([ "hours_reported_compliant" ])
         data = determination.determination_data
         expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EX_PARTE_CE_COMBINED)
-        expect(data["satisfied_by"]).to eq("hours")
+        expect(data["satisfied_by"]).to eq(Determination::SATISFIED_BY_HOURS)
         expect(data["hours"]["compliant"]).to be true
         expect(data["income"]["compliant"]).to be false
       end
@@ -77,7 +77,7 @@ RSpec.describe CommunityEngagementCheckService do
         expect(determination.outcome).to eq("compliant")
         expect(determination.reasons).to eq([ "income_reported_compliant" ])
         data = determination.determination_data
-        expect(data["satisfied_by"]).to eq("income")
+        expect(data["satisfied_by"]).to eq(Determination::SATISFIED_BY_INCOME)
         expect(data["hours"]["compliant"]).to be false
         expect(data["income"]["compliant"]).to be true
       end
@@ -104,7 +104,7 @@ RSpec.describe CommunityEngagementCheckService do
         determination = latest_determination_for(certification.id)
         expect(determination.outcome).to eq("compliant")
         expect(determination.reasons).to contain_exactly("hours_reported_compliant", "income_reported_compliant")
-        expect(determination.determination_data["satisfied_by"]).to eq("both")
+        expect(determination.determination_data["satisfied_by"]).to eq(Determination::SATISFIED_BY_BOTH)
         expect(determination.determination_data["hours"]["compliant"]).to be true
         expect(determination.determination_data["income"]["compliant"]).to be true
       end
@@ -127,7 +127,7 @@ RSpec.describe CommunityEngagementCheckService do
         )
         data = determination.determination_data
         expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EX_PARTE_CE_COMBINED)
-        expect(data["satisfied_by"]).to eq("neither")
+        expect(data["satisfied_by"]).to eq(Determination::SATISFIED_BY_NEITHER)
         expect(data["hours"]["compliant"]).to be false
         expect(data["income"]["compliant"]).to be false
       end

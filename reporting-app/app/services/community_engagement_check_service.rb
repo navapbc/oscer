@@ -15,6 +15,7 @@ class CommunityEngagementCheckService
       income_ok = IncomeComplianceDeterminationService.compliant_for_total_income?(income_data[:total_income])
 
       kase.record_ex_parte_ce_combined_assessment(
+        certification: certification,
         hours_data: hours_data,
         income_data: income_data,
         hours_ok: hours_ok,

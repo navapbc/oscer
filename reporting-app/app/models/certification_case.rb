@@ -149,11 +149,12 @@ class CertificationCase < Strata::Case
   # Member is compliant if either +hours_ok+ or +income_ok+; not compliant only when both are false.
   # Events/notifications are published by CommunityEngagementCheckService (via Strata).
   #
+  # @param certification [Certification] aggregate root for +record_determination!+
   # @param hours_data [Hash] from HoursComplianceDeterminationService.aggregate_hours_for_certification
   # @param income_data [Hash] from IncomeComplianceDeterminationService.aggregate_income_for_certification
   # @param hours_ok [Boolean]
   # @param income_ok [Boolean]
-  def record_ex_parte_ce_combined_assessment(hours_data:, income_data:, hours_ok:, income_ok:)
+  def record_ex_parte_ce_combined_assessment(certification:, hours_data:, income_data:, hours_ok:, income_ok:)
     outcome = (hours_ok || income_ok) ? :compliant : :not_compliant
     reasons = ex_parte_ce_combined_reason_codes(outcome: outcome, hours_ok: hours_ok, income_ok: income_ok)
     determination_data = build_ex_parte_ce_combined_determination_data(
@@ -163,7 +164,6 @@ class CertificationCase < Strata::Case
       income_ok: income_ok
     )
 
-    certification = Certification.find(certification_id)
     transaction do
       close! if outcome == :compliant
 
@@ -254,13 +254,13 @@ class CertificationCase < Strata::Case
 
   def build_ex_parte_ce_combined_determination_data(hours_data:, income_data:, hours_ok:, income_ok:)
     satisfied_by = if hours_ok && income_ok
-      "both"
+      Determination::SATISFIED_BY_BOTH
     elsif hours_ok
-      "hours"
+      Determination::SATISFIED_BY_HOURS
     elsif income_ok
-      "income"
+      Determination::SATISFIED_BY_INCOME
     else
-      "neither"
+      Determination::SATISFIED_BY_NEITHER
     end
 
     {

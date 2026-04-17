@@ -36,6 +36,11 @@ class Determination < Strata::Determination
   CALCULATION_TYPE_INCOME_BASED = "income_based"
   # Ex parte CE step: one determination with both hours and income assessments (OR compliant).
   CALCULATION_TYPE_EX_PARTE_CE_COMBINED = "ex_parte_ce_combined"
+  # Stored in +determination_data["satisfied_by"]+ when +calculation_type+ is +CALCULATION_TYPE_EX_PARTE_CE_COMBINED+.
+  SATISFIED_BY_BOTH = "both"
+  SATISFIED_BY_HOURS = "hours"
+  SATISFIED_BY_INCOME = "income"
+  SATISFIED_BY_NEITHER = "neither"
   CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE = "automated_income_intake"
 
   REASON_CODE_MAPPING = {
