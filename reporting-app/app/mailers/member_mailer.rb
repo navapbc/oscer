@@ -49,6 +49,8 @@ class MemberMailer < ApplicationMailer
     certification = params[:certification]
     income_data = params[:income_data]
     target_income = params[:target_income] || IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY
+    # Optional CE context for future combined hours+income copy (income-only templates ignore today).
+    @hours_data = params[:hours_data]
 
     @first_name = certification.member_name.first
     reported = income_data[:total_income].to_d

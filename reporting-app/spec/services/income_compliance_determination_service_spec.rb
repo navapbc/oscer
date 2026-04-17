@@ -49,12 +49,15 @@ RSpec.describe IncomeComplianceDeterminationService do
         expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedHoursInsufficient", anything)
       end
 
-      it "publishes DeterminedIncomeMet event" do
+      it "publishes DeterminedIncomeMet event with generic hours_data on the payload" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
           "DeterminedIncomeMet",
-          hash_including(case_id: certification_case.id)
+          hash_including(
+            case_id: certification_case.id,
+            hours_data: hash_including(:total_hours, :hours_by_source)
+          )
         )
       end
 
@@ -91,14 +94,15 @@ RSpec.describe IncomeComplianceDeterminationService do
         create_income_for(certification, gross_income: 400)
       end
 
-      it "publishes DeterminedIncomeInsufficient with income_data" do
+      it "publishes DeterminedIncomeInsufficient with income_data and hours_data" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
           "DeterminedIncomeInsufficient",
           hash_including(
             case_id: certification_case.id,
-            income_data: hash_including(:total_income)
+            income_data: hash_including(:total_income),
+            hours_data: hash_including(:total_hours)
           )
         )
       end
@@ -119,12 +123,15 @@ RSpec.describe IncomeComplianceDeterminationService do
     end
 
     context "when income is below target with NO income rows" do
-      it "publishes DeterminedIncomeActionRequired" do
+      it "publishes DeterminedIncomeActionRequired with hours_data" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
           "DeterminedIncomeActionRequired",
-          hash_including(case_id: certification_case.id)
+          hash_including(
+            case_id: certification_case.id,
+            hours_data: hash_including(:total_hours)
+          )
         )
       end
 

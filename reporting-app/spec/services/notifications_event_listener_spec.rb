@@ -15,7 +15,7 @@ RSpec.describe NotificationsEventListener, type: :service do
   before do
     allow(NotificationService).to receive(:send_email_notification)
     # Stub services that may publish events during certification creation
-    allow(HoursComplianceDeterminationService).to receive(:determine)
+    allow(ExParteCommunityEngagementDeterminationService).to receive(:determine)
     allow(ExemptionDeterminationService).to receive(:determine)
   end
 
@@ -125,7 +125,7 @@ RSpec.describe NotificationsEventListener, type: :service do
     end
 
     describe "#handle_insufficient_income" do
-      it "sends insufficient_income_email with income_data (not hours aggregate)" do
+      it "sends insufficient_income_email with income_data and payload hours_data (no extra aggregate)" do
         allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
 
         income_data = {
@@ -135,12 +135,20 @@ RSpec.describe NotificationsEventListener, type: :service do
           period_start: Date.current,
           period_end: Date.current
         }
+        hours_data = {
+          total_hours: 50.0,
+          hours_by_category: {},
+          hours_by_source: { ex_parte: 50, activity: 0 },
+          ex_parte_activity_ids: [],
+          activity_ids: []
+        }
 
         event = {
           payload: {
             case_id: certification_case.id,
             certification_id: certification.id,
-            income_data: income_data
+            income_data: income_data,
+            hours_data: hours_data
           }
         }
 
@@ -151,7 +159,8 @@ RSpec.describe NotificationsEventListener, type: :service do
           {
             certification: certification,
             income_data: income_data,
-            target_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY
+            target_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY,
+            hours_data: hours_data
           },
           :insufficient_income_email,
           [ certification.member_email ]

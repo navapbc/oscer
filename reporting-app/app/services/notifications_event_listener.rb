@@ -8,7 +8,7 @@
 # - DeterminedHoursMet / DeterminedIncomeMet → compliant_email
 # - DeterminedActionRequired / DeterminedIncomeActionRequired → action_required_email
 # - DeterminedHoursInsufficient → insufficient_hours_email
-# - DeterminedIncomeInsufficient → insufficient_income_email (income_data, not hours aggregate)
+# - DeterminedIncomeInsufficient → insufficient_income_email (income_data + optional hours_data on payload)
 # - ActivityReportApproved → compliant_email (reviewer determined compliance)
 # - ActivityReportDenied → insufficient_hours_email (reviewer determined non-compliance)
 class NotificationsEventListener
@@ -60,14 +60,17 @@ class NotificationsEventListener
 
     def handle_insufficient_income(event)
       certification = fetch_certification(event)
-      income_data = event[:payload][:income_data] || IncomeComplianceDeterminationService.aggregate_income_for_certification(certification)
+      payload = event[:payload]
+      income_data = payload[:income_data] || IncomeComplianceDeterminationService.aggregate_income_for_certification(certification)
+      hours_data = payload[:hours_data] || HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
 
       NotificationService.send_email_notification(
         MemberMailer,
         {
           certification: certification,
           income_data: income_data,
-          target_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY
+          target_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY,
+          hours_data: hours_data
         },
         :insufficient_income_email,
         [ certification.member_email ]

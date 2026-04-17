@@ -249,7 +249,7 @@ Mirror hours: income is saved **before** certification creation, and the busines
    - If income sufficient (and hours path not taken) → `IncomeComplianceDeterminationService.determine(kase)`.
 5. For existing certifications: `CalculateComplianceJob` (or equivalent) recalculates when new income arrives.
 
-**Current wiring:** `IncomeComplianceDeterminationService.determine` publishes income-specific Strata events (`DeterminedIncomeMet`, `DeterminedIncomeInsufficient`, `DeterminedIncomeActionRequired`) for notifications when that path runs. `CertificationBusinessProcess` still invokes only `HoursComplianceDeterminationService.determine` at `EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP` until the follow-up story wires hours/income orchestration. See `docs/reporting-app/community-engagement-bp-follow-up.md`.
+**Current wiring:** `ExParteCommunityEngagementDeterminationService` runs at `EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP` (hours first; income when hours are below threshold). `IncomeComplianceDeterminationService.determine` publishes income-specific Strata events only; each payload includes generic `hours_data` for CE context. See `docs/reporting-app/community-engagement-bp-follow-up.md`.
 
 ---
 
