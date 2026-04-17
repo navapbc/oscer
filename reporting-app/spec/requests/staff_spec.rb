@@ -95,5 +95,41 @@ RSpec.describe "/staff", type: :request do
         expect(response.body).to include("No pending tasks")
       end
     end
+
+    describe "metrics" do
+      let(:reporting_service) { instance_double(ReportingService) }
+
+      before do
+        allow(ReportingService).to receive(:new).and_return(reporting_service)
+      end
+
+      context "when admin" do
+        it "shows no data when no data" do
+          allow(reporting_service).to receive(:time_to_close).and_return(nil)
+
+          get "/staff"
+          expect(response.body).to include(I18n.t("staff.dashboard.index.metrics"))
+          expect(response.body).to include(I18n.t("staff.dashboard.index.time_to_close_hours", count: 0))
+        end
+
+        it "shows metrics when present" do
+          allow(reporting_service).to receive(:time_to_close).and_return(1.1.days)
+          get "/staff"
+          expect(response.body).to include(I18n.t("staff.dashboard.index.metrics"))
+          expect(response.body).to include(I18n.t("staff.dashboard.index.time_to_close_days", count: 1.1))
+        end
+      end
+
+      context "when caseworker" do
+        before { login_as other_user }
+
+        it "does not show metrics" do
+          allow(reporting_service).to receive(:time_to_close)
+          get "/staff"
+          expect(response.body).not_to include(I18n.t("staff.dashboard.index.metrics"))
+          expect(reporting_service).not_to have_received(:time_to_close)
+        end
+      end
+    end
   end
 end

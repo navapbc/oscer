@@ -1,0 +1,18 @@
+<div
+  class="usa-summary-box"
+  role="region"
+  aria-labelledby="summary-box-key-information"
+>
+  <div class="usa-summary-box__body">
+    <h2 class="usa-summary-box__heading" id="summary-box-key-information">
+      <%= t("staff.dashboard.index.metrics") %>
+    </h2>
+    <div class="usa-summary-box__text">
+      <ul class="usa-list">
+        <li>
+	  <%= median_time_to_close(@data) %>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
