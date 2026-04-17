@@ -17,7 +17,7 @@ gem "rack", ">= 3.0"
 gem "sprockets-rails"
 
 # Use postgresql as the database for Active Record
-gem "pg", "~> 1.1"
+gem "pg", "~> 1.6"
 
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
@@ -47,7 +47,7 @@ gem "csv"
 # gem "kredis"
 
 # PostgreSQL-backed job queue for ActiveJob
-gem "good_job", "~> 4.0"
+gem "good_job", "~> 4.16"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
@@ -65,7 +65,7 @@ gem "bootsnap", require: false
 gem "image_processing", "~> 1.14"
 
 # Authentication and Authorization
-gem "aws-sdk-cognitoidentityprovider", "~> 1.88"
+gem "aws-sdk-cognitoidentityprovider", "~> 1.138"
 gem "devise"
 gem "jwt"
 gem "pundit"
@@ -91,7 +91,7 @@ gem "faraday"
 gem "faraday-multipart"
 
 # Create fake data (outside of dev/test block to support seeding lower environments)
-gem "faker", "~> 3.2"
+gem "faker", "~> 3.7"
 gem "factory_bot_rails"
 
 gem "lookbook", ">= 2.3.9"
@@ -109,7 +109,7 @@ group :development, :test do
   gem "debug", platforms: %i[ mri windows ]
 
   # Testing framework
-  gem "rspec-rails", "~> 8.0.0"
+  gem "rspec-rails", "~> 8.0.4"
 
   # Mocking HTTP calls
   gem "webmock"
@@ -154,5 +154,5 @@ end
 
 group :production do
   # Add plugin for pg gem to support AWS RDS IAM
-  gem "pg-aws_rds_iam", "~> 0.7.0"
+  gem "pg-aws_rds_iam", "~> 0.8.0"
 end
