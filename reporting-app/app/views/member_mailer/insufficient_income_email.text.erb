@@ -3,14 +3,8 @@
 <%= t('.progress_message') %>
 
 <%= t('.your_status') %>
-<% if @show_hours %>
-- <%= t('.hours_still_needed', hours: @hours_needed) %>
-- <%= t('.hours_reported', hours: @hours_reported) %>
-<% end %>
-<% if @show_income %>
 - <%= t('.income_still_needed', amount: number_to_currency(@income_needed, precision: 0)) %>
 - <%= t('.income_reported', amount: number_to_currency(@income_reported, precision: 0)) %>
-<% end %>
 - <%= t('.deadline', date: @deadline) %>
 
 <%= t('.login_instructions', login_url: @login_url) %>

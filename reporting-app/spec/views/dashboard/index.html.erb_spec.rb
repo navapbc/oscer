@@ -10,7 +10,7 @@ RSpec.describe "dashboard/index", type: :view do
   before do
     # Prevent auto-triggering business process during test setup
     allow(Strata::EventManager).to receive(:publish).and_call_original
-    allow(CommunityEngagementDeterminationService).to receive(:determine)
+    allow(HoursComplianceDeterminationService).to receive(:determine)
     allow(ExemptionDeterminationService).to receive(:determine)
     allow(NotificationService).to receive(:send_email_notification)
 

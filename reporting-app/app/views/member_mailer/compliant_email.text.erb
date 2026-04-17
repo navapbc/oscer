@@ -1,9 +1,5 @@
 <%= render partial: 'member_mailer/greeting', locals: { first_name: @first_name } %>
 
-<% if @ce_satisfied_by.present? %>
-<%= t(".ce_intro.#{@ce_satisfied_by}") %>
-
-<% end %>
 <%= t('.good_news', period: @period) %>
 
 <%= t('.what_this_means.title') %>
