@@ -305,7 +305,7 @@ RSpec.describe "/staff/tasks", type: :request do
         information_request
         get task_path(activity_report_task)
       end
-      
+
       it "renders a successful response" do
         expect(response).to have_http_status(:success)
       end
