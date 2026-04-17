@@ -62,7 +62,11 @@ class NotificationsEventListener
       certification = fetch_certification(event)
       payload = event[:payload]
       income_data = payload[:income_data] || IncomeComplianceDeterminationService.aggregate_income_for_certification(certification)
-      hours_data = payload[:hours_data] || HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
+      show_hours = payload.fetch(:show_hours_insufficient, false)
+      hours_data = payload[:hours_data]
+      if show_hours && hours_data.nil?
+        hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
+      end
 
       NotificationService.send_email_notification(
         MemberMailer,
@@ -72,7 +76,7 @@ class NotificationsEventListener
           income_data: income_data,
           target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
           target_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY,
-          show_hours_insufficient: payload.fetch(:show_hours_insufficient, false),
+          show_hours_insufficient: show_hours,
           show_income_insufficient: payload.fetch(:show_income_insufficient, false)
         },
         :insufficient_community_engagement_email,

@@ -49,14 +49,14 @@ RSpec.describe IncomeComplianceDeterminationService do
         expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedHoursInsufficient", anything)
       end
 
-      it "publishes DeterminedCommunityEngagementMet with hours_data on the payload" do
+      it "publishes DeterminedCommunityEngagementMet" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
           "DeterminedCommunityEngagementMet",
           hash_including(
             case_id: certification_case.id,
-            hours_data: hash_including(:total_hours, :hours_by_source)
+            certification_id: certification.id
           )
         )
       end
@@ -94,7 +94,7 @@ RSpec.describe IncomeComplianceDeterminationService do
         create_income_for(certification, gross_income: 400)
       end
 
-      it "publishes DeterminedCommunityEngagementInsufficient with income_data, hours_data, and show flags" do
+      it "publishes DeterminedCommunityEngagementInsufficient with income_data and show flags" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
@@ -102,7 +102,6 @@ RSpec.describe IncomeComplianceDeterminationService do
           hash_including(
             case_id: certification_case.id,
             income_data: hash_including(:total_income),
-            hours_data: hash_including(:total_hours),
             show_hours_insufficient: false,
             show_income_insufficient: true
           )
@@ -125,14 +124,14 @@ RSpec.describe IncomeComplianceDeterminationService do
     end
 
     context "when income is below target with NO income rows" do
-      it "publishes DeterminedCommunityEngagementActionRequired with hours_data" do
+      it "publishes DeterminedCommunityEngagementActionRequired" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
           "DeterminedCommunityEngagementActionRequired",
           hash_including(
             case_id: certification_case.id,
-            hours_data: hash_including(:total_hours)
+            certification_id: certification.id
           )
         )
       end

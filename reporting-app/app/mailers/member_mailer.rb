@@ -45,7 +45,7 @@ class MemberMailer < ApplicationMailer
     mail(to: certification.member_email, subject: t(".subject", hours_needed: @hours_needed, deadline: @deadline))
   end
 
-  # Generic CE shortfall: one or both of hours and income sections (flags from the Strata payload).
+  # Generic CE shortfall: one or both of hours and income sections (flags + optional aggregates from the listener).
   def insufficient_community_engagement_email
     certification = params[:certification]
     hours_data = params[:hours_data]
@@ -53,19 +53,23 @@ class MemberMailer < ApplicationMailer
     target_hours = params[:target_hours] || HoursComplianceDeterminationService::TARGET_HOURS
     target_income = params[:target_income] || IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY
 
-    @show_hours = params[:show_hours_insufficient]
-    @show_income = params[:show_income_insufficient]
+    show_hours_flag = params[:show_hours_insufficient]
+    show_income_flag = params[:show_income_insufficient]
     @first_name = certification.member_name.first
     @deadline = certification.certification_requirements.due_date.strftime("%B %d, %Y")
     @login_url = root_url
     helpers = ActionController::Base.helpers
 
-    if @show_hours
+    @show_hours = false
+    if show_hours_flag && hours_data.present?
+      @show_hours = true
       @hours_reported = hours_data[:total_hours].to_i
       @hours_needed = [ target_hours - @hours_reported, 0 ].max
     end
 
-    if @show_income
+    @show_income = false
+    if show_income_flag && income_data.present?
+      @show_income = true
       reported = income_data[:total_income].to_d
       target = target_income.to_d
       @income_reported = reported.round

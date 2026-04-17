@@ -151,7 +151,6 @@ RSpec.describe MemberMailer, type: :mailer do
       let(:mail) do
         described_class.with(
           certification: certification,
-          hours_data: hours_data,
           income_data: income_data,
           show_hours_insufficient: false,
           show_income_insufficient: true,

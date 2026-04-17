@@ -14,14 +14,12 @@ class IncomeComplianceDeterminationService
       certification = Certification.find(kase.certification_id)
       income_data = aggregate_income_for_certification(certification)
       outcome = determine_outcome(income_data[:total_income])
-      hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
 
       kase.record_income_compliance(outcome, income_data)
 
       payload_base = {
         case_id: kase.id,
-        certification_id: certification.id,
-        hours_data: hours_data
+        certification_id: certification.id
       }
 
       if outcome == :compliant

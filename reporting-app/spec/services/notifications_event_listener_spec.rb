@@ -136,20 +136,12 @@ RSpec.describe NotificationsEventListener, type: :service do
           period_start: Date.current,
           period_end: Date.current
         }
-        hours_data = {
-          total_hours: 50.0,
-          hours_by_category: {},
-          hours_by_source: { ex_parte: 50, activity: 0 },
-          ex_parte_activity_ids: [],
-          activity_ids: []
-        }
 
         event = {
           payload: {
             case_id: certification_case.id,
             certification_id: certification.id,
             income_data: income_data,
-            hours_data: hours_data,
             show_hours_insufficient: false,
             show_income_insufficient: true
           }
@@ -162,7 +154,7 @@ RSpec.describe NotificationsEventListener, type: :service do
           {
             certification: certification,
             income_data: income_data,
-            hours_data: hours_data,
+            hours_data: nil,
             target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
             target_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY,
             show_hours_insufficient: false,
