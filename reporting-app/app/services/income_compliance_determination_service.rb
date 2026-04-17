@@ -81,7 +81,7 @@ class IncomeComplianceDeterminationService
     end
 
     # Whether aggregated income meets the monthly CE threshold. Single source for comparison
-    # with +determine_outcome+ and +CertificationBusinessProcess.run_ex_parte_community_engagement_check+.
+    # with +determine_outcome+ and +CommunityEngagementCheckService.determine+.
     # @param total_income [Numeric]
     # @return [Boolean]
     def compliant_for_total_income?(total_income)

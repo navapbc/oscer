@@ -147,7 +147,7 @@ class CertificationCase < Strata::Case
 
   # Ex parte CE check: one automated determination with both tracks in +determination_data+.
   # Member is compliant if either +hours_ok+ or +income_ok+; not compliant only when both are false.
-  # Events/notifications are published by CertificationBusinessProcess.
+  # Events/notifications are published by CommunityEngagementCheckService (via Strata).
   #
   # @param hours_data [Hash] from HoursComplianceDeterminationService.aggregate_hours_for_certification
   # @param income_data [Hash] from IncomeComplianceDeterminationService.aggregate_income_for_certification

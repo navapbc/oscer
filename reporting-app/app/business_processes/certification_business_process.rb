@@ -18,12 +18,9 @@ class CertificationBusinessProcess < Strata::BusinessProcess
     ExemptionDeterminationService.determine(kase)
   })
 
-  # Ex parte CE check: evaluates hours and income in parallel (both aggregated), stores one combined
-  # determination (+CertificationCase#record_ex_parte_ce_combined_assessment+). Member is compliant if
-  # either track meets its threshold; not compliant only if both fail. Same Strata event names as the
-  # legacy hours-only flow (+DeterminedHoursMet+ / +DeterminedHoursInsufficient+ / +DeterminedActionRequired+).
+  # Ex parte CE: see CommunityEngagementCheckService (combined hours/income determination + events).
   system_process(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, ->(kase) {
-    CertificationBusinessProcess.run_ex_parte_community_engagement_check(kase)
+    CommunityEngagementCheckService.determine(kase)
   })
 
   # User tasks
@@ -59,55 +56,4 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   transition(REPORT_ACTIVITIES_STEP, "ExemptionApplicationFormSubmitted", REVIEW_EXEMPTION_CLAIM_STEP)
   transition(REVIEW_EXEMPTION_CLAIM_STEP, "DeterminedExempt", END_STEP)
   transition(REVIEW_EXEMPTION_CLAIM_STEP, "DeterminedNotExempt", REPORT_ACTIVITIES_STEP)
-
-  # @param kase [CertificationCase]
-  def self.run_ex_parte_community_engagement_check(kase)
-    certification = Certification.find(kase.certification_id)
-    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
-    income_data = IncomeComplianceDeterminationService.aggregate_income_for_certification(certification)
-
-    hours_ok = hours_compliant?(hours_data)
-    income_ok = IncomeComplianceDeterminationService.compliant_for_total_income?(income_data[:total_income])
-
-    kase.record_ex_parte_ce_combined_assessment(
-      hours_data: hours_data,
-      income_data: income_data,
-      hours_ok: hours_ok,
-      income_ok: income_ok
-    )
-
-    publish_ex_parte_ce_workflow_events(
-      kase: kase,
-      certification: certification,
-      hours_data: hours_data,
-      income_data: income_data,
-      hours_ok: hours_ok,
-      income_ok: income_ok
-    )
-  end
-
-  def self.hours_compliant?(hours_data)
-    hours_data[:total_hours].to_f >= HoursComplianceDeterminationService::TARGET_HOURS
-  end
-
-  def self.publish_ex_parte_ce_workflow_events(kase:, certification:, hours_data:, income_data:, hours_ok:, income_ok:)
-    if hours_ok || income_ok
-      Strata::EventManager.publish("DeterminedHoursMet", {
-        case_id: kase.id,
-        certification_id: certification.id
-      })
-    elsif hours_data[:hours_by_source][:ex_parte].to_f.positive?
-      Strata::EventManager.publish("DeterminedHoursInsufficient", {
-        case_id: kase.id,
-        certification_id: certification.id,
-        hours_data: hours_data,
-        income_data: income_data
-      })
-    else
-      Strata::EventManager.publish("DeterminedActionRequired", {
-        case_id: kase.id,
-        certification_id: certification.id
-      })
-    end
-  end
 end
