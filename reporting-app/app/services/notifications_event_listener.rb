@@ -5,10 +5,10 @@
 #
 # Subscribed events and their notifications:
 # - DeterminedExempt → exempt_email
-# - DeterminedHoursMet / DeterminedIncomeMet → compliant_email
-# - DeterminedActionRequired / DeterminedIncomeActionRequired → action_required_email
+# - DeterminedHoursMet / DeterminedCommunityEngagementMet → compliant_email
+# - DeterminedActionRequired / DeterminedCommunityEngagementActionRequired → action_required_email
 # - DeterminedHoursInsufficient → insufficient_hours_email
-# - DeterminedIncomeInsufficient → insufficient_income_email (income_data + optional hours_data on payload)
+# - DeterminedCommunityEngagementInsufficient → insufficient_community_engagement_email (hours and/or income sections)
 # - ActivityReportApproved → compliant_email (reviewer determined compliance)
 # - ActivityReportDenied → insufficient_hours_email (reviewer determined non-compliance)
 class NotificationsEventListener
@@ -16,11 +16,11 @@ class NotificationsEventListener
     def subscribe
       Strata::EventManager.subscribe("DeterminedExempt", method(:handle_exempt))
       Strata::EventManager.subscribe("DeterminedHoursMet", method(:handle_compliant))
-      Strata::EventManager.subscribe("DeterminedIncomeMet", method(:handle_compliant))
+      Strata::EventManager.subscribe("DeterminedCommunityEngagementMet", method(:handle_compliant))
       Strata::EventManager.subscribe("DeterminedActionRequired", method(:handle_action_required))
-      Strata::EventManager.subscribe("DeterminedIncomeActionRequired", method(:handle_action_required))
+      Strata::EventManager.subscribe("DeterminedCommunityEngagementActionRequired", method(:handle_action_required))
       Strata::EventManager.subscribe("DeterminedHoursInsufficient", method(:handle_insufficient_hours))
-      Strata::EventManager.subscribe("DeterminedIncomeInsufficient", method(:handle_insufficient_income))
+      Strata::EventManager.subscribe("DeterminedCommunityEngagementInsufficient", method(:handle_insufficient_community_engagement))
       Strata::EventManager.subscribe("ActivityReportApproved", method(:handle_activity_report_approved))
       Strata::EventManager.subscribe("ActivityReportDenied", method(:handle_activity_report_denied))
     end
@@ -58,7 +58,7 @@ class NotificationsEventListener
       )
     end
 
-    def handle_insufficient_income(event)
+    def handle_insufficient_community_engagement(event)
       certification = fetch_certification(event)
       payload = event[:payload]
       income_data = payload[:income_data] || IncomeComplianceDeterminationService.aggregate_income_for_certification(certification)
@@ -68,11 +68,14 @@ class NotificationsEventListener
         MemberMailer,
         {
           certification: certification,
+          hours_data: hours_data,
           income_data: income_data,
+          target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
           target_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY,
-          hours_data: hours_data
+          show_hours_insufficient: payload.fetch(:show_hours_insufficient, false),
+          show_income_insufficient: payload.fetch(:show_income_insufficient, false)
         },
-        :insufficient_income_email,
+        :insufficient_community_engagement_email,
         [ certification.member_email ]
       )
     end

@@ -15,7 +15,7 @@ RSpec.describe NotificationsEventListener, type: :service do
   before do
     allow(NotificationService).to receive(:send_email_notification)
     # Stub services that may publish events during certification creation
-    allow(ExParteCommunityEngagementDeterminationService).to receive(:determine)
+    allow(HoursComplianceDeterminationService).to receive(:determine)
     allow(ExemptionDeterminationService).to receive(:determine)
   end
 
@@ -27,11 +27,11 @@ RSpec.describe NotificationsEventListener, type: :service do
 
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedExempt", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedHoursMet", anything)
-      expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedIncomeMet", anything)
+      expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedCommunityEngagementMet", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedActionRequired", anything)
-      expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedIncomeActionRequired", anything)
+      expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedCommunityEngagementActionRequired", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedHoursInsufficient", anything)
-      expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedIncomeInsufficient", anything)
+      expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedCommunityEngagementInsufficient", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("ActivityReportApproved", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("ActivityReportDenied", anything)
     end
@@ -124,9 +124,10 @@ RSpec.describe NotificationsEventListener, type: :service do
       end
     end
 
-    describe "#handle_insufficient_income" do
-      it "sends insufficient_income_email with income_data and payload hours_data (no extra aggregate)" do
+    describe "#handle_insufficient_community_engagement" do
+      it "sends insufficient_community_engagement_email with payload data (no extra aggregate)" do
         allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
+        allow(IncomeComplianceDeterminationService).to receive(:aggregate_income_for_certification)
 
         income_data = {
           total_income: BigDecimal("400"),
@@ -148,24 +149,30 @@ RSpec.describe NotificationsEventListener, type: :service do
             case_id: certification_case.id,
             certification_id: certification.id,
             income_data: income_data,
-            hours_data: hours_data
+            hours_data: hours_data,
+            show_hours_insufficient: false,
+            show_income_insufficient: true
           }
         }
 
-        described_class.send(:handle_insufficient_income, event)
+        described_class.send(:handle_insufficient_community_engagement, event)
 
         expect(NotificationService).to have_received(:send_email_notification).with(
           MemberMailer,
           {
             certification: certification,
             income_data: income_data,
+            hours_data: hours_data,
+            target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
             target_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY,
-            hours_data: hours_data
+            show_hours_insufficient: false,
+            show_income_insufficient: true
           },
-          :insufficient_income_email,
+          :insufficient_community_engagement_email,
           [ certification.member_email ]
         )
         expect(HoursComplianceDeterminationService).not_to have_received(:aggregate_hours_for_certification)
+        expect(IncomeComplianceDeterminationService).not_to have_received(:aggregate_income_for_certification)
       end
     end
 

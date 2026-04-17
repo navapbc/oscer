@@ -4,8 +4,14 @@
 
 <p><strong><%= t('.your_status') %></strong></p>
 <ul>
-  <li><%= t('.income_still_needed', amount: number_to_currency(@income_needed, precision: 0)) %></li>
-  <li><%= t('.income_reported', amount: number_to_currency(@income_reported, precision: 0)) %></li>
+  <% if @show_hours %>
+    <li><%= t('.hours_still_needed', hours: @hours_needed) %></li>
+    <li><%= t('.hours_reported', hours: @hours_reported) %></li>
+  <% end %>
+  <% if @show_income %>
+    <li><%= t('.income_still_needed', amount: number_to_currency(@income_needed, precision: 0)) %></li>
+    <li><%= t('.income_reported', amount: number_to_currency(@income_reported, precision: 0)) %></li>
+  <% end %>
   <li><%= t('.deadline', date: @deadline) %></li>
 </ul>
 

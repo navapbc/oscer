@@ -11,8 +11,8 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     allow(Strata::EventManager).to receive(:publish).and_call_original
     allow(NotificationService).to receive(:send_email_notification)
 
-    # Stub ex parte CE orchestrator for initial check (avoids full hours/income determination during setup)
-    allow(ExParteCommunityEngagementDeterminationService).to receive(:determine) do |kase|
+    # Stub hours compliance service for initial check
+    allow(HoursComplianceDeterminationService).to receive(:determine) do |kase|
       Strata::EventManager.publish("DeterminedActionRequired", {
         case_id: kase.id,
         certification_id: kase.certification_id

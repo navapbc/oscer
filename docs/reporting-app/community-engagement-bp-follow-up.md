@@ -1,12 +1,11 @@
-# Ex parte CE business process (hours + income)
+# Community engagement (generic Strata events)
 
-## Implemented behavior
+## In this PR
 
-- **`ExParteCommunityEngagementDeterminationService.determine`** runs at `ex_parte_community_engagement_check`: evaluates **hours first**; if below the hours threshold, runs **`IncomeComplianceDeterminationService.determine(kase, hours_context: …)`** so the income path does not publish hours-named events when income applies.
-- **`IncomeComplianceDeterminationService#determine`** publishes only **`DeterminedIncomeMet`**, **`DeterminedIncomeInsufficient`**, or **`DeterminedIncomeActionRequired`**. Every payload includes generic **`hours_data`** (same shape as `HoursComplianceDeterminationService.aggregate_hours_for_certification`) for notifications and future combined CE messaging.
-- **`CertificationBusinessProcess`** transitions the ex parte CE step on those three income events to the **same next steps** as the analogous hours events (`END_STEP` for met; `report_activities` for insufficient / action required).
+- **`CertificationBusinessProcess`** adds three transitions on generic CE events from `ex_parte_community_engagement_check`: **`DeterminedCommunityEngagementMet`**, **`DeterminedCommunityEngagementInsufficient`**, **`DeterminedCommunityEngagementActionRequired`** (same next steps as the analogous hours events where applicable).
+- **`IncomeComplianceDeterminationService#determine`** publishes those event names (hours path unchanged; still **`DeterminedHours*`**).
+- **`NotificationsEventListener`** subscribes and routes insufficient CE to **`insufficient_community_engagement_email`**, which can show **hours and/or income** shortfall using **`show_hours_insufficient`** / **`show_income_insufficient`** on the payload.
 
-## Possible follow-ups
+## Follow-up
 
-- Member-facing copy that uses **`hours_data`** alongside income in `insufficient_income_email` (today templates remain income-focused; mailer receives `hours_data` when present).
-- Product rules if both hours and income are partially satisfied (current path is hours-first, then income-only outcomes).
+- Wire the **hours** ex parte path to publish the same generic names when product is ready (and set show flags / payloads accordingly).

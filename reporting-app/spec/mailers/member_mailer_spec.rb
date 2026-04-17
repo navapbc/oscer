@@ -6,7 +6,7 @@ RSpec.describe MemberMailer, type: :mailer do
   # Stub business process to prevent auto-triggering when creating certifications
   before do
     allow(Strata::EventManager).to receive(:publish).and_call_original
-    allow(ExParteCommunityEngagementDeterminationService).to receive(:determine)
+    allow(HoursComplianceDeterminationService).to receive(:determine)
     allow(ExemptionDeterminationService).to receive(:determine)
     allow(NotificationService).to receive(:send_email_notification)
   end
@@ -125,7 +125,7 @@ RSpec.describe MemberMailer, type: :mailer do
     end
   end
 
-  describe "#insufficient_income_email" do
+  describe "#insufficient_community_engagement_email" do
     let(:income_data) do
       {
         total_income: BigDecimal("400"),
@@ -135,30 +135,62 @@ RSpec.describe MemberMailer, type: :mailer do
         period_end: Date.current
       }
     end
+    let(:hours_data) do
+      {
+        total_hours: 50.0,
+        hours_by_category: {},
+        hours_by_source: { ex_parte: 50, activity: 0 },
+        ex_parte_activity_ids: [],
+        activity_ids: []
+      }
+    end
     let(:target_income) { IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY }
-    let(:mail) do
-      described_class.with(
-        certification: certification,
-        income_data: income_data,
-        target_income: target_income
-      ).insufficient_income_email
+    let(:target_hours) { 80 }
+
+    context "when only the income section applies" do
+      let(:mail) do
+        described_class.with(
+          certification: certification,
+          hours_data: hours_data,
+          income_data: income_data,
+          show_hours_insufficient: false,
+          show_income_insufficient: true,
+          target_hours: target_hours,
+          target_income: target_income
+        ).insufficient_community_engagement_email
+      end
+
+      it "renders the headers" do
+        expect(mail.subject).to match(/Action needed/)
+        expect(mail.to).to eq([ certification.member_email ])
+      end
+
+      it "includes income shortfall in subject" do
+        expect(mail.subject).to include("$180")
+      end
+
+      it "includes income reported in body" do
+        expect(mail.body.encoded).to include("$400")
+      end
     end
 
-    it "renders the headers" do
-      expect(mail.subject).to match(/Action needed/)
-      expect(mail.to).to eq([ certification.member_email ])
-    end
+    context "when both hours and income sections apply" do
+      let(:mail) do
+        described_class.with(
+          certification: certification,
+          hours_data: hours_data,
+          income_data: income_data,
+          show_hours_insufficient: true,
+          show_income_insufficient: true,
+          target_hours: target_hours,
+          target_income: target_income
+        ).insufficient_community_engagement_email
+      end
 
-    it "includes income shortfall in subject" do
-      expect(mail.subject).to include("$180")
-    end
-
-    it "renders the body" do
-      expect(mail.body.encoded).to be_present
-    end
-
-    it "includes income reported in body" do
-      expect(mail.body.encoded).to include("$400")
+      it "mentions both hours and income in the subject" do
+        expect(mail.subject).to include("more hours")
+        expect(mail.subject).to include("more in monthly income")
+      end
     end
   end
 end

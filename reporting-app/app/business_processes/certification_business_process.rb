@@ -19,7 +19,7 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   })
 
   system_process(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, ->(kase) {
-    ExParteCommunityEngagementDeterminationService.determine(kase)
+    HoursComplianceDeterminationService.determine(kase)
   })
 
   # User tasks
@@ -36,16 +36,18 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   transition(EX_PARTE_EXEMPTION_CHECK_STEP, "DeterminedNotExempt", EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP)
   transition(EX_PARTE_EXEMPTION_CHECK_STEP, "DeterminedExempt", END_STEP)
 
-  # --- Transitions: Ex parte community engagement (hours first, then income) ---
-  # Hours path: DeterminedHoursMet → satisfied; DeterminedActionRequired / DeterminedHoursInsufficient → report
-  # Income path (after hours below threshold): DeterminedIncomeMet → satisfied; DeterminedIncomeInsufficient /
-  # DeterminedIncomeActionRequired → report (same next steps as analogous hours events)
+  # --- Transitions: Ex parte hours check ---
+  # DeterminedHoursMet: Hours requirement satisfied
+  # DeterminedActionRequired: No ex parte hours found, member needs to report from scratch
+  # DeterminedHoursInsufficient: Has some ex parte hours but needs more
   transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedHoursMet", END_STEP)
   transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedActionRequired", REPORT_ACTIVITIES_STEP)
   transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedHoursInsufficient", REPORT_ACTIVITIES_STEP)
-  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedIncomeMet", END_STEP)
-  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedIncomeInsufficient", REPORT_ACTIVITIES_STEP)
-  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedIncomeActionRequired", REPORT_ACTIVITIES_STEP)
+
+  # --- Transitions: Community engagement (income path today; hours can use same events later) ---
+  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementMet", END_STEP)
+  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementInsufficient", REPORT_ACTIVITIES_STEP)
+  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementActionRequired", REPORT_ACTIVITIES_STEP)
 
   # --- Transitions: Activity report workflow ---
   # Reviewer determines compliance: approved = compliant, denied = not compliant
