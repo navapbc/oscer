@@ -2,42 +2,13 @@
 
 # Aggregates verified income for a certification lookback, compares to the monthly threshold,
 # and (via CertificationCase#record_income_compliance) persists automated determinations.
-# Mirrors HoursComplianceDeterminationService: no mailers here; publishes income-specific Strata events for workflow/notifications.
+# Mirrors HoursComplianceDeterminationService: aggregation + calculate for income path; ex parte CE publishes via CommunityEngagementDeterminationService.
 # Single source for TARGET_INCOME_MONTHLY (CE compliance UI and statistics; parity with
 # HoursComplianceDeterminationService::TARGET_HOURS) via Rails.application.config.ce_compliance.
 class IncomeComplianceDeterminationService
   TARGET_INCOME_MONTHLY = Rails.application.config.ce_compliance[:income_threshold_monthly]
 
   class << self
-    # Called by the business process at the ex parte CE check when the income path runs.
-    # Publishes income-specific events (parallel to hours’ DeterminedHours* / DeterminedActionRequired).
-    # @param kase [CertificationCase]
-    def determine(kase)
-      certification = Certification.find(kase.certification_id)
-      income_data = aggregate_income_for_certification(certification)
-      outcome = determine_outcome(income_data[:total_income])
-
-      kase.record_income_compliance(outcome, income_data)
-
-      if outcome == :compliant
-        Strata::EventManager.publish("DeterminedIncomeMet", {
-          case_id: kase.id,
-          certification_id: certification.id
-        })
-      elsif income_data[:income_by_source][:income].positive?
-        Strata::EventManager.publish("DeterminedIncomeInsufficient", {
-          case_id: kase.id,
-          certification_id: certification.id,
-          income_data: income_data
-        })
-      else
-        Strata::EventManager.publish("DeterminedIncomeActionRequired", {
-          case_id: kase.id,
-          certification_id: certification.id
-        })
-      end
-    end
-
     # Silent recalculation (e.g. jobs) — records determination without publishing workflow events.
     # @param certification_id [String]
     # @return [void]

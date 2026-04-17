@@ -12,7 +12,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     allow(NotificationService).to receive(:send_email_notification)
 
     # Stub hours compliance service for initial check
-    allow(HoursComplianceDeterminationService).to receive(:determine) do |kase|
+    allow(CommunityEngagementDeterminationService).to receive(:determine) do |kase|
       Strata::EventManager.publish("DeterminedActionRequired", {
         case_id: kase.id,
         certification_id: kase.certification_id

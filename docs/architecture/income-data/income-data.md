@@ -246,7 +246,7 @@ Mirror hours: income is saved **before** certification creation, and the busines
 3. Create certification → triggers business process.
 4. At `EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP`:
    - If hours sufficient → existing hours path.
-   - If income sufficient (and hours path not taken) → `IncomeComplianceDeterminationService.determine(kase)`.
+   - Ex parte CE is evaluated in `CommunityEngagementDeterminationService.determine(kase)` (hours OR income threshold).
 5. For existing certifications: `CalculateComplianceJob` (or equivalent) recalculates when new income arrives.
 
 ---
