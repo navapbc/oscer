@@ -152,3 +152,17 @@ $attribution-green-bg: #DDF9C7;
   0% { width: 20%; }
   100% { width: 80%; }
 }
+
+// =========================================================
+// Anchor-as-button disabled state (OSCER-246)
+//
+// USWDS has no `usa-button--disabled` modifier for anchors —
+// their disabled story is the native `<button disabled>` attribute,
+// which doesn't apply to anchors. Use `aria-disabled="true"` +
+// this class on anchors that should look disabled; `pointer-events`
+// is belt-and-suspenders with the Stimulus click preventDefault.
+// =========================================================
+.usa-button.is-disabled-link[aria-disabled="true"] {
+  @include button-disabled;
+  pointer-events: none;
+}
