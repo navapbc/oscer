@@ -1,5 +1,6 @@
 <h1><%= t(".title") %></h1>
 <%= render partial: 'application/flash' %>
+<%= render partial: 'metrics' if @data.present? %>
 <h2><%= t(".my_tasks") %></h2>
 <table class="usa-table usa-table--borderless width-full">
   <thead>
