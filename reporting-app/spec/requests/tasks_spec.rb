@@ -88,7 +88,7 @@ RSpec.describe "/staff/tasks", type: :request do
           get "/staff/tasks/#{activity_report_task.id}"
 
           expect(response.body).to include("test_document_1.pdf")
-          expect(response.body).not_to include("usa-link")
+          expect(response.body).not_to include("disposition=attachment")
         end
 
         it "renders the document preview panel with Stimulus targets" do
@@ -150,7 +150,7 @@ RSpec.describe "/staff/tasks", type: :request do
             get "/staff/tasks/#{activity_report_task.id}"
 
             expect(response.body).to include("test_document_1.pdf")
-            expect(response.body).not_to include("usa-link")
+            expect(response.body).not_to include("disposition=attachment")
             expect(response.body).not_to include('data-controller="document-preview"')
           end
         end
@@ -326,7 +326,7 @@ RSpec.describe "/staff/tasks", type: :request do
       it "displays supporting document names without links" do
         expect(response.body).to include(document_1_filename)
         expect(response.body).to include(document_2_filename)
-        expect(response.body).not_to include("usa-link")
+        expect(response.body).not_to include("disposition=attachment")
       end
     end
   end
