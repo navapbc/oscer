@@ -145,13 +145,13 @@ RSpec.describe IncomeComplianceDeterminationService do
   end
 
   describe "income aggregation" do
+    let(:certification) { create(:certification) }
+
     before do
       allow(Strata::EventManager).to receive(:publish)
       allow(NotificationService).to receive(:send_email_notification)
+      create(:certification_case, certification: certification)
     end
-
-    let(:certification) { create(:certification) }
-    let!(:certification_case) { create(:certification_case, certification: certification) }
 
     context "with multiple Income rows in lookback" do
       before do
