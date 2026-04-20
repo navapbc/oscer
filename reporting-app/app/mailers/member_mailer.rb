@@ -86,12 +86,16 @@ class MemberMailer < ApplicationMailer
         )
       elsif @show_hours
         t(".subject_hours_only", hours_needed: @hours_needed, deadline: @deadline)
-      else
+      elsif @show_income
         t(
           ".subject_income_only",
           income_needed: helpers.number_to_currency(@income_needed, precision: 0),
           deadline: @deadline
         )
+      else
+        raise ArgumentError,
+          "insufficient_community_engagement_email needs at least one visible section " \
+          "(set show_hours_insufficient with hours_data, or show_income_insufficient with income_data)"
       end
 
     mail(to: certification.member_email, subject: subject)

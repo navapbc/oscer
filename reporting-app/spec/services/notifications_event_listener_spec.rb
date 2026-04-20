@@ -166,6 +166,57 @@ RSpec.describe NotificationsEventListener, type: :service do
         expect(HoursComplianceDeterminationService).not_to have_received(:aggregate_hours_for_certification)
         expect(IncomeComplianceDeterminationService).not_to have_received(:aggregate_income_for_certification)
       end
+
+      it "aggregates hours when show_hours_insufficient is true and hours_data is omitted" do
+        aggregated_hours = {
+          total_hours: 50.0,
+          hours_by_category: {},
+          hours_by_source: { ex_parte: 50, activity: 0 },
+          ex_parte_activity_ids: [],
+          activity_ids: []
+        }
+        income_data = {
+          total_income: BigDecimal("0"),
+          income_by_source: { income: BigDecimal("0"), activity: BigDecimal("0") },
+          income_ids: [],
+          period_start: Date.current,
+          period_end: Date.current
+        }
+
+        allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
+          .with(certification)
+          .and_return(aggregated_hours)
+        allow(IncomeComplianceDeterminationService).to receive(:aggregate_income_for_certification)
+
+        event = {
+          payload: {
+            case_id: certification_case.id,
+            certification_id: certification.id,
+            income_data: income_data,
+            show_hours_insufficient: true,
+            show_income_insufficient: false
+          }
+        }
+
+        described_class.send(:handle_insufficient_community_engagement, event)
+
+        expect(HoursComplianceDeterminationService).to have_received(:aggregate_hours_for_certification).with(certification)
+        expect(IncomeComplianceDeterminationService).not_to have_received(:aggregate_income_for_certification)
+        expect(NotificationService).to have_received(:send_email_notification).with(
+          MemberMailer,
+          {
+            certification: certification,
+            hours_data: aggregated_hours,
+            income_data: income_data,
+            target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
+            target_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY,
+            show_hours_insufficient: true,
+            show_income_insufficient: false
+          },
+          :insufficient_community_engagement_email,
+          [ certification.member_email ]
+        )
+      end
     end
 
     describe "#handle_activity_report_approved" do

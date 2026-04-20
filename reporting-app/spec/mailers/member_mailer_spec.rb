@@ -173,6 +173,36 @@ RSpec.describe MemberMailer, type: :mailer do
       end
     end
 
+    context "when only the hours section applies" do
+      let(:mail) do
+        described_class.with(
+          certification: certification,
+          hours_data: hours_data,
+          show_hours_insufficient: true,
+          show_income_insufficient: false,
+          target_hours: target_hours,
+          target_income: target_income
+        ).insufficient_community_engagement_email
+      end
+
+      it "renders the headers" do
+        expect(mail.subject).to match(/Action needed/)
+        expect(mail.to).to eq([ certification.member_email ])
+      end
+
+      it "includes hours shortfall in the subject" do
+        expect(mail.subject).to include("30 more hours")
+      end
+
+      it "includes hours reported in the body" do
+        expect(mail.body.encoded).to include("50 hours")
+      end
+
+      it "does not include income lines in the body" do
+        expect(mail.body.encoded).not_to include("Income still needed")
+      end
+    end
+
     context "when both hours and income sections apply" do
       let(:mail) do
         described_class.with(
@@ -189,6 +219,47 @@ RSpec.describe MemberMailer, type: :mailer do
       it "mentions both hours and income in the subject" do
         expect(mail.subject).to include("more hours")
         expect(mail.subject).to include("more in monthly income")
+      end
+    end
+
+    context "when income is flagged but income_data is missing" do
+      it "raises ArgumentError so the subject does not reference unset aggregates" do
+        expect do
+          described_class.with(
+            certification: certification,
+            income_data: nil,
+            show_hours_insufficient: false,
+            show_income_insufficient: true
+          ).insufficient_community_engagement_email.deliver_now
+        end.to raise_error(
+          ArgumentError,
+          /show_income_insufficient with income_data/
+        )
+      end
+    end
+
+    context "when hours are flagged but hours_data is missing" do
+      it "raises ArgumentError" do
+        expect do
+          described_class.with(
+            certification: certification,
+            hours_data: nil,
+            show_hours_insufficient: true,
+            show_income_insufficient: false
+          ).insufficient_community_engagement_email.deliver_now
+        end.to raise_error(ArgumentError, /hours_data/)
+      end
+    end
+
+    context "when neither hours nor income section is displayed" do
+      it "raises ArgumentError" do
+        expect do
+          described_class.with(
+            certification: certification,
+            show_hours_insufficient: false,
+            show_income_insufficient: false
+          ).insufficient_community_engagement_email.deliver_now
+        end.to raise_error(ArgumentError, /at least one visible section/)
       end
     end
   end
