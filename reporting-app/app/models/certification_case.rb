@@ -132,7 +132,8 @@ class CertificationCase < Strata::Case
     )
   end
 
-  # Called by IncomeComplianceDeterminationService to record income-based CE determination.
+  # Called by IncomeComplianceDeterminationService#calculate to record income-only CE determination
+  # (+CALCULATION_TYPE_INCOME_BASED+; not used by the combined ex parte CE business process step).
   # Model only handles state changes — service handles events and notifications.
   # @param outcome [Symbol] :compliant or :not_compliant
   # @param income_data [Hash] aggregated income data from IncomeComplianceDeterminationService

@@ -244,10 +244,8 @@ Mirror hours: income is saved **before** certification creation, and the busines
 1. API receives `member_data.activities` with `type: "income"`.
 2. Create `Income` records (before certification).
 3. Create certification → triggers business process.
-4. At `EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP`:
-   - If hours sufficient → existing hours path.
-   - If income sufficient (and hours path not taken) → `IncomeComplianceDeterminationService.determine(kase)`.
-5. For existing certifications: `CalculateComplianceJob` (or equivalent) recalculates when new income arrives.
+4. At `EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP`, `CommunityEngagementCheckService.determine(kase)` aggregates **hours and income** in parallel, records one combined determination (`ex_parte_ce_combined`), and publishes the same Strata event names as the legacy hours-only flow (`DeterminedHoursMet` / `DeterminedHoursInsufficient` / `DeterminedActionRequired`). Member is compliant if **either** track meets its threshold.
+5. For existing certifications: `CalculateComplianceJob` (or equivalent) may call `IncomeComplianceDeterminationService.calculate(certification_id)` for silent income-only recalculation (no workflow events) when new income arrives.
 
 ---
 
