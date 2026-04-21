@@ -44,6 +44,11 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedActionRequired", REPORT_ACTIVITIES_STEP)
   transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedHoursInsufficient", REPORT_ACTIVITIES_STEP)
 
+  # --- Transitions: Community engagement (income path today; hours can use same events later) ---
+  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementMet", END_STEP)
+  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementInsufficient", REPORT_ACTIVITIES_STEP)
+  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementActionRequired", REPORT_ACTIVITIES_STEP)
+
   # --- Transitions: Activity report workflow ---
   # Reviewer determines compliance: approved = compliant, denied = not compliant
   # Both outcomes close the case

@@ -2,7 +2,7 @@
 
 class ActivityReportApplicationForm < Strata::ApplicationForm
   MINIMUM_MONTHLY_HOURS = 80
-  MINIMUM_MONTHLY_INCOME = 580
+  MINIMUM_MONTHLY_INCOME = IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY
 
   has_many :activities, strict_loading: true, autosave: true, dependent: :destroy
 

@@ -335,14 +335,14 @@
           "period_end"
         ]
       },
-      "CertificationMemberDataActivity": {
+      "CertificationMemberDataHourlyActivity": {
         "type": "object",
-        "description": "Description of an activity",
+        "description": "Hourly community engagement activity",
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["hourly", "income"],
-            "description": "The type of activity (currently only 'hourly' is used)"
+            "enum": ["hourly"],
+            "description": "Hourly activity"
           },
           "category": {
             "type": "string",
@@ -380,6 +380,74 @@
           "hours",
           "period_start",
           "period_end"
+        ]
+      },
+      "CertificationMemberDataIncomeActivity": {
+        "type": "object",
+        "description": "Income-based community engagement activity",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["income"],
+            "description": "Income activity"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["employment", "community_service", "education"],
+            "description": "The category of activity"
+          },
+          "gross_income": {
+            "type": "string",
+            "format": "decimal",
+            "description": "Gross income for the pay period"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date",
+            "description": "Start date of the activity period"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date",
+            "description": "End date of the activity period"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["api"],
+            "description": "Income source type; certification API intake currently requires api"
+          },
+          "reported_at": {
+            "type": ["string", "null"],
+            "format": "date-time",
+            "description": "When the income data was reported"
+          },
+          "employer": {
+            "type": ["string", "null"],
+            "description": "Employer or organization associated with the activity"
+          },
+          "verification_status": {
+            "type": ["string", "null"],
+            "enum": ["verified", "self_attested", "pending", null],
+            "description": "Verification status of the activity"
+          }
+        },
+        "required": [
+          "type",
+          "category",
+          "gross_income",
+          "period_start",
+          "period_end",
+          "source"
+        ]
+      },
+      "CertificationMemberDataActivity": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CertificationMemberDataHourlyActivity"
+          },
+          {
+            "$ref": "#/components/schemas/CertificationMemberDataIncomeActivity"
+          }
         ]
       },
       "CertificationResponseBody": {

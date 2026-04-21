@@ -1,8 +1,7 @@
 # Use the official Playwright image as a base
-FROM mcr.microsoft.com/playwright:v1.49.0-noble
+FROM mcr.microsoft.com/playwright:v1.59.1-noble
 
-# Install make and any other necessary dependencies
-RUN apt-get update
+# Skip apt unless you need extra packages; `apt-get update` flakes when Ubuntu mirrors are mid-sync.
 
 # Set the working directory to the root of the project inside the Docker container
 WORKDIR /e2e

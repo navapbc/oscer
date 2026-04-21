@@ -124,20 +124,25 @@ class CertificationCase < Strata::Case
   # @param outcome [Symbol] :compliant or :not_compliant
   # @param hours_data [Hash] aggregated hours data
   def record_hours_compliance(outcome, hours_data)
-    certification = Certification.find(certification_id)
-    reason_code = outcome == :compliant ? :hours_reported_compliant : :hours_reported_insufficient
+    record_automated_ce_compliance(
+      outcome,
+      build_hours_determination_data(hours_data),
+      compliant_reason: :hours_reported_compliant,
+      not_compliant_reason: :hours_reported_insufficient
+    )
+  end
 
-    transaction do
-      close! if outcome == :compliant
-
-      certification.record_determination!(
-        decision_method: :automated,
-        reasons: [ Determination::REASON_CODE_MAPPING[reason_code] ],
-        outcome: outcome,
-        determination_data: build_hours_determination_data(hours_data),
-        determined_at: certification.certification_requirements.certification_date
-      )
-    end
+  # Called by IncomeComplianceDeterminationService to record income-based CE determination.
+  # Model only handles state changes — service handles events and notifications.
+  # @param outcome [Symbol] :compliant or :not_compliant
+  # @param income_data [Hash] aggregated income data from IncomeComplianceDeterminationService
+  def record_income_compliance(outcome, income_data)
+    record_automated_ce_compliance(
+      outcome,
+      build_income_determination_data(income_data),
+      compliant_reason: :income_reported_compliant,
+      not_compliant_reason: :income_reported_insufficient
+    )
   end
 
   def member_status
@@ -146,15 +151,57 @@ class CertificationCase < Strata::Case
 
   private
 
+  # @param outcome [Symbol] :compliant or :not_compliant
+  # @param determination_data [Hash] payload for +record_determination!+
+  # @param compliant_reason [Symbol] key into +Determination::REASON_CODE_MAPPING+ when compliant
+  # @param not_compliant_reason [Symbol] key into +Determination::REASON_CODE_MAPPING+ when not compliant
+  def record_automated_ce_compliance(outcome, determination_data, compliant_reason:, not_compliant_reason:)
+    certification = Certification.find(certification_id)
+    reason_code = outcome == :compliant ? compliant_reason : not_compliant_reason
+
+    transaction do
+      close! if outcome == :compliant
+
+      certification.record_determination!(
+        decision_method: :automated,
+        reasons: [ Determination::REASON_CODE_MAPPING[reason_code] ],
+        outcome: outcome,
+        determination_data: determination_data,
+        determined_at: certification.certification_requirements.certification_date
+      )
+    end
+  end
+
   def build_hours_determination_data(hours_data)
     {
-      calculation_type: "hours_based",
+      calculation_type: Determination::CALCULATION_TYPE_HOURS_BASED,
       total_hours: hours_data[:total_hours],
       target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
       hours_by_category: hours_data[:hours_by_category],
       hours_by_source: hours_data[:hours_by_source],
       ex_parte_activity_ids: hours_data[:ex_parte_activity_ids],
       activity_ids: hours_data[:activity_ids],
+      calculated_at: Time.current.iso8601
+    }
+  end
+
+  def build_income_determination_data(income_data)
+    income_by = income_data[:income_by_source]
+    period_start = income_data[:period_start]
+    period_end = income_data[:period_end]
+
+    {
+      calculation_type: Determination::CALCULATION_TYPE_INCOME_BASED,
+      total_income: income_data[:total_income].to_f,
+      target_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY.to_f,
+      income_by_source: {
+        income: income_by[:income].to_f,
+        activity: income_by[:activity].to_f
+      },
+      period_start: period_start&.respond_to?(:iso8601) ? period_start.iso8601 : period_start&.to_s,
+      period_end: period_end&.respond_to?(:iso8601) ? period_end.iso8601 : period_end&.to_s,
+      income_ids: income_data[:income_ids],
+      calculation_method: Determination::CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE,
       calculated_at: Time.current.iso8601
     }
   end

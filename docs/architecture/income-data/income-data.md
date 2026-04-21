@@ -139,7 +139,7 @@ Extend `member_data.activities` to accept `type: "income"` activities, aligning 
         "gross_income": 620.0,
         "period_start": "2025-01-01",
         "period_end": "2025-01-31",
-        "source": "quarterly_wage_data",
+        "source": "api",
         "reported_at": "2025-02-15T10:00:00Z",
         "employer": "Acme Corp"
       }
@@ -192,7 +192,7 @@ create_table :incomes, id: :uuid do |t|
 end
 ```
 
-- `source_type`: `"api"`, `"batch_upload"`, `"quarterly_wage_data"` (stored for attribution)
+- `source_type`: currently `"api"` for certification API income activities; other values when additional intakes are implemented
 - `source_id`: batch upload ID or external reference
 - **Data governance:** Append-only in normal intake flows. Updates or deletes are exceptional (e.g., corrections, backfills) and must be recorded in an audit log. See [Audit trail over hard immutability](#audit-trail-over-hard-immutability) below.
 

@@ -271,7 +271,7 @@ RSpec.describe "/api/certifications", type: :request do
         expect(activity.source_id).to be_nil
       end
 
-      it "does not create ExParteActivity for income activities" do
+      it "creates Income records for income activities and not ExParteActivity" do
         member_data = build(:certification_member_data,
           :with_full_name,
           :with_account_email,
@@ -279,9 +279,11 @@ RSpec.describe "/api/certifications", type: :request do
             {
               "type" => "income",
               "category" => "employment",
-              "hours" => 40,
+              "gross_income" => 620,
               "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month
+              "period_end" => certification_date.end_of_month,
+              "source" => "api",
+              "employer" => "Acme Corp"
             }
           ]
         )
@@ -295,13 +297,21 @@ RSpec.describe "/api/certifications", type: :request do
             params: params,
             headers: auth_headers(params),
             as: :json
-        }.not_to change(ExParteActivity, :count)
+        }.to change(Income, :count).from(0).to(1)
+          .and(change(Certification, :count).from(0).to(1))
 
         expect(response).to have_http_status(:created)
-        expect(Certification.count).to eq(1)
+        expect(ExParteActivity.where(member_id: member_id)).to be_empty
+
+        expect(Income.pluck(:member_id, :category, :gross_income, :source_type, :period_start, :period_end)).to eq(
+          [
+            [ member_id, "employment", 620, "api", certification_date.beginning_of_month, certification_date.end_of_month ]
+          ]
+        )
+        expect(Income.pick(:metadata)).to include("employer" => "Acme Corp")
       end
 
-      it "creates ExParteActivity only for hourly activities in mixed types" do
+      it "creates ExParteActivity for hourly and Income for income in mixed types" do
         member_data = build(:certification_member_data,
           :with_full_name,
           :with_account_email,
@@ -316,9 +326,10 @@ RSpec.describe "/api/certifications", type: :request do
             {
               "type" => "income",
               "category" => "employment",
-              "hours" => 20,
+              "gross_income" => 580,
               "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month
+              "period_end" => certification_date.end_of_month,
+              "source" => "api"
             }
           ]
         )
@@ -333,11 +344,13 @@ RSpec.describe "/api/certifications", type: :request do
             headers: auth_headers(params),
             as: :json
         }.to change(ExParteActivity, :count).from(0).to(1)
+          .and change(Income, :count).from(0).to(1)
 
         expect(response).to have_http_status(:created)
 
         activity = ExParteActivity.last
         expect(activity.hours).to eq(40)
+        expect(Income.last.gross_income).to eq(580)
       end
 
       it "creates CertificationOrigin record with api source_type" do
@@ -401,6 +414,47 @@ RSpec.describe "/api/certifications", type: :request do
 
         expect(response).to have_http_status(:unprocessable_content)
         expect(ExParteActivity.count).to eq(0)
+        expect(Income.count).to eq(0)
+        expect(CertificationOrigin.count).to eq(0)
+      end
+
+      it "rolls back certification when duplicate income activities fail" do
+        member_data = build(:certification_member_data,
+          :with_full_name,
+          :with_account_email,
+          activities: [
+            {
+              "type" => "income",
+              "category" => "employment",
+              "gross_income" => 500,
+              "period_start" => certification_date.beginning_of_month,
+              "period_end" => certification_date.end_of_month,
+              "source" => "api"
+            },
+            {
+              "type" => "income",
+              "category" => "employment",
+              "gross_income" => 500,
+              "period_start" => certification_date.beginning_of_month,
+              "period_end" => certification_date.end_of_month,
+              "source" => "api"
+            }
+          ]
+        )
+        params = valid_json_request_attributes.merge({
+          member_id: member_id,
+          member_data: member_data.as_json
+        })
+
+        expect {
+          post api_certifications_url,
+            params: params,
+            headers: auth_headers(params),
+            as: :json
+        }.not_to change(Certification, :count)
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(Income.count).to eq(0)
         expect(CertificationOrigin.count).to eq(0)
       end
 
@@ -568,6 +622,29 @@ RSpec.describe "/api/certifications", type: :request do
                 "type": "hourly",
                 "category": "invalid_category",
                 "hours": 20,
+                "period_start": Date.today.to_s,
+                "period_end": Date.today.to_s
+              }
+            ]
+          }
+        })
+        post api_certifications_url,
+             params: params,
+             headers: auth_headers(params),
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.content_type).to match(a_string_including("application/json"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "invalid income activities - missing gross_income and source" do
+        params = valid_json_request_attributes.merge({
+          member_data: {
+            activities: [
+              {
+                "type": "income",
+                "category": "employment",
                 "period_start": Date.today.to_s,
                 "period_end": Date.today.to_s
               }

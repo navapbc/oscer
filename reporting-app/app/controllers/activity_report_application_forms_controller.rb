@@ -18,6 +18,7 @@ class ActivityReportApplicationFormsController < ApplicationController
 
   # GET /activity_report_application_forms/1 or /activity_report_application_forms/1.json
   def show
+    redirect_to edit_activity_report_application_form_path(@activity_report_application_form) if @activity_report_application_form.reporting_periods.empty?
   end
 
   # GET /activity_report_application_forms/new
