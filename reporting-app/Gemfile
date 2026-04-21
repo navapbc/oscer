@@ -65,7 +65,7 @@ gem "bootsnap", require: false
 gem "image_processing", "~> 1.14"
 
 # Authentication and Authorization
-gem "aws-sdk-cognitoidentityprovider", "~> 1.138"
+gem "aws-sdk-cognitoidentityprovider", "~> 1.139"
 gem "devise"
 gem "jwt"
 gem "pundit"
