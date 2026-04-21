@@ -26,9 +26,7 @@ class IncomeComplianceDeterminationService
         Strata::EventManager.publish("DeterminedCommunityEngagementMet", payload_base)
       elsif income_data[:income_by_source][:income].positive?
         Strata::EventManager.publish("DeterminedCommunityEngagementInsufficient", payload_base.merge(
-          income_data: income_data,
-          show_hours_insufficient: false,
-          show_income_insufficient: true
+          income_data: income_data
         ))
       else
         Strata::EventManager.publish("DeterminedCommunityEngagementActionRequired", payload_base)

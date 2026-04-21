@@ -94,16 +94,14 @@ RSpec.describe IncomeComplianceDeterminationService do
         create_income_for(certification, gross_income: 400)
       end
 
-      it "publishes DeterminedCommunityEngagementInsufficient with income_data and show flags" do
+      it "publishes DeterminedCommunityEngagementInsufficient with income_data (mailer flags derived in listener)" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
           "DeterminedCommunityEngagementInsufficient",
           hash_including(
             case_id: certification_case.id,
-            income_data: hash_including(:total_income),
-            show_hours_insufficient: false,
-            show_income_insufficient: true
+            income_data: hash_including(:total_income)
           )
         )
       end
