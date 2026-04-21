@@ -12,6 +12,9 @@ class ApplicationController < ActionController::Base
   after_action :verify_authorized, except: :index
   after_action :verify_policy_scoped, only: :index
 
+  @@view_overrides = ActionView::FileSystemResolver.new("app/views/overrides")
+  prepend_view_path @@view_overrides
+
   # Set the active locale based on the URL
   # For example, if the URL starts with /es-US, the locale will be set to :es-US
   def switch_locale(&action)
