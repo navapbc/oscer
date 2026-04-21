@@ -2,16 +2,13 @@
 
 source "https://rubygems.org"
 
-ruby "3.4.7"
+ruby "3.4.9"
 
 # Strata Government Digital Services SDK Rails engine
 gem "strata", git: "https://github.com/navapbc/strata-sdk-rails.git"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "rails", "~> 7.2.0", ">= 7.2.3.1"
-
-# Ensure rack 3.x for Rails 7.2 compatibility (rack-oauth2 allows >= 2.1.0)
-gem "rack", ">= 3.0"
+gem "rails", "~> 8.0.5", ">= 8.0.5"
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem "sprockets-rails"

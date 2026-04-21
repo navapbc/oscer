@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
 module ApplicationHelper
-  # Strata::Tasks::TaskRowComponent (and other views) call helpers.time_since_epoch / local_en_us.
-  # ViewComponent tests use ApplicationHelper as the view context; include here so render_inline works.
-  include Strata::DateHelper
-
-  def us_form_with(model: nil, scope: nil, url: nil, format: nil, **options, &block)
+  def us_form_with(model: false, scope: nil, url: nil, format: nil, **options, &block)
     options[:builder] = UswdsFormBuilder
-    form_with model: model, scope: scope, url: url, format: format, **options, &block
+
+    # Build arguments hash, excluding model if it's nil
+    form_args = { scope: scope, url: url, format: format, **options }
+    form_args[:model] = model if model
+
+    form_with(**form_args, &block)
   end
 
   def local_time(time, format: nil, timezone: "America/Chicago")

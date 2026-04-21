@@ -1,6 +1,6 @@
 services:
   reporting-app-database:
-    image: postgres:14-alpine
+    image: postgres:16-alpine
     command: postgres -c "log_lock_waits=on" -N 1000 -c "fsync=off"
     environment:
       POSTGRES_PASSWORD: secret123
