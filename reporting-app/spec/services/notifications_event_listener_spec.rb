@@ -125,6 +125,46 @@ RSpec.describe NotificationsEventListener, type: :service do
     end
 
     describe "#handle_insufficient_community_engagement" do
+      it "derives mailer flags for IncomeComplianceDeterminationService payload (income_data only, no show_* keys)" do
+        allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
+        allow(IncomeComplianceDeterminationService).to receive(:aggregate_income_for_certification)
+
+        income_data = {
+          total_income: BigDecimal("400"),
+          income_by_source: { income: BigDecimal("400"), activity: BigDecimal("0") },
+          income_ids: [],
+          period_start: Date.current,
+          period_end: Date.current
+        }
+
+        event = {
+          payload: {
+            case_id: certification_case.id,
+            certification_id: certification.id,
+            income_data: income_data
+          }
+        }
+
+        described_class.send(:handle_insufficient_community_engagement, event)
+
+        expect(HoursComplianceDeterminationService).not_to have_received(:aggregate_hours_for_certification)
+        expect(IncomeComplianceDeterminationService).not_to have_received(:aggregate_income_for_certification)
+        expect(NotificationService).to have_received(:send_email_notification).with(
+          MemberMailer,
+          {
+            certification: certification,
+            income_data: income_data,
+            hours_data: nil,
+            target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
+            target_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY,
+            show_hours_insufficient: false,
+            show_income_insufficient: true
+          },
+          :insufficient_community_engagement_email,
+          [ certification.member_email ]
+        )
+      end
+
       it "sends insufficient_community_engagement_email with payload data (no extra aggregate)" do
         allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
         allow(IncomeComplianceDeterminationService).to receive(:aggregate_income_for_certification)

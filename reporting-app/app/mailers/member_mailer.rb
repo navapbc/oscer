@@ -37,8 +37,7 @@ class MemberMailer < ApplicationMailer
     target_hours = params[:target_hours] || HoursComplianceDeterminationService::TARGET_HOURS
 
     @first_name = certification.member_name.first
-    @hours_reported = hours_data[:total_hours].to_i
-    @hours_needed = [ target_hours - @hours_reported, 0 ].max
+    @hours_reported, @hours_needed = hours_reported_and_needed_for_mailer(hours_data, target_hours)
     @deadline = certification.certification_requirements.due_date.strftime("%B %d, %Y")
     @login_url = root_url
 
@@ -63,8 +62,7 @@ class MemberMailer < ApplicationMailer
     @show_hours = false
     if show_hours_flag && hours_data.present?
       @show_hours = true
-      @hours_reported = hours_data[:total_hours].to_i
-      @hours_needed = [ target_hours - @hours_reported, 0 ].max
+      @hours_reported, @hours_needed = hours_reported_and_needed_for_mailer(hours_data, target_hours)
     end
 
     @show_income = false
@@ -99,5 +97,17 @@ class MemberMailer < ApplicationMailer
       end
 
     mail(to: certification.member_email, subject: subject)
+  end
+
+  private
+
+  # Matches certification_cases/_hours_reported_table: shortfall from raw total_hours, each value rounded for display (precision 0, half up).
+  def hours_reported_and_needed_for_mailer(hours_data, target_hours)
+    raw_total = BigDecimal(hours_data[:total_hours].to_s)
+    raw_needed = [ BigDecimal(target_hours.to_s) - raw_total, 0 ].max
+    [
+      raw_total.round(0, :half_up).to_i,
+      raw_needed.round(0, :half_up).to_i
+    ]
   end
 end

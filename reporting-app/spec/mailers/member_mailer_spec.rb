@@ -123,6 +123,16 @@ RSpec.describe MemberMailer, type: :mailer do
     it "includes coverage warning" do
       expect(mail.body.encoded).to include("Medicaid coverage may end")
     end
+
+    context "when total_hours is fractional" do
+      let(:hours_data) { { total_hours: 50.6, hours_by_category: { "employment" => 50.6 } } }
+
+      it "rounds reported and needed hours for subject and body" do
+        expect(mail.subject).to include("29 more hours")
+        expect(mail.body.encoded).to include("51 hours")
+        expect(mail.body.encoded).to include("29 hours")
+      end
+    end
   end
 
   describe "#insufficient_community_engagement_email" do
@@ -200,6 +210,34 @@ RSpec.describe MemberMailer, type: :mailer do
 
       it "does not include income lines in the body" do
         expect(mail.body.encoded).not_to include("Income still needed")
+      end
+    end
+
+    context "when only the hours section applies and total_hours is fractional" do
+      let(:hours_data) do
+        {
+          total_hours: 50.6,
+          hours_by_category: {},
+          hours_by_source: { ex_parte: 50, activity: 0 },
+          ex_parte_activity_ids: [],
+          activity_ids: []
+        }
+      end
+      let(:mail) do
+        described_class.with(
+          certification: certification,
+          hours_data: hours_data,
+          show_hours_insufficient: true,
+          show_income_insufficient: false,
+          target_hours: target_hours,
+          target_income: target_income
+        ).insufficient_community_engagement_email
+      end
+
+      it "rounds reported and needed hours consistently" do
+        expect(mail.subject).to include("29 more hours")
+        expect(mail.body.encoded).to include("51 hours")
+        expect(mail.body.encoded).to include("29 hours")
       end
     end
 
