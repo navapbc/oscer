@@ -2,16 +2,13 @@
 
 # Aggregates verified income for a certification lookback, compares to the monthly threshold,
 # and (via CertificationCase#record_income_compliance) persists automated determinations.
-# Mirrors HoursComplianceDeterminationService: no mailers here; events optional for workflow/notifications.
+# Publishes generic community-engagement Strata events from #determine (income path until hours adopts the same names).
 # Single source for TARGET_INCOME_MONTHLY (CE compliance UI and statistics; parity with
 # HoursComplianceDeterminationService::TARGET_HOURS) via Rails.application.config.ce_compliance.
 class IncomeComplianceDeterminationService
   TARGET_INCOME_MONTHLY = Rails.application.config.ce_compliance[:income_threshold_monthly]
 
   class << self
-    # Called by the business process at the ex parte CE check when the income path runs.
-    # Publishes the same event names as the hours path so transitions/notifications can stay aligned
-    # until income-specific events are approved.
     # @param kase [CertificationCase]
     def determine(kase)
       certification = Certification.find(kase.certification_id)
@@ -20,27 +17,19 @@ class IncomeComplianceDeterminationService
 
       kase.record_income_compliance(outcome, income_data)
 
-      # TODO(OSCER-405): Publish income-specific Strata events when product/sign-off names them
-      # (e.g. DeterminedIncomeMet, DeterminedIncomeInsufficient, DeterminedIncomeActionRequired) and
-      # subscribe in NotificationsEventListener / CertificationBusinessProcess. Do not raise here in the
-      # interim — hours-named events are intentional for workflow parity; switching without updating
-      # subscribers would drop notifications or break transitions.
+      payload_base = {
+        case_id: kase.id,
+        certification_id: certification.id
+      }
+
       if outcome == :compliant
-        Strata::EventManager.publish("DeterminedHoursMet", {
-          case_id: kase.id,
-          certification_id: certification.id
-        })
+        Strata::EventManager.publish("DeterminedCommunityEngagementMet", payload_base)
       elsif income_data[:income_by_source][:income].positive?
-        Strata::EventManager.publish("DeterminedHoursInsufficient", {
-          case_id: kase.id,
-          certification_id: certification.id,
+        Strata::EventManager.publish("DeterminedCommunityEngagementInsufficient", payload_base.merge(
           income_data: income_data
-        })
+        ))
       else
-        Strata::EventManager.publish("DeterminedActionRequired", {
-          case_id: kase.id,
-          certification_id: certification.id
-        })
+        Strata::EventManager.publish("DeterminedCommunityEngagementActionRequired", payload_base)
       end
     end
 
