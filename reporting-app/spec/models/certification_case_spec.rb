@@ -9,7 +9,7 @@ RSpec.describe CertificationCase, type: :model do
   # (Income aggregate can meet threshold and close the case before examples run).
   before do
     allow(CommunityEngagementCheckService).to receive(:determine) do |kase|
-      Strata::EventManager.publish("DeterminedActionRequired", {
+      Strata::EventManager.publish("DeterminedCommunityEngagementActionRequired", {
         case_id: kase.id,
         certification_id: kase.certification_id
       })

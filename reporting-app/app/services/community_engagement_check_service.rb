@@ -2,7 +2,8 @@
 
 # Called by CertificationBusinessProcess at the ex parte community engagement step.
 # Aggregates hours and income, records a combined determination on the case, and publishes
-# Strata events for transitions/notifications (see NotificationsEventListener).
+# generic community-engagement Strata events (+DeterminedCommunityEngagementMet+ / +Insufficient+ / +ActionRequired+;
+# see NotificationsEventListener).
 class CommunityEngagementCheckService
   class << self
     # @param kase [CertificationCase]
@@ -39,23 +40,20 @@ class CommunityEngagementCheckService
     end
 
     def publish_workflow_events(kase:, certification:, hours_data:, income_data:, hours_ok:, income_ok:)
+      payload_base = {
+        case_id: kase.id,
+        certification_id: certification.id
+      }
+
       if hours_ok || income_ok
-        Strata::EventManager.publish("DeterminedHoursMet", {
-          case_id: kase.id,
-          certification_id: certification.id
-        })
+        Strata::EventManager.publish("DeterminedCommunityEngagementMet", payload_base)
       elsif hours_data[:hours_by_source][:ex_parte].to_f.positive?
-        Strata::EventManager.publish("DeterminedHoursInsufficient", {
-          case_id: kase.id,
-          certification_id: certification.id,
+        Strata::EventManager.publish("DeterminedCommunityEngagementInsufficient", payload_base.merge(
           hours_data: hours_data,
           income_data: income_data
-        })
+        ))
       else
-        Strata::EventManager.publish("DeterminedActionRequired", {
-          case_id: kase.id,
-          certification_id: certification.id
-        })
+        Strata::EventManager.publish("DeterminedCommunityEngagementActionRequired", payload_base)
       end
     end
   end

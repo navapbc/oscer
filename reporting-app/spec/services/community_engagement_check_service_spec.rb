@@ -54,11 +54,11 @@ RSpec.describe CommunityEngagementCheckService do
         expect(data["income"]["compliant"]).to be false
       end
 
-      it "publishes DeterminedHoursMet" do
+      it "publishes DeterminedCommunityEngagementMet" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedHoursMet",
+          "DeterminedCommunityEngagementMet",
           hash_including(case_id: certification_case.id)
         )
       end
@@ -82,11 +82,11 @@ RSpec.describe CommunityEngagementCheckService do
         expect(data["income"]["compliant"]).to be true
       end
 
-      it "publishes DeterminedHoursMet for workflow parity" do
+      it "publishes DeterminedCommunityEngagementMet" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedHoursMet",
+          "DeterminedCommunityEngagementMet",
           hash_including(case_id: certification_case.id)
         )
       end
@@ -132,11 +132,11 @@ RSpec.describe CommunityEngagementCheckService do
         expect(data["income"]["compliant"]).to be false
       end
 
-      it "publishes DeterminedHoursInsufficient with hours and income payload" do
+      it "publishes DeterminedCommunityEngagementInsufficient with hours and income payload" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedHoursInsufficient",
+          "DeterminedCommunityEngagementInsufficient",
           hash_including(
             case_id: certification_case.id,
             hours_data: kind_of(Hash),
@@ -151,11 +151,11 @@ RSpec.describe CommunityEngagementCheckService do
         create_income_for(certification, gross_income: 100)
       end
 
-      it "publishes DeterminedActionRequired" do
+      it "publishes DeterminedCommunityEngagementActionRequired" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedActionRequired",
+          "DeterminedCommunityEngagementActionRequired",
           hash_including(case_id: certification_case.id)
         )
       end
