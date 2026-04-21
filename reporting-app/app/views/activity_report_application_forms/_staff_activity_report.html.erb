@@ -37,10 +37,7 @@
           <% if activity.supporting_documents.any? %>
             <ul class="usa-list usa-list--unstyled margin-0">
               <% activity.supporting_documents.each do |document| %>
-                <li>
-                  <%= link_to document.filename, rails_blob_path(document, disposition: "attachment"),
-                      target: "_blank", class: "usa-link" %>
-                </li>
+                <li><%= document.filename %></li>
               <% end %>
             </ul>
           <% else %>

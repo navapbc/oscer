@@ -1,15 +1,38 @@
 # frozen_string_literal: true
 
-# Aggregates verified income for a certification lookback and compares to the monthly threshold.
-# Ex parte CE workflow (aggregate + combined determination + Strata events) lives in
-# +CommunityEngagementCheckService+; this service exposes +aggregate_income_for_certification+,
-# +compliant_for_total_income?+, and +calculate+ for silent persistence (+CertificationCase#record_income_compliance+).
+# Aggregates verified income for a certification lookback, compares to the monthly threshold,
+# and (via CertificationCase#record_income_compliance) persists automated determinations.
+# Publishes generic community-engagement Strata events from #determine (income path until hours adopts the same names).
 # Single source for TARGET_INCOME_MONTHLY (CE compliance UI and statistics; parity with
 # HoursComplianceDeterminationService::TARGET_HOURS) via Rails.application.config.ce_compliance.
 class IncomeComplianceDeterminationService
   TARGET_INCOME_MONTHLY = Rails.application.config.ce_compliance[:income_threshold_monthly]
 
   class << self
+    # @param kase [CertificationCase]
+    def determine(kase)
+      certification = Certification.find(kase.certification_id)
+      income_data = aggregate_income_for_certification(certification)
+      outcome = determine_outcome(income_data[:total_income])
+
+      kase.record_income_compliance(outcome, income_data)
+
+      payload_base = {
+        case_id: kase.id,
+        certification_id: certification.id
+      }
+
+      if outcome == :compliant
+        Strata::EventManager.publish("DeterminedCommunityEngagementMet", payload_base)
+      elsif income_data[:income_by_source][:income].positive?
+        Strata::EventManager.publish("DeterminedCommunityEngagementInsufficient", payload_base.merge(
+          income_data: income_data
+        ))
+      else
+        Strata::EventManager.publish("DeterminedCommunityEngagementActionRequired", payload_base)
+      end
+    end
+
     # Silent recalculation (e.g. jobs) — records determination without publishing workflow events.
     # @param certification_id [String]
     # @return [void]
@@ -46,18 +69,10 @@ class IncomeComplianceDeterminationService
       }
     end
 
-    # Whether aggregated income meets the monthly CE threshold. Single source for comparison
-    # with +determine_outcome+ and +CommunityEngagementCheckService.determine+.
-    # @param total_income [Numeric]
-    # @return [Boolean]
-    def compliant_for_total_income?(total_income)
-      total_income >= TARGET_INCOME_MONTHLY
-    end
-
     private
 
     def determine_outcome(total_income)
-      compliant_for_total_income?(total_income) ? :compliant : :not_compliant
+      total_income >= TARGET_INCOME_MONTHLY ? :compliant : :not_compliant
     end
 
     # Approved member-reported income (e.g. from activity report) — stub until modeled.

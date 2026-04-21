@@ -3,14 +3,13 @@
 require "rails_helper"
 
 RSpec.describe IncomeComplianceDeterminationService do
-  def latest_determination_for(certification_id)
-    Determination.unscope(:order).where(subject_id: certification_id).order(created_at: :desc).first
-  end
-
   def expect_no_ce_workflow_events_published
     expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedHoursMet", anything)
     expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedHoursInsufficient", anything)
     expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedActionRequired", anything)
+    expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedCommunityEngagementMet", anything)
+    expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedCommunityEngagementInsufficient", anything)
+    expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedCommunityEngagementActionRequired", anything)
   end
 
   # Income rows aligned with the certification's continuous lookback (parity with hours ex parte helper).
@@ -29,57 +28,64 @@ RSpec.describe IncomeComplianceDeterminationService do
     end
   end
 
-  describe ".compliant_for_total_income?" do
-    it "is true when total meets threshold exactly" do
-      expect(described_class.compliant_for_total_income?(described_class::TARGET_INCOME_MONTHLY)).to be true
-    end
-
-    it "is false when just below threshold" do
-      expect(described_class.compliant_for_total_income?(described_class::TARGET_INCOME_MONTHLY - 1)).to be false
-    end
-  end
-
-  describe ".calculate" do
+  describe ".determine" do
     before do
       allow(Strata::EventManager).to receive(:publish)
       allow(NotificationService).to receive(:send_email_notification)
     end
 
     let(:certification) { create(:certification) }
-    let!(:certification_case) { create(:certification_case, certification: certification) }
+    let(:certification_case) { create(:certification_case, certification: certification) }
 
     context "when income meets target" do
       before do
-        create_income_for(certification, gross_income: 600)
+        create_income_for(certification, gross_income: 620)
       end
 
-      it "creates a compliant automated determination (no workflow events from this method)" do
-        described_class.calculate(certification.id)
+      it "does not publish hours-path CE events (income uses generic community engagement names)" do
+        described_class.determine(certification_case)
 
-        determination = latest_determination_for(certification.id)
+        expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedHoursMet", anything)
+        expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedHoursInsufficient", anything)
+      end
+
+      it "publishes DeterminedCommunityEngagementMet" do
+        described_class.determine(certification_case)
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DeterminedCommunityEngagementMet",
+          hash_including(
+            case_id: certification_case.id,
+            certification_id: certification.id
+          )
+        )
+      end
+
+      it "creates a compliant determination with income reason code" do
+        described_class.determine(certification_case)
+
+        determination = Determination.where(subject_id: certification.id).last
         expect(determination.outcome).to eq("compliant")
         expect(determination.reasons).to include("income_reported_compliant")
-        expect(determination.decision_method).to eq("automated")
-        expect_no_ce_workflow_events_published
       end
 
       it "closes the case" do
-        described_class.calculate(certification.id)
+        described_class.determine(certification_case)
 
         expect(certification_case.reload).to be_closed
       end
 
       it "stores income_based determination_data" do
-        described_class.calculate(certification.id)
+        described_class.determine(certification_case)
 
-        determination = latest_determination_for(certification.id)
+        determination = Determination.where(subject_id: certification.id).last
         data = determination.determination_data
 
         expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_INCOME_BASED)
-        expect(data["total_income"]).to eq(600.0)
+        expect(data["total_income"]).to eq(620.0)
         expect(data["target_income"]).to eq(580.0)
         expect(data["calculation_method"]).to eq(Determination::CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE)
-        expect(data["income_by_source"]).to eq("income" => 600.0, "activity" => 0.0)
+        expect(data["income_by_source"]).to eq("income" => 620.0, "activity" => 0.0)
       end
     end
 
@@ -88,30 +94,52 @@ RSpec.describe IncomeComplianceDeterminationService do
         create_income_for(certification, gross_income: 400)
       end
 
-      it "creates a not_compliant determination" do
-        described_class.calculate(certification.id)
+      it "publishes DeterminedCommunityEngagementInsufficient with income_data (mailer flags derived in listener)" do
+        described_class.determine(certification_case)
 
-        determination = latest_determination_for(certification.id)
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DeterminedCommunityEngagementInsufficient",
+          hash_including(
+            case_id: certification_case.id,
+            income_data: hash_including(:total_income)
+          )
+        )
+      end
+
+      it "creates a not_compliant determination" do
+        described_class.determine(certification_case)
+
+        determination = Determination.where(subject_id: certification.id).last
         expect(determination.outcome).to eq("not_compliant")
         expect(determination.reasons).to include("income_reported_insufficient")
-        expect_no_ce_workflow_events_published
       end
 
       it "does not close the case" do
-        described_class.calculate(certification.id)
+        described_class.determine(certification_case)
 
         expect(certification_case.reload).not_to be_closed
       end
     end
 
     context "when income is below target with NO income rows" do
-      it "creates a not_compliant determination" do
-        described_class.calculate(certification.id)
+      it "publishes DeterminedCommunityEngagementActionRequired" do
+        described_class.determine(certification_case)
 
-        determination = latest_determination_for(certification.id)
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DeterminedCommunityEngagementActionRequired",
+          hash_including(
+            case_id: certification_case.id,
+            certification_id: certification.id
+          )
+        )
+      end
+
+      it "creates a not_compliant determination" do
+        described_class.determine(certification_case)
+
+        determination = Determination.where(subject_id: certification.id).last
         expect(determination.outcome).to eq("not_compliant")
         expect(determination.reasons).to include("income_reported_insufficient")
-        expect_no_ce_workflow_events_published
       end
     end
 
@@ -121,10 +149,36 @@ RSpec.describe IncomeComplianceDeterminationService do
       end
 
       it "is compliant" do
+        described_class.determine(certification_case)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.outcome).to eq("compliant")
+      end
+    end
+  end
+
+  describe ".calculate" do
+    before do
+      allow(Strata::EventManager).to receive(:publish)
+      allow(NotificationService).to receive(:send_email_notification)
+      create(:certification_case, certification: certification)
+    end
+
+    let(:certification) { create(:certification) }
+
+    context "when income meets target" do
+      before do
+        create_income_for(certification, gross_income: 600)
+      end
+
+      it "creates a compliant automated determination (no workflow events from this method)" do
         described_class.calculate(certification.id)
 
-        determination = latest_determination_for(certification.id)
+        determination = Determination.where(subject_id: certification.id).last
         expect(determination.outcome).to eq("compliant")
+        expect(determination.reasons).to include("income_reported_compliant")
+        expect(determination.decision_method).to eq("automated")
+        expect_no_ce_workflow_events_published
       end
     end
 
@@ -136,7 +190,7 @@ RSpec.describe IncomeComplianceDeterminationService do
       it "creates a not_compliant determination" do
         described_class.calculate(certification.id)
 
-        determination = latest_determination_for(certification.id)
+        determination = Determination.where(subject_id: certification.id).last
         expect(determination.outcome).to eq("not_compliant")
         expect(determination.reasons).to include("income_reported_insufficient")
         expect_no_ce_workflow_events_published
@@ -145,13 +199,13 @@ RSpec.describe IncomeComplianceDeterminationService do
   end
 
   describe "income aggregation" do
-    let(:certification) { create(:certification) }
-
     before do
       allow(Strata::EventManager).to receive(:publish)
       allow(NotificationService).to receive(:send_email_notification)
-      create(:certification_case, certification: certification)
     end
+
+    let(:certification) { create(:certification) }
+    let(:certification_case) { create(:certification_case, certification: certification) }
 
     context "with multiple Income rows in lookback" do
       before do
@@ -160,16 +214,16 @@ RSpec.describe IncomeComplianceDeterminationService do
       end
 
       it "sums gross_income across rows" do
-        described_class.calculate(certification.id)
+        described_class.determine(certification_case)
 
-        determination = latest_determination_for(certification.id)
+        determination = Determination.where(subject_id: certification.id).last
         expect(determination.determination_data["total_income"]).to eq(580.25)
       end
 
       it "includes income_ids" do
-        described_class.calculate(certification.id)
+        described_class.determine(certification_case)
 
-        determination = latest_determination_for(certification.id)
+        determination = Determination.where(subject_id: certification.id).last
         expect(determination.determination_data["income_ids"].length).to eq(2)
       end
     end
@@ -186,9 +240,9 @@ RSpec.describe IncomeComplianceDeterminationService do
       end
 
       it "only counts income within the lookback period" do
-        described_class.calculate(certification.id)
+        described_class.determine(certification_case)
 
-        determination = latest_determination_for(certification.id)
+        determination = Determination.where(subject_id: certification.id).last
         expect(determination.outcome).to eq("not_compliant")
         expect(determination.determination_data["total_income"]).to eq(300.0)
       end
