@@ -17,6 +17,17 @@ The Rails app reads these optional variables at boot. Omit them to use defaults;
 | `CE_TARGET_MONTHLY_HOURS`     | `80`    | Minimum qualifying hours per month (`HoursComplianceDeterminationService::TARGET_HOURS`). |
 | `CE_INCOME_THRESHOLD_MONTHLY` | `580`   | Minimum qualifying gross income per month in dollars (`IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY`). Must be a positive number or the application will fail to boot. |
 
+## Canonical public host (reporting-app)
+
+These affect how Rails builds absolute redirect URLs when the reverse proxy or container does not present the browser-facing host.
+
+| Variable | Where set | Purpose |
+|----------|-----------|---------|
+| `APP_HOST` | Terraform (`infra/reporting-app/.../environment_variables.tf` maps it from `var.domain_name`) and local `.env` | Public hostname for this deployment; when set, `Middleware::PublicRequestHost` normalizes `Host` / `X-Forwarded-Host` before the app runs so string redirects use the public authority. |
+| `SKIP_PUBLIC_REQUEST_HOST` | Local, **PR preview ECS** (set automatically), or other ad-hoc Rails processes | When set to the string `true`, `Middleware::PublicRequestHost` does not run. Reporting-app **temporary** Terraform workspaces (e.g. `p-<pr>`) merge this into the task definition so GitHub E2E can use the load-balancer URL while `APP_HOST` remains the configured domain for OIDC. For long-lived environments, omit it so redirects use the canonical public host. |
+
+`RAILS_ENV=test` also skips the middleware so request specs keep a stable default host.
+
 Environment variables are defined in `infra/<APP_NAME>/app-config/env-config/environment_variables.tf`. Modify the `default_extra_environment_variables` map to define extra environment variables specific to the application. Map keys define the environment variable name, and values define the default value for the variable across application environments. For example:
 
 ```terraform

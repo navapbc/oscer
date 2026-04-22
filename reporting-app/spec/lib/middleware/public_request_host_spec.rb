@@ -39,6 +39,34 @@ RSpec.describe Middleware::PublicRequestHost do
         expect(body.join).to eq("http://web:3000")
       end
     end
+
+    it "does not rewrite when SKIP_PUBLIC_REQUEST_HOST is set outside test" do
+      allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new("development"))
+      with_env(
+        "APP_HOST" => "app.example.com",
+        "APP_PORT" => "443",
+        "DISABLE_HTTPS" => "false",
+        "SKIP_PUBLIC_REQUEST_HOST" => "true"
+      ) do
+        env = Rack::MockRequest.env_for("/", "HTTP_HOST" => "localhost:3000")
+        _status, _headers, body = middleware.call(env)
+        expect(body.join).to eq("http://localhost:3000")
+      end
+    end
+
+    it "rewrites internal Host in development when SKIP_PUBLIC_REQUEST_HOST is unset" do
+      allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new("development"))
+      with_env(
+        "APP_HOST" => "app.example.com",
+        "APP_PORT" => "443",
+        "DISABLE_HTTPS" => "false",
+        "SKIP_PUBLIC_REQUEST_HOST" => nil
+      ) do
+        env = Rack::MockRequest.env_for("/", "HTTP_HOST" => "web:3000")
+        _status, _headers, body = middleware.call(env)
+        expect(body.join).to eq("https://app.example.com")
+      end
+    end
   end
 
   describe ".apply_canonical_host!" do
@@ -126,47 +154,6 @@ RSpec.describe Middleware::PublicRequestHost do
         expect(env["HTTP_HOST"]).to eq("app.example.com")
         expect(env["HTTP_X_FORWARDED_HOST"]).to eq("app.example.com")
         expect(env["HTTP_X_FORWARDED_PROTO"]).to eq("http")
-      end
-    end
-
-    it "does not rewrite when the browser Host is localhost (Playwright E2E while APP_HOST is set for OIDC)" do
-      with_env("APP_HOST" => "app.example.com", "APP_PORT" => "443", "DISABLE_HTTPS" => "false") do
-        env = Rack::MockRequest.env_for("/", "HTTP_HOST" => "localhost:3000")
-        described_class.apply_canonical_host!(env)
-
-        expect(env["HTTP_HOST"]).to eq("localhost:3000")
-        expect(env["HTTP_X_FORWARDED_HOST"]).to be_nil
-        expect(env["HTTP_X_FORWARDED_PROTO"]).to be_nil
-      end
-    end
-
-    it "does not rewrite when the browser Host is 127.0.0.1" do
-      with_env("APP_HOST" => "app.example.com", "APP_PORT" => "443", "DISABLE_HTTPS" => "false") do
-        env = Rack::MockRequest.env_for("/", "HTTP_HOST" => "127.0.0.1:3000")
-        described_class.apply_canonical_host!(env)
-
-        expect(env["HTTP_HOST"]).to eq("127.0.0.1:3000")
-        expect(env["HTTP_X_FORWARDED_HOST"]).to be_nil
-      end
-    end
-
-    it "does not rewrite when the browser Host is host.docker.internal" do
-      with_env("APP_HOST" => "app.example.com", "APP_PORT" => "443", "DISABLE_HTTPS" => "false") do
-        env = Rack::MockRequest.env_for("/", "HTTP_HOST" => "host.docker.internal:3000")
-        described_class.apply_canonical_host!(env)
-
-        expect(env["HTTP_HOST"]).to eq("host.docker.internal:3000")
-        expect(env["HTTP_X_FORWARDED_HOST"]).to be_nil
-      end
-    end
-
-    it "does not rewrite when the browser Host is www.example.com" do
-      with_env("APP_HOST" => "app.example.com", "APP_PORT" => "443", "DISABLE_HTTPS" => "false") do
-        env = Rack::MockRequest.env_for("/", "HTTP_HOST" => "www.example.com")
-        described_class.apply_canonical_host!(env)
-
-        expect(env["HTTP_HOST"]).to eq("www.example.com")
-        expect(env["HTTP_X_FORWARDED_HOST"]).to be_nil
       end
     end
   end
