@@ -53,7 +53,7 @@ The platform consists of:
 
 ### Key Technologies
 
-- **Backend**: Ruby on Rails 7.2, PostgreSQL
+- **Backend**: Ruby on Rails 8.0, PostgreSQL
 - **Frontend**: USWDS, ERB templates, JavaScript
 - **Infrastructure**: Terraform (AWS implementation provided as reference)
 - **Testing**: RSpec, Playwright (E2E)
@@ -68,7 +68,7 @@ If you are interested in:
 ### Prerequisites
 
 - Docker or Finch (container runtime)
-- Ruby 3.x (for native development)
+- Ruby 3.4.9 (for native development)
 - Node.js LTS (for native development)
 
 ### Installation
