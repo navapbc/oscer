@@ -62,6 +62,15 @@ RSpec.describe IncomeComplianceDeterminationService do
         expect(determination.decision_method).to eq("automated")
         expect_no_ce_workflow_events_published
       end
+
+      it "does not close the certification case when compliant" do
+        kase = CertificationCase.find_by!(certification_id: certification.id)
+        expect(kase).to be_open
+
+        described_class.calculate(certification.id)
+
+        expect(kase.reload).to be_open
+      end
     end
 
     context "when income is below target" do

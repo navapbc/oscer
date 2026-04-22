@@ -18,9 +18,9 @@ Community engagement requirements (CER) under H.R. 1 require Medicaid members to
 
 ## Compliance recalculation (open cases)
 
-When [`IncomeService#create_entry`](../../reporting-app/app/services/income_service.rb) persists a new `Income` row with **`recalculate_income_compliance: true`** (the default), OSCER looks up the member’s **open** [`CertificationCase`](../../reporting-app/app/models/certification_case.rb) and runs [`IncomeComplianceDeterminationService.calculate`](../../reporting-app/app/services/income_compliance_determination_service.rb) for that case’s certification. That records an automated **income-based** determination without publishing CE workflow events, so determinations stay current when states append income for an existing case.
+When [`IncomeService#create_entry`](../../../reporting-app/app/services/income_service.rb) persists a new `Income` row with **`recalculate_income_compliance: true`** (the default), OSCER looks up the member’s **open** [`CertificationCase`](../../../reporting-app/app/models/certification_case.rb) and runs [`IncomeComplianceDeterminationService.calculate`](../../../reporting-app/app/services/income_compliance_determination_service.rb) for that case’s certification. That records an automated **income-based** determination without publishing CE workflow events and **without closing the case** when the outcome is compliant, so determinations stay current when states append income for an existing case.
 
-During **certification creation**, [`Certifications::CreationService`](../../reporting-app/app/services/certifications/creation_service.rb) passes **`recalculate_income_compliance: false`** so intake does not run this path before the case exists (or risk attributing rows to the wrong open case). The combined ex parte CE step after `CertificationCreated` still uses aggregated income for the initial assessment.
+During **certification creation**, [`Certifications::CreationService`](../../../reporting-app/app/services/certifications/creation_service.rb) passes **`recalculate_income_compliance: false`** so intake does not run this path before the case exists (or risk attributing rows to the wrong open case). The combined ex parte CE step after `CertificationCreated` still uses aggregated income for the initial assessment.
 
 ---
 

@@ -55,9 +55,9 @@ RSpec.describe IncomeService do
 
     context "when the member has an open certification case" do
       let(:certification) { create(:certification) }
+      let!(:kase) { create(:certification_case, certification: certification) }
 
       before do
-        create(:certification_case, certification: certification)
         allow(Strata::EventManager).to receive(:publish)
         allow(NotificationService).to receive(:send_email_notification)
       end
@@ -66,6 +66,8 @@ RSpec.describe IncomeService do
         lookback = certification.certification_requirements.continuous_lookback_period
         period_start = lookback.start.to_date
         period_end = lookback.start.to_date.end_of_month
+
+        expect(kase).to be_open
 
         expect {
           described_class.create_entry(
@@ -81,6 +83,7 @@ RSpec.describe IncomeService do
         determination = Determination.where(subject_id: certification.id).order(created_at: :desc).first
         expect(determination.outcome).to eq("compliant")
         expect(determination.reasons).to include("income_reported_compliant")
+        expect(kase.reload).to be_open
       end
 
       it "skips recalculation when recalculate_income_compliance is false" do

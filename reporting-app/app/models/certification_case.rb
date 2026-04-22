@@ -150,12 +150,14 @@ class CertificationCase < Strata::Case
   # Model only handles state changes — service handles events and notifications.
   # @param outcome [Symbol] :compliant or :not_compliant
   # @param income_data [Hash] aggregated income data from IncomeComplianceDeterminationService
-  def record_income_compliance(outcome, income_data)
+  # @param close_on_compliant [Boolean] default false: silent recalculation does not +close!+ the case
+  def record_income_compliance(outcome, income_data, close_on_compliant: false)
     record_automated_ce_compliance(
       outcome,
       build_income_determination_data(income_data),
       compliant_reason: :income_reported_compliant,
-      not_compliant_reason: :income_reported_insufficient
+      not_compliant_reason: :income_reported_insufficient,
+      close_on_compliant: close_on_compliant
     )
   end
 
@@ -201,12 +203,14 @@ class CertificationCase < Strata::Case
   # @param determination_data [Hash] payload for +record_determination!+
   # @param compliant_reason [Symbol] key into +Determination::REASON_CODE_MAPPING+ when compliant
   # @param not_compliant_reason [Symbol] key into +Determination::REASON_CODE_MAPPING+ when not compliant
-  def record_automated_ce_compliance(outcome, determination_data, compliant_reason:, not_compliant_reason:)
+  # @param close_on_compliant [Boolean] when false, compliant outcomes do not call +close!+ (income silent recalc)
+  def record_automated_ce_compliance(outcome, determination_data, compliant_reason:, not_compliant_reason:,
+                                     close_on_compliant: true)
     certification = Certification.find(certification_id)
     reason_code = outcome == :compliant ? compliant_reason : not_compliant_reason
 
     transaction do
-      close! if outcome == :compliant
+      close! if close_on_compliant && outcome == :compliant
 
       certification.record_determination!(
         decision_method: :automated,
