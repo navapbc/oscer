@@ -743,6 +743,7 @@ DEPENDENCIES
   strata!
   turbo-rails (>= 2.0)
   tzinfo-data
+  validates_timeliness (~> 8.0)
   web-console
   webmock
 
