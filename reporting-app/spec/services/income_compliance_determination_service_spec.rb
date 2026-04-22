@@ -63,13 +63,13 @@ RSpec.describe IncomeComplianceDeterminationService do
         expect_no_ce_workflow_events_published
       end
 
-      it "does not close the certification case when compliant" do
+      it "closes the certification case when compliant (parity with hours calculate)" do
         kase = CertificationCase.find_by!(certification_id: certification.id)
         expect(kase).to be_open
 
         described_class.calculate(certification.id)
 
-        expect(kase.reload).to be_open
+        expect(kase.reload).to be_closed
       end
     end
 

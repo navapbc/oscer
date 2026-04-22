@@ -2,7 +2,7 @@
 
 # Aggregates verified income for a certification lookback, compares to the monthly threshold,
 # and (via CertificationCase#record_income_compliance) persists automated determinations from +#calculate+
-# without closing the case when compliant (see +CertificationCase#record_income_compliance+).
+# (same +close!+ when compliant as hours; +close_on_compliant+ on +record_income_compliance+ can opt out later).
 # Combined ex parte CE assessment and Strata workflow events live in +CommunityEngagementCheckService+.
 # Single source for TARGET_INCOME_MONTHLY (CE compliance UI and statistics; parity with
 # HoursComplianceDeterminationService::TARGET_HOURS) via Rails.application.config.ce_compliance.
@@ -18,7 +18,7 @@ class IncomeComplianceDeterminationService
     end
 
     # Silent recalculation (e.g. after new Income) — records determination without publishing workflow
-    # events and without closing the case when compliant.
+    # events; closes the case when compliant (same as +HoursComplianceDeterminationService#calculate+).
     # @param certification_id [String]
     # @return [void]
     def calculate(certification_id)

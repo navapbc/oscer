@@ -150,8 +150,8 @@ class CertificationCase < Strata::Case
   # Model only handles state changes — service handles events and notifications.
   # @param outcome [Symbol] :compliant or :not_compliant
   # @param income_data [Hash] aggregated income data from IncomeComplianceDeterminationService
-  # @param close_on_compliant [Boolean] default false: silent recalculation does not +close!+ the case
-  def record_income_compliance(outcome, income_data, close_on_compliant: false)
+  # @param close_on_compliant [Boolean] default true (parity with +record_hours_compliance+); pass false to record only
+  def record_income_compliance(outcome, income_data, close_on_compliant: true)
     record_automated_ce_compliance(
       outcome,
       build_income_determination_data(income_data),
@@ -203,7 +203,7 @@ class CertificationCase < Strata::Case
   # @param determination_data [Hash] payload for +record_determination!+
   # @param compliant_reason [Symbol] key into +Determination::REASON_CODE_MAPPING+ when compliant
   # @param not_compliant_reason [Symbol] key into +Determination::REASON_CODE_MAPPING+ when not compliant
-  # @param close_on_compliant [Boolean] when false, compliant outcomes do not call +close!+ (income silent recalc)
+  # @param close_on_compliant [Boolean] when false, compliant outcomes do not call +close!+
   def record_automated_ce_compliance(outcome, determination_data, compliant_reason:, not_compliant_reason:,
                                      close_on_compliant: true)
     certification = Certification.find(certification_id)

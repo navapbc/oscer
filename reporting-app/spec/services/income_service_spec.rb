@@ -83,7 +83,7 @@ RSpec.describe IncomeService do
         determination = Determination.where(subject_id: certification.id).order(created_at: :desc).first
         expect(determination.outcome).to eq("compliant")
         expect(determination.reasons).to include("income_reported_compliant")
-        expect(kase.reload).to be_open
+        expect(kase.reload).to be_closed
       end
 
       it "skips recalculation when recalculate_income_compliance is false" do
