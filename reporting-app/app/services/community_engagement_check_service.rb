@@ -28,8 +28,7 @@ class CommunityEngagementCheckService
         certification: certification,
         hours_data: hours_data,
         income_data: income_data,
-        hours_ok: hours_ok,
-        income_ok: income_ok
+        either_track_compliant: hours_ok || income_ok
       )
     end
 
@@ -39,15 +38,15 @@ class CommunityEngagementCheckService
       hours_data[:total_hours].to_f >= HoursComplianceDeterminationService::TARGET_HOURS
     end
 
-    def publish_workflow_events(kase:, certification:, hours_data:, income_data:, hours_ok:, income_ok:)
+    def publish_workflow_events(kase:, certification:, hours_data:, income_data:, either_track_compliant:)
       payload_base = {
         case_id: kase.id,
         certification_id: certification.id
       }
 
-      if hours_ok || income_ok
+      if either_track_compliant
         Strata::EventManager.publish("DeterminedCommunityEngagementMet", payload_base)
-      elsif hours_data[:hours_by_source][:ex_parte].to_f.positive?
+      elsif hours_data.dig(:hours_by_source, :ex_parte).to_f.positive?
         Strata::EventManager.publish("DeterminedCommunityEngagementInsufficient", payload_base.merge(
           hours_data: hours_data,
           income_data: income_data
