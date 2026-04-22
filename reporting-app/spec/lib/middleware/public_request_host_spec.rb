@@ -159,5 +159,15 @@ RSpec.describe Middleware::PublicRequestHost do
         expect(env["HTTP_X_FORWARDED_HOST"]).to be_nil
       end
     end
+
+    it "does not rewrite when the browser Host is www.example.com" do
+      with_env("APP_HOST" => "app.example.com", "APP_PORT" => "443", "DISABLE_HTTPS" => "false") do
+        env = Rack::MockRequest.env_for("/", "HTTP_HOST" => "www.example.com")
+        described_class.apply_canonical_host!(env)
+
+        expect(env["HTTP_HOST"]).to eq("www.example.com")
+        expect(env["HTTP_X_FORWARDED_HOST"]).to be_nil
+      end
+    end
   end
 end

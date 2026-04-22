@@ -12,8 +12,9 @@ module Middleware
   # and normalize Host / forwarded headers before the rest of the stack runs.
   #
   # When the browser already talks to a local dev host (localhost, 127.0.0.1,
-  # host.docker.internal, loopback), we do not rewrite—even if APP_HOST is set for
-  # OIDC callback URLs—so redirects stay on the same origin (e.g. Playwright E2E).
+  # host.docker.internal, loopback), or reserved test hosts (www.example.com,
+  # example.com), we do not rewrite—even if APP_HOST is set for OIDC callback URLs—so
+  # redirects stay on the same origin (e.g. Playwright E2E).
   #
   # In +test+, this middleware is a no-op so request specs (default host
   # +www.example.com+, +follow_redirect!+, flash/session) stay stable when CI sets
@@ -74,6 +75,8 @@ module Middleware
 
       hn = hostname.downcase
       return true if hn == "localhost" || hn == "host.docker.internal"
+      # Playwright / Rails reserved hosts when BASE_URL or default host is not loopback
+      return true if hn == "www.example.com" || hn == "example.com"
 
       begin
         IPAddr.new(hostname).loopback?
