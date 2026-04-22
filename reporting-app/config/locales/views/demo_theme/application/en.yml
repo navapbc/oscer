@@ -1,0 +1,23 @@
+# See: https://guides.rubyonrails.org/i18n.html.
+#
+# Be aware that YAML interprets the following case-insensitive strings as
+# booleans: `true`, `false`, `on`, `off`, `yes`, `no`. Therefore, these strings
+# must be quoted to be interpreted as strings. For example:
+#  "yes": yup
+#  enabled: "ON"
+
+en:
+  demo:
+    header:
+      title: "State of Nava PBC"
+      subtitle: "Department of Health & Social Services"
+    banner:
+      official: "State of Nava PBC Official Website"
+      help: "Help"
+      contact: "Contact"
+    footer:
+      privacy: "Privacy Policy"
+      accessibility: "Accessibility"
+      contact: "Contact"
+      agency_name: "State of Nava PBC - Department of Health & Social Services"
+

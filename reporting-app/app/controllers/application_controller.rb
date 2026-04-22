@@ -8,12 +8,14 @@ class ApplicationController < ActionController::Base
 
   helper_method :feature_enabled?
 
+  before_action :check_demo_status
   around_action :switch_locale
   after_action :verify_authorized, except: :index
   after_action :verify_policy_scoped, only: :index
 
   @@view_overrides = ActionView::FileSystemResolver.new("app/views/overrides")
   prepend_view_path @@view_overrides
+  @@view_demo_theme = ActionView::FileSystemResolver.new("app/views/demo_theme")
 
   # Set the active locale based on the URL
   # For example, if the URL starts with /es-US, the locale will be set to :es-US
@@ -48,6 +50,20 @@ class ApplicationController < ActionController::Base
   end
 
   private
+
+  def check_demo_status
+    case params[:theme]
+    when "nava_pbc"
+      session[:demo_mode] = true
+    when nil
+      # no-op
+    else
+      session.delete(:demo_mode)
+    end
+    if session[:demo_mode]
+      prepend_view_path @@view_demo_theme
+    end
+  end
 
   # Validates return paths to prevent open redirect vulnerabilities
   # Only allows relative paths within the application
