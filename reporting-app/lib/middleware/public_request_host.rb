@@ -9,6 +9,10 @@ module Middleware
   # If APP_HOST is set, treat it as the canonical public host for this deployment
   # and normalize Host / forwarded headers before the rest of the stack runs.
   #
+  # In +test+, this middleware is a no-op so request specs (default host
+  # +www.example.com+, +follow_redirect!+, flash/session) stay stable when CI sets
+  # APP_HOST. Use {.apply_canonical_host!} in unit tests to assert rewrite behavior.
+  #
   # See config/application.rb (middleware.unshift).
   class PublicRequestHost
     def initialize(app)
@@ -16,19 +20,26 @@ module Middleware
     end
 
     def call(env)
-      canonical = canonical_authority_from_env
-      if canonical
-        env["HTTP_HOST"] = canonical
-        env["HTTP_X_FORWARDED_HOST"] = canonical
-        env["HTTP_X_FORWARDED_PROTO"] ||= forwarded_proto_from_env
-      end
-
+      self.class.apply_canonical_host!(env) unless self.class.skip_middleware?
       @app.call(env)
     end
 
-    private
+    # @param env [Hash] Rack env (mutated when APP_HOST is set)
+    # @return [void]
+    def self.apply_canonical_host!(env)
+      canonical = canonical_authority_from_env
+      return if canonical.blank?
 
-    def canonical_authority_from_env
+      env["HTTP_HOST"] = canonical
+      env["HTTP_X_FORWARDED_HOST"] = canonical
+      env["HTTP_X_FORWARDED_PROTO"] ||= forwarded_proto_from_env
+    end
+
+    def self.skip_middleware?
+      defined?(Rails) && Rails.respond_to?(:env) && Rails.env.test?
+    end
+
+    def self.canonical_authority_from_env
       app_host = ENV["APP_HOST"]&.strip
       return nil if app_host.blank?
 
@@ -43,7 +54,7 @@ module Middleware
       end
     end
 
-    def forwarded_proto_from_env
+    def self.forwarded_proto_from_env
       ENV["DISABLE_HTTPS"] == "true" ? "http" : "https"
     end
   end
