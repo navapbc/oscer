@@ -267,4 +267,31 @@ RSpec.describe CertificationCase, type: :model do
       expect(certification_case.reload).to be_closed
     end
   end
+
+  describe ".open_certification_id_for_member" do
+    let(:certification) { create(:certification) }
+
+    it "returns the certification id when an open case exists" do
+      kase = create(:certification_case, certification: certification)
+
+      expect(described_class.open_certification_id_for_member(certification.member_id)).to eq(kase.certification_id)
+    end
+
+    it "returns nil when the only case for the member is closed" do
+      kase = create(:certification_case, certification: certification)
+      kase.close!
+
+      expect(described_class.open_certification_id_for_member(certification.member_id)).to be_nil
+    end
+
+    it "returns the latest certification when multiple open cases exist for the member" do
+      member_id = create(:certification).member_id
+      older = create(:certification, member_id: member_id)
+      create(:certification_case, certification: older)
+      newer = travel_to(1.hour.from_now) { create(:certification, member_id: member_id) }
+      create(:certification_case, certification: newer)
+
+      expect(described_class.open_certification_id_for_member(member_id)).to eq(newer.id)
+    end
+  end
 end

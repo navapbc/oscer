@@ -8,7 +8,8 @@ class IncomeService
     # @return [Income] on success
     # @return [Hash] with :error key on failure
     def create_entry(member_id:, category:, gross_income:, period_start:, period_end:,
-                     source_type:, source_id: nil, reported_at: Time.current, metadata: {}, employer: nil)
+                     source_type:, source_id: nil, reported_at: Time.current, metadata: {}, employer: nil,
+                     recalculate_income_compliance: true)
       if duplicate_entry?(
         member_id: member_id,
         category: category,
@@ -32,6 +33,7 @@ class IncomeService
       )
 
       if entry.save
+        maybe_recalculate_income_compliance(entry.member_id) if recalculate_income_compliance
         entry
       else
         { error: entry.errors.full_messages.join(", ") }
@@ -39,6 +41,18 @@ class IncomeService
     end
 
     private
+
+    def maybe_recalculate_income_compliance(member_id)
+      certification_id = CertificationCase.open_certification_id_for_member(member_id)
+      return if certification_id.blank?
+
+      IncomeComplianceDeterminationService.calculate(certification_id)
+    rescue ActiveRecord::RecordNotFound
+      Rails.logger.warn(
+        "IncomeService: skipped income compliance recalculation (case or certification missing) " \
+        "for member_id=#{member_id} certification_id=#{certification_id}"
+      )
+    end
 
     # Same dimensions as ExParteActivityService duplicate check; source_type is not part of the key.
     def duplicate_entry?(member_id:, category:, gross_income:, period_start:, period_end:)

@@ -27,6 +27,19 @@ class CertificationCase < Strata::Case
     ).merge(Certification.by_region(region))
   }
 
+  # Latest open case for a member (by certification created_at). Used when persisting new
+  # Income rows to run income compliance recalculation for the active certification.
+  # @param member_id [String]
+  # @return [UUID, nil] certification_id
+  def self.open_certification_id_for_member(member_id)
+    joins("INNER JOIN certifications ON certifications.id = certification_cases.certification_id")
+      .where(certifications: { member_id: member_id })
+      .open
+      .order("certifications.created_at DESC")
+      .limit(1)
+      .pick(:certification_id)
+  end
+
   def accept_activity_report
     certification = Certification.find(certification_id)
     hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)

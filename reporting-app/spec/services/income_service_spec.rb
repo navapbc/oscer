@@ -53,6 +53,68 @@ RSpec.describe IncomeService do
       end
     end
 
+    context "when the member has an open certification case" do
+      let(:certification) { create(:certification) }
+
+      before do
+        create(:certification_case, certification: certification)
+        allow(Strata::EventManager).to receive(:publish)
+        allow(NotificationService).to receive(:send_email_notification)
+      end
+
+      it "persists an automated income determination after save" do
+        lookback = certification.certification_requirements.continuous_lookback_period
+        period_start = lookback.start.to_date
+        period_end = lookback.start.to_date.end_of_month
+
+        expect {
+          described_class.create_entry(
+            member_id: certification.member_id,
+            category: "employment",
+            gross_income: 600,
+            period_start: period_start,
+            period_end: period_end,
+            source_type: Income::SOURCE_TYPES[:api]
+          )
+        }.to change { Determination.where(subject_id: certification.id).count }.by(1)
+
+        determination = Determination.where(subject_id: certification.id).order(created_at: :desc).first
+        expect(determination.outcome).to eq("compliant")
+        expect(determination.reasons).to include("income_reported_compliant")
+      end
+
+      it "skips recalculation when recalculate_income_compliance is false" do
+        lookback = certification.certification_requirements.continuous_lookback_period
+        period_start = lookback.start.to_date
+        period_end = lookback.start.to_date.end_of_month
+
+        expect {
+          described_class.create_entry(
+            member_id: certification.member_id,
+            category: "employment",
+            gross_income: 600,
+            period_start: period_start,
+            period_end: period_end,
+            source_type: Income::SOURCE_TYPES[:api],
+            recalculate_income_compliance: false
+          )
+        }.not_to change { Determination.where(subject_id: certification.id).count }
+      end
+    end
+
+    context "when the member has no open certification case" do
+      before do
+        allow(Strata::EventManager).to receive(:publish)
+        allow(NotificationService).to receive(:send_email_notification)
+      end
+
+      it "creates income without running income compliance determination" do
+        expect {
+          described_class.create_entry(**valid_params)
+        }.not_to change(Determination, :count)
+      end
+    end
+
     context "with duplicate entry" do
       before do
         create(:income,
