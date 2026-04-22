@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
 # Aggregates verified income for a certification lookback, compares to the monthly threshold,
-# and (via CertificationCase#record_income_compliance) persists automated determinations from +#calculate+
-# (same +close!+ when compliant as hours; +close_on_compliant+ on +record_income_compliance+ can opt out later).
+# and (via CertificationCase#record_income_compliance) persists automated determinations from +#calculate+.
+#
+# Silent +#calculate+ matches +HoursComplianceDeterminationService#calculate+: no Strata workflow events,
+# and compliant outcomes close the case (see +CertificationCase#record_income_compliance+ and its
+# +close_on_compliant+ keyword for a future record-only mode).
 # Combined ex parte CE assessment and Strata workflow events live in +CommunityEngagementCheckService+.
 # Single source for TARGET_INCOME_MONTHLY (CE compliance UI and statistics; parity with
 # HoursComplianceDeterminationService::TARGET_HOURS) via Rails.application.config.ce_compliance.
@@ -17,8 +20,9 @@ class IncomeComplianceDeterminationService
       total_income >= TARGET_INCOME_MONTHLY
     end
 
-    # Silent recalculation (e.g. after new Income) — records determination without publishing workflow
-    # events; closes the case when compliant (same as +HoursComplianceDeterminationService#calculate+).
+    # Silent recalculation (e.g. after +IncomeService+ saves a row for an open case). Same contract as
+    # +HoursComplianceDeterminationService#calculate+: no +Strata::EventManager.publish+, and compliant
+    # outcomes close the case via +record_income_compliance+ (default +close_on_compliant: true+).
     # @param certification_id [String]
     # @return [void]
     def calculate(certification_id)

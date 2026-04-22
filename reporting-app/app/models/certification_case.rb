@@ -132,8 +132,11 @@ class CertificationCase < Strata::Case
     end
   end
 
-  # Called by HoursComplianceDeterminationService to record compliance determination
-  # Model only handles state changes - service handles events and notifications
+  # Called by HoursComplianceDeterminationService (+#calculate+, etc.) to persist hours-based CE.
+  # Model only handles state changes; services own events/notifications.
+  # Uses +record_automated_ce_compliance+ with default +close_on_compliant: true+ — when +outcome+ is
+  # +:compliant+, the case is +close!+d in the same transaction as the determination (open-case queues
+  # drop the case). Income silent recalculation is aligned via +record_income_compliance+.
   # @param outcome [Symbol] :compliant or :not_compliant
   # @param hours_data [Hash] aggregated hours data
   def record_hours_compliance(outcome, hours_data)
@@ -145,12 +148,17 @@ class CertificationCase < Strata::Case
     )
   end
 
-  # Called by IncomeComplianceDeterminationService#calculate to record income-only CE determination
-  # (+CALCULATION_TYPE_INCOME_BASED+; not used by the combined ex parte CE business process step).
-  # Model only handles state changes — service handles events and notifications.
+  # Called by IncomeComplianceDeterminationService#calculate (e.g. after +IncomeService+ persists new
+  # income for an open case) to record income-only CE (+CALCULATION_TYPE_INCOME_BASED+; not used by the
+  # combined ex parte CE business process step).
+  #
+  # Default +close_on_compliant: true+ matches +record_hours_compliance+: compliant outcomes +close!+
+  # the case so behavior matches hours silent recalculation and the case leaves open caseworker queues.
+  # Pass +close_on_compliant: false+ if product later wants an automated determination row without closing.
+  #
   # @param outcome [Symbol] :compliant or :not_compliant
   # @param income_data [Hash] aggregated income data from IncomeComplianceDeterminationService
-  # @param close_on_compliant [Boolean] default true (parity with +record_hours_compliance+); pass false to record only
+  # @param close_on_compliant [Boolean] see above; default +true+
   def record_income_compliance(outcome, income_data, close_on_compliant: true)
     record_automated_ce_compliance(
       outcome,
@@ -203,7 +211,9 @@ class CertificationCase < Strata::Case
   # @param determination_data [Hash] payload for +record_determination!+
   # @param compliant_reason [Symbol] key into +Determination::REASON_CODE_MAPPING+ when compliant
   # @param not_compliant_reason [Symbol] key into +Determination::REASON_CODE_MAPPING+ when not compliant
-  # @param close_on_compliant [Boolean] when false, compliant outcomes do not call +close!+
+  # @param close_on_compliant [Boolean] when +true+ (default), +:compliant+ outcomes call +close!+ before
+  # persisting the determination. When +false+, the determination is still written but the case stays open
+  # (+record_income_compliance+ may pass +false+; +record_hours_compliance+ always uses the default).
   def record_automated_ce_compliance(outcome, determination_data, compliant_reason:, not_compliant_reason:,
                                      close_on_compliant: true)
     certification = Certification.find(certification_id)

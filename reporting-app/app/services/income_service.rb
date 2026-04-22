@@ -2,9 +2,16 @@
 
 # Service for creating and validating Income entries from API and batch intake.
 # Mirrors ExParteActivityService for hours data.
+#
+# After a successful save, optional compliance recalculation (+recalculate_income_compliance+, default +true+)
+# runs +IncomeComplianceDeterminationService.calculate+ for the member’s open case; compliant outcomes
+# close the case (same as hours +HoursComplianceDeterminationService#calculate+). Certification intake
+# passes +recalculate_income_compliance: false+ so rows created before the case exists do not run this path.
 class IncomeService
   class << self
-    # Create income data entry for a member
+    # Create income data entry for a member.
+    # @param recalculate_income_compliance [Boolean] when +true+ (default), after save run silent income
+    #   compliance for the open case (may +close!+ when compliant); +Certifications::CreationService+ passes +false+.
     # @return [Income] on success
     # @return [Hash] with :error key on failure
     def create_entry(member_id:, category:, gross_income:, period_start:, period_end:,
@@ -42,6 +49,9 @@ class IncomeService
 
     private
 
+    # Resolves the member’s open +CertificationCase+ and runs +IncomeComplianceDeterminationService.calculate+,
+    # which records an income determination and closes the case when compliant (unless product later passes
+    # +close_on_compliant: false+ at the +record_income_compliance+ call site).
     def maybe_recalculate_income_compliance(member_id)
       certification_id = CertificationCase.open_certification_id_for_member(member_id)
       return if certification_id.blank?
