@@ -27,5 +27,6 @@ module "sandbox_config" {
     SSO_ENABLED             = "true"
     FEATURE_BATCH_UPLOAD_V2 = "true"
     FEATURE_DOC_AI          = "true"
+    FEATURE_DEMO_THEME      = "true"
   }
 }

@@ -52,6 +52,8 @@ class ApplicationController < ActionController::Base
   private
 
   def check_demo_status
+    return unless Features.demo_theme_enabled?
+
     case params[:theme]
     when "nava_pbc"
       session[:demo_mode] = true

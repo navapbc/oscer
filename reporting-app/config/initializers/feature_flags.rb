@@ -19,6 +19,11 @@ module Features
       env_var: "FEATURE_DOC_AI",
       default: false,
       description: "Enable DocAI document analysis for income verification"
+    },
+    demo_theme: {
+      env_var: "FEATURE_DEMO_THEME",
+      default: false,
+      description: "Enable toggle of State of Nava demo theme via get parameter"
     }
     # Example of adding more flags:
     # realtime_progress: {
