@@ -69,6 +69,7 @@ RSpec.describe ApplicationController, type: :controller do
           get :index, params: { theme: "nava_pbc" }
           get :index, params: { theme: "reset" }
 
+          request.cookies.update(response.cookies)
           get :index
           expect(controller_paths).not_to include(view_demo_theme)
         end

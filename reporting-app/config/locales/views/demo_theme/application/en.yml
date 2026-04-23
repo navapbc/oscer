@@ -7,7 +7,7 @@
 #  enabled: "ON"
 
 en:
-  demo:
+  demo_theme:
     header:
       title: "State of Nava PBC"
       subtitle: "Department of Health & Social Services"

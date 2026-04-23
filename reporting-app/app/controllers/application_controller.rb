@@ -56,13 +56,14 @@ class ApplicationController < ActionController::Base
 
     case params[:theme]
     when "nava_pbc"
-      session[:demo_mode] = true
+      cookies[:demo_mode] = true
     when nil
       # no-op
     else
-      session.delete(:demo_mode)
+      cookies.delete(:demo_mode)
     end
-    if session[:demo_mode]
+
+    if cookies[:demo_mode].present?
       prepend_view_path @@view_demo_theme
     end
   end
