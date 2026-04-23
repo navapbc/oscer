@@ -108,6 +108,15 @@ RSpec.describe CommunityEngagementCheckService do
         expect(determination.determination_data["hours"]["compliant"]).to be true
         expect(determination.determination_data["income"]["compliant"]).to be true
       end
+
+      it "publishes DeterminedCommunityEngagementMet" do
+        described_class.determine(certification_case)
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DeterminedCommunityEngagementMet",
+          hash_including(case_id: certification_case.id)
+        )
+      end
     end
 
     context "when neither hours nor income meet targets with some ex parte hours" do
