@@ -8,6 +8,7 @@ RSpec.describe CertificationCase, type: :model do
   # Prevent real ex parte CE from recording a compliant determination during certification bootstrap
   # (Income aggregate can meet threshold and close the case before examples run).
   before do
+    allow(NotificationService).to receive(:send_email_notification)
     allow(CommunityEngagementCheckService).to receive(:determine) do |kase|
       Strata::EventManager.publish("DeterminedCommunityEngagementActionRequired", {
         case_id: kase.id,

@@ -108,6 +108,15 @@ RSpec.describe CommunityEngagementCheckService do
         expect(determination.determination_data["hours"]["compliant"]).to be true
         expect(determination.determination_data["income"]["compliant"]).to be true
       end
+
+      it "publishes DeterminedCommunityEngagementMet" do
+        described_class.determine(certification_case)
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DeterminedCommunityEngagementMet",
+          hash_including(case_id: certification_case.id)
+        )
+      end
     end
 
     context "when neither hours nor income meet targets with some ex parte hours" do
@@ -116,7 +125,7 @@ RSpec.describe CommunityEngagementCheckService do
         create_income_for(certification, gross_income: 400)
       end
 
-      it "records not_compliant with both insufficient reason codes" do
+      it "records not_compliant with both insufficient reason codes when some ex parte hours are present" do
         described_class.determine(certification_case)
 
         determination = latest_determination_for(certification.id)
@@ -149,6 +158,22 @@ RSpec.describe CommunityEngagementCheckService do
     context "when neither track passes and there are no ex parte hours" do
       before do
         create_income_for(certification, gross_income: 100)
+      end
+
+      it "records not_compliant with both insufficient reason codes when there are no ex parte hours" do
+        described_class.determine(certification_case)
+
+        determination = latest_determination_for(certification.id)
+        expect(determination.outcome).to eq("not_compliant")
+        expect(determination.reasons).to contain_exactly(
+          "hours_reported_insufficient",
+          "income_reported_insufficient"
+        )
+        data = determination.determination_data
+        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EX_PARTE_CE_COMBINED)
+        expect(data["satisfied_by"]).to eq(Determination::SATISFIED_BY_NEITHER)
+        expect(data["hours"]["compliant"]).to be false
+        expect(data["income"]["compliant"]).to be false
       end
 
       it "publishes DeterminedCommunityEngagementActionRequired" do

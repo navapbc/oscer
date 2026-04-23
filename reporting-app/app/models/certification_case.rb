@@ -140,11 +140,11 @@ class CertificationCase < Strata::Case
   # @param outcome [Symbol] :compliant or :not_compliant
   # @param hours_data [Hash] aggregated hours data
   def record_hours_compliance(outcome, hours_data)
+    reason_key = outcome == :compliant ? :hours_reported_compliant : :hours_reported_insufficient
     record_automated_ce_compliance(
       outcome,
       build_hours_determination_data(hours_data),
-      compliant_reason: :hours_reported_compliant,
-      not_compliant_reason: :hours_reported_insufficient
+      reasons: [ Determination::REASON_CODE_MAPPING[reason_key] ]
     )
   end
 
@@ -160,11 +160,11 @@ class CertificationCase < Strata::Case
   # @param income_data [Hash] aggregated income data from IncomeComplianceDeterminationService
   # @param close_on_compliant [Boolean] see above; default +true+
   def record_income_compliance(outcome, income_data, close_on_compliant: true)
+    reason_key = outcome == :compliant ? :income_reported_compliant : :income_reported_insufficient
     record_automated_ce_compliance(
       outcome,
       build_income_determination_data(income_data),
-      compliant_reason: :income_reported_compliant,
-      not_compliant_reason: :income_reported_insufficient,
+      reasons: [ Determination::REASON_CODE_MAPPING[reason_key] ],
       close_on_compliant: close_on_compliant
     )
   end
@@ -188,17 +188,12 @@ class CertificationCase < Strata::Case
       income_ok: income_ok
     )
 
-    transaction do
-      close! if outcome == :compliant
-
-      certification.record_determination!(
-        decision_method: :automated,
-        reasons: reasons,
-        outcome: outcome,
-        determination_data: determination_data,
-        determined_at: certification.certification_requirements.certification_date
-      )
-    end
+    record_automated_ce_compliance(
+      outcome,
+      determination_data,
+      reasons: reasons,
+      certification: certification
+    )
   end
 
   def member_status
@@ -209,22 +204,20 @@ class CertificationCase < Strata::Case
 
   # @param outcome [Symbol] :compliant or :not_compliant
   # @param determination_data [Hash] payload for +record_determination!+
-  # @param compliant_reason [Symbol] key into +Determination::REASON_CODE_MAPPING+ when compliant
-  # @param not_compliant_reason [Symbol] key into +Determination::REASON_CODE_MAPPING+ when not compliant
+  # @param reasons [Array<String>] reason codes for +record_determination!+ (from +Determination::REASON_CODE_MAPPING+)
+  # @param certification [Certification, nil] when nil, loads via +certification_id+ (avoids extra query when caller already loaded it)
   # @param close_on_compliant [Boolean] when +true+ (default), +:compliant+ outcomes call +close!+ before
-  # persisting the determination. When +false+, the determination is still written but the case stays open
-  # (+record_income_compliance+ may pass +false+; +record_hours_compliance+ always uses the default).
-  def record_automated_ce_compliance(outcome, determination_data, compliant_reason:, not_compliant_reason:,
-                                     close_on_compliant: true)
-    certification = Certification.find(certification_id)
-    reason_code = outcome == :compliant ? compliant_reason : not_compliant_reason
+  #   persisting the determination. When +false+, the determination is still written but the case stays open
+  #   (+record_income_compliance+ may pass +false+; +record_hours_compliance+ always uses the default).
+  def record_automated_ce_compliance(outcome, determination_data, reasons:, certification: nil, close_on_compliant: true)
+    certification ||= Certification.find(certification_id)
 
     transaction do
       close! if close_on_compliant && outcome == :compliant
 
       certification.record_determination!(
         decision_method: :automated,
-        reasons: [ Determination::REASON_CODE_MAPPING[reason_code] ],
+        reasons: reasons,
         outcome: outcome,
         determination_data: determination_data,
         determined_at: certification.certification_requirements.certification_date
