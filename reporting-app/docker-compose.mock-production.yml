@@ -1,5 +1,5 @@
 services:
-  reporting-app-database:
+  reporting-app-db16:
     image: postgres:16-alpine
     command: postgres -c "log_lock_waits=on" -N 1000 -c "fsync=off"
     environment:
@@ -21,11 +21,11 @@ services:
       context: .
       target: release
     depends_on:
-      reporting-app-database:
+      reporting-app-db16:
         condition: service_healthy
     env_file: .env
     environment:
-      - DB_HOST=reporting-app-database
+      - DB_HOST=reporting-app-db16
       - RAILS_BINDING=0.0.0.0
       # The following env vars allow testing a "production"-like environment on a local
       # machine.

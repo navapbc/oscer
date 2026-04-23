@@ -20,13 +20,13 @@ Verified template install with the following:
 The following files existed in Rails 7.2 and were updated by the Rails 8.0 generator.
 
 ### `bin/rails`
-- Discarded changes and keep freeze string literal: true
+- Reverted changes to keep freeze string literal: true
 
 ### `bin/rake`
-- Discarded changes and keep freeze string literal: true
+- Reverted changes to keep freeze string literal: true
 
 ### `bin/rubocop`
-- Discarded changes which would have removed
+- Reverted changes which would have removed
 
 ```
 # frozen_string_literal: true
@@ -53,36 +53,36 @@ end
 ```
 
 ### `bin/setup`
-- Discarded changes and keep system! "gem install bundler --conservative"
-- Discarded changes and keep exec "bin/dev" which uses overman(foreman alternative) for procfile based management. instead of bin/rails restart.
+- Reverted changes to keep system! "gem install bundler --conservative"
+- Reverted changes to keep exec "bin/dev" which uses overman(foreman alternative) for procfile based management. instead of bin/rails restart.
 
 ### `config/application.rb`
-- Discarded changes and keep internationalization (i18n) settings
-- Discarded changes and keep authentication flow (auth_adapter)
-- Discarded changes and keep factory_bot suffix
-- Discarded changes and keep UUID generation for primary key
-- Discarded changes and keep Pundit rescue_responses
-- Discarded changes and keepautoload_lib ignore list
-- Discarded changes and keep form_with error proc
+- Reverted changes to keep internationalization (i18n) settings
+- Reverted changes to keep authentication flow (auth_adapter)
+- Reverted changes to keep factory_bot suffix
+- Reverted changes to keep UUID generation for primary key
+- Reverted changes to keep Pundit rescue_responses
+- Reverted changes to keepautoload_lib ignore list
+- Reverted changes to keep form_with error proc
 
 
 ### `config/boot.rb`
-- Discarded changes and keep freeze string literal: true
+- Reverted changes to keep freeze string literal: true
 
 ### `config/environment.rb`
-- Discarded changes and keep freeze string literal: true
+- Reverted changes to keep freeze string literal: true
 
 ### `config/initializers/assets.rb`
-- Discarded changes and keep additional fontawesome precompiled assets
+- Reverted changes to keep additional fontawesome precompiled assets
 
 ### `config/initializers/content_security_policy.rb`
-- Discarded changes and keep freeze string literal: true
+- Reverted changes to keep freeze string literal: true
 
 ### `config/initializers/filter_parameter_logging.rb`
 - Added :cvv, :cvc to filter parameters list
 
 ### `config/initializers/inflections.rb`
-- Discarded changes and keep freeze string literal: true
+- Reverted changes to keep freeze string literal: true
 
 ### `public/404.html`
 - Updated default rails error page
