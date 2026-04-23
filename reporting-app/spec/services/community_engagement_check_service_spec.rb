@@ -160,6 +160,22 @@ RSpec.describe CommunityEngagementCheckService do
         create_income_for(certification, gross_income: 100)
       end
 
+      it "records not_compliant with both insufficient reason codes" do
+        described_class.determine(certification_case)
+
+        determination = latest_determination_for(certification.id)
+        expect(determination.outcome).to eq("not_compliant")
+        expect(determination.reasons).to contain_exactly(
+          "hours_reported_insufficient",
+          "income_reported_insufficient"
+        )
+        data = determination.determination_data
+        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EX_PARTE_CE_COMBINED)
+        expect(data["satisfied_by"]).to eq(Determination::SATISFIED_BY_NEITHER)
+        expect(data["hours"]["compliant"]).to be false
+        expect(data["income"]["compliant"]).to be false
+      end
+
       it "publishes DeterminedCommunityEngagementActionRequired" do
         described_class.determine(certification_case)
 
