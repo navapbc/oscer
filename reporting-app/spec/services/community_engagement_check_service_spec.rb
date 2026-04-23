@@ -125,7 +125,7 @@ RSpec.describe CommunityEngagementCheckService do
         create_income_for(certification, gross_income: 400)
       end
 
-      it "records not_compliant with both insufficient reason codes" do
+      it "records not_compliant with both insufficient reason codes when some ex parte hours are present" do
         described_class.determine(certification_case)
 
         determination = latest_determination_for(certification.id)
@@ -160,7 +160,7 @@ RSpec.describe CommunityEngagementCheckService do
         create_income_for(certification, gross_income: 100)
       end
 
-      it "records not_compliant with both insufficient reason codes" do
+      it "records not_compliant with both insufficient reason codes when there are no ex parte hours" do
         described_class.determine(certification_case)
 
         determination = latest_determination_for(certification.id)
