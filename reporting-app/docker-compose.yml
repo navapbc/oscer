@@ -29,7 +29,7 @@ services:
       - DB_PORT=5432
       - RAILS_BINDING=0.0.0.0
       - RAILS_ENV=development
-      - FEATURE_DEMO_THEME=true
+      - FEATURE_DEMO_THEME=${FEATURE_DEMO_THEME:-}
     ports:
       - 3000:3000
     volumes:
