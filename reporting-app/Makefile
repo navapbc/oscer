@@ -141,7 +141,7 @@ stop-containers: ## Stop Docker
 ##################################################
 
 db-up: ## Run just the database container
-	$(DOCKER_CMD) compose $(DOCKER_COMPOSE_ARGS) up --remove-orphans --detach $(APP_NAME)-database
+	$(DOCKER_CMD) compose $(DOCKER_COMPOSE_ARGS) up --remove-orphans --detach $(APP_NAME)-db16
 
 db-migrate: ## Run database migrations
 	$(RAILS_RUN_CMD) db:migrate
@@ -165,7 +165,7 @@ db-console: ## Access the rails db console
 	$(RAILS_RUN_CMD) dbconsole
 
 wait-on-db:
-	DB_NAME=$(APP_NAME)-database ./bin/wait-for-local-postgres.sh
+	DB_NAME=$(APP_NAME)-db16 ./bin/wait-for-local-postgres.sh
 
 ##################################################
 # Testing
