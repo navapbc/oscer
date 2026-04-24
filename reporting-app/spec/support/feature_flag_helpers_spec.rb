@@ -12,12 +12,12 @@ RSpec.describe FeatureFlagHelpers do
 
   let(:test_instance) { test_class.new }
 
-  describe 'with_env helper' do
+  describe 'with_temp_env_var helper' do
     it 'sets an ENV variable for the duration of a block and restores it' do
       env_key = "TEST_FEATURE_FLAG_HELPERS_SPEC"
       original = ENV[env_key]
 
-      test_instance.send(:with_env, env_key, "custom_value") do
+      test_instance.send(:with_temp_env_var, env_key, "custom_value") do
         expect(ENV[env_key]).to eq("custom_value")
       end
 
@@ -29,7 +29,7 @@ RSpec.describe FeatureFlagHelpers do
       ENV[env_key] = "before"
 
       expect do
-        test_instance.send(:with_env, env_key, "during") do
+        test_instance.send(:with_temp_env_var, env_key, "during") do
           expect(ENV[env_key]).to eq("during")
           raise StandardError, "test error"
         end

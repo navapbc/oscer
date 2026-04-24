@@ -3,17 +3,6 @@
 require "rails_helper"
 
 RSpec.describe Middleware::PublicRequestHost do
-  def with_env(overrides, &block)
-    old = {}
-    overrides.each do |key, value|
-      old[key] = ENV[key]
-      ENV[key] = value
-    end
-    block.call
-  ensure
-    old.each { |k, v| v.nil? ? ENV.delete(k) : ENV[k] = v }
-  end
-
   subject(:middleware) { described_class.new(inner_app) }
 
   let(:inner_app) do
