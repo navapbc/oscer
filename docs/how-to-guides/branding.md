@@ -20,3 +20,7 @@ See `app/views/demo_theme/**` for an example of overriding view templates.
 
 - Add new files instead of modifying OSCER core files. Feel free to modify `app/assets/stylesheets/_overrides.scss` and `app/assets/stylesheets/custom.scss`, but add new files in the `app/views/overrides` and `app/assets/stylesheets` directories to brand your implementation of OSCER.
 - When overriding a template, try to keep it as close as possible to the OSCER core version. Only change what you need to get the look and feel you want. Some parts of the template that seem extraneous might be necessary for the proper user experience.
+
+## Notes on the Demo Theme
+
+The demo theme is present to demonstrate branding possiblities within OSCER. The ability to toggle between the current theme and the demo theme is enabled via the `demo_theme` [feature flag](../feature-flags.md). To toggle the demo theme, add `theme=nava_pbc` as a GET parameter to any request. The demo theme will remain enabled for the current user until `theme=(anything but nava_pbc)` is added to a request.
