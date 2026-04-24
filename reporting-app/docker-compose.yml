@@ -1,6 +1,6 @@
 services:
   reporting-app-database:
-    image: postgres:14-alpine
+    image: postgres:16-alpine
     command: postgres -c "log_lock_waits=on" -N 1000 -c "fsync=off"
     environment:
       POSTGRES_PASSWORD: secret123
@@ -12,7 +12,7 @@ services:
     ports:
       - "${DB_PORT}:5432"
     volumes:
-      - reporting-app-database_data:/var/lib/postgresql/data
+      - reporting-app-database_data-16:/var/lib/postgresql/data
 
   # Rails app
   # Configured for "development" RAILS_ENV
@@ -41,7 +41,7 @@ services:
       - reporting-app_storage:/rails/storage
 
 volumes:
-  reporting-app-database_data:
+  reporting-app-database_data-16:
   reporting-app_nodemodules:
   reporting-app_tmp:
   reporting-app_storage:

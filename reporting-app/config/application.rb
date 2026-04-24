@@ -22,7 +22,7 @@ module TemplateApplicationRails
     config.i18n.load_path += Dir[Rails.root.join("config", "locales", "**", "*.{rb,yml}")]
 
     # Initialize configuration defaults for originally generated Rails version.
-    config.load_defaults 7.2
+    config.load_defaults 8.0
 
     # Configured here (not in initializers/) so the acronym is registered before initializers run,
     # allowing Zeitwerk to autoload CECompliance without an explicit require.

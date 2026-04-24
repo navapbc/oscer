@@ -2,7 +2,7 @@
 
 # Make sure RUBY_VERSION matches the Ruby version in .ruby-version and Gemfile
 # renovate: datasource=docker depName=registry.docker.com/library/ruby
-ARG RUBY_VERSION=3.4.7
+ARG RUBY_VERSION=3.4.9
 
 
 ##########################################################################################
@@ -64,7 +64,7 @@ RUN apt-get update -qq \
 
 # Install application gems for development
 COPY Gemfile Gemfile.lock ./
-RUN bundle config set --local without production && \
+RUN bundle config set --local without production && bundle config set frozen false && \
     bundle install && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git
 
