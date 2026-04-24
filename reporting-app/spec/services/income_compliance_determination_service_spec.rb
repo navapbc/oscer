@@ -79,12 +79,16 @@ RSpec.describe IncomeComplianceDeterminationService do
       end
 
       it "creates a not_compliant determination" do
+        kase = CertificationCase.find_by!(certification_id: certification.id)
+        expect(kase).to be_open
+
         described_class.calculate(certification.id)
 
         determination = Determination.where(subject_id: certification.id).last
         expect(determination.outcome).to eq("not_compliant")
         expect(determination.reasons).to include("income_reported_insufficient")
         expect_no_ce_workflow_events_published
+        expect(kase.reload).to be_open
       end
     end
   end
