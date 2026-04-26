@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Member OIDC Controller for public member sign-in via citizen IdP
+# Member OIDC Controller for public member sign-in via the configured public member IdP
 #
 # Mirrors Auth::SsoController pattern: new (login form), callback, failure.
 # Uses MemberOidcProvisioner (no role mapping). On failure redirects to member sign-in path.
