@@ -50,10 +50,17 @@ class ActivitiesController < ApplicationController
     authorize @activity_report_application_form, :edit?
 
     supporting_documents = params.require(:activity).permit(supporting_documents: [])[:supporting_documents]
-    @activity.supporting_documents.attach(supporting_documents)
+
+    # The partial re-submits hidden signed_id strings for each already-attached
+    # document. Filter to actual newly uploaded files so the success flash only
+    # fires when the user uploaded something new.
+    files_submitted = Array(supporting_documents).grep(ActionDispatch::Http::UploadedFile).any?
+
+    @activity.supporting_documents.attach(supporting_documents) if supporting_documents.present?
 
     respond_to do |format|
       if @activity_report_application_form.save
+        flash[:notice] = t("supporting_documents.upload_success") if files_submitted
         format.html { redirect_to documents_activity_report_application_form_activity_path(@activity_report_application_form, @activity) }
         format.json { render :show, status: :ok, location: @activity.becomes(Activity) }
       else
