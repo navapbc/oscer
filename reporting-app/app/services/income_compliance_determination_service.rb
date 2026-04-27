@@ -1,47 +1,19 @@
 # frozen_string_literal: true
 
 # Aggregates verified income for a certification lookback, compares to the monthly threshold,
-# and (via CertificationCase#record_income_compliance) persists automated determinations.
-# Mirrors HoursComplianceDeterminationService: no mailers here; events optional for workflow/notifications.
+# and (via CertificationCase#record_income_compliance) persists automated determinations from +#calculate+.
+# Combined ex parte CE assessment and Strata workflow events live in +CommunityEngagementCheckService+.
 # Single source for TARGET_INCOME_MONTHLY (CE compliance UI and statistics; parity with
 # HoursComplianceDeterminationService::TARGET_HOURS) via Rails.application.config.ce_compliance.
 class IncomeComplianceDeterminationService
   TARGET_INCOME_MONTHLY = Rails.application.config.ce_compliance[:income_threshold_monthly]
 
   class << self
-    # Called by the business process at the ex parte CE check when the income path runs.
-    # Publishes the same event names as the hours path so transitions/notifications can stay aligned
-    # until income-specific events are approved.
-    # @param kase [CertificationCase]
-    def determine(kase)
-      certification = Certification.find(kase.certification_id)
-      income_data = aggregate_income_for_certification(certification)
-      outcome = determine_outcome(income_data[:total_income])
-
-      kase.record_income_compliance(outcome, income_data)
-
-      # TODO(OSCER-405): Publish income-specific Strata events when product/sign-off names them
-      # (e.g. DeterminedIncomeMet, DeterminedIncomeInsufficient, DeterminedIncomeActionRequired) and
-      # subscribe in NotificationsEventListener / CertificationBusinessProcess. Do not raise here in the
-      # interim — hours-named events are intentional for workflow parity; switching without updating
-      # subscribers would drop notifications or break transitions.
-      if outcome == :compliant
-        Strata::EventManager.publish("DeterminedHoursMet", {
-          case_id: kase.id,
-          certification_id: certification.id
-        })
-      elsif income_data[:income_by_source][:income].positive?
-        Strata::EventManager.publish("DeterminedHoursInsufficient", {
-          case_id: kase.id,
-          certification_id: certification.id,
-          income_data: income_data
-        })
-      else
-        Strata::EventManager.publish("DeterminedActionRequired", {
-          case_id: kase.id,
-          certification_id: certification.id
-        })
-      end
+    # Shared threshold check for combined CE (+CommunityEngagementCheckService+) and +#calculate+.
+    # @param total_income [Numeric]
+    # @return [Boolean]
+    def compliant_for_total_income?(total_income)
+      total_income >= TARGET_INCOME_MONTHLY
     end
 
     # Silent recalculation (e.g. jobs) — records determination without publishing workflow events.
@@ -83,7 +55,7 @@ class IncomeComplianceDeterminationService
     private
 
     def determine_outcome(total_income)
-      total_income >= TARGET_INCOME_MONTHLY ? :compliant : :not_compliant
+      compliant_for_total_income?(total_income) ? :compliant : :not_compliant
     end
 
     # Approved member-reported income (e.g. from activity report) — stub until modeled.

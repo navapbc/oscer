@@ -67,7 +67,7 @@ class ExemptionApplicationFormsController < ApplicationController
       redirect_to @exemption_application_form, notice: "Exemption application form submitted"
     else
       flash[:errors] = @exemption_application_form.errors.full_messages
-      redirect_to edit_exemption_application_form_url(@exemption_application_form)
+      redirect_to edit_exemption_application_form_path(@exemption_application_form)
     end
   end
 
