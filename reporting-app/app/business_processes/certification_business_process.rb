@@ -18,8 +18,9 @@ class CertificationBusinessProcess < Strata::BusinessProcess
     ExemptionDeterminationService.determine(kase)
   })
 
+  # Ex parte CE: see CommunityEngagementCheckService (combined hours/income determination + events).
   system_process(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, ->(kase) {
-    HoursComplianceDeterminationService.determine(kase)
+    CommunityEngagementCheckService.determine(kase)
   })
 
   # User tasks
@@ -36,15 +37,10 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   transition(EX_PARTE_EXEMPTION_CHECK_STEP, "DeterminedNotExempt", EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP)
   transition(EX_PARTE_EXEMPTION_CHECK_STEP, "DeterminedExempt", END_STEP)
 
-  # --- Transitions: Ex parte hours check ---
-  # DeterminedHoursMet: Hours requirement satisfied
-  # DeterminedActionRequired: No ex parte hours found, member needs to report from scratch
-  # DeterminedHoursInsufficient: Has some ex parte hours but needs more
-  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedHoursMet", END_STEP)
-  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedActionRequired", REPORT_ACTIVITIES_STEP)
-  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedHoursInsufficient", REPORT_ACTIVITIES_STEP)
-
-  # --- Transitions: Community engagement (income path today; hours can use same events later) ---
+  # --- Transitions: Ex parte CE check (combined hours/income; generic community-engagement event names) ---
+  # DeterminedCommunityEngagementMet: At least one CE track (hours or income) satisfied
+  # DeterminedCommunityEngagementActionRequired: Both tracks failed and no ex parte hours on file
+  # DeterminedCommunityEngagementInsufficient: Both tracks failed but some ex parte hours exist (+hours_data+, +income_data+)
   transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementMet", END_STEP)
   transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementInsufficient", REPORT_ACTIVITIES_STEP)
   transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementActionRequired", REPORT_ACTIVITIES_STEP)
