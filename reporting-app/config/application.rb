@@ -2,6 +2,7 @@
 
 require_relative "boot"
 require_relative "../lib/middleware/api_error_response.rb"
+require_relative "../lib/middleware/public_request_host.rb"
 
 require "rails/all"
 
@@ -48,6 +49,9 @@ module TemplateApplicationRails
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks generators])
+
+    # Canonical public host for redirects when the reverse proxy sends an internal Host.
+    config.middleware.unshift Middleware::PublicRequestHost
 
     # Prevent the form_with helper from wrapping input and labels with separate
     # div elements when an error is present, since this breaks USWDS styling

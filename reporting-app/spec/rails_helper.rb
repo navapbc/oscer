@@ -44,6 +44,7 @@ require_relative 'support/pundit_spec_view_helper'
 require_relative 'support/policy_shared_examples'
 require_relative 'support/sso_helpers'
 require_relative 'support/feature_flag_helpers'
+require_relative 'support/env_helpers'
 require "strata/testing/api_auth_helpers"
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
