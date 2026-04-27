@@ -78,7 +78,7 @@ class CertificationBatchUpload < ApplicationRecord
   # - Any chunk completed (ran successfully) → completed (with errors if applicable)
   # - All chunks failed (system errors) → failed
   def check_completion!
-    # NOTE: Avoid `return` inside transaction blocks — Rails 7.2 treats non-local
+    # NOTE: Avoid `return` inside transaction blocks — Rails 8.0 treats non-local
     # returns as rollbacks and raises ActiveRecord::Rollback in the ensure block.
     # Use if/else flow control instead.
     self.class.transaction do
