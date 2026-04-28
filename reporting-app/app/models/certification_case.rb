@@ -32,10 +32,17 @@ class CertificationCase < Strata::Case
   # @param member_id [String]
   # @return [UUID, nil] certification_id
   def self.open_certification_id_for_member(member_id)
-    joins("INNER JOIN certifications ON certifications.id = certification_cases.certification_id")
-      .where(certifications: { member_id: member_id })
+    cases = arel_table
+    certs = Certification.arel_table
+
+    joins(
+      cases.join(certs, Arel::Nodes::InnerJoin)
+        .on(cases[:certification_id].eq(certs[:id]))
+        .join_sources
+    )
+      .where(certs[:member_id].eq(member_id))
       .open
-      .order("certifications.created_at DESC")
+      .order(certs[:created_at].desc)
       .limit(1)
       .pick(:certification_id)
   end
