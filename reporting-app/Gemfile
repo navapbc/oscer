@@ -67,7 +67,7 @@ gem "image_processing", "~> 1.14"
 
 # Authentication and Authorization
 gem "aws-sdk-cognitoidentityprovider", "~> 1.139"
-gem "devise"
+gem "devise", "~> 5.0"
 gem "jwt"
 gem "pundit"
 gem "pundit-matchers"
