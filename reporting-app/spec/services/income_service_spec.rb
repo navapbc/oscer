@@ -55,7 +55,7 @@ RSpec.describe IncomeService do
 
     context "when the member has an open certification case" do
       let(:certification) { create(:certification) }
-      let!(:kase) { create(:certification_case, certification: certification) }
+      let(:kase) { create(:certification_case, certification: certification) }
 
       before do
         allow(Strata::EventManager).to receive(:publish)
