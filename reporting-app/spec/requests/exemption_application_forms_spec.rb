@@ -191,6 +191,31 @@ RSpec.describe "/exemption_application_forms", type: :request do
         expect(response).to have_http_status(:ok)
         expect(existing_exemption_application_form.reload.supporting_documents.attached?).to be true
       end
+
+      it "sets a success flash notice when a new file is attached" do
+        post upload_documents_exemption_application_form_path(existing_exemption_application_form),
+          params: { exemption_application_form: { supporting_documents: [ file ] } }
+
+        expect(flash[:notice]).to eq(I18n.t("supporting_documents.upload_success"))
+      end
+
+      it "does not set a success flash when params carry only signed_id strings from prior attachments" do
+        existing_exemption_application_form.supporting_documents.attach(file)
+        existing_exemption_application_form.save!
+        signed_ids = existing_exemption_application_form.supporting_documents.map(&:signed_id)
+
+        post upload_documents_exemption_application_form_path(existing_exemption_application_form),
+          params: { exemption_application_form: { supporting_documents: signed_ids } }
+
+        expect(flash[:notice]).to be_nil
+      end
+
+      it "does not set a success flash when supporting_documents is an empty array" do
+        post upload_documents_exemption_application_form_path(existing_exemption_application_form),
+          params: { exemption_application_form: { supporting_documents: [] } }
+
+        expect(flash[:notice]).to be_nil
+      end
     end
   end
 end

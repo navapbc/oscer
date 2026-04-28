@@ -38,6 +38,14 @@
   <% documents.each do |document| %>
     <%= f.hidden_field field_name, multiple: true, value: document.signed_id %>
   <% end %>
-  <%= f.file_field field_name, label: t("supporting_documents.upload_document_label"), multiple: true %>
-  <%= f.submit t("supporting_documents.upload") %>
+  <%= f.file_field field_name,
+        label: t("supporting_documents.upload_document_label"),
+        multiple: true,
+        data: {
+          document_upload_target: "fileInput",
+          action: "change->document-upload#fileSelectionChanged"
+        } %>
+  <%= f.submit t("supporting_documents.upload"),
+        class: "usa-button--outline",
+        data: { document_upload_target: "uploadButton" } %>
 <% end %>
