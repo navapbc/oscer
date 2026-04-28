@@ -164,6 +164,15 @@ RSpec.describe HoursComplianceDeterminationService do
         expect(determination.decision_method).to eq("automated")
       end
 
+      it "closes the certification case when compliant (parity with income calculate)" do
+        kase = CertificationCase.find_by!(certification_id: certification.id)
+        expect(kase).to be_open
+
+        described_class.calculate(certification.id)
+
+        expect(kase.reload).to be_closed
+      end
+
       it "includes determination_data with calculation details" do
         described_class.calculate(certification.id)
 

@@ -81,7 +81,8 @@ class Certifications::CreationService
         source_type: activity_data.source,
         source_id: nil,
         reported_at: activity_data.reported_at || Time.current,
-        employer: activity_data.employer
+        employer: activity_data.employer,
+        recalculate_income_compliance: false
       )
 
       if result.is_a?(Hash) && result[:error]
