@@ -450,6 +450,32 @@ RSpec.describe "/activities", type: :request do
       existing_activity.reload
       expect(existing_activity.supporting_documents.count).to eq(2)
     end
+
+    it "sets a success flash notice" do
+      expect(flash[:notice]).to eq(I18n.t("supporting_documents.upload_success"))
+    end
+  end
+
+  describe "POST /upload_document when no new file is submitted" do
+    it "does not set a success flash when params carry only signed_id strings from prior attachments" do
+      existing_activity.supporting_documents.attach(
+        fixture_file_upload('spec/fixtures/files/test_document_1.pdf', 'application/pdf')
+      )
+      existing_activity.save!
+      signed_ids = existing_activity.supporting_documents.map(&:signed_id)
+
+      post upload_documents_activity_report_application_form_activity_url(activity_report_application_form, existing_activity),
+        params: { activity: { supporting_documents: signed_ids } }
+
+      expect(flash[:notice]).to be_nil
+    end
+
+    it "does not set a success flash when supporting_documents is an empty array" do
+      post upload_documents_activity_report_application_form_activity_url(activity_report_application_form, existing_activity),
+        params: { activity: { supporting_documents: [] } }
+
+      expect(flash[:notice]).to be_nil
+    end
   end
 
   describe "DELETE /destroy" do
