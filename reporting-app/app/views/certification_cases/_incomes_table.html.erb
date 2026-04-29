@@ -1,0 +1,27 @@
+<h3 class="margin-top-4"><%= title %></h3>
+<% if income_rows.any? %>
+  <table class="usa-table usa-table--borderless width-full">
+    <thead>
+      <tr>
+        <th scope="col"><%= t("certification_cases.income.organization_name") %></th>
+        <th scope="col"><%= t("certification_cases.income.pay_period") %></th>
+        <th scope="col"><%= t("certification_cases.income.source") %></th>
+        <th scope="col"><%= t("certification_cases.income.activity_type") %></th>
+        <th scope="col" class="text-right"><%= t("certification_cases.income.gross_income") %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% income_rows.each do |row| %>
+        <tr>
+          <td><%= row.metadata&.dig("employer").presence || t("certification_cases.income.organization_not_listed") %></td>
+          <td class="text-no-wrap"><%= l(row.period_start) %> – <%= l(row.period_end) %></td>
+          <td><%= t("certification_cases.income.source_types.#{row.source_type}", default: row.source_type.to_s.tr("_", " ").titleize) %></td>
+          <td><%= row.category.titleize %></td>
+          <td class="text-right"><%= number_to_currency(row.gross_income) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p><%= t("certification_cases.income.no_rows") %></p>
+<% end %>

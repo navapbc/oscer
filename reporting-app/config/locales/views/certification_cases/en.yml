@@ -7,7 +7,10 @@ en:
       notes: "Notes"
     index:
       title: "Certification Cases"
+    ex_parte_data:
+      summarized_under_activity_report: "Hours and income from the state and this member’s activity report are summarized under Activity Report below."
     show:
+      activity_line_items: "Activity line items"
       assigned_to: "Assigned to:"
       caseworker: "Caseworker"
       certification_date: "Certification date:"
@@ -15,6 +18,7 @@ en:
       certification_due_date: "Certification due date:"
       last_updated: "Last updated:"
       activity_report: "Activity Report"
+      no_hours_or_income_reported: "No hours or income reported"
       no_activity_report: "No activity report submitted"
       ex_parte_data: "Ex Parte Data"
       information_request_info: "Tasks will be updated once the member provides updated documents."
@@ -35,6 +39,23 @@ en:
       step: "Step:"
       tasks: "Tasks"
       title: "Case: %{case_number}"
+    income:
+      table_title: "Income reported"
+      income_reported_amount: "Income reported"
+      total_reported: "Total reported"
+      required: "Required"
+      additional_income_needed: "Additional income needed"
+      no_rows_compliance: "No income reported for this lookback."
+      organization_name: "Organization name"
+      organization_not_listed: "—"
+      pay_period: "Pay period"
+      source: "Source"
+      activity_type: "Activity type"
+      gross_income: "Gross income"
+      no_rows: "No income data from external sources for this lookback."
+      # Labels for Income#source_type (see Income::ALLOWED_SOURCE_TYPES). Add a key when adding a type.
+      source_types:
+        api: "State verification (API)"
     hours_reported_table:
       title: "Hours reported"
       organization_name: "Organization name"

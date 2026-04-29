@@ -20,7 +20,7 @@
   </p>
 </div>
 
-<%= render Strata::US::AccordionComponent.new(heading_tag: :h4, is_multiselectable: true) do |component| %>
+<%= render Strata::US::AccordionComponent.new(heading_tag: :h4, is_bordered: true, is_multiselectable: true) do |component| %>
   <% component.with_heading { t(".certification_details") } %>
   <% component.with_body do %>
     <p>
@@ -91,19 +91,52 @@
 
   <% component.with_heading { t(".ex_parte_data") } %>
   <% component.with_body do %>
-    <%= render partial: 'hours_reported_table',
+    <%= render partial: "certification_cases/ex_parte_data_section",
         locals: {
+          activity_report: @activity_report,
           ex_parte_activities: @ex_parte_activities,
           member_activities: @member_activities,
           hours_summary: @hours_summary,
-          target_hours: @target_hours
+          target_hours: @target_hours,
+          income_rows: @income_rows,
+          income_detail_title: t("certification_cases.income.table_title")
         } %>
   <% end %>
 
   <% component.with_heading { t(".activity_report") } %>
   <% component.with_body do %>
     <% if @activity_report %>
-      <%= render partial: 'activity_report_application_forms/staff_activity_report', locals: { activity_report: @activity_report } %>
+      <% state_name = ENV.fetch("STATE_NAME", "the State") %>
+      <% hours_has_data = @ex_parte_activities.any? || @member_activities.any? %>
+      <% income_has_data = @income_rows.any? || @member_income_activities.any? %>
+      <% if hours_has_data || income_has_data %>
+        <div class="certification-case-compliance-tables margin-bottom-4">
+          <%= render partial: "certification_cases/hours_reported_table",
+              locals: {
+                ex_parte_activities: @ex_parte_activities,
+                member_activities: @member_activities,
+                hours_summary: @hours_summary,
+                target_hours: @target_hours,
+                compliance_table_styles: true,
+                income_has_data: income_has_data
+              } %>
+          <%= render partial: "certification_cases/income_reported_table",
+              locals: {
+                ex_parte_incomes: @income_rows,
+                member_income_activities: @member_income_activities,
+                income_summary: @income_summary,
+                target_income: @target_income,
+                state_name: state_name,
+                hours_has_data: hours_has_data
+              } %>
+        </div>
+      <% else %>
+        <p><%= t(".no_hours_or_income_reported") %></p>
+      <% end %>
+      <% if Features.doc_ai_enabled? %>
+        <h3 class="margin-top-4"><%= t(".activity_line_items") %></h3>
+        <%= render partial: "activity_report_application_forms/staff_activity_report", locals: { activity_report: @activity_report } %>
+      <% end %>
     <% else %>
       <p><%= t(".no_activity_report") %></p>
     <% end %>

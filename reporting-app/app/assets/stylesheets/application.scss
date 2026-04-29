@@ -20,6 +20,56 @@ legend {
   margin-top: units(3);
 }
 
+// =========================================================
+// Staff certification case: compliance summary tables
+// =========================================================
+.certification-case-compliance-tables {
+  h3 {
+    margin-bottom: units("105");
+  }
+}
+
+// Staff case Activity Report compliance tables: outer frame + section
+// dividers only (no horizontal rules between organization rows; totals block
+// merges Total + Required; divider before Additional row). Matches staff UI
+// reference (OSCER-336).
+table.certification-case-compliance-table {
+  margin-top: 0;
+  border-collapse: collapse;
+  border: 1px solid color("base-light");
+
+  thead th {
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    border-bottom: 1px solid color("base-dark") !important;
+    vertical-align: middle;
+  }
+
+  tbody td {
+    border: none !important;
+    vertical-align: middle;
+  }
+
+  tfoot tr:nth-child(1) td {
+    border-top: 1px solid color("base-dark") !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+
+  tfoot tr:nth-child(2) td {
+    border: none !important;
+  }
+
+  tfoot tr:nth-child(3) td {
+    border-top: 1px solid color("base-dark") !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+}
+
 p,
 li,
 .usa-hint {

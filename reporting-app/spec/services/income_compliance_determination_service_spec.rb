@@ -144,6 +144,12 @@ RSpec.describe IncomeComplianceDeterminationService do
     end
   end
 
+  describe ".member_income_activities_for_certification" do
+    it "does not use an ActiveRecord :income association (Strata money on IncomeActivity)" do
+      expect(IncomeActivity.reflect_on_association(:income)).to be_nil
+    end
+  end
+
   describe ".aggregate_income_for_certification" do
     before do
       allow(Strata::EventManager).to receive(:publish)
@@ -151,12 +157,26 @@ RSpec.describe IncomeComplianceDeterminationService do
 
     let(:certification) { create(:certification) }
 
-    it "exposes member_reported_income_total as zero until modeled (stub)" do
+    it "includes member IncomeActivity amounts in totals with external Income rows" do
+      kase = create(:certification_case, certification: certification)
+      form = create(:activity_report_application_form, certification_case_id: kase.id)
+      lookback = certification.certification_requirements.continuous_lookback_period
+      month = lookback.start.to_date
+
+      form.activities.create!(
+        type: "IncomeActivity",
+        name: "Food Bank",
+        category: "community_service",
+        month: month,
+        income: 5_000
+      )
       create_income_for(certification, gross_income: 100)
+
       agg = described_class.aggregate_income_for_certification(certification)
 
-      expect(agg[:income_by_source][:activity]).to eq(BigDecimal("0"))
-      expect(agg[:total_income]).to eq(BigDecimal("100"))
+      expect(agg[:income_by_source][:activity]).to eq(BigDecimal("50"))
+      expect(agg[:income_by_source][:income]).to eq(BigDecimal("100"))
+      expect(agg[:total_income]).to eq(BigDecimal("150"))
       expect_no_ce_workflow_events_published
     end
   end
