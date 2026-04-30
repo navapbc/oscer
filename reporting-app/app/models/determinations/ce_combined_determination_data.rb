@@ -7,6 +7,7 @@ module Determinations
   #
   # Nested {HoursBasedDeterminationData} and {IncomeBasedDeterminationData} are validated during
   # {.build} (eager), not only when {#to_h} serializes, so invalid inner aggregates raise before persist.
+  # After {.build}, nested instances are memoized so {#to_h} does not reconstruct them.
   class CECombinedDeterminationData < ValueObject
     attribute :hours_data
     attribute :income_data
@@ -51,8 +52,8 @@ module Determinations
     private
 
     def validate_nested_aggregate_payloads!
-      HoursBasedDeterminationData.from_aggregate(hours_data, compliant: hours_ok)
-      IncomeBasedDeterminationData.from_aggregate(income_data, compliant: income_ok)
+      @nested_hours_vo = HoursBasedDeterminationData.from_aggregate(hours_data, compliant: hours_ok)
+      @nested_income_vo = IncomeBasedDeterminationData.from_aggregate(income_data, compliant: income_ok)
     end
 
     def satisfied_by
@@ -68,11 +69,19 @@ module Determinations
     end
 
     def nested_hours_hash
-      HoursBasedDeterminationData.from_aggregate(hours_data, compliant: hours_ok).to_h
+      nested_hours_vo.to_h
     end
 
     def nested_income_hash
-      IncomeBasedDeterminationData.from_aggregate(income_data, compliant: income_ok).to_h
+      nested_income_vo.to_h
+    end
+
+    def nested_hours_vo
+      @nested_hours_vo ||= HoursBasedDeterminationData.from_aggregate(hours_data, compliant: hours_ok)
+    end
+
+    def nested_income_vo
+      @nested_income_vo ||= IncomeBasedDeterminationData.from_aggregate(income_data, compliant: income_ok)
     end
 
     def hours_data_is_hash

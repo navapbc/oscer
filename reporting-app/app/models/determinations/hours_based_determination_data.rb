@@ -4,6 +4,10 @@ module Determinations
   # Canonical serialized shape for automated CE determinations with
   # {Determination::CALCULATION_TYPE_HOURS_BASED}. Built from
   # {HoursComplianceDeterminationService.aggregate_hours_for_certification} output.
+  #
+  # {#to_h} treats +hours_by_category+ and +hours_by_source+ **values** as numeric totals from that
+  # aggregate path (+to_f+ is for JSON consistency). Callers must not pass non-numeric values expecting
+  # validation here — invalid shapes should be rejected at the aggregate layer or via future stricter VO checks.
   class HoursBasedDeterminationData < ValueObject
     attribute :total_hours
     attribute :hours_by_category, default: -> { {} }
@@ -36,6 +40,7 @@ module Determinations
     end
 
     # @return [Hash{String => Object}] JSONB-safe keys and values for +Determination#determination_data+
+    # @note Category and source values are coerced with +to_f+; see class-level contract above.
     def to_h
       by_source = (hours_by_source || {}).stringify_keys.transform_values { |v| v.to_f }
       {
