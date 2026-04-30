@@ -111,15 +111,16 @@
       <% income_has_data = @income_rows.any? || @member_income_activities.any? %>
       <% if hours_has_data || income_has_data %>
         <div class="certification-case-compliance-tables margin-bottom-4">
-          <%= render partial: "certification_cases/hours_reported_table",
-              locals: {
-                ex_parte_activities: @ex_parte_activities,
-                member_activities: @member_activities,
-                hours_summary: @hours_summary,
-                target_hours: @target_hours,
-                compliance_table_styles: true,
-                income_has_data: income_has_data
-              } %>
+          <% if hours_has_data %>
+            <%= render partial: "certification_cases/hours_reported_table",
+                locals: {
+                  ex_parte_activities: @ex_parte_activities,
+                  member_activities: @member_activities,
+                  hours_summary: @hours_summary,
+                  target_hours: @target_hours,
+                  compliance_table_styles: true
+                } %>
+          <% end %>
           <%= render partial: "certification_cases/income_reported_table",
               locals: {
                 ex_parte_incomes: @income_rows,

@@ -1,13 +1,18 @@
 <% if activity_report.present? %>
   <p class="maxw-full"><%= t("certification_cases.ex_parte_data.summarized_under_activity_report") %></p>
 <% else %>
-  <%= render partial: "certification_cases/hours_reported_table",
-      locals: {
-        ex_parte_activities: ex_parte_activities,
-        member_activities: member_activities,
-        hours_summary: hours_summary,
-        target_hours: target_hours
-      } %>
+  <% hours_has_data = ex_parte_activities.any? || member_activities.any? %>
+  <% if hours_has_data %>
+    <%= render partial: "certification_cases/hours_reported_table",
+        locals: {
+          ex_parte_activities: ex_parte_activities,
+          member_activities: member_activities,
+          hours_summary: hours_summary,
+          target_hours: target_hours
+        } %>
+  <% else %>
+    <p><%= t("certification_cases.hours_reported_table.no_hours_reported") %></p>
+  <% end %>
   <%= render partial: "certification_cases/incomes_table",
       locals: {
         title: income_detail_title,
