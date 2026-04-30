@@ -4,6 +4,9 @@ module Determinations
   # Canonical serialized shape for the combined hours + income CE step
   # (+Determination::CALCULATION_TYPE_CE_COMBINED+): one automated determination with nested hours and
   # income assessment payloads.
+  #
+  # Nested {HoursBasedDeterminationData} and {IncomeBasedDeterminationData} are validated during
+  # {.build} (eager), not only when {#to_h} serializes, so invalid inner aggregates raise before persist.
   class CECombinedDeterminationData < ValueObject
     attribute :hours_data
     attribute :income_data
@@ -20,6 +23,7 @@ module Determinations
     # @param hours_data [Hash] aggregate from {HoursComplianceDeterminationService.aggregate_hours_for_certification}
     # @param income_data [Hash] aggregate from {IncomeComplianceDeterminationService.aggregate_income_for_certification}
     # @return [self]
+    # @raise [ActiveModel::ValidationError] outer or nested aggregate payload is invalid
     def self.build(hours_data:, income_data:, hours_ok:, income_ok:)
       new(
         hours_data: hours_data,
@@ -27,7 +31,10 @@ module Determinations
         hours_ok: hours_ok,
         income_ok: income_ok,
         calculated_at: Time.current.iso8601
-      ).tap(&:validate!)
+      ).tap do |vo|
+        vo.validate!
+        vo.send(:validate_nested_aggregate_payloads!)
+      end
     end
 
     # @return [Hash{String => Object}] JSONB-safe keys and values for +Determination#determination_data+
@@ -42,6 +49,11 @@ module Determinations
     end
 
     private
+
+    def validate_nested_aggregate_payloads!
+      HoursBasedDeterminationData.from_aggregate(hours_data, compliant: hours_ok)
+      IncomeBasedDeterminationData.from_aggregate(income_data, compliant: income_ok)
+    end
 
     def satisfied_by
       if hours_ok && income_ok

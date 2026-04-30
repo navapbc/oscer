@@ -11,7 +11,7 @@ module Determinations
     attribute :ex_parte_activity_ids, default: -> { [] }
     attribute :activity_ids, default: -> { [] }
     attribute :calculated_at, :string
-    # When set (ex parte combined CE nested +hours+ payload), included in {#to_h}.
+    # When set (nested +hours+ payload under +Determination::CALCULATION_TYPE_CE_COMBINED+), included in {#to_h}.
     attribute :compliant, :boolean
 
     validates :calculated_at, presence: true

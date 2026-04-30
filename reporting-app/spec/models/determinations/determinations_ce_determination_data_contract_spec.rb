@@ -136,5 +136,31 @@ RSpec.describe Determinations do
       expect(payload["hours"]["compliant"]).to be false
       expect(payload["income"]["compliant"]).to be false
     end
+
+    it "fails at build time when nested hours aggregate is invalid" do
+      invalid_hours = { not_an_aggregate: true }
+      valid_income = {
+        total_income: BigDecimal("0"),
+        income_by_source: { income: BigDecimal("0"), activity: BigDecimal("0") },
+        period_start: nil,
+        period_end: nil,
+        income_ids: []
+      }
+
+      expect {
+        described_class.build(
+          hours_data: invalid_hours,
+          income_data: valid_income,
+          hours_ok: false,
+          income_ok: false
+        )
+      }.to raise_error(ActiveModel::ValidationError)
+    end
+  end
+
+  describe Determination do
+    it "exposes CALCULATION_TYPE_CE_COMBINED_LEGACY for historical JSON and BI filters" do
+      expect(described_class::CALCULATION_TYPE_CE_COMBINED_LEGACY).to eq("ex_parte_ce_combined")
+    end
   end
 end

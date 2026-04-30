@@ -31,7 +31,7 @@
 # @see Strata::Determinable for the +record_determination!+ method to use in models
 #
 # Determination rows store arbitrary JSON in +determination_data+. For **automated CE**
-# (hours, income, and combined ex parte CE), the canonical serialized contract is defined by
+# (hours, income, and combined hours + income CE), the canonical serialized contract is defined by
 # {Determinations::HoursBasedDeterminationData}, {Determinations::IncomeBasedDeterminationData},
 # and {Determinations::CECombinedDeterminationData} — those classes validate and emit the
 # payloads written by {CertificationCase}. Other flows (manual activity report, exemption
@@ -42,16 +42,18 @@
 # Existing production rows may predate this contract or use ad-hoc keys (for example exemption
 # placeholders or +Strata::RulesEngine+ fact JSON). The app does **not** coerce or re-validate those
 # on read. Consumers should treat unknown +calculation_type+ or missing keys defensively. Older CE
-# combined rows may still store +calculation_type+ as the legacy string +ex_parte_ce_combined+; new
-# writes use +CALCULATION_TYPE_CE_COMBINED+ (+ce_combined+). A future backfill or strict read path
-# can be ticketed separately if product needs normalized history.
+# combined rows may still store +calculation_type+ as +Determination::CALCULATION_TYPE_CE_COMBINED_LEGACY+; new
+# writes use +CALCULATION_TYPE_CE_COMBINED+. A future backfill or strict read path can be ticketed
+# separately if product needs normalized history.
 class Determination < Strata::Determination
   # Stored in +determination_data+ JSON for CE compliance automated calculations.
   CALCULATION_TYPE_HOURS_BASED = "hours_based"
   CALCULATION_TYPE_INCOME_BASED = "income_based"
   # Combined CE step: one determination with both hours and income assessments (OR compliant).
   CALCULATION_TYPE_CE_COMBINED = "ce_combined"
-  # Stored in +determination_data["satisfied_by"]+ when +calculation_type+ is +CALCULATION_TYPE_CE_COMBINED+.
+  # Historical +determination_data["calculation_type"]+ value before rename; use for BI/read filters on old rows.
+  CALCULATION_TYPE_CE_COMBINED_LEGACY = "ex_parte_ce_combined"
+  # Stored in +determination_data["satisfied_by"]+ when combined CE (+CALCULATION_TYPE_CE_COMBINED+ or legacy).
   SATISFIED_BY_BOTH = "both"
   SATISFIED_BY_HOURS = "hours"
   SATISFIED_BY_INCOME = "income"
