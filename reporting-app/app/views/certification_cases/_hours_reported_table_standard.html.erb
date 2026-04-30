@@ -1,0 +1,53 @@
+<% total_hours = hours_summary[:total_hours] %>
+<% hours_needed = [target_hours - total_hours, 0].max %>
+<% has_activities = ex_parte_activities.any? || member_activities.any? %>
+<% i18n = "certification_cases.hours_reported_table" %>
+
+<% if has_activities %>
+  <h3><%= t("#{i18n}.title") %></h3>
+  <table class="usa-table usa-table--borderless width-full certification-case-hours-table-standard">
+    <thead>
+      <tr>
+        <th scope="col"><%= t("#{i18n}.organization_name") %></th>
+        <th scope="col"><%= t("#{i18n}.source") %></th>
+        <th scope="col"><%= t("#{i18n}.activity_type") %></th>
+        <th scope="col"><%= t("#{i18n}.hours_reported") %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% ex_parte_activities.each do |activity| %>
+        <% category_name = activity.category.titleize %>
+        <tr>
+          <td><%= category_name %> <%= t("#{i18n}.activity_label") %></td>
+          <td><%= t("#{i18n}.source_ex_parte", state_name: ENV.fetch("STATE_NAME", "the State")) %></td>
+          <td><%= category_name %></td>
+          <td><%= number_with_precision(activity.hours, precision: 0) %></td>
+        </tr>
+      <% end %>
+      <% member_activities.each do |activity| %>
+        <tr>
+          <td><%= activity.name %></td>
+          <td><%= t("#{i18n}.source_self_reported") %></td>
+          <td><%= activity.category.titleize %></td>
+          <td><%= number_with_precision(activity.hours, precision: 0) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3"><%= t("#{i18n}.total_reported") %></td>
+        <td><%= number_with_precision(total_hours, precision: 0) %></td>
+      </tr>
+      <tr>
+        <td colspan="3"><%= t("#{i18n}.required") %></td>
+        <td><%= target_hours %></td>
+      </tr>
+      <% if hours_needed > 0 %>
+        <tr>
+          <td colspan="3"><%= t("#{i18n}.additional_hours_needed") %></td>
+          <td><%= number_with_precision(hours_needed, precision: 0) %></td>
+        </tr>
+      <% end %>
+    </tfoot>
+  </table>
+<% end %>

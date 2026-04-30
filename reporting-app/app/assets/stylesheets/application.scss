@@ -23,39 +23,108 @@ legend {
 // =========================================================
 // Staff certification case: compliance summary tables
 // =========================================================
+// Section titles ("Hours reported", "Income reported"): match Figma OSCER-336
+// (node 6068:422) — USA Prose.h4 scale, not default h3 / font-sans-lg.
 .certification-case-compliance-tables {
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: units(2);
+
   h3 {
-    margin-bottom: units("105");
+    font-family: font-family("sans");
+    font-size: 1rem;
+    font-weight: font-weight("bold");
+    line-height: 1.5;
+    margin-bottom: 0;
+    margin-top: 0;
   }
 }
 
 // Staff case Activity Report compliance tables: outer frame + section
 // dividers only (no horizontal rules between organization rows; totals block
 // merges Total + Required; divider before Additional row). Matches staff UI
-// reference (OSCER-336).
-table.certification-case-compliance-table {
+// reference (OSCER-336) / Figma table cell tokens: px = spacing/2 (16px),
+// py = spacing/1 (8px), body 16px, leading 1.5.
+// Include `.usa-table` so these beat USWDS table header/footer background rules.
+table.usa-table.certification-case-compliance-table {
   margin-top: 0;
   border-collapse: collapse;
   border: 1px solid color("base-light");
 
+  thead,
+  thead tr {
+    background-color: color("white") !important;
+  }
+
   thead th {
+    background-color: color("white") !important;
+    border-bottom: 1px solid color("base-dark") !important;
     border-left: none !important;
     border-right: none !important;
     border-top: none !important;
-    border-bottom: 1px solid color("base-dark") !important;
+    font-size: 1rem !important;
+    font-weight: font-weight("bold") !important;
+    line-height: 1.5 !important;
+    padding: units(1) units(2) !important;
     vertical-align: middle;
+
+    &:last-child {
+      background-color: color("base-lightest") !important;
+      min-width: 10rem;
+      text-align: right;
+      width: 10rem;
+    }
+  }
+
+  tbody tr {
+    background-color: color("white") !important;
   }
 
   tbody td {
     border: none !important;
+    font-size: 1rem !important;
+    font-weight: font-weight("normal") !important;
+    line-height: 1.5 !important;
+    padding: units(1) units(2) !important;
+    vertical-align: middle;
+
+    &:last-child {
+      background-color: color("base-lightest") !important;
+      text-align: right;
+    }
+  }
+
+  tfoot td {
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
+    padding: units(1) units(2) !important;
     vertical-align: middle;
   }
 
+  tfoot,
+  tfoot tr {
+    background-color: color("white") !important;
+  }
+
   tfoot tr:nth-child(1) td {
-    border-top: 1px solid color("base-dark") !important;
+    border-bottom: none !important;
     border-left: none !important;
     border-right: none !important;
-    border-bottom: none !important;
+    border-top: 1px solid color("base-dark") !important;
+  }
+
+  tfoot tr:nth-child(1) td:first-child,
+  tfoot tr:nth-child(2) td:first-child {
+    background-color: color("white") !important;
+    font-weight: font-weight("normal") !important;
+  }
+
+  tfoot tr:nth-child(1) td:last-child,
+  tfoot tr:nth-child(2) td:last-child {
+    background-color: color("base-lightest") !important;
+    font-weight: font-weight("normal") !important;
+    text-align: right;
   }
 
   tfoot tr:nth-child(2) td {
@@ -63,10 +132,38 @@ table.certification-case-compliance-table {
   }
 
   tfoot tr:nth-child(3) td {
-    border-top: 1px solid color("base-dark") !important;
+    border-bottom: none !important;
     border-left: none !important;
     border-right: none !important;
-    border-bottom: none !important;
+    border-top: 1px solid color("base-dark") !important;
+  }
+
+  tfoot tr:nth-child(3) td:first-child {
+    background-color: color("base-lightest") !important;
+  }
+
+  tfoot tr:nth-child(3) td:last-child {
+    background-color: color("base-lighter") !important;
+    font-weight: font-weight("bold");
+    text-align: right;
+  }
+}
+
+// Ex parte hours summary (borderless): align numeric column; optional shortfall
+// row is always the third footer row when present.
+table.certification-case-hours-table-standard {
+  thead th:last-child,
+  tbody td:last-child,
+  tfoot td:last-child {
+    text-align: right;
+  }
+
+  tfoot tr:nth-child(3) {
+    background-color: color("base-lightest");
+  }
+
+  tfoot tr:nth-child(3) td {
+    font-weight: font-weight("bold");
   }
 }
 
