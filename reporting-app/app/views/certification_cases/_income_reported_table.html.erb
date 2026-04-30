@@ -1,0 +1,58 @@
+<% total_income = income_summary[:total_income].to_d %>
+<% income_needed = [ target_income.to_d - total_income, BigDecimal("0") ].max %>
+<% has_rows = ex_parte_incomes.any? || member_income_activities.any? %>
+<% hours_has_data = local_assigns.fetch(:hours_has_data, false) %>
+
+<% if has_rows %>
+  <h3><%= t("certification_cases.income.table_title") %></h3>
+  <table class="usa-table width-full certification-case-compliance-table">
+    <thead>
+      <tr>
+        <th scope="col"><%= t("certification_cases.income.organization_name") %></th>
+        <th scope="col"><%= t("certification_cases.income.source") %></th>
+        <th scope="col"><%= t("certification_cases.income.activity_type") %></th>
+        <th scope="col"><%= t("certification_cases.income.income_reported_amount") %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% ex_parte_incomes.each do |row| %>
+        <% category_name = row.category.titleize %>
+        <tr>
+          <td>
+            <%= row.metadata&.dig("employer").presence || "#{category_name} #{t('certification_cases.hours_reported_table.activity_label')}" %>
+          </td>
+          <td><%= t("certification_cases.hours_reported_table.source_ex_parte", state_name: state_name) %></td>
+          <td><%= category_name %></td>
+          <td><%= number_to_currency(row.gross_income) %></td>
+        </tr>
+      <% end %>
+      <% member_income_activities.each do |activity| %>
+        <tr>
+          <td><%= activity.name %></td>
+          <td><%= t("certification_cases.hours_reported_table.source_self_reported") %></td>
+          <td><%= activity.category.titleize %></td>
+          <td><%= number_to_currency(activity.income&.dollar_amount, precision: 0) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3"><%= t("certification_cases.income.total_reported") %></td>
+        <td><%= number_to_currency(total_income, precision: 0) %></td>
+      </tr>
+      <tr>
+        <td colspan="3"><%= t("certification_cases.income.required") %></td>
+        <td><%= number_to_currency(target_income, precision: 0) %></td>
+      </tr>
+      <% if income_needed.positive? %>
+        <tr>
+          <td colspan="3"><strong><%= t("certification_cases.income.additional_income_needed") %></strong></td>
+          <td><%= number_to_currency(income_needed, precision: 0) %></td>
+        </tr>
+      <% end %>
+    </tfoot>
+  </table>
+<% elsif !hours_has_data %>
+  <h3><%= t("certification_cases.income.table_title") %></h3>
+  <p><%= t("certification_cases.income.no_rows_compliance") %></p>
+<% end %>

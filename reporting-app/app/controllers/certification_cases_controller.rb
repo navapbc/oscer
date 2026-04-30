@@ -28,6 +28,16 @@ class CertificationCasesController < StaffController
     @target_hours = HoursComplianceDeterminationService::TARGET_HOURS
     @ex_parte_activities = fetch_ex_parte_activities
     @member_activities = fetch_member_activities
+    @income_rows = fetch_incomes
+    @member_income_activities = IncomeComplianceDeterminationService.member_income_activities_for_certification(
+      @certification,
+      certification_case: @case
+    )
+    @income_summary = IncomeComplianceDeterminationService.aggregate_income_for_certification(
+      @certification,
+      certification_case: @case
+    )
+    @target_income = IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY
     if Features.doc_ai_enabled? && @activity_report
       activity_ids = @activity_report.activities.pluck(:id)
       @confidence_by_activity = DocAiConfidenceService.new.confidence_by_activity_id(activity_ids)
@@ -59,6 +69,13 @@ class CertificationCasesController < StaffController
   def fetch_ex_parte_activities
     lookback_period = @certification.certification_requirements.continuous_lookback_period
     ExParteActivity.for_member(@certification.member_id).within_period(lookback_period)
+  end
+
+  def fetch_incomes
+    lookback_period = @certification.certification_requirements.continuous_lookback_period
+    Income.for_member(@certification.member_id)
+      .within_period(lookback_period)
+      .order(:period_start, :reported_at)
   end
 
   def fetch_member_activities

@@ -101,7 +101,7 @@ class MemberMailer < ApplicationMailer
 
   private
 
-  # Matches certification_cases/_hours_reported_table: shortfall from raw total_hours, each value rounded for display (precision 0, half up).
+  # Matches certification_cases hours summary tables: shortfall from raw total_hours, each value rounded for display (precision 0, half up).
   def hours_reported_and_needed_for_mailer(hours_data, target_hours)
     raw_total = BigDecimal(hours_data[:total_hours].to_s)
     raw_needed = [ BigDecimal(target_hours.to_s) - raw_total, 0 ].max

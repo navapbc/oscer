@@ -43,8 +43,8 @@ class Income < ApplicationRecord
   scope :within_period, ->(lookback_period) {
     return all unless lookback_period.present?
 
-    start_date = Date.parse(lookback_period.start.to_s)
-    end_date = Date.parse(lookback_period.end.to_s).end_of_month
+    start_date = lookback_period.start.to_date
+    end_date = lookback_period.end.to_date.end_of_month
 
     where("period_start >= ? AND period_end <= ?", start_date, end_date)
   }
