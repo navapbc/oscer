@@ -157,7 +157,7 @@ class CertificationCase < Strata::Case
 
   # Called by IncomeComplianceDeterminationService#calculate (e.g. after +IncomeService+ persists new
   # income for an open case) to record income-only CE (+CALCULATION_TYPE_INCOME_BASED+; not used by the
-  # combined ex parte CE business process step).
+  # combined CE business process step).
   #
   # Default +close_on_compliant: true+ matches +record_hours_compliance+: compliant outcomes +close!+
   # the case so behavior matches hours silent recalculation and the case leaves open caseworker queues.
@@ -176,7 +176,7 @@ class CertificationCase < Strata::Case
     )
   end
 
-  # Ex parte CE check: one automated determination with both tracks in +determination_data+.
+  # Combined CE check (hours + income): one automated determination with both tracks in +determination_data+.
   # Member is compliant if either +hours_ok+ or +income_ok+; not compliant only when both are false.
   # Events/notifications are published by CommunityEngagementCheckService (via Strata).
   #
@@ -185,10 +185,10 @@ class CertificationCase < Strata::Case
   # @param income_data [Hash] from IncomeComplianceDeterminationService.aggregate_income_for_certification
   # @param hours_ok [Boolean]
   # @param income_ok [Boolean]
-  def record_ex_parte_ce_combined_assessment(certification:, hours_data:, income_data:, hours_ok:, income_ok:)
+  def record_ce_combined_assessment(certification:, hours_data:, income_data:, hours_ok:, income_ok:)
     outcome = (hours_ok || income_ok) ? :compliant : :not_compliant
-    reasons = ex_parte_ce_combined_reason_codes(outcome: outcome, hours_ok: hours_ok, income_ok: income_ok)
-    determination_data = Determinations::ExParteCECombinedDeterminationData.build(
+    reasons = ce_combined_reason_codes(outcome: outcome, hours_ok: hours_ok, income_ok: income_ok)
+    determination_data = Determinations::CECombinedDeterminationData.build(
       hours_data: hours_data,
       income_data: income_data,
       hours_ok: hours_ok,
@@ -232,7 +232,7 @@ class CertificationCase < Strata::Case
     end
   end
 
-  def ex_parte_ce_combined_reason_codes(outcome:, hours_ok:, income_ok:)
+  def ce_combined_reason_codes(outcome:, hours_ok:, income_ok:)
     if outcome == :compliant
       [].tap do |codes|
         codes << Determination::REASON_CODE_MAPPING[:hours_reported_compliant] if hours_ok

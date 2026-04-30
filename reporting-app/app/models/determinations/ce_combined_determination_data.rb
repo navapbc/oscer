@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 module Determinations
-  # Canonical serialized shape for the ex parte CE step (+Determination::CALCULATION_TYPE_EX_PARTE_CE_COMBINED+):
-  # one automated determination with nested hours and income assessment payloads.
-  class ExParteCECombinedDeterminationData < ValueObject
+  # Canonical serialized shape for the combined hours + income CE step
+  # (+Determination::CALCULATION_TYPE_CE_COMBINED+): one automated determination with nested hours and
+  # income assessment payloads.
+  class CECombinedDeterminationData < ValueObject
     attribute :hours_data
     attribute :income_data
     attribute :hours_ok, :boolean
@@ -32,7 +33,7 @@ module Determinations
     # @return [Hash{String => Object}] JSONB-safe keys and values for +Determination#determination_data+
     def to_h
       {
-        "calculation_type" => Determination::CALCULATION_TYPE_EX_PARTE_CE_COMBINED,
+        "calculation_type" => Determination::CALCULATION_TYPE_CE_COMBINED,
         "satisfied_by" => satisfied_by,
         "hours" => nested_hours_hash,
         "income" => nested_income_hash,

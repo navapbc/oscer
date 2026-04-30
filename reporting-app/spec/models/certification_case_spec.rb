@@ -209,7 +209,7 @@ RSpec.describe CertificationCase, type: :model do
     end
   end
 
-  describe "#record_ex_parte_ce_combined_assessment" do
+  describe "#record_ce_combined_assessment" do
     def latest_determination_for(certification_id)
       Determination.unscope(:order).where(subject_id: certification_id).order(created_at: :desc).first
     end
@@ -236,7 +236,7 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it "stores not_compliant with both insufficient reasons when both tracks fail" do
-      certification_case.record_ex_parte_ce_combined_assessment(
+      certification_case.record_ce_combined_assessment(
         certification: certification,
         hours_data: hours_data,
         income_data: income_data,
@@ -254,7 +254,7 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it "stores compliant when only income_ok" do
-      certification_case.record_ex_parte_ce_combined_assessment(
+      certification_case.record_ce_combined_assessment(
         certification: certification,
         hours_data: hours_data,
         income_data: income_data,

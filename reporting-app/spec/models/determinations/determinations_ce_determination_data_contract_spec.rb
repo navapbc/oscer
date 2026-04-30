@@ -73,8 +73,8 @@ RSpec.describe Determinations do
     end
   end
 
-  describe Determinations::ExParteCECombinedDeterminationData do
-    it "serializes a stable ex_parte_ce_combined payload" do
+  describe Determinations::CECombinedDeterminationData do
+    it "serializes a stable ce_combined payload" do
       hours_data = {
         total_hours: 80,
         hours_by_category: { "employment" => 80.0 },
@@ -97,7 +97,7 @@ RSpec.describe Determinations do
         income_ok: true
       ).to_h
 
-      expect(payload["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EX_PARTE_CE_COMBINED)
+      expect(payload["calculation_type"]).to eq(Determination::CALCULATION_TYPE_CE_COMBINED)
       expect(payload["satisfied_by"]).to eq(Determination::SATISFIED_BY_BOTH)
       expect(payload["calculated_at"]).to eq(calculated_at)
 

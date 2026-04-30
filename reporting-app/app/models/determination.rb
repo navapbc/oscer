@@ -33,7 +33,7 @@
 # Determination rows store arbitrary JSON in +determination_data+. For **automated CE**
 # (hours, income, and combined ex parte CE), the canonical serialized contract is defined by
 # {Determinations::HoursBasedDeterminationData}, {Determinations::IncomeBasedDeterminationData},
-# and {Determinations::ExParteCECombinedDeterminationData} — those classes validate and emit the
+# and {Determinations::CECombinedDeterminationData} — those classes validate and emit the
 # payloads written by {CertificationCase}. Other flows (manual activity report, exemption
 # placeholder, automated eligibility JSON) use different shapes and are not covered by those VOs.
 #
@@ -41,15 +41,17 @@
 #
 # Existing production rows may predate this contract or use ad-hoc keys (for example exemption
 # placeholders or +Strata::RulesEngine+ fact JSON). The app does **not** coerce or re-validate those
-# on read. Consumers should treat unknown +calculation_type+ or missing keys defensively. A future
-# backfill or strict read path can be ticketed separately if product needs normalized history.
+# on read. Consumers should treat unknown +calculation_type+ or missing keys defensively. Older CE
+# combined rows may still store +calculation_type+ as the legacy string +ex_parte_ce_combined+; new
+# writes use +CALCULATION_TYPE_CE_COMBINED+ (+ce_combined+). A future backfill or strict read path
+# can be ticketed separately if product needs normalized history.
 class Determination < Strata::Determination
   # Stored in +determination_data+ JSON for CE compliance automated calculations.
   CALCULATION_TYPE_HOURS_BASED = "hours_based"
   CALCULATION_TYPE_INCOME_BASED = "income_based"
-  # Ex parte CE step: one determination with both hours and income assessments (OR compliant).
-  CALCULATION_TYPE_EX_PARTE_CE_COMBINED = "ex_parte_ce_combined"
-  # Stored in +determination_data["satisfied_by"]+ when +calculation_type+ is +CALCULATION_TYPE_EX_PARTE_CE_COMBINED+.
+  # Combined CE step: one determination with both hours and income assessments (OR compliant).
+  CALCULATION_TYPE_CE_COMBINED = "ce_combined"
+  # Stored in +determination_data["satisfied_by"]+ when +calculation_type+ is +CALCULATION_TYPE_CE_COMBINED+.
   SATISFIED_BY_BOTH = "both"
   SATISFIED_BY_HOURS = "hours"
   SATISFIED_BY_INCOME = "income"
