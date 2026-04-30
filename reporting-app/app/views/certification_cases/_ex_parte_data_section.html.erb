@@ -3,7 +3,7 @@
 <% else %>
   <% hours_has_data = ex_parte_activities.any? || member_activities.any? %>
   <% if hours_has_data %>
-    <%= render partial: "certification_cases/hours_reported_table_standard",
+    <%= render partial: "certification_cases/hours_ex_parte_table",
         locals: {
           ex_parte_activities: ex_parte_activities,
           member_activities: member_activities,
