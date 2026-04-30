@@ -30,6 +30,19 @@
 # @see Strata::Determination for available associations, validations, and scopes
 # @see Strata::Determinable for the +record_determination!+ method to use in models
 #
+# Determination rows store arbitrary JSON in +determination_data+. For **automated CE**
+# (hours, income, and combined ex parte CE), the canonical serialized contract is defined by
+# {Determinations::HoursBasedDeterminationData}, {Determinations::IncomeBasedDeterminationData},
+# and {Determinations::ExParteCECombinedDeterminationData} — those classes validate and emit the
+# payloads written by {CertificationCase}. Other flows (manual activity report, exemption
+# placeholder, automated eligibility JSON) use different shapes and are not covered by those VOs.
+#
+# ## Legacy and non-CE +determination_data+
+#
+# Existing production rows may predate this contract or use ad-hoc keys (for example exemption
+# placeholders or +Strata::RulesEngine+ fact JSON). The app does **not** coerce or re-validate those
+# on read. Consumers should treat unknown +calculation_type+ or missing keys defensively. A future
+# backfill or strict read path can be ticketed separately if product needs normalized history.
 class Determination < Strata::Determination
   # Stored in +determination_data+ JSON for CE compliance automated calculations.
   CALCULATION_TYPE_HOURS_BASED = "hours_based"
