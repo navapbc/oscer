@@ -41,6 +41,15 @@ RSpec.describe CommunityEngagementCheckService do
         create_ex_parte_activity_for(certification, hours: 85)
       end
 
+      it "aggregates income scoped to the case under assessment" do
+        allow(IncomeComplianceDeterminationService).to receive(:aggregate_income_for_certification).and_call_original
+
+        described_class.determine(certification_case)
+
+        expect(IncomeComplianceDeterminationService).to have_received(:aggregate_income_for_certification)
+          .with(certification, certification_case: certification_case)
+      end
+
       it "records combined determination with hours satisfied and income assessed" do
         described_class.determine(certification_case)
 
