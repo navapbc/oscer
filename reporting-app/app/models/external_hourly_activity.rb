@@ -1,15 +1,16 @@
 # frozen_string_literal: true
 
-# ExParteActivity stores trusted hours data from the state system (ex parte verification).
+# ExternalHourlyActivity stores trusted hours data from external sources, like
+# the state system
 #
-# These are "ex parte" (automated/external) hours as opposed to member
-# reported hours from ActivityReportApplicationForm. Ex parte hours are
-# auto-verified and don't require staff review.
+# These are automated or external hours as opposed to member reported hours from
+# ActivityReportApplicationForm. External hours are auto-verified and don't require
+# staff review.
 #
 # Activities are linked to certifications through member_id - since there's
 # only one active certification per member at a time, the relationship is implicit.
 #
-class ExParteActivity < ApplicationRecord
+class ExternalHourlyActivity < ApplicationRecord
   include Strata::Attributes
 
   ALLOWED_CATEGORIES = ActivityCategories::ALL

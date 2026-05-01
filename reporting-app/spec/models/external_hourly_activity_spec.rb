@@ -2,15 +2,15 @@
 
 require 'rails_helper'
 
-RSpec.describe ExParteActivity, type: :model do
+RSpec.describe ExternalHourlyActivity, type: :model do
   describe 'factory' do
     it 'creates a valid record' do
-      activity = build(:ex_parte_activity)
+      activity = build(:external_hourly_activity)
       expect(activity).to be_valid
     end
 
     it 'creates a valid record from batch' do
-      activity = build(:ex_parte_activity, :from_batch)
+      activity = build(:external_hourly_activity, :from_batch)
       expect(activity).to be_valid
       expect(activity.source_type).to eq('batch_upload')
       expect(activity.source_id).to be_present
@@ -18,7 +18,7 @@ RSpec.describe ExParteActivity, type: :model do
   end
 
   describe 'validations' do
-    subject(:activity) { build(:ex_parte_activity) }
+    subject(:activity) { build(:external_hourly_activity) }
 
     describe 'member_id' do
       it 'is required' do
@@ -36,7 +36,7 @@ RSpec.describe ExParteActivity, type: :model do
       end
 
       it 'accepts valid categories' do
-        ExParteActivity::ALLOWED_CATEGORIES.each do |category|
+        ExternalHourlyActivity::ALLOWED_CATEGORIES.each do |category|
           activity.category = category
           expect(activity).to be_valid
         end
@@ -63,7 +63,7 @@ RSpec.describe ExParteActivity, type: :model do
       end
 
       it 'must be less than or equal to MAX_HOURS_PER_YEAR' do
-        activity.hours = ExParteActivity::MAX_HOURS_PER_YEAR + 1
+        activity.hours = ExternalHourlyActivity::MAX_HOURS_PER_YEAR + 1
         expect(activity).not_to be_valid
       end
 
@@ -109,7 +109,7 @@ RSpec.describe ExParteActivity, type: :model do
       end
 
       it 'accepts valid source types' do
-        ExParteActivity::ALLOWED_SOURCE_TYPES.each do |source|
+        ExternalHourlyActivity::ALLOWED_SOURCE_TYPES.each do |source|
           activity.source_type = source
           expect(activity).to be_valid
         end
@@ -126,8 +126,8 @@ RSpec.describe ExParteActivity, type: :model do
     describe '.for_member' do
       it 'returns entries for the given member' do
         member_id = 'M12345'
-        entry = create(:ex_parte_activity, member_id: member_id)
-        create(:ex_parte_activity, member_id: 'OTHER')
+        entry = create(:external_hourly_activity, member_id: member_id)
+        create(:external_hourly_activity, member_id: 'OTHER')
 
         expect(described_class.for_member(member_id)).to eq([ entry ])
       end
@@ -136,16 +136,16 @@ RSpec.describe ExParteActivity, type: :model do
 
   describe 'constants' do
     it 'defines ALLOWED_CATEGORIES' do
-      expect(ExParteActivity::ALLOWED_CATEGORIES).to eq(%w[employment community_service education])
+      expect(ExternalHourlyActivity::ALLOWED_CATEGORIES).to eq(%w[employment community_service education])
     end
 
     it 'defines source type constants' do
-      expect(ExParteActivity::SOURCE_TYPES[:api]).to eq('api')
-      expect(ExParteActivity::SOURCE_TYPES[:batch]).to eq('batch_upload')
+      expect(ExternalHourlyActivity::SOURCE_TYPES[:api]).to eq('api')
+      expect(ExternalHourlyActivity::SOURCE_TYPES[:batch]).to eq('batch_upload')
     end
 
     it 'defines MAX_HOURS_PER_YEAR' do
-      expect(ExParteActivity::MAX_HOURS_PER_YEAR).to eq(8760)
+      expect(ExternalHourlyActivity::MAX_HOURS_PER_YEAR).to eq(8760)
     end
   end
 end
