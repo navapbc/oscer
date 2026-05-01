@@ -3,13 +3,13 @@
 require "rails_helper"
 
 RSpec.describe HoursComplianceDeterminationService do
-  # Helper to create ex_parte_activity with periods matching the certification's lookback
+  # Helper to create external_hourly_activity with periods matching the certification's lookback
   def create_ex_parte_activity_for(certification, **attrs)
     lookback = certification.certification_requirements.continuous_lookback_period
     period_start = lookback.start.to_date
     period_end = lookback.start.to_date.end_of_month
 
-    create(:ex_parte_activity, member_id: certification.member_id,
+    create(:external_hourly_activity, member_id: certification.member_id,
            period_start: period_start, period_end: period_end, **attrs)
   end
 
@@ -258,7 +258,7 @@ RSpec.describe HoursComplianceDeterminationService do
         create_ex_parte_activity_for(certification, hours: 50)
 
         # Create activity outside lookback period (far in the past)
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                member_id: certification.member_id,
                hours: 100,
                period_start: 2.years.ago.to_date,
@@ -280,7 +280,7 @@ RSpec.describe HoursComplianceDeterminationService do
   describe ".summarize_hours" do
     context "when activities are blank" do
       it "returns a summary with zeroed values" do
-        summary = described_class.summarize_hours(ExParteActivity.none)
+        summary = described_class.summarize_hours(ExternalHourlyActivity.none)
 
         expect(summary).to eq({
           total: 0.0,

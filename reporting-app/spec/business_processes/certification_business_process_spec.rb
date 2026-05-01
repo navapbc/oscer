@@ -119,7 +119,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
 
       # Step 3: Create sufficient hours and approve activity report
       lookback = certification.certification_requirements.continuous_lookback_period
-      create(:ex_parte_activity,
+      create(:external_hourly_activity,
              member_id: certification.member_id,
              hours: 85,
              period_start: lookback.start.to_date,
@@ -230,7 +230,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
 
       # Create sufficient hours for approval
       lookback = certification.certification_requirements.continuous_lookback_period
-      create(:ex_parte_activity,
+      create(:external_hourly_activity,
              member_id: certification.member_id,
              hours: 85,
              period_start: lookback.start.to_date,

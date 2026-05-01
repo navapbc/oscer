@@ -2,10 +2,10 @@
 
 module ActivityAggregator
   def fetch_ex_parte_activities(certification)
-    return ExParteActivity.none unless certification&.member_id
+    return ExternalHourlyActivity.none unless certification&.member_id
 
     lookback_period = certification.certification_requirements.continuous_lookback_period
-    ExParteActivity.for_member(certification.member_id).within_period(lookback_period)
+    ExternalHourlyActivity.for_member(certification.member_id).within_period(lookback_period)
   end
 
   def fetch_member_activities(certification)
