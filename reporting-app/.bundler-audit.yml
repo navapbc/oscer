@@ -1,6 +1,0 @@
----
-ignore:
-  # Devise 4.9.4 → 5.0.3 (CVE-2026-32700): Confirmable "change email" race condition.
-  # Not exploitable — OSCER does not use Devise's confirmable module.
-  # Fix requires major version upgrade (4.x → 5.x) with auth flow testing.
-  - CVE-2026-32700
