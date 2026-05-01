@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Service for creating and validating Income entries from API and batch intake.
-# Mirrors ExParteActivityService for hours data.
+# Mirrors ExternalHourlyActivityService for hours data.
 #
 # After a successful save, optional compliance recalculation (+recalculate_income_compliance+, default +true+)
 # runs +IncomeComplianceDeterminationService.calculate+ for the member’s open case; compliant outcomes
@@ -64,7 +64,7 @@ class IncomeService
       )
     end
 
-    # Same dimensions as ExParteActivityService duplicate check; source_type is not part of the key.
+    # Same dimensions as ExternalHourlyActivityService duplicate check; source_type is not part of the key.
     def duplicate_entry?(member_id:, category:, gross_income:, period_start:, period_end:)
       Income.exists?(
         member_id: member_id,

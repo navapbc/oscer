@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe ExParteActivityService do
+RSpec.describe ExternalHourlyActivityService do
   describe ".create_entry" do
     let(:valid_params) do
       {
