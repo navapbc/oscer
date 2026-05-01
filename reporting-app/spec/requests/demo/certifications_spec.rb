@@ -98,9 +98,9 @@ RSpec.describe "/demo/certifications", type: :request do
       }.to change(Certification, :count).by(1)
     end
 
-    context "when using ex parte scenarios" do
+    context "when using external scenarios" do
       it "creates Certification with 'Partially met work hours requirement'" do
-        create_attrs = valid_request_attributes.merge({ ex_parte_scenario: "Partially met work hours requirement" })
+        create_attrs = valid_request_attributes.merge({ external_scenario: "Partially met work hours requirement" })
 
         expect {
           post demo_certifications_url,
@@ -131,7 +131,7 @@ RSpec.describe "/demo/certifications", type: :request do
       end
 
       it "creates Certification with 'Fully met work hours requirement'" do
-        create_attrs = valid_request_attributes.merge({ ex_parte_scenario: "Fully met work hours requirement" })
+        create_attrs = valid_request_attributes.merge({ external_scenario: "Fully met work hours requirement" })
 
         expect {
           post demo_certifications_url,
@@ -159,7 +159,7 @@ RSpec.describe "/demo/certifications", type: :request do
       end
 
       it "creates a new Certification with 'Meets age-based exemption requirement' scenario and uses scenario DOB" do
-        create_attrs = valid_request_attributes.except(:date_of_birth).merge({ ex_parte_scenario: "Meets age-based exemption requirement" })
+        create_attrs = valid_request_attributes.except(:date_of_birth).merge({ external_scenario: "Meets age-based exemption requirement" })
 
         expect {
           post demo_certifications_url,
@@ -180,7 +180,7 @@ RSpec.describe "/demo/certifications", type: :request do
       end
 
       it "creates a new Certification with 'Meets age-based exemption requirement' scenario and uses form DOB over scenario DOB" do
-        create_attrs = valid_request_attributes.merge({ ex_parte_scenario: "Meets age-based exemption requirement" })
+        create_attrs = valid_request_attributes.merge({ external_scenario: "Meets age-based exemption requirement" })
 
         expect {
           post demo_certifications_url,
@@ -198,7 +198,7 @@ RSpec.describe "/demo/certifications", type: :request do
       end
 
       it "creates a new Certification with pregnancy_status checkbox selected" do
-        create_attrs = valid_request_attributes.merge({ pregnancy_status: "1", ex_parte_scenario: "No data" })
+        create_attrs = valid_request_attributes.merge({ pregnancy_status: "1", external_scenario: "No data" })
 
         expect {
           post demo_certifications_url,
@@ -210,7 +210,7 @@ RSpec.describe "/demo/certifications", type: :request do
       end
 
       it "creates a new Certification with race_ethnicity selected" do
-        create_attrs = valid_request_attributes.merge({ race_ethnicity: "white", ex_parte_scenario: "No data" })
+        create_attrs = valid_request_attributes.merge({ race_ethnicity: "white", external_scenario: "No data" })
 
         expect {
           post demo_certifications_url,
@@ -222,7 +222,7 @@ RSpec.describe "/demo/certifications", type: :request do
       end
 
       it "creates a new Certification with icn entered" do
-        create_attrs = valid_request_attributes.merge({ va_icn: "1012861229V078999", ex_parte_scenario: "No data" })
+        create_attrs = valid_request_attributes.merge({ va_icn: "1012861229V078999", external_scenario: "No data" })
 
         expect {
           post demo_certifications_url,

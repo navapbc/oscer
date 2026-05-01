@@ -15,7 +15,7 @@
         <td class="border-0"><%= t("activity_report_application_forms.shared.employment_activity") %></td>
         <td class="border-0"><%= t("activity_report_application_forms.shared.from_the_state") %></td>
         <td class="border-0"><%= activity.category.humanize %></td>
-        <td class="border-0 text-right bg-base-lightest"><%= ex_parte_value.call(external_data) %></td>
+        <td class="border-0 text-right bg-base-lightest"><%= external_value.call(external_data) %></td>
       </tr>
     <% end %>
     <% activities.each do |activity| %>

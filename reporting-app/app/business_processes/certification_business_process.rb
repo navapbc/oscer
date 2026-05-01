@@ -2,8 +2,8 @@
 
 class CertificationBusinessProcess < Strata::BusinessProcess
   # Determination steps
-  EX_PARTE_EXEMPTION_CHECK_STEP = "ex_parte_exemption_check"
-  EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP = "ex_parte_community_engagement_check"
+  EXTERNAL_EXEMPTION_CHECK_STEP = "external_exemption_check"
+  EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP = "external_community_engagement_check"
 
   # User task steps
   REPORT_ACTIVITIES_STEP = "report_activities"
@@ -14,12 +14,12 @@ class CertificationBusinessProcess < Strata::BusinessProcess
 
   # --- System processes: Determination ---
   # Notifications are sent via NotificationsEventListener which subscribes to domain events
-  system_process(EX_PARTE_EXEMPTION_CHECK_STEP, ->(kase) {
+  system_process(EXTERNAL_EXEMPTION_CHECK_STEP, ->(kase) {
     ExemptionDeterminationService.determine(kase)
   })
 
-  # Ex parte CE: see CommunityEngagementCheckService (combined hours/income determination + events).
-  system_process(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, ->(kase) {
+  # External CE: see CommunityEngagementCheckService (combined hours/income determination + events).
+  system_process(EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP, ->(kase) {
     CommunityEngagementCheckService.determine(kase)
   })
 
@@ -29,21 +29,21 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   staff_task(REVIEW_EXEMPTION_CLAIM_STEP, ReviewExemptionClaimTask)
 
   # --- Start ---
-  start(EX_PARTE_EXEMPTION_CHECK_STEP, on: "CertificationCreated") do |event|
+  start(EXTERNAL_EXEMPTION_CHECK_STEP, on: "CertificationCreated") do |event|
     CertificationCase.new(certification_id: event[:payload][:certification_id])
   end
 
-  # --- Transitions: Ex parte exemption check ---
-  transition(EX_PARTE_EXEMPTION_CHECK_STEP, "DeterminedNotExempt", EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP)
-  transition(EX_PARTE_EXEMPTION_CHECK_STEP, "DeterminedExempt", END_STEP)
+  # --- Transitions: External exemption check ---
+  transition(EXTERNAL_EXEMPTION_CHECK_STEP, "DeterminedNotExempt", EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP)
+  transition(EXTERNAL_EXEMPTION_CHECK_STEP, "DeterminedExempt", END_STEP)
 
-  # --- Transitions: Ex parte CE check (combined hours/income; generic community-engagement event names) ---
+  # --- Transitions: External CE check (combined hours/income; generic community-engagement event names) ---
   # DeterminedCommunityEngagementMet: At least one CE track (hours or income) satisfied
   # DeterminedCommunityEngagementActionRequired: Both tracks failed and no external hours on file
   # DeterminedCommunityEngagementInsufficient: Both tracks failed but some external hours exist (+hours_data+, +income_data+)
-  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementMet", END_STEP)
-  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementInsufficient", REPORT_ACTIVITIES_STEP)
-  transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementActionRequired", REPORT_ACTIVITIES_STEP)
+  transition(EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementMet", END_STEP)
+  transition(EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementInsufficient", REPORT_ACTIVITIES_STEP)
+  transition(EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementActionRequired", REPORT_ACTIVITIES_STEP)
 
   # --- Transitions: Activity report workflow ---
   # Reviewer determines compliance: approved = compliant, denied = not compliant

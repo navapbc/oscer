@@ -14,12 +14,12 @@
       </tr>
     </thead>
     <tbody>
-      <%# Ex parte activities (from state) %>
+      <%# External activities (from state) %>
       <% external_hourly_activities.each do |activity| %>
         <% category_name = activity.category.titleize %>
         <tr>
           <td><%= category_name %> <%= t(".activity_label") %></td>
-          <td><%= t(".source_ex_parte", state_name: ENV.fetch("STATE_NAME", "the State")) %></td>
+          <td><%= t(".source_external", state_name: ENV.fetch("STATE_NAME", "the State")) %></td>
           <td><%= category_name %></td>
           <td class="text-right"><%= number_with_precision(activity.hours, precision: 0) %></td>
         </tr>

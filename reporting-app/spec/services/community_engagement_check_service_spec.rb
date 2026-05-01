@@ -48,7 +48,7 @@ RSpec.describe CommunityEngagementCheckService do
         expect(determination.outcome).to eq("compliant")
         expect(determination.reasons).to eq([ "hours_reported_compliant" ])
         data = determination.determination_data
-        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EX_PARTE_CE_COMBINED)
+        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED)
         expect(data["satisfied_by"]).to eq(Determination::SATISFIED_BY_HOURS)
         expect(data["hours"]["compliant"]).to be true
         expect(data["income"]["compliant"]).to be false
@@ -135,7 +135,7 @@ RSpec.describe CommunityEngagementCheckService do
           "income_reported_insufficient"
         )
         data = determination.determination_data
-        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EX_PARTE_CE_COMBINED)
+        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED)
         expect(data["satisfied_by"]).to eq(Determination::SATISFIED_BY_NEITHER)
         expect(data["hours"]["compliant"]).to be false
         expect(data["income"]["compliant"]).to be false
@@ -170,7 +170,7 @@ RSpec.describe CommunityEngagementCheckService do
           "income_reported_insufficient"
         )
         data = determination.determination_data
-        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EX_PARTE_CE_COMBINED)
+        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED)
         expect(data["satisfied_by"]).to eq(Determination::SATISFIED_BY_NEITHER)
         expect(data["hours"]["compliant"]).to be false
         expect(data["income"]["compliant"]).to be false

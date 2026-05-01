@@ -6,7 +6,7 @@
 # Silent +#calculate+ matches +HoursComplianceDeterminationService#calculate+: no Strata workflow events,
 # and compliant outcomes close the case (see +CertificationCase#record_income_compliance+ and its
 # +close_on_compliant+ keyword for a future record-only mode).
-# Combined ex parte CE assessment and Strata workflow events live in +CommunityEngagementCheckService+.
+# Combined external CE assessment and Strata workflow events live in +CommunityEngagementCheckService+.
 # Single source for TARGET_INCOME_MONTHLY (CE compliance UI and statistics; parity with
 # HoursComplianceDeterminationService::TARGET_HOURS) via Rails.application.config.ce_compliance.
 class IncomeComplianceDeterminationService

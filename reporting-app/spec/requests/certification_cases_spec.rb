@@ -82,7 +82,7 @@ RSpec.describe "/staff/certification_cases", type: :request do
 
       it "displays the hours reported table" do
         get "/staff/certification_cases/#{certification_case.id}"
-        expect(response.body).to include("Ex Parte Data")
+        expect(response.body).to include("External Data")
         expect(response.body).to include("Organization name")
         expect(response.body).to include("Source")
         expect(response.body).to include("Activity type")
