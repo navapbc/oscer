@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Income stores trusted gross income data from external sources (ex parte verification),
+# Income stores trusted gross income data from external sources,
 # parallel to ExternalHourlyActivity for hours.
 #
 # Schema: Records use member_id only (like ExternalHourlyActivity). There is no certification_id

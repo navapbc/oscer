@@ -239,7 +239,7 @@ class CertificationCase < Strata::Case
       target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
       hours_by_category: hours_data[:hours_by_category],
       hours_by_source: hours_data[:hours_by_source],
-      ex_parte_activity_ids: hours_data[:ex_parte_activity_ids],
+      external_hourly_activity_ids: hours_data[:external_hourly_activity_ids],
       activity_ids: hours_data[:activity_ids],
       calculated_at: Time.current.iso8601
     }

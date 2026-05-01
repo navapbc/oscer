@@ -39,8 +39,8 @@ class CertificationBusinessProcess < Strata::BusinessProcess
 
   # --- Transitions: Ex parte CE check (combined hours/income; generic community-engagement event names) ---
   # DeterminedCommunityEngagementMet: At least one CE track (hours or income) satisfied
-  # DeterminedCommunityEngagementActionRequired: Both tracks failed and no ex parte hours on file
-  # DeterminedCommunityEngagementInsufficient: Both tracks failed but some ex parte hours exist (+hours_data+, +income_data+)
+  # DeterminedCommunityEngagementActionRequired: Both tracks failed and no external hours on file
+  # DeterminedCommunityEngagementInsufficient: Both tracks failed but some external hours exist (+hours_data+, +income_data+)
   transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementMet", END_STEP)
   transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementInsufficient", REPORT_ACTIVITIES_STEP)
   transition(EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementActionRequired", REPORT_ACTIVITIES_STEP)

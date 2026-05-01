@@ -16,7 +16,7 @@ en:
       last_updated: "Last updated:"
       activity_report: "Activity Report"
       no_activity_report: "No activity report submitted"
-      ex_parte_data: "Ex Parte Data"
+      external_data: "Ex Parte Data"
       information_request_info: "Tasks will be updated once the member provides updated documents."
       information_request_sent: "We sent a Request for Information to this member"
       information_requests: "Requests for Information"

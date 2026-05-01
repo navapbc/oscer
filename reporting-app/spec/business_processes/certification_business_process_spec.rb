@@ -24,8 +24,8 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
         total_hours: 85,
         hours_by_category: {},
-        hours_by_source: { ex_parte: 85, activity: 0 },
-        ex_parte_activity_ids: [],
+        hours_by_source: { external: 85, activity: 0 },
+        external_hourly_activity_ids: [],
         activity_ids: []
       })
   end

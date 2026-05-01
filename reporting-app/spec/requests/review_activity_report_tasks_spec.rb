@@ -26,8 +26,8 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
         allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
           total_hours: 85,
           hours_by_category: {},
-          hours_by_source: { ex_parte: 85, activity: 0 },
-          ex_parte_activity_ids: [],
+          hours_by_source: { external: 85, activity: 0 },
+          external_hourly_activity_ids: [],
           activity_ids: []
         })
         patch review_activity_report_task_url(task), params: { review_activity_report_task: { activity_report_decision: "yes" } }
@@ -58,8 +58,8 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
         allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
           total_hours: 40,
           hours_by_category: {},
-          hours_by_source: { ex_parte: 40, activity: 0 },
-          ex_parte_activity_ids: [],
+          hours_by_source: { external: 40, activity: 0 },
+          external_hourly_activity_ids: [],
           activity_ids: []
         })
         patch review_activity_report_task_url(task), params: { review_activity_report_task: { activity_report_decision: "no-not-acceptable" } }

@@ -13,7 +13,7 @@ RSpec.describe CommunityEngagementCheckService do
   let(:certification) { create(:certification) }
   let(:certification_case) { create(:certification_case, certification: certification) }
 
-  def create_ex_parte_activity_for(certification, **attrs)
+  def create_external_hourly_activity_for(certification, **attrs)
     lookback = certification.certification_requirements.continuous_lookback_period
     period_start = lookback.start.to_date
     period_end = lookback.start.to_date.end_of_month
@@ -38,7 +38,7 @@ RSpec.describe CommunityEngagementCheckService do
   describe ".determine" do
     context "when hours meet target (hours-only pass)" do
       before do
-        create_ex_parte_activity_for(certification, hours: 85)
+        create_external_hourly_activity_for(certification, hours: 85)
       end
 
       it "records combined determination with hours satisfied and income assessed" do
@@ -66,7 +66,7 @@ RSpec.describe CommunityEngagementCheckService do
 
     context "when hours are below target but income meets threshold (income-only pass)" do
       before do
-        create_ex_parte_activity_for(certification, hours: 40)
+        create_external_hourly_activity_for(certification, hours: 40)
         create_income_for(certification, gross_income: 600)
       end
 
@@ -94,7 +94,7 @@ RSpec.describe CommunityEngagementCheckService do
 
     context "when both hours and income meet targets" do
       before do
-        create_ex_parte_activity_for(certification, hours: 90)
+        create_external_hourly_activity_for(certification, hours: 90)
         create_income_for(certification, gross_income: 700)
       end
 
@@ -119,13 +119,13 @@ RSpec.describe CommunityEngagementCheckService do
       end
     end
 
-    context "when neither hours nor income meet targets with some ex parte hours" do
+    context "when neither hours nor income meet targets with some external hours" do
       before do
-        create_ex_parte_activity_for(certification, hours: 40)
+        create_external_hourly_activity_for(certification, hours: 40)
         create_income_for(certification, gross_income: 400)
       end
 
-      it "records not_compliant with both insufficient reason codes when some ex parte hours are present" do
+      it "records not_compliant with both insufficient reason codes when some external hours are present" do
         described_class.determine(certification_case)
 
         determination = latest_determination_for(certification.id)
@@ -155,12 +155,12 @@ RSpec.describe CommunityEngagementCheckService do
       end
     end
 
-    context "when neither track passes and there are no ex parte hours" do
+    context "when neither track passes and there are no external hours" do
       before do
         create_income_for(certification, gross_income: 100)
       end
 
-      it "records not_compliant with both insufficient reason codes when there are no ex parte hours" do
+      it "records not_compliant with both insufficient reason codes when there are no external hours" do
         described_class.determine(certification_case)
 
         determination = latest_determination_for(certification.id)
@@ -188,7 +188,7 @@ RSpec.describe CommunityEngagementCheckService do
 
     context "when total hours exactly equal TARGET_HOURS" do
       before do
-        create_ex_parte_activity_for(certification, hours: HoursComplianceDeterminationService::TARGET_HOURS)
+        create_external_hourly_activity_for(certification, hours: HoursComplianceDeterminationService::TARGET_HOURS)
       end
 
       it "treats hours as compliant (inclusive threshold)" do
@@ -202,7 +202,7 @@ RSpec.describe CommunityEngagementCheckService do
 
     context "when total income exactly equals TARGET_INCOME_MONTHLY and hours are below target" do
       before do
-        create_ex_parte_activity_for(certification, hours: 40)
+        create_external_hourly_activity_for(certification, hours: 40)
         create_income_for(certification, gross_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY)
       end
 

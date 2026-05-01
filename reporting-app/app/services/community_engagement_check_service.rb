@@ -46,7 +46,7 @@ class CommunityEngagementCheckService
 
       if either_track_compliant
         Strata::EventManager.publish("DeterminedCommunityEngagementMet", payload_base)
-      elsif hours_data.dig(:hours_by_source, :ex_parte).to_f.positive?
+      elsif hours_data.dig(:hours_by_source, :external).to_f.positive?
         Strata::EventManager.publish("DeterminedCommunityEngagementInsufficient", payload_base.merge(
           hours_data: hours_data,
           income_data: income_data

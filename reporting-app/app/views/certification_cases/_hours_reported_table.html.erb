@@ -1,6 +1,6 @@
 <% total_hours = hours_summary[:total_hours] %>
 <% hours_needed = [target_hours - total_hours, 0].max %>
-<% has_activities = ex_parte_activities.any? || member_activities.any? %>
+<% has_activities = external_hourly_activities.any? || member_activities.any? %>
 
 <% if has_activities %>
   <h3><%= t(".title") %></h3>
@@ -15,7 +15,7 @@
     </thead>
     <tbody>
       <%# Ex parte activities (from state) %>
-      <% ex_parte_activities.each do |activity| %>
+      <% external_hourly_activities.each do |activity| %>
         <% category_name = activity.category.titleize %>
         <tr>
           <td><%= category_name %> <%= t(".activity_label") %></td>
