@@ -18,7 +18,7 @@ RSpec.describe CommunityEngagementCheckService do
     period_start = lookback.start.to_date
     period_end = lookback.start.to_date.end_of_month
 
-    create(:ex_parte_activity, member_id: certification.member_id,
+    create(:external_hourly_activity, member_id: certification.member_id,
            period_start: period_start, period_end: period_end, **attrs)
   end
 

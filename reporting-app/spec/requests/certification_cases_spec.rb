@@ -50,19 +50,19 @@ RSpec.describe "/staff/certification_cases", type: :request do
         period_start = lookback_period.start
         period_end = lookback_period.start.end_of_month
 
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                member_id: member_id,
                category: "employment",
                hours: 20,
                period_start: period_start,
                period_end: period_end)
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                member_id: member_id,
                category: "community_service",
                hours: 15,
                period_start: period_start,
                period_end: period_end)
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                member_id: member_id,
                category: "community_service",
                hours: 15,

@@ -61,7 +61,7 @@ class HoursComplianceDeterminationService
       kase.record_hours_compliance(outcome, hours_data)
     end
 
-    # PUBLIC: Aggregate hours from both ExParteActivity and approved Activity records
+    # PUBLIC: Aggregate hours from both ExternalHourlyActivity and approved Activity records
     # Called by business process notification steps to get hours data for emails
     # @param certification [Certification]
     # @return [Hash] with total_hours, hours_by_category, hours_by_source, etc.

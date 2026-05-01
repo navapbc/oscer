@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 # Income stores trusted gross income data from external sources (ex parte verification),
-# parallel to ExParteActivity for hours.
+# parallel to ExternalHourlyActivity for hours.
 #
-# Schema: Records use member_id only (like ExParteActivity). There is no certification_id
+# Schema: Records use member_id only (like ExternalHourlyActivity). There is no certification_id
 # column; the active certification for a member is implicit. Do not add belongs_to :certification
 # if a future migration adds an optional UUID for traceability—use a plain column only.
 #

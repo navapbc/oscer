@@ -51,12 +51,12 @@ RSpec.describe Certifications::CreationService, type: :service do
         expect(service.certification.member_id).to eq(member_id)
       end
 
-      it "creates ExParteActivity records for hourly activities" do
+      it "creates ExternalHourlyActivity records for hourly activities" do
         expect {
           service.call
-        }.to change(ExParteActivity, :count).from(0).to(1)
+        }.to change(ExternalHourlyActivity, :count).from(0).to(1)
 
-        activity = ExParteActivity.last
+        activity = ExternalHourlyActivity.last
         expect(activity.member_id).to eq(member_id)
         expect(activity.category).to eq("employment")
         expect(activity.hours).to eq(40)
@@ -77,15 +77,15 @@ RSpec.describe Certifications::CreationService, type: :service do
         expect(origin.source_id).to be_nil
       end
 
-      it "does not include employer in ExParteActivity" do
+      it "does not include employer in ExternalHourlyActivity" do
         service.call
-        activity = ExParteActivity.last
+        activity = ExternalHourlyActivity.last
         expect(activity).not_to respond_to(:employer)
       end
 
-      it "does not include verification_status in ExParteActivity" do
+      it "does not include verification_status in ExternalHourlyActivity" do
         service.call
-        activity = ExParteActivity.last
+        activity = ExternalHourlyActivity.last
         expect(activity).not_to respond_to(:verification_status)
       end
     end
@@ -114,12 +114,12 @@ RSpec.describe Certifications::CreationService, type: :service do
         )
       end
 
-      it "creates ExParteActivity records for all hourly activities" do
+      it "creates ExternalHourlyActivity records for all hourly activities" do
         expect {
           service.call
-        }.to change(ExParteActivity, :count).from(0).to(2)
+        }.to change(ExternalHourlyActivity, :count).from(0).to(2)
 
-        activities = ExParteActivity.where(member_id: member_id).order(:category)
+        activities = ExternalHourlyActivity.where(member_id: member_id).order(:category)
         expect(activities.first.category).to eq("community_service")
         expect(activities.last.category).to eq("employment")
       end
@@ -144,10 +144,10 @@ RSpec.describe Certifications::CreationService, type: :service do
         )
       end
 
-      it "does not create ExParteActivity records for income activities" do
+      it "does not create ExternalHourlyActivity records for income activities" do
         expect {
           service.call
-        }.not_to change(ExParteActivity, :count)
+        }.not_to change(ExternalHourlyActivity, :count)
       end
 
       it "creates Income records for income activities" do
@@ -195,13 +195,13 @@ RSpec.describe Certifications::CreationService, type: :service do
         )
       end
 
-      it "creates ExParteActivity for hourly activities and Income for income activities" do
+      it "creates ExternalHourlyActivity for hourly activities and Income for income activities" do
         expect {
           service.call
-        }.to change(ExParteActivity, :count).from(0).to(1)
+        }.to change(ExternalHourlyActivity, :count).from(0).to(1)
           .and change(Income, :count).from(0).to(1)
 
-        epa = ExParteActivity.last
+        epa = ExternalHourlyActivity.last
         expect(epa.hours).to eq(40)
 
         income = Income.last
@@ -219,10 +219,10 @@ RSpec.describe Certifications::CreationService, type: :service do
         )
       end
 
-      it "does not create ExParteActivity records" do
+      it "does not create ExternalHourlyActivity records" do
         expect {
           service.call
-        }.not_to change(ExParteActivity, :count)
+        }.not_to change(ExternalHourlyActivity, :count)
       end
 
       it "still creates the certification" do
@@ -241,10 +241,10 @@ RSpec.describe Certifications::CreationService, type: :service do
         )
       end
 
-      it "does not create ExParteActivity records" do
+      it "does not create ExternalHourlyActivity records" do
         expect {
           service.call
-        }.not_to change(ExParteActivity, :count)
+        }.not_to change(ExternalHourlyActivity, :count)
       end
 
       it "still creates the certification" do
@@ -254,7 +254,7 @@ RSpec.describe Certifications::CreationService, type: :service do
       end
     end
 
-    context "when ExParteActivity validation fails" do
+    context "when ExternalHourlyActivity validation fails" do
       let(:member_data) do
         build(:certification_member_data,
           :with_full_name,
@@ -275,7 +275,7 @@ RSpec.describe Certifications::CreationService, type: :service do
         expect { service.call }.to raise_error(ActiveRecord::RecordInvalid)
 
         expect(Certification.count).to eq(0)
-        expect(ExParteActivity.count).to eq(0)
+        expect(ExternalHourlyActivity.count).to eq(0)
         expect(Income.count).to eq(0)
         expect(CertificationOrigin.count).to eq(0)
       end

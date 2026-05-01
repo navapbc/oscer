@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Service for creating certifications
-# Handles creation of ExParteActivity records and CertificationOrigin tracking
+# Handles creation of ExternalHourlyActivity records and CertificationOrigin tracking
 class Certifications::CreationService
   attr_reader :create_request, :certification
 
@@ -52,14 +52,14 @@ class Certifications::CreationService
         hours: activity_data.hours,
         period_start: activity_data.period_start,
         period_end: activity_data.period_end,
-        source_type: ExParteActivity::SOURCE_TYPES[:api],
+        source_type: ExternalHourlyActivity::SOURCE_TYPES[:api],
         source_id: nil
       )
 
       # Handle service error response
       if result.is_a?(Hash) && result[:error]
         # Create a dummy record to use RecordInvalid pattern
-        activity = ExParteActivity.new
+        activity = ExternalHourlyActivity.new
         activity.errors.add(:base, result[:error])
         raise ActiveRecord::RecordInvalid.new(activity)
       end
