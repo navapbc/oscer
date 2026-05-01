@@ -35,8 +35,8 @@ class IncomeComplianceDeterminationService
       kase.record_income_compliance(outcome, income_data)
     end
 
-    # Same lookback and query shape as ActivityAggregator#fetch_ex_parte_activities /
-    # Income.for_member(...).within_period(lookback) as used for ex parte hours parity.
+    # Same lookback and query shape as ActivityAggregator#fetch_external_hourly_activities /
+    # Income.for_member(...).within_period(lookback) as used for external hours parity.
     # @param certification [Certification]
     # @return [Hash]
     def aggregate_income_for_certification(certification)

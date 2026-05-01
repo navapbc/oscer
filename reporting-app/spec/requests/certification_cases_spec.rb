@@ -88,7 +88,7 @@ RSpec.describe "/staff/certification_cases", type: :request do
         expect(response.body).to include("Activity type")
       end
 
-      it "displays ex parte activities" do
+      it "displays external hourly activities" do
         get "/staff/certification_cases/#{certification_case.id}"
         expect(response.body).to include("From the State")
         expect(response.body).to include("Employment")

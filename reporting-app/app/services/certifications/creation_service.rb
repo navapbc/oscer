@@ -14,8 +14,8 @@ class Certifications::CreationService
   # @raise [ActiveRecord::RecordInvalid] If validation fails
   def call
     ActiveRecord::Base.transaction do
-      # Create ex parte activities FIRST (before certification)
-      create_ex_parte_activities
+      # Create external hourly activities FIRST (before certification)
+      create_external_hourly_activities
       create_incomes
 
       # Save certification
@@ -40,7 +40,7 @@ class Certifications::CreationService
     )
   end
 
-  def create_ex_parte_activities
+  def create_external_hourly_activities
     return unless certification.member_data&.activities.present?
 
     hourly_activities = certification.member_data.activities.select { |a| a.type == "hourly" }

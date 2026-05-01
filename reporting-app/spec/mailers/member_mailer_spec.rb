@@ -149,8 +149,8 @@ RSpec.describe MemberMailer, type: :mailer do
       {
         total_hours: 50.0,
         hours_by_category: {},
-        hours_by_source: { ex_parte: 50, activity: 0 },
-        ex_parte_activity_ids: [],
+        hours_by_source: { external: 50, activity: 0 },
+        external_hourly_activity_ids: [],
         activity_ids: []
       }
     end
@@ -218,8 +218,8 @@ RSpec.describe MemberMailer, type: :mailer do
         {
           total_hours: 50.6,
           hours_by_category: {},
-          hours_by_source: { ex_parte: 50, activity: 0 },
-          ex_parte_activity_ids: [],
+          hours_by_source: { external: 50, activity: 0 },
+          external_hourly_activity_ids: [],
           activity_ids: []
         }
       end

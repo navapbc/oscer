@@ -9,13 +9,13 @@
     </tr>
   </thead>
   <tbody>
-    <% ex_parte_activities.each do |ex_parte_data| %>
-      <% activity = ex_parte_data[:activity] %>
+    <% external_hourly_activities.each do |external_data| %>
+      <% activity = external_data[:activity] %>
       <tr>
         <td class="border-0"><%= t("activity_report_application_forms.shared.employment_activity") %></td>
         <td class="border-0"><%= t("activity_report_application_forms.shared.from_the_state") %></td>
         <td class="border-0"><%= activity.category.humanize %></td>
-        <td class="border-0 text-right bg-base-lightest"><%= ex_parte_value.call(ex_parte_data) %></td>
+        <td class="border-0 text-right bg-base-lightest"><%= ex_parte_value.call(external_data) %></td>
       </tr>
     <% end %>
     <% activities.each do |activity| %>

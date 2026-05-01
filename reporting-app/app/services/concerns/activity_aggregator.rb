@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ActivityAggregator
-  def fetch_ex_parte_activities(certification)
+  def fetch_external_hourly_activities(certification)
     return ExternalHourlyActivity.none unless certification&.member_id
 
     lookback_period = certification.certification_requirements.continuous_lookback_period
@@ -18,7 +18,7 @@ module ActivityAggregator
     form.activities
   end
 
-  def allocate_ex_parte_activities_by_month(activities)
+  def allocate_external_hourly_activities_by_month(activities)
     result = Hash.new { |h, k| h[k] = [] }
     activities.each do |activity|
       allocate_activity_to_months(activity, result)

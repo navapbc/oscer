@@ -23,8 +23,8 @@ RSpec.describe CertificationCase, type: :model do
       allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
         total_hours: 85,
         hours_by_category: { "education" => 50, "employment" => 35 },
-        hours_by_source: { ex_parte: 40, activity: 45 },
-        ex_parte_activity_ids: [ "ex-1" ],
+        hours_by_source: { external: 40, activity: 45 },
+        external_hourly_activity_ids: [ "ex-1" ],
         activity_ids: [ "act-1" ]
       })
     end
@@ -66,8 +66,8 @@ RSpec.describe CertificationCase, type: :model do
       allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
         total_hours: 40,
         hours_by_category: { "education" => 40 },
-        hours_by_source: { ex_parte: 30, activity: 10 },
-        ex_parte_activity_ids: [ "ex-1" ],
+        hours_by_source: { external: 30, activity: 10 },
+        external_hourly_activity_ids: [ "ex-1" ],
         activity_ids: [ "act-1" ]
       })
     end
@@ -220,8 +220,8 @@ RSpec.describe CertificationCase, type: :model do
       {
         total_hours: 50,
         hours_by_category: {},
-        hours_by_source: { ex_parte: 40.0, activity: 10.0 },
-        ex_parte_activity_ids: [],
+        hours_by_source: { external: 40.0, activity: 10.0 },
+        external_hourly_activity_ids: [],
         activity_ids: []
       }
     end

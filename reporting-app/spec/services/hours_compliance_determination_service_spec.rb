@@ -4,7 +4,7 @@ require "rails_helper"
 
 RSpec.describe HoursComplianceDeterminationService do
   # Helper to create external_hourly_activity with periods matching the certification's lookback
-  def create_ex_parte_activity_for(certification, **attrs)
+  def create_external_hourly_activity_for(certification, **attrs)
     lookback = certification.certification_requirements.continuous_lookback_period
     period_start = lookback.start.to_date
     period_end = lookback.start.to_date.end_of_month
@@ -25,7 +25,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
     context "when hours meet target" do
       before do
-        create_ex_parte_activity_for(certification, hours: 85)
+        create_external_hourly_activity_for(certification, hours: 85)
       end
 
       it "publishes DeterminedHoursMet event" do
@@ -63,9 +63,9 @@ RSpec.describe HoursComplianceDeterminationService do
       end
     end
 
-    context "when hours are below target with ex parte hours" do
+    context "when hours are below target with external hours" do
       before do
-        create_ex_parte_activity_for(certification, hours: 50)
+        create_external_hourly_activity_for(certification, hours: 50)
       end
 
       it "publishes DeterminedHoursInsufficient event (has some hours but needs more)" do
@@ -92,8 +92,8 @@ RSpec.describe HoursComplianceDeterminationService do
       end
     end
 
-    context "when hours are below target with NO ex parte hours" do
-      # No ex parte activities created - member needs to report from scratch
+    context "when hours are below target with NO external hours" do
+      # No external hourly activities created - member needs to report from scratch
 
       it "publishes DeterminedActionRequired event (no hours found)" do
         described_class.determine(certification_case)
@@ -115,7 +115,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
     context "when hours exactly meet target" do
       before do
-        create_ex_parte_activity_for(certification, hours: 80)
+        create_external_hourly_activity_for(certification, hours: 80)
       end
 
       it "publishes DeterminedHoursMet event" do
@@ -152,7 +152,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
     context "when hours meet target" do
       before do
-        create_ex_parte_activity_for(certification, hours: 90)
+        create_external_hourly_activity_for(certification, hours: 90)
       end
 
       it "creates a compliant determination" do
@@ -187,7 +187,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
     context "when hours are below target" do
       before do
-        create_ex_parte_activity_for(certification, hours: 40)
+        create_external_hourly_activity_for(certification, hours: 40)
       end
 
       it "creates a not_compliant determination" do
@@ -209,11 +209,11 @@ RSpec.describe HoursComplianceDeterminationService do
     let(:certification) { create(:certification) }
     let(:certification_case) { create(:certification_case, certification_id: certification.id) }
 
-    context "with multiple ex_parte activities" do
+    context "with multiple external hourly activities" do
       before do
-        create_ex_parte_activity_for(certification, category: "employment", hours: 40)
-        create_ex_parte_activity_for(certification, category: "community_service", hours: 30)
-        create_ex_parte_activity_for(certification, category: "education", hours: 15)
+        create_external_hourly_activity_for(certification, category: "employment", hours: 40)
+        create_external_hourly_activity_for(certification, category: "community_service", hours: 30)
+        create_external_hourly_activity_for(certification, category: "education", hours: 15)
       end
 
       it "sums hours across all entries" do
@@ -240,7 +240,7 @@ RSpec.describe HoursComplianceDeterminationService do
         determination = Determination.where(subject_id: certification.id).last
         by_source = determination.determination_data["hours_by_source"]
 
-        expect(by_source["ex_parte"]).to eq(85.0)
+        expect(by_source["external"]).to eq(85.0)
         expect(by_source["activity"]).to eq(0.0)
       end
 
@@ -248,14 +248,14 @@ RSpec.describe HoursComplianceDeterminationService do
         described_class.determine(certification_case)
 
         determination = Determination.where(subject_id: certification.id).last
-        expect(determination.determination_data["ex_parte_activity_ids"].length).to eq(3)
+        expect(determination.determination_data["external_hourly_activity_ids"].length).to eq(3)
       end
     end
 
     context "with activities outside lookback period" do
       before do
         # Create activity within lookback period
-        create_ex_parte_activity_for(certification, hours: 50)
+        create_external_hourly_activity_for(certification, hours: 50)
 
         # Create activity outside lookback period (far in the past)
         create(:external_hourly_activity,
