@@ -35,14 +35,14 @@ module Determinations
 
     # @return [Hash{String => Object}] JSONB-safe keys and values for +Determination#determination_data+
     def to_h
-      income_by = income_by_source || {}
+      income_by = (income_by_source || {}).with_indifferent_access
       {
         "calculation_type" => Determination::CALCULATION_TYPE_INCOME_BASED,
         "total_income" => total_income.to_f,
         "target_income" => IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY.to_f,
         "income_by_source" => {
-          "income" => (income_by[:income] || income_by["income"]).to_f,
-          "activity" => (income_by[:activity] || income_by["activity"]).to_f
+          "income" => income_by[:income].to_f,
+          "activity" => income_by[:activity].to_f
         },
         "period_start" => serialize_period(period_start),
         "period_end" => serialize_period(period_end),
