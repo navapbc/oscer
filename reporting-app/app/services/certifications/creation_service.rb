@@ -46,7 +46,7 @@ class Certifications::CreationService
     hourly_activities = certification.member_data.activities.select { |a| a.type == "hourly" }
 
     hourly_activities.each do |activity_data|
-      result = ExParteActivityService.create_entry(
+      result = ExternalHourlyActivityService.create_entry(
         member_id: certification.member_id,
         category: activity_data.category,
         hours: activity_data.hours,

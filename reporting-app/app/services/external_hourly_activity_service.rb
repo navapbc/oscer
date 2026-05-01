@@ -5,7 +5,7 @@
 #
 # Note: Hours aggregation is handled by HoursComplianceDeterminationService
 # which includes lookback period filtering required for compliance calculations.
-class ExParteActivityService
+class ExternalHourlyActivityService
   class << self
     # Create hours data entry for a member
     # @return [ExternalHourlyActivity] on success
