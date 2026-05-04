@@ -42,12 +42,13 @@ module Determinations
     # @return [Hash{String => Object}] JSONB-safe keys and values for +Determination#determination_data+
     # @note Category and source values are coerced with +to_f+; see class-level contract above.
     def to_h
+      by_category = (hours_by_category || {}).stringify_keys.transform_values { |v| v.to_f }
       by_source = (hours_by_source || {}).stringify_keys.transform_values { |v| v.to_f }
       {
         "calculation_type" => Determination::CALCULATION_TYPE_HOURS_BASED,
         "total_hours" => total_hours.to_f,
         "target_hours" => HoursComplianceDeterminationService::TARGET_HOURS,
-        "hours_by_category" => (hours_by_category || {}).stringify_keys.transform_values { |v| v.to_f },
+        "hours_by_category" => by_category,
         "hours_by_source" => by_source,
         "ex_parte_activity_ids" => ex_parte_activity_ids.map(&:to_s),
         "activity_ids" => activity_ids.map(&:to_s),
