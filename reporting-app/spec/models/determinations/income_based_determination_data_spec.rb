@@ -32,4 +32,30 @@ RSpec.describe Determinations::IncomeBasedDeterminationData do
       }
     )
   end
+
+  it "includes compliant in the hash when provided for combined CE nesting" do
+    income_data = {
+      total_income: BigDecimal("580.25"),
+      income_by_source: { income: BigDecimal("500"), activity: BigDecimal("80.25") },
+      period_start: Date.new(2026, 1, 1),
+      period_end: Date.new(2026, 1, 31),
+      income_ids: []
+    }
+
+    h = described_class.from_aggregate(income_data, compliant: true).to_h
+    expect(h["compliant"]).to be true
+  end
+
+  it "omits compliant from the hash when not passed (standalone income CE)" do
+    income_data = {
+      total_income: BigDecimal("580.25"),
+      income_by_source: { income: BigDecimal("500"), activity: BigDecimal("80.25") },
+      period_start: Date.new(2026, 1, 1),
+      period_end: Date.new(2026, 1, 31),
+      income_ids: []
+    }
+
+    h = described_class.from_aggregate(income_data).to_h
+    expect(h).not_to have_key("compliant")
+  end
 end

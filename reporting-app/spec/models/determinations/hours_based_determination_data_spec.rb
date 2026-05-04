@@ -44,4 +44,17 @@ RSpec.describe Determinations::HoursBasedDeterminationData do
     h = described_class.from_aggregate(hours_data, compliant: false).to_h
     expect(h["compliant"]).to be false
   end
+
+  it "omits compliant from the hash when not passed (standalone hours CE)" do
+    hours_data = {
+      total_hours: 10,
+      hours_by_category: {},
+      hours_by_source: { ex_parte: 10.0, activity: 0.0 },
+      ex_parte_activity_ids: [],
+      activity_ids: []
+    }
+
+    h = described_class.from_aggregate(hours_data).to_h
+    expect(h).not_to have_key("compliant")
+  end
 end
