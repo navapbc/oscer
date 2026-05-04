@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Income stores trusted gross income data from external sources,
+# ExternalIncomeActivity stores trusted gross income data from external sources,
 # parallel to ExternalHourlyActivity for hours.
 #
 # Schema: Records use member_id only (like ExternalHourlyActivity). There is no certification_id
@@ -11,7 +11,7 @@
 # exceptional (e.g., corrections, backfills) and must be fully audited—see
 # docs/architecture/income-data/income-data.md (Audit trail over hard immutability).
 #
-class Income < ApplicationRecord
+class ExternalIncomeActivity < ApplicationRecord
   include Strata::Attributes
 
   ALLOWED_CATEGORIES = ActivityCategories::ALL

@@ -51,7 +51,7 @@ class Certifications::MemberData < ValueObject
                              if: -> { type == TYPE_INCOME }
     validates :source,
               presence: true,
-              inclusion: { in: Income::SOURCE_TYPES.values },
+              inclusion: { in: ExternalIncomeActivity::SOURCE_TYPES.values },
               if: -> { type == TYPE_INCOME }
     validates :period_start, presence: true
     validates :period_end, presence: true

@@ -2,16 +2,16 @@
 
 require 'rails_helper'
 
-RSpec.describe Income, type: :model do
+RSpec.describe ExternalIncomeActivity, type: :model do
   describe 'factory' do
     it 'creates a valid record' do
-      income = build(:income)
+      income = build(:external_income_activity)
       expect(income).to be_valid
     end
   end
 
   describe 'validations' do
-    subject(:income) { build(:income) }
+    subject(:income) { build(:external_income_activity) }
 
     describe 'member_id' do
       it 'is required' do
@@ -29,7 +29,7 @@ RSpec.describe Income, type: :model do
       end
 
       it 'accepts valid categories' do
-        Income::ALLOWED_CATEGORIES.each do |category|
+        ExternalIncomeActivity::ALLOWED_CATEGORIES.each do |category|
           income.category = category
           expect(income).to be_valid
         end
@@ -97,7 +97,7 @@ RSpec.describe Income, type: :model do
       end
 
       it 'accepts valid source types' do
-        Income::ALLOWED_SOURCE_TYPES.each do |source|
+        ExternalIncomeActivity::ALLOWED_SOURCE_TYPES.each do |source|
           income.source_type = source
           expect(income).to be_valid
         end
@@ -122,8 +122,8 @@ RSpec.describe Income, type: :model do
     describe '.for_member' do
       it 'returns entries for the given member' do
         member_id = 'M12345'
-        entry = create(:income, member_id: member_id)
-        create(:income, member_id: 'OTHER')
+        entry = create(:external_income_activity, member_id: member_id)
+        create(:external_income_activity, member_id: 'OTHER')
 
         expect(described_class.for_member(member_id)).to eq([ entry ])
       end
@@ -138,19 +138,19 @@ RSpec.describe Income, type: :model do
       end
 
       it 'returns all when lookback_period is nil' do
-        create(:income, period_start: Date.new(2024, 1, 1), period_end: Date.new(2024, 1, 31))
+        create(:external_income_activity, period_start: Date.new(2024, 1, 1), period_end: Date.new(2024, 1, 31))
 
         expect(described_class.within_period(nil).count).to eq(1)
       end
 
       it 'returns all when lookback_period is blank' do
-        create(:income)
+        create(:external_income_activity)
 
         expect(described_class.within_period("").count).to eq(1)
       end
 
       it 'includes records fully inside the lookback window' do
-        inside = create(:income,
+        inside = create(:external_income_activity,
                         period_start: Date.new(2025, 2, 1),
                         period_end: Date.new(2025, 2, 28))
 
@@ -158,7 +158,7 @@ RSpec.describe Income, type: :model do
       end
 
       it 'excludes records that extend before the lookback start' do
-        create(:income,
+        create(:external_income_activity,
                period_start: Date.new(2024, 12, 1),
                period_end: Date.new(2025, 2, 28))
 
@@ -166,7 +166,7 @@ RSpec.describe Income, type: :model do
       end
 
       it 'excludes records that extend after the lookback end' do
-        create(:income,
+        create(:external_income_activity,
                period_start: Date.new(2025, 3, 1),
                period_end: Date.new(2025, 5, 31))
 
@@ -177,11 +177,11 @@ RSpec.describe Income, type: :model do
 
   describe 'constants' do
     it 'defines ALLOWED_CATEGORIES' do
-      expect(Income::ALLOWED_CATEGORIES).to eq(%w[employment community_service education])
+      expect(ExternalIncomeActivity::ALLOWED_CATEGORIES).to eq(%w[employment community_service education])
     end
 
     it 'defines MVP source type strings' do
-      expect(Income::SOURCE_TYPES[:api]).to eq('api')
+      expect(ExternalIncomeActivity::SOURCE_TYPES[:api]).to eq('api')
     end
   end
 end
