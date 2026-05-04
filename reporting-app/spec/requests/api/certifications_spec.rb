@@ -271,7 +271,7 @@ RSpec.describe "/api/certifications", type: :request do
         expect(activity.source_id).to be_nil
       end
 
-      it "creates Income records for income activities and not ExternalHourlyActivity" do
+      it "creates ExternalIncomeActivity records for income activities and not ExternalHourlyActivity" do
         member_data = build(:certification_member_data,
           :with_full_name,
           :with_account_email,
@@ -297,21 +297,21 @@ RSpec.describe "/api/certifications", type: :request do
             params: params,
             headers: auth_headers(params),
             as: :json
-        }.to change(Income, :count).from(0).to(1)
+        }.to change(ExternalIncomeActivity, :count).from(0).to(1)
           .and(change(Certification, :count).from(0).to(1))
 
         expect(response).to have_http_status(:created)
         expect(ExternalHourlyActivity.where(member_id: member_id)).to be_empty
 
-        expect(Income.pluck(:member_id, :category, :gross_income, :source_type, :period_start, :period_end)).to eq(
+        expect(ExternalIncomeActivity.pluck(:member_id, :category, :gross_income, :source_type, :period_start, :period_end)).to eq(
           [
             [ member_id, "employment", 620, "api", certification_date.beginning_of_month, certification_date.end_of_month ]
           ]
         )
-        expect(Income.pick(:metadata)).to include("employer" => "Acme Corp")
+        expect(ExternalIncomeActivity.pick(:metadata)).to include("employer" => "Acme Corp")
       end
 
-      it "creates ExternalHourlyActivity for hourly and Income for income in mixed types" do
+      it "creates ExternalHourlyActivity for hourly and ExternalIncomeActivity for income in mixed types" do
         member_data = build(:certification_member_data,
           :with_full_name,
           :with_account_email,
@@ -344,13 +344,13 @@ RSpec.describe "/api/certifications", type: :request do
             headers: auth_headers(params),
             as: :json
         }.to change(ExternalHourlyActivity, :count).from(0).to(1)
-          .and change(Income, :count).from(0).to(1)
+          .and change(ExternalIncomeActivity, :count).from(0).to(1)
 
         expect(response).to have_http_status(:created)
 
         activity = ExternalHourlyActivity.last
         expect(activity.hours).to eq(40)
-        expect(Income.last.gross_income).to eq(580)
+        expect(ExternalIncomeActivity.last.gross_income).to eq(580)
       end
 
       it "creates CertificationOrigin record with api source_type" do
@@ -414,7 +414,7 @@ RSpec.describe "/api/certifications", type: :request do
 
         expect(response).to have_http_status(:unprocessable_content)
         expect(ExternalHourlyActivity.count).to eq(0)
-        expect(Income.count).to eq(0)
+        expect(ExternalIncomeActivity.count).to eq(0)
         expect(CertificationOrigin.count).to eq(0)
       end
 
@@ -454,7 +454,7 @@ RSpec.describe "/api/certifications", type: :request do
         }.not_to change(Certification, :count)
 
         expect(response).to have_http_status(:unprocessable_content)
-        expect(Income.count).to eq(0)
+        expect(ExternalIncomeActivity.count).to eq(0)
         expect(CertificationOrigin.count).to eq(0)
       end
 

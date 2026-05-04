@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe IncomeService do
+RSpec.describe ExternalIncomeActivityService do
   describe ".create_entry" do
     let(:valid_params) do
       {
@@ -11,15 +11,15 @@ RSpec.describe IncomeService do
         gross_income: 580.00,
         period_start: Date.current.beginning_of_month,
         period_end: Date.current.end_of_month,
-        source_type: Income::SOURCE_TYPES[:api]
+        source_type: ExternalIncomeActivity::SOURCE_TYPES[:api]
       }
     end
 
     context "with valid data" do
-      it "creates an Income" do
+      it "creates an ExternalIncomeActivity" do
         result = described_class.create_entry(**valid_params)
 
-        expect(result).to be_a(Income)
+        expect(result).to be_a(ExternalIncomeActivity)
         expect(result).to be_persisted
         expect(result.member_id).to eq("123456789")
         expect(result.category).to eq("employment")
@@ -76,7 +76,7 @@ RSpec.describe IncomeService do
             gross_income: 600,
             period_start: period_start,
             period_end: period_end,
-            source_type: Income::SOURCE_TYPES[:api]
+            source_type: ExternalIncomeActivity::SOURCE_TYPES[:api]
           )
         }.to change { Determination.where(subject_id: certification.id).count }.by(1)
 
@@ -98,7 +98,7 @@ RSpec.describe IncomeService do
             gross_income: 600,
             period_start: period_start,
             period_end: period_end,
-            source_type: Income::SOURCE_TYPES[:api],
+            source_type: ExternalIncomeActivity::SOURCE_TYPES[:api],
             recalculate_income_compliance: false
           )
         }.not_to change { Determination.where(subject_id: certification.id).count }
@@ -120,7 +120,7 @@ RSpec.describe IncomeService do
 
     context "with duplicate entry" do
       before do
-        create(:income,
+        create(:external_income_activity,
                member_id: valid_params[:member_id],
                category: valid_params[:category],
                gross_income: valid_params[:gross_income],
@@ -138,7 +138,7 @@ RSpec.describe IncomeService do
       it "does not create a new entry" do
         expect {
           described_class.create_entry(**valid_params)
-        }.not_to change(Income, :count)
+        }.not_to change(ExternalIncomeActivity, :count)
       end
     end
 
@@ -181,7 +181,7 @@ RSpec.describe IncomeService do
   end
 
   describe "duplicate_entry? (private)" do
-    let(:existing_entry) { create(:income, :employment) }
+    let(:existing_entry) { create(:external_income_activity, :employment) }
 
     def duplicate_entry?(**)
       described_class.send(:duplicate_entry?, **)

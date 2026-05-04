@@ -72,7 +72,7 @@ class Certifications::CreationService
     income_activities = certification.member_data.activities.select { |a| a.type == "income" }
 
     income_activities.each do |activity_data|
-      result = IncomeService.create_entry(
+      result = ExternalIncomeActivityService.create_entry(
         member_id: certification.member_id,
         category: activity_data.category,
         gross_income: activity_data.gross_income,
@@ -86,7 +86,7 @@ class Certifications::CreationService
       )
 
       if result.is_a?(Hash) && result[:error]
-        row = Income.new
+        row = ExternalIncomeActivity.new
         row.errors.add(:base, result[:error])
         raise ActiveRecord::RecordInvalid.new(row)
       end

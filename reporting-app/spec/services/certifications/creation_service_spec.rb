@@ -150,17 +150,17 @@ RSpec.describe Certifications::CreationService, type: :service do
         }.not_to change(ExternalHourlyActivity, :count)
       end
 
-      it "creates Income records for income activities" do
+      it "creates ExternalIncomeActivity records for income activities" do
         expect {
           service.call
-        }.to change(Income, :count).from(0).to(1)
+        }.to change(ExternalIncomeActivity, :count).from(0).to(1)
 
-        expect(Income.pluck(:member_id, :category, :gross_income, :source_type, :period_start, :period_end)).to eq(
+        expect(ExternalIncomeActivity.pluck(:member_id, :category, :gross_income, :source_type, :period_start, :period_end)).to eq(
           [
             [ member_id, "employment", 620, "api", certification_date.beginning_of_month, certification_date.end_of_month ]
           ]
         )
-        expect(Income.pick(:metadata)).to include("employer" => "Acme Corp")
+        expect(ExternalIncomeActivity.pick(:metadata)).to include("employer" => "Acme Corp")
       end
 
       it "still creates the certification" do
@@ -195,16 +195,16 @@ RSpec.describe Certifications::CreationService, type: :service do
         )
       end
 
-      it "creates ExternalHourlyActivity for hourly activities and Income for income activities" do
+      it "creates ExternalHourlyActivity for hourly activities and ExternalIncomeActivity for income activities" do
         expect {
           service.call
         }.to change(ExternalHourlyActivity, :count).from(0).to(1)
-          .and change(Income, :count).from(0).to(1)
+          .and change(ExternalIncomeActivity, :count).from(0).to(1)
 
         epa = ExternalHourlyActivity.last
         expect(epa.hours).to eq(40)
 
-        income = Income.last
+        income = ExternalIncomeActivity.last
         expect(income.gross_income).to eq(580)
         expect(income.source_type).to eq("api")
       end
@@ -276,12 +276,12 @@ RSpec.describe Certifications::CreationService, type: :service do
 
         expect(Certification.count).to eq(0)
         expect(ExternalHourlyActivity.count).to eq(0)
-        expect(Income.count).to eq(0)
+        expect(ExternalIncomeActivity.count).to eq(0)
         expect(CertificationOrigin.count).to eq(0)
       end
     end
 
-    context "when IncomeService fails (duplicate income in same request)" do
+    context "when ExternalIncomeActivityService fails (duplicate income in same request)" do
       let(:member_data) do
         build(:certification_member_data,
           :with_full_name,
@@ -311,7 +311,7 @@ RSpec.describe Certifications::CreationService, type: :service do
         expect { service.call }.to raise_error(ActiveRecord::RecordInvalid)
 
         expect(Certification.count).to eq(0)
-        expect(Income.count).to eq(0)
+        expect(ExternalIncomeActivity.count).to eq(0)
         expect(CertificationOrigin.count).to eq(0)
       end
     end

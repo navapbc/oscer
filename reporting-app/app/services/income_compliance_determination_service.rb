@@ -20,9 +20,10 @@ class IncomeComplianceDeterminationService
       total_income >= TARGET_INCOME_MONTHLY
     end
 
-    # Silent recalculation (e.g. after +IncomeService+ saves a row for an open case). Same contract as
-    # +HoursComplianceDeterminationService#calculate+: no +Strata::EventManager.publish+, and compliant
-    # outcomes close the case via +record_income_compliance+ (default +close_on_compliant: true+).
+    # Silent recalculation (e.g. after +ExternalIncomeActivityService+ saves a row for an open
+    # case). Same contract as +HoursComplianceDeterminationService#calculate+: no
+    # +Strata::EventManager.publish+, and compliant outcomes close the case via
+    # +record_income_compliance+ (default +close_on_compliant: true+).
     # @param certification_id [String]
     # @return [void]
     def calculate(certification_id)
@@ -36,12 +37,13 @@ class IncomeComplianceDeterminationService
     end
 
     # Same lookback and query shape as ActivityAggregator#fetch_external_hourly_activities /
-    # Income.for_member(...).within_period(lookback) as used for external hours parity.
+    # ExternalIncomeActivity.for_member(...).within_period(lookback) as used for external
+    # hours parity.
     # @param certification [Certification]
     # @return [Hash]
     def aggregate_income_for_certification(certification)
       lookback = certification.certification_requirements.continuous_lookback_period
-      rows = Income.for_member(certification.member_id).within_period(lookback)
+      rows = ExternalIncomeActivity.for_member(certification.member_id).within_period(lookback)
 
       ex_total = BigDecimal(rows.sum(:gross_income).to_s)
       member_total = member_reported_income_total(certification)

@@ -28,7 +28,7 @@ class CertificationCase < Strata::Case
   }
 
   # Latest open case for a member (by certification created_at). Used when persisting new
-  # Income rows to run income compliance recalculation for the active certification.
+  # ExternalIncomeActivity rows to run income compliance recalculation for the active certification.
   # @param member_id [String]
   # @return [UUID, nil] certification_id
   def self.open_certification_id_for_member(member_id)
@@ -155,9 +155,9 @@ class CertificationCase < Strata::Case
     )
   end
 
-  # Called by IncomeComplianceDeterminationService#calculate (e.g. after +IncomeService+ persists new
-  # income for an open case) to record income-only CE (+CALCULATION_TYPE_INCOME_BASED+; not used by the
-  # combined external CE business process step).
+  # Called by IncomeComplianceDeterminationService#calculate (e.g. after
+  # +ExternalIncomeActivityService+ persists new income for an open case) to record income-only CE
+  # (+CALCULATION_TYPE_INCOME_BASED+; not used by the combined external CE business process step).
   #
   # Default +close_on_compliant: true+ matches +record_hours_compliance+: compliant outcomes +close!+
   # the case so behavior matches hours silent recalculation and the case leaves open caseworker queues.
