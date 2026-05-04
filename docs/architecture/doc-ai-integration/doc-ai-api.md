@@ -117,7 +117,7 @@ Five evidence-source statuses provide CMS-auditable tracking of how activity dat
 
 | Status Label | Meaning | How Determined |
 |---|---|---|
-| `STATE_PROVIDED` | Data from ex parte / external data sources | Activity type is `ExPartActivity` (no member upload involved) |
+| `STATE_PROVIDED` | Data from external data sources | Activity type is `ExternalHourlyActivity` (no member upload involved) |
 | `SELF_REPORTED` | Member manually entered and uploaded | No `StagedDocument` associated with activity (member opted out of AI or feature flag off) |
 | `AI_ASSISTED` | Member uploaded, AI extracted, member submitted unchanged | `StagedDocument` exists with `status: :validated`; all comparable prefill values match activity's submitted values |
 | `AI_ASSISTED_WITH_MEMBER_EDITS` | Member uploaded, AI extracted, member corrected before submission | `StagedDocument` exists with `status: :validated`; one or more prefill values differ from activity's submitted values |

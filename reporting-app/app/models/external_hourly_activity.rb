@@ -1,40 +1,43 @@
 # frozen_string_literal: true
 
-# Income stores trusted gross income data from external sources (ex parte verification),
-# parallel to ExParteActivity for hours.
+# ExternalHourlyActivity stores trusted hours data from external sources, like
+# the state system
 #
-# Schema: Records use member_id only (like ExParteActivity). There is no certification_id
-# column; the active certification for a member is implicit. Do not add belongs_to :certification
-# if a future migration adds an optional UUID for traceability—use a plain column only.
+# These are automated or external hours as opposed to member reported hours from
+# ActivityReportApplicationForm. External hours are auto-verified and don't require
+# staff review.
 #
-# Append-only policy: Normal intake flows create records only. Updates or deletes are
-# exceptional (e.g., corrections, backfills) and must be fully audited—see
-# docs/architecture/income-data/income-data.md (Audit trail over hard immutability).
+# Activities are linked to certifications through member_id - since there's
+# only one active certification per member at a time, the relationship is implicit.
 #
-class Income < ApplicationRecord
+class ExternalHourlyActivity < ApplicationRecord
   include Strata::Attributes
 
   ALLOWED_CATEGORIES = ActivityCategories::ALL
 
   SOURCE_TYPES = {
-    api: "api"
+    api: "api",
+    batch: "batch_upload"
   }.freeze
   ALLOWED_SOURCE_TYPES = SOURCE_TYPES.values.freeze
 
+  # 365 days * 24 hours = 8,760 hours
+  MAX_HOURS_PER_YEAR = 365 * 24
+
   # --- Strata Attributes ---
 
+  # DateRange provides built-in validation (start <= end)
   strata_attribute :period, :us_date, range: true
 
   # --- Validations ---
 
   validates :member_id, presence: true
   validates :category, presence: true, inclusion: { in: ALLOWED_CATEGORIES }
-  validates :gross_income, presence: true,
-                           numericality: { greater_than: 0 }
+  validates :hours, presence: true,
+                    numericality: { greater_than: 0, less_than_or_equal_to: MAX_HOURS_PER_YEAR }
   validates :period_start, presence: true
   validates :period_end, presence: true
   validates :source_type, presence: true, inclusion: { in: ALLOWED_SOURCE_TYPES }
-  validates :reported_at, presence: true
 
   # --- Scopes ---
 

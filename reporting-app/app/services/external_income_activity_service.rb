@@ -1,18 +1,18 @@
 # frozen_string_literal: true
 
-# Service for creating and validating Income entries from API and batch intake.
-# Mirrors ExParteActivityService for hours data.
+# Service for creating and validating ExternalIncomeActivity entries from API and batch intake.
+# Mirrors ExternalHourlyActivityService for hours data.
 #
 # After a successful save, optional compliance recalculation (+recalculate_income_compliance+, default +true+)
 # runs +IncomeComplianceDeterminationService.calculate+ for the member’s open case; compliant outcomes
 # close the case (same as hours +HoursComplianceDeterminationService#calculate+). Certification intake
 # passes +recalculate_income_compliance: false+ so rows created before the case exists do not run this path.
-class IncomeService
+class ExternalIncomeActivityService
   class << self
     # Create income data entry for a member.
     # @param recalculate_income_compliance [Boolean] when +true+ (default), after save run silent income
     #   compliance for the open case (may +close!+ when compliant); +Certifications::CreationService+ passes +false+.
-    # @return [Income] on success
+    # @return [ExternalIncomeActivity] on success
     # @return [Hash] with :error key on failure
     def create_entry(member_id:, category:, gross_income:, period_start:, period_end:,
                      source_type:, source_id: nil, reported_at: Time.current, metadata: {}, employer: nil,
@@ -27,7 +27,7 @@ class IncomeService
         return { error: "Duplicate entry" }
       end
 
-      entry = Income.new(
+      entry = ExternalIncomeActivity.new(
         member_id: member_id,
         category: category,
         gross_income: gross_income,
@@ -59,14 +59,15 @@ class IncomeService
       IncomeComplianceDeterminationService.calculate(certification_id)
     rescue ActiveRecord::RecordNotFound
       Rails.logger.warn(
-        "IncomeService: skipped income compliance recalculation (case or certification missing) " \
-        "for member_id=#{member_id} certification_id=#{certification_id}"
+        "ExternalIncomeActivityService: skipped income compliance recalculation " \
+        "(case or certification missing) for member_id=#{member_id} " \
+        "certification_id=#{certification_id}"
       )
     end
 
-    # Same dimensions as ExParteActivityService duplicate check; source_type is not part of the key.
+    # Same dimensions as ExternalHourlyActivityService duplicate check; source_type is not part of the key.
     def duplicate_entry?(member_id:, category:, gross_income:, period_start:, period_end:)
-      Income.exists?(
+      ExternalIncomeActivity.exists?(
         member_id: member_id,
         category: category,
         gross_income: gross_income,

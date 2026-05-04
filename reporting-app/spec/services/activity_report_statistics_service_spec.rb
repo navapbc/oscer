@@ -49,7 +49,7 @@ RSpec.describe ActivityReportStatisticsService do
         october_stats = stats[Date.new(2025, 10, 1)]
         expect(october_stats[:summed_hours]).to eq(70.0)
         expect(october_stats[:hourly_activities].length).to eq(2)
-        expect(october_stats[:ex_parte_activities]).to be_empty
+        expect(october_stats[:external_hourly_activities]).to be_empty
       end
 
       it 'calculates remaining hours needed' do
@@ -60,9 +60,9 @@ RSpec.describe ActivityReportStatisticsService do
       end
     end
 
-    context 'with only ex parte activities' do
+    context 'with only external hourly activities' do
       before do
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                member_id: member_id,
                category: "employment",
                hours: 50,
@@ -70,12 +70,12 @@ RSpec.describe ActivityReportStatisticsService do
                period_end: Date.new(2025, 10, 31))
       end
 
-      it 'calculates total hours from ex parte activities' do
+      it 'calculates total hours from external hourly activities' do
         stats = described_class.build_monthly_statistics(activity_report.reload, certification)
 
         october_stats = stats[Date.new(2025, 10, 1)]
         expect(october_stats[:summed_hours]).to eq(50.0)
-        expect(october_stats[:ex_parte_activities].length).to eq(1)
+        expect(october_stats[:external_hourly_activities].length).to eq(1)
         expect(october_stats[:hourly_activities]).to be_empty
       end
 
@@ -87,14 +87,14 @@ RSpec.describe ActivityReportStatisticsService do
       end
     end
 
-    context 'with both self-reported and ex parte activities' do
+    context 'with both self-reported and external hourly activities' do
       before do
         create(:work_activity,
                activity_report_application_form_id: activity_report.id,
                month: Date.new(2025, 10, 1),
                hours: 30,
                name: "Self Employment")
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                member_id: member_id,
                category: "employment",
                hours: 50,
@@ -108,7 +108,7 @@ RSpec.describe ActivityReportStatisticsService do
         october_stats = stats[Date.new(2025, 10, 1)]
         expect(october_stats[:summed_hours]).to eq(80.0) # 30 + 50
         expect(october_stats[:hourly_activities].length).to eq(1)
-        expect(october_stats[:ex_parte_activities].length).to eq(1)
+        expect(october_stats[:external_hourly_activities].length).to eq(1)
       end
 
       it 'shows zero remaining hours when requirement is met' do
@@ -119,7 +119,7 @@ RSpec.describe ActivityReportStatisticsService do
       end
     end
 
-    context 'with ex parte activity spanning multiple months' do
+    context 'with external hourly activity spanning multiple months' do
       # Use a certification with a longer lookback period
       let(:certification) do
         create(:certification,
@@ -135,7 +135,7 @@ RSpec.describe ActivityReportStatisticsService do
 
       before do
         # Activity spans October and November (61 days total)
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                member_id: member_id,
                category: "employment",
                hours: 61, # 1 hour per day for easy calculation
@@ -152,8 +152,8 @@ RSpec.describe ActivityReportStatisticsService do
         # October has 31 days, November has 30 days = 61 total days
         # October: 61 hours * (31/61) = 31 hours
         # November: 61 hours * (30/61) = 30 hours
-        expect(october_stats[:ex_parte_activities].first[:allocated_hours]).to eq(31.0)
-        expect(november_stats[:ex_parte_activities].first[:allocated_hours]).to eq(30.0)
+        expect(october_stats[:external_hourly_activities].first[:allocated_hours]).to eq(31.0)
+        expect(november_stats[:external_hourly_activities].first[:allocated_hours]).to eq(30.0)
       end
     end
 
@@ -195,15 +195,15 @@ RSpec.describe ActivityReportStatisticsService do
 
         october_stats = stats[Date.new(2025, 10, 1)]
         expect(october_stats[:summed_hours]).to eq(40.0)
-        expect(october_stats[:ex_parte_activities]).to be_empty
+        expect(october_stats[:external_hourly_activities]).to be_empty
       end
     end
   end
 
-  describe '.fetch_ex_parte_activities' do
+  describe '.fetch_external_hourly_activities' do
     context 'with activities within lookback period' do
       before do
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                member_id: member_id,
                category: "employment",
                hours: 40,
@@ -212,7 +212,7 @@ RSpec.describe ActivityReportStatisticsService do
       end
 
       it 'returns activities for the member' do
-        activities = described_class.fetch_ex_parte_activities(certification)
+        activities = described_class.fetch_external_hourly_activities(certification)
 
         expect(activities.count).to eq(1)
         expect(activities.first.member_id).to eq(member_id)
@@ -221,7 +221,7 @@ RSpec.describe ActivityReportStatisticsService do
 
     context 'with activities outside lookback period' do
       before do
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                member_id: member_id,
                category: "employment",
                hours: 40,
@@ -230,7 +230,7 @@ RSpec.describe ActivityReportStatisticsService do
       end
 
       it 'does not return activities outside the period' do
-        activities = described_class.fetch_ex_parte_activities(certification)
+        activities = described_class.fetch_external_hourly_activities(certification)
 
         expect(activities.count).to eq(0)
       end
@@ -238,7 +238,7 @@ RSpec.describe ActivityReportStatisticsService do
 
     context 'when certification is nil' do
       it 'returns empty relation' do
-        activities = described_class.fetch_ex_parte_activities(nil)
+        activities = described_class.fetch_external_hourly_activities(nil)
 
         expect(activities).to be_empty
       end
@@ -248,7 +248,7 @@ RSpec.describe ActivityReportStatisticsService do
       let(:certification_without_member) { build(:certification, member_id: nil) }
 
       it 'returns empty relation' do
-        activities = described_class.fetch_ex_parte_activities(certification_without_member)
+        activities = described_class.fetch_external_hourly_activities(certification_without_member)
 
         expect(activities).to be_empty
       end

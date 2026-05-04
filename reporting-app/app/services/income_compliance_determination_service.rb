@@ -6,7 +6,7 @@
 # Silent +#calculate+ matches +HoursComplianceDeterminationService#calculate+: no Strata workflow events,
 # and compliant outcomes close the case (see +CertificationCase#record_income_compliance+ and its
 # +close_on_compliant+ keyword for a future record-only mode).
-# Combined ex parte CE assessment and Strata workflow events live in +CommunityEngagementCheckService+.
+# Combined external CE assessment and Strata workflow events live in +CommunityEngagementCheckService+.
 # Single source for TARGET_INCOME_MONTHLY (CE compliance UI and statistics; parity with
 # HoursComplianceDeterminationService::TARGET_HOURS) via Rails.application.config.ce_compliance.
 class IncomeComplianceDeterminationService
@@ -20,9 +20,10 @@ class IncomeComplianceDeterminationService
       total_income >= TARGET_INCOME_MONTHLY
     end
 
-    # Silent recalculation (e.g. after +IncomeService+ saves a row for an open case). Same contract as
-    # +HoursComplianceDeterminationService#calculate+: no +Strata::EventManager.publish+, and compliant
-    # outcomes close the case via +record_income_compliance+ (default +close_on_compliant: true+).
+    # Silent recalculation (e.g. after +ExternalIncomeActivityService+ saves a row for an open
+    # case). Same contract as +HoursComplianceDeterminationService#calculate+: no
+    # +Strata::EventManager.publish+, and compliant outcomes close the case via
+    # +record_income_compliance+ (default +close_on_compliant: true+).
     # @param certification_id [String]
     # @return [void]
     def calculate(certification_id)
@@ -35,13 +36,14 @@ class IncomeComplianceDeterminationService
       kase.record_income_compliance(outcome, income_data)
     end
 
-    # Same lookback and query shape as ActivityAggregator#fetch_ex_parte_activities /
-    # Income.for_member(...).within_period(lookback) as used for ex parte hours parity.
+    # Same lookback and query shape as ActivityAggregator#fetch_external_hourly_activities /
+    # ExternalIncomeActivity.for_member(...).within_period(lookback) as used for external
+    # hours parity.
     # @param certification [Certification]
     # @return [Hash]
     def aggregate_income_for_certification(certification)
       lookback = certification.certification_requirements.continuous_lookback_period
-      rows = Income.for_member(certification.member_id).within_period(lookback)
+      rows = ExternalIncomeActivity.for_member(certification.member_id).within_period(lookback)
 
       ex_total = BigDecimal(rows.sum(:gross_income).to_s)
       member_total = member_reported_income_total(certification)

@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-# Service for creating and validating ExParteActivity entries.
+# Service for creating and validating ExternalHourlyActivity entries.
 # Used by both API and batch upload for consistent data intake.
 #
 # Note: Hours aggregation is handled by HoursComplianceDeterminationService
 # which includes lookback period filtering required for compliance calculations.
-class ExParteActivityService
+class ExternalHourlyActivityService
   class << self
     # Create hours data entry for a member
-    # @return [ExParteActivity] on success
+    # @return [ExternalHourlyActivity] on success
     # @return [Hash] with :error, :status keys on failure
     def create_entry(member_id:, category:, hours:, period_start:, period_end:,
                      source_type:, source_id: nil)
@@ -16,7 +16,7 @@ class ExParteActivityService
         return { error: "Duplicate entry", status: :conflict }
       end
 
-      entry = ExParteActivity.new(
+      entry = ExternalHourlyActivity.new(
         member_id: member_id,
         category: category,
         hours: hours,
@@ -36,7 +36,7 @@ class ExParteActivityService
     # Check for exact duplicate entry
     # @return [Boolean]
     def duplicate_entry?(member_id:, category:, hours:, period_start:, period_end:)
-      ExParteActivity.exists?(
+      ExternalHourlyActivity.exists?(
         member_id: member_id,
         category: category,
         hours: hours,

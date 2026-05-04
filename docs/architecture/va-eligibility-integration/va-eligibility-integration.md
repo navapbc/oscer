@@ -4,7 +4,7 @@
 
 Members who are Veterans with service-connected disabilities may qualify for exemptions from Medicaid work requirements. Integrating with the VA's Veteran Service History and Eligibility API would enable:
 
-1. **Automated ex-parte exemption checks** — System automatically determines Veteran disability status during the `EX_PARTE_EXEMPTION_CHECK` step without member intervention
+1. **Automated external exemption checks** — System automatically determines Veteran disability status during the `EXTERNAL_EXEMPTION_CHECK_STEP` step without member intervention
 2. **User-initiated verification** — Members who self-identify as Veterans can have their status verified in real-time during the exemption screener flow
 
 ## Approach
@@ -13,7 +13,7 @@ Two integration patterns are required based on access level and use case:
 
 | Use Case | OAuth Grant Type | User Interaction | Production Requirements |
 |----------|------------------|------------------|------------------------|
-| Automated ex-parte checks | Client Credentials Grant | None (machine-to-machine) | VA agreement required |
+| Automated external checks | Client Credentials Grant | None (machine-to-machine) | VA agreement required |
 | Member-initiated verification | Authorization Code Grant | Veteran authenticates via ID.me | Standard production access |
 
 ### VA API Overview
@@ -29,7 +29,7 @@ The [Veteran Service History and Eligibility API](https://developer.va.gov/explo
 | Authorization Code (PKCE) | Veteran-authorized access to own data | Production demo required |
 | Client Credentials | System-level access to Veteran data | VA agreement + production demo |
 
-> **Note**: Client Credentials Grant access requires either VA employment or a specific VA agreement ([source](https://developer.va.gov/explore/api/community-care-eligibility/docs)). This is the primary blocker for implementing Option 1 (automated ex-parte checks).
+> **Note**: Client Credentials Grant access requires either VA employment or a specific VA agreement ([source](https://developer.va.gov/explore/api/community-care-eligibility/docs)). This is the primary blocker for implementing Option 1 (automated external checks).
 
 ## Unknowns
 
@@ -41,7 +41,7 @@ Additionally, testing of the summary `disability_rating` endpoints revealed that
 
 ## C4 Component Diagram
 
-### Option 1: Client Credentials Grant (Automated Ex-Parte Checks)
+### Option 1: Client Credentials Grant (Automated External Checks)
 
 ```mermaid
 flowchart TB
@@ -53,7 +53,7 @@ flowchart TB
     subgraph Application["OSCER Application"]
         subgraph BusinessProcess["Business Process Layer"]
             CertBP[CertificationBusinessProcess]
-            ExPartStep[EX_PARTE_EXEMPTION_CHECK]
+            ExPartStep[EXTERNAL_EXEMPTION_CHECK_STEP]
         end
 
         subgraph Services["Service Layer"]
@@ -372,7 +372,7 @@ Per [VA production access documentation](https://developer.va.gov/production-acc
 | Requirement | How We Address It |
 |-------------|-------------------|
 | Exemption Screener Flow | User Flow + Diagrams |
-| Ex Parte Exemption Check | Data Flow + Diagrams |
+| External Exemption Check | Data Flow + Diagrams |
 | Proper error handling | Graceful degradation, user-friendly error messages |
 | Rate limit handling | Exponential backoff, request queuing |
 | Veteran data protection | PII handling per VA requirements, data minimization |

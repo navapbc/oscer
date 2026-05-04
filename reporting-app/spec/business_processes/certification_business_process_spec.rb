@@ -11,7 +11,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     allow(Strata::EventManager).to receive(:publish).and_call_original
     allow(NotificationService).to receive(:send_email_notification)
 
-    # Avoid persisting real ex parte CE combined determinations during factory/BP bootstrap (would
+    # Avoid persisting real external CE combined determinations during factory/BP bootstrap (would
     # close the case / mark compliant when income aggregate meets threshold).
     allow(CommunityEngagementCheckService).to receive(:determine) do |kase|
       Strata::EventManager.publish("DeterminedCommunityEngagementActionRequired", {
@@ -24,16 +24,16 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
         total_hours: 85,
         hours_by_category: {},
-        hours_by_source: { ex_parte: 85, activity: 0 },
-        ex_parte_activity_ids: [],
+        hours_by_source: { external: 85, activity: 0 },
+        external_hourly_activity_ids: [],
         activity_ids: []
       })
   end
 
-  describe 'ex_parte_exemption_check' do
+  describe 'external_exemption_check' do
     before do
       certification_case.update!(
-        business_process_current_step: CertificationBusinessProcess::EX_PARTE_EXEMPTION_CHECK_STEP
+        business_process_current_step: CertificationBusinessProcess::EXTERNAL_EXEMPTION_CHECK_STEP
       )
     end
 
@@ -57,8 +57,8 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       end
 
       it 'transitions to end' do
-        # Step 1: Case has been created and is on ex_parte_exemption_check step
-        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EX_PARTE_EXEMPTION_CHECK_STEP)
+        # Step 1: Case has been created and is on external_exemption_check step
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EXTERNAL_EXEMPTION_CHECK_STEP)
         expect(certification_case.member_status).to eq(MemberStatus::AWAITING_REPORT)
         expect(certification_case).to be_open
 
@@ -81,9 +81,9 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         )
       end
 
-      it 'transitions to ex_parte_community_engagement_check' do
-        # Step 1: Case has been created and is on ex_parte_exemption_check step
-        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EX_PARTE_EXEMPTION_CHECK_STEP)
+      it 'transitions to external_community_engagement_check' do
+        # Step 1: Case has been created and is on external_exemption_check step
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EXTERNAL_EXEMPTION_CHECK_STEP)
         expect(certification_case.member_status).to eq(MemberStatus::AWAITING_REPORT)
         expect(certification_case).to be_open
 
@@ -119,7 +119,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
 
       # Step 3: Create sufficient hours and approve activity report
       lookback = certification.certification_requirements.continuous_lookback_period
-      create(:ex_parte_activity,
+      create(:external_hourly_activity,
              member_id: certification.member_id,
              hours: 85,
              period_start: lookback.start.to_date,
@@ -230,7 +230,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
 
       # Create sufficient hours for approval
       lookback = certification.certification_requirements.continuous_lookback_period
-      create(:ex_parte_activity,
+      create(:external_hourly_activity,
              member_id: certification.member_id,
              hours: 85,
              period_start: lookback.start.to_date,

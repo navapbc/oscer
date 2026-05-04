@@ -26,7 +26,7 @@ class CertificationCasesController < StaffController
     # Hours data for the "Hours reported" table
     @hours_summary = HoursComplianceDeterminationService.aggregate_hours_for_certification(@certification)
     @target_hours = HoursComplianceDeterminationService::TARGET_HOURS
-    @ex_parte_activities = fetch_ex_parte_activities
+    @external_hourly_activities = fetch_external_hourly_activities
     @member_activities = fetch_member_activities
     if Features.doc_ai_enabled? && @activity_report
       activity_ids = @activity_report.activities.pluck(:id)
@@ -56,9 +56,9 @@ class CertificationCasesController < StaffController
     end.compact
   end
 
-  def fetch_ex_parte_activities
+  def fetch_external_hourly_activities
     lookback_period = @certification.certification_requirements.continuous_lookback_period
-    ExParteActivity.for_member(@certification.member_id).within_period(lookback_period)
+    ExternalHourlyActivity.for_member(@certification.member_id).within_period(lookback_period)
   end
 
   def fetch_member_activities

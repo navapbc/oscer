@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Service for creating certifications
-# Handles creation of ExParteActivity records and CertificationOrigin tracking
+# Handles creation of ExternalHourlyActivity records and CertificationOrigin tracking
 class Certifications::CreationService
   attr_reader :create_request, :certification
 
@@ -14,8 +14,8 @@ class Certifications::CreationService
   # @raise [ActiveRecord::RecordInvalid] If validation fails
   def call
     ActiveRecord::Base.transaction do
-      # Create ex parte activities FIRST (before certification)
-      create_ex_parte_activities
+      # Create external hourly activities FIRST (before certification)
+      create_external_hourly_activities
       create_incomes
 
       # Save certification
@@ -40,26 +40,26 @@ class Certifications::CreationService
     )
   end
 
-  def create_ex_parte_activities
+  def create_external_hourly_activities
     return unless certification.member_data&.activities.present?
 
     hourly_activities = certification.member_data.activities.select { |a| a.type == "hourly" }
 
     hourly_activities.each do |activity_data|
-      result = ExParteActivityService.create_entry(
+      result = ExternalHourlyActivityService.create_entry(
         member_id: certification.member_id,
         category: activity_data.category,
         hours: activity_data.hours,
         period_start: activity_data.period_start,
         period_end: activity_data.period_end,
-        source_type: ExParteActivity::SOURCE_TYPES[:api],
+        source_type: ExternalHourlyActivity::SOURCE_TYPES[:api],
         source_id: nil
       )
 
       # Handle service error response
       if result.is_a?(Hash) && result[:error]
         # Create a dummy record to use RecordInvalid pattern
-        activity = ExParteActivity.new
+        activity = ExternalHourlyActivity.new
         activity.errors.add(:base, result[:error])
         raise ActiveRecord::RecordInvalid.new(activity)
       end
@@ -72,7 +72,7 @@ class Certifications::CreationService
     income_activities = certification.member_data.activities.select { |a| a.type == "income" }
 
     income_activities.each do |activity_data|
-      result = IncomeService.create_entry(
+      result = ExternalIncomeActivityService.create_entry(
         member_id: certification.member_id,
         category: activity_data.category,
         gross_income: activity_data.gross_income,
@@ -86,7 +86,7 @@ class Certifications::CreationService
       )
 
       if result.is_a?(Hash) && result[:error]
-        row = Income.new
+        row = ExternalIncomeActivity.new
         row.errors.add(:base, result[:error])
         raise ActiveRecord::RecordInvalid.new(row)
       end

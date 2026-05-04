@@ -17,10 +17,9 @@ Community engagement requirements (CER) under H.R. 1 require Medicaid members to
 ---
 
 ## Compliance recalculation (open cases)
+When [`ExternalIncomeActivityService#create_entry`](../../../reporting-app/app/services/external_income_activity_service.rb) persists a new `ExternalIncomeActivity` row with **`recalculate_income_compliance: true`** (the default), OSCER looks up the member’s **open** [`CertificationCase`](../../../reporting-app/app/models/certification_case.rb) and runs [`IncomeComplianceDeterminationService.calculate`](../../../reporting-app/app/services/income_compliance_determination_service.rb) for that case’s certification. That records an automated **income-based** determination without publishing CE workflow events; when the outcome is compliant, the case is **closed** (same as hours silent recalculation). `CertificationCase#record_income_compliance` accepts **`close_on_compliant`** for future opt-out if product changes.
 
-When [`IncomeService#create_entry`](../../../reporting-app/app/services/income_service.rb) persists a new `Income` row with **`recalculate_income_compliance: true`** (the default), OSCER looks up the member’s **open** [`CertificationCase`](../../../reporting-app/app/models/certification_case.rb) and runs [`IncomeComplianceDeterminationService.calculate`](../../../reporting-app/app/services/income_compliance_determination_service.rb) for that case’s certification. That records an automated **income-based** determination without publishing CE workflow events; when the outcome is compliant, the case is **closed** (same as hours silent recalculation). `CertificationCase#record_income_compliance` accepts **`close_on_compliant`** for future opt-out if product changes.
-
-During **certification creation**, [`Certifications::CreationService`](../../../reporting-app/app/services/certifications/creation_service.rb) passes **`recalculate_income_compliance: false`** so intake does not run this path before the case exists (or risk attributing rows to the wrong open case). The combined ex parte CE step after `CertificationCreated` still uses aggregated income for the initial assessment.
+During **certification creation**, [`Certifications::CreationService`](../../../reporting-app/app/services/certifications/creation_service.rb) passes **`recalculate_income_compliance: false`** so intake does not run this path before the case exists (or risk attributing rows to the wrong open case). The combined external CE step after `CertificationCreated` still uses aggregated income for the initial assessment.
 
 ---
 
@@ -72,7 +71,7 @@ flowchart TB
     end
 
     subgraph Data
-        Income[Income]
+        ExternalIncomeActivity[ExternalIncomeActivity]
         Determination[Determination]
     end
 
@@ -84,10 +83,10 @@ flowchart TB
         MemberStatus[MemberStatusService]
     end
 
-    CertAPI --> IncomeService
-    IncomeService --> Income
-    IncomeService --> IncomeComplianceService
-    IncomeComplianceService --> Determination
+    CertAPI --> ExternalIncomeActivityService
+    ExternalIncomeActivityService --> ExternalIncomeActivity
+    ExternalIncomeActivityService --> IncomeComplianceDeterminationService
+    IncomeComplianceDeterminationService --> Determination
     MemberStatus --> Determination
 ```
 
@@ -97,22 +96,22 @@ flowchart TB
 
 ### Extend existing schema vs. parallel structure
 
-**Context:** The existing data model was built for hours (`ExParteActivity`: `hours`, `category`, `period_start`, `period_end`). Income has a different field set (`gross_income`, `pay_period`, `source`).
+**Context:** The existing data model was built for hours (`ExternalHourlyActivity`: `hours`, `category`, `period_start`, `period_end`). Income has a different field set (`gross_income`, `pay_period`, `source`).
 
 **Options considered:**
 
 | Option                        | Description                                                | Pros                                                     | Cons                                            |
 | ----------------------------- | ---------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------- |
-| **A: Extend ExParteActivity** | Add `gross_income`, nullable `hours`; `type` discriminator | Single table, shared source attribution, simpler queries | Schema drift, mixed semantics, nullable columns |
+| **A: Extend ExternalHourlyActivity** | Add `gross_income`, nullable `hours`; `type` discriminator | Single table, shared source attribution, simpler queries | Schema drift, mixed semantics, nullable columns |
 | **B: Parallel Income**        | New `incomes` table with income-specific columns  | Clear separation, type-safe, independent evolution       | Duplicate patterns, two aggregation paths       |
-| **C: Polymorphic activity**   | Generic `ex_parte_verification` with `verifiable_type`     | Single aggregation, flexible                             | Complex, over-engineered for two types          |
+| **C: Polymorphic activity**   | Generic `external_verification` with `verifiable_type`     | Single aggregation, flexible                             | Complex, over-engineered for two types          |
 
 **Decision:** **Option B – Parallel `Income` table.**
 
 **Rationale:**
 
 - Income semantics differ: dollar amounts, pay period granularity, source cadence (quarterly vs. near real-time).
-- Keeps `ExParteActivity` focused on hours and avoids nullable or overloaded columns.
+- Keeps `ExternalHourlyActivity` focused on hours and avoids nullable or overloaded columns.
 - Mirrors existing patterns (e.g., `CertificationBatchUpload` vs. hours batch) and allows independent rules (e.g., data freshness by source type).
 - Determination logic can aggregate hours and income separately, then apply CER rules.
 
@@ -215,7 +214,7 @@ end
 
 ### Aggregation
 
-1. Sum `gross_income` from all `Income` records within certification lookback.
+1. Sum `gross_income` from all `ExternalIncomeActivity` records within certification lookback.
 2. Include approved manual income activities (if present).
 3. Compare total to threshold.
 
@@ -245,21 +244,21 @@ end
 
 ## Business Process Integration
 
-Mirror hours: income is saved **before** certification creation, and the business process runs at the ex-parte CE check step.
+Mirror hours: income is saved **before** certification creation, and the business process runs at the external CE check step.
 
 **Flow:**
 
 1. API receives `member_data.activities` with `type: "income"`.
-2. Create `Income` records (before certification).
+2. Create `ExternalIncomeActivity` records (before certification).
 3. Create certification → triggers business process.
-4. At `EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP`, `CertificationBusinessProcess` invokes `CommunityEngagementCheckService.determine(kase)`.
+4. At `EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP`, `CertificationBusinessProcess` invokes `CommunityEngagementCheckService.determine(kase)`.
    - Aggregates hours via `HoursComplianceDeterminationService.aggregate_hours_for_certification` and income via `IncomeComplianceDeterminationService.aggregate_income_for_certification`.
-   - `CertificationCase#record_ex_parte_ce_combined_assessment` persists **one** automated determination with `calculation_type` `ex_parte_ce_combined` (nested hours/income payloads and `satisfied_by`). Member is compliant if **either** track meets its threshold.
-   - Publishes generic community-engagement Strata events: `DeterminedCommunityEngagementMet` (either track passes), `DeterminedCommunityEngagementInsufficient` (both fail but some ex parte hours; payload includes `hours_data` and `income_data`), `DeterminedCommunityEngagementActionRequired` (both fail and no ex parte hours). `CertificationBusinessProcess` transitions map these to `end` or `report_activities`.
+   - `CertificationCase#record_external_ce_combined_assessment` persists **one** automated determination with `calculation_type` `external_ce_combined` (nested hours/income payloads and `satisfied_by`). Member is compliant if **either** track meets its threshold.
+   - Publishes generic community-engagement Strata events: `DeterminedCommunityEngagementMet` (either track passes), `DeterminedCommunityEngagementInsufficient` (both fail but some external hours; payload includes `hours_data` and `income_data`), `DeterminedCommunityEngagementActionRequired` (both fail and no external hours). `CertificationBusinessProcess` transitions map these to `end` or `report_activities`.
    - Other flows (e.g. hours-only paths elsewhere) may still use `DeterminedHoursMet` / `DeterminedHoursInsufficient`; see `NotificationsEventListener`.
 5. For existing certifications: `CalculateComplianceJob` (or equivalent) may call `IncomeComplianceDeterminationService.calculate(certification_id)` for silent income-only recalculation (no workflow events) when new income arrives.
 
-**Testing / QE:** `spec/services/community_engagement_check_service_spec.rb` runs **real** `CommunityEngagementCheckService.determine` with factories (primary integration coverage for the combined CE step). Many specs (e.g. `certification_case_spec`, `certification_business_process_spec`) **stub** `CommunityEngagementCheckService.determine` on `CertificationCreated` so bootstrap does not persist an accidental compliant CE determination or send mail. Combined CE income uses `aggregate_income_for_certification`; **`member_reported_income_total` is stubbed to `0` until OSCER-405**, so only ex-parte-sourced income counts toward the threshold today. For ops triage, log/monitor **`DeterminedCommunityEngagementMet`**, **`DeterminedCommunityEngagementInsufficient`**, and **`DeterminedCommunityEngagementActionRequired`** alongside legacy `DeterminedHours*` where applicable.
+**Testing / QE:** `spec/services/community_engagement_check_service_spec.rb` runs **real** `CommunityEngagementCheckService.determine` with factories (primary integration coverage for the combined CE step). Many specs (e.g. `certification_case_spec`, `certification_business_process_spec`) **stub** `CommunityEngagementCheckService.determine` on `CertificationCreated` so bootstrap does not persist an accidental compliant CE determination or send mail. Combined CE income uses `aggregate_income_for_certification`; **`member_reported_income_total` is stubbed to `0` until OSCER-405**, so only external-sourced income counts toward the threshold today. For ops triage, log/monitor **`DeterminedCommunityEngagementMet`**, **`DeterminedCommunityEngagementInsufficient`**, and **`DeterminedCommunityEngagementActionRequired`** alongside legacy `DeterminedHours*` where applicable.
 
 ---
 
@@ -267,7 +266,7 @@ Mirror hours: income is saved **before** certification creation, and the busines
 
 ### Parallel Income table
 
-Use a dedicated `incomes` table instead of extending `ExParteActivity`. Keeps semantics clear and supports future income-specific rules (e.g., freshness by source). Tradeoff: two intake paths; mitigated by shared patterns.
+Use a dedicated `incomes` table instead of extending `ExternalHourlyActivity`. Keeps semantics clear and supports future income-specific rules (e.g., freshness by source). Tradeoff: two intake paths; mitigated by shared patterns.
 
 ### Income nested in member_data.activities
 
@@ -279,7 +278,7 @@ Use `CE_INCOME_THRESHOLD_MONTHLY` (default 580) so states can adjust. Tradeoff: 
 
 ### Source attribution on every record
 
-Store `source_type` and `source_id` on each `Income` for audit. Tradeoff: redundant source data; required for traceability.
+Store `source_type` and `source_id` on each `ExternalIncomeActivity` for audit. Tradeoff: redundant source data; required for traceability.
 
 ### Audit trail over hard immutability
 
@@ -287,7 +286,7 @@ Use an **audit trail** to satisfy the business requirement for traceable, trustw
 
 **Rationale:** Strict immutability is difficult to enforce reliably (triggers and hooks can be bypassed; raw SQL, console, or other services may change data). It also blocks legitimate cases: corrections after a bad load, transient states (e.g., pending verification), merges, backfills, or compliance-driven updates. The business need is **traceability**—who changed what, when, and why—plus **origin metadata** (source_type, source_id, reported_at). An audit log provides both and accommodates edge cases.
 
-**Approach:** Record all create/update/delete events for `Income` in an audit store (e.g., `income_audit` or a generic audit table): old/new values, `changed_at`, `changed_by` (user or system), optional reason/context, and origin fields at time of event. Normal flows are append-only (create only); any update or delete goes through a defined process and is always audited. Optionally, model-level guards (e.g., `before_update` / `before_destroy` that raise or log) may be used as defense-in-depth; the primary guarantee is the audit log.
+**Approach:** Record all create/update/delete events for `ExternalIncomeActivity` in an audit store (e.g., `income_audit` or a generic audit table): old/new values, `changed_at`, `changed_by` (user or system), optional reason/context, and origin fields at time of event. Normal flows are append-only (create only); any update or delete goes through a defined process and is always audited. Optionally, model-level guards (e.g., `before_update` / `before_destroy` that raise or log) may be used as defense-in-depth; the primary guarantee is the audit log.
 
 **Tradeoff:** Policy-based "do not update in normal flows" instead of technical enforcement. Mitigated by audit, code review, and optional model guards.
 

@@ -15,21 +15,21 @@ user = User.first || FactoryBot.create(:user, :as_admin, region: "Southeast", em
   )
   certification_case = CertificationCase.find_by!(certification_id: certification.id)
 
-  # Add ex parte activities (state-provided hours) for most cases
+  # Add external hourly activities for most cases
   unless index == 0 # Skip first case to test empty state
     lookback = certification.certification_requirements.continuous_lookback_period
     period_start = lookback&.start ? Date.parse(lookback.start.to_s) : 2.months.ago.beginning_of_month.to_date
     period_end = lookback&.end ? Date.parse(lookback.end.to_s).end_of_month : 1.month.ago.end_of_month.to_date
 
-    # Add 2-4 ex parte activities per case
+    # Add 2-4 external hourly activities per case
     rand(2..4).times do
-      ExParteActivity.create!(
+      ExternalHourlyActivity.create!(
         member_id: certification.member_id,
         category: ActivityCategories::ALL.sample,
         hours: rand(5..25),
         period_start: period_start,
         period_end: period_end,
-        source_type: ExParteActivity::SOURCE_TYPES[:batch],
+        source_type: ExternalHourlyActivity::SOURCE_TYPES[:batch],
         source_id: "seed-#{SecureRandom.hex(4)}"
       )
     end

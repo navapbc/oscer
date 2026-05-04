@@ -12,13 +12,14 @@ RSpec.describe IncomeComplianceDeterminationService do
     expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedCommunityEngagementActionRequired", anything)
   end
 
-  # Income rows aligned with the certification's continuous lookback (parity with hours ex parte helper).
+  # ExternalIncomeActivity rows aligned with the certification's continuous
+  # lookback (parity with external hours helper).
   def create_income_for(certification, gross_income:, **attrs)
     lookback = certification.certification_requirements.continuous_lookback_period
     period_start = lookback.start.to_date
     period_end = lookback.start.to_date.end_of_month
 
-    create(:income, member_id: certification.member_id,
+    create(:external_income_activity, member_id: certification.member_id,
            period_start: period_start, period_end: period_end, gross_income: gross_income, **attrs)
   end
 
@@ -102,7 +103,7 @@ RSpec.describe IncomeComplianceDeterminationService do
 
     let(:certification) { create(:certification) }
 
-    context "with multiple Income rows in lookback" do
+    context "with multiple ExternalIncomeActivity rows in lookback" do
       before do
         create_income_for(certification, gross_income: 300.0, category: "employment")
         create_income_for(certification, gross_income: 280.25, category: "education")
@@ -127,7 +128,7 @@ RSpec.describe IncomeComplianceDeterminationService do
       before do
         create_income_for(certification, gross_income: 300)
 
-        create(:income,
+        create(:external_income_activity,
                member_id: certification.member_id,
                gross_income: 10_000,
                period_start: 2.years.ago.to_date,

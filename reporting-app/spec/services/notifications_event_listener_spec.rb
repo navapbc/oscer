@@ -100,7 +100,7 @@ RSpec.describe NotificationsEventListener, type: :service do
       it "sends insufficient_hours_email notification with hours data" do
         allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
           .with(certification)
-          .and_return({ total_hours: 40, hours_by_source: { ex_parte: 40, activity: 0 } })
+          .and_return({ total_hours: 40, hours_by_source: { external: 40, activity: 0 } })
 
         event = {
           payload: {
@@ -115,7 +115,7 @@ RSpec.describe NotificationsEventListener, type: :service do
           MemberMailer,
           {
             certification: certification,
-            hours_data: { total_hours: 40, hours_by_source: { ex_parte: 40, activity: 0 } },
+            hours_data: { total_hours: 40, hours_by_source: { external: 40, activity: 0 } },
             target_hours: HoursComplianceDeterminationService::TARGET_HOURS
           },
           :insufficient_hours_email,
@@ -211,8 +211,8 @@ RSpec.describe NotificationsEventListener, type: :service do
         aggregated_hours = {
           total_hours: 50.0,
           hours_by_category: {},
-          hours_by_source: { ex_parte: 50, activity: 0 },
-          ex_parte_activity_ids: [],
+          hours_by_source: { external: 50, activity: 0 },
+          external_hourly_activity_ids: [],
           activity_ids: []
         }
         income_data = {
@@ -278,7 +278,7 @@ RSpec.describe NotificationsEventListener, type: :service do
       it "sends insufficient_hours_email notification" do
         allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
           .with(certification)
-          .and_return({ total_hours: 30, hours_by_source: { ex_parte: 30, activity: 0 } })
+          .and_return({ total_hours: 30, hours_by_source: { external: 30, activity: 0 } })
 
         event = { payload: { case_id: certification_case.id, certification_id: certification.id } }
 
@@ -288,7 +288,7 @@ RSpec.describe NotificationsEventListener, type: :service do
           MemberMailer,
           {
             certification: certification,
-            hours_data: { total_hours: 30, hours_by_source: { ex_parte: 30, activity: 0 } },
+            hours_data: { total_hours: 30, hours_by_source: { external: 30, activity: 0 } },
             target_hours: HoursComplianceDeterminationService::TARGET_HOURS
           },
           :insufficient_hours_email,
