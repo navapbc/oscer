@@ -2,7 +2,7 @@
 
 class ExemptionDeterminationService
   class << self
-    # Called by CertificationBusinessProcess at EX_PARTE_EXEMPTION_CHECK step
+    # Called by CertificationBusinessProcess at EXTERNAL_EXEMPTION_CHECK_STEP
     # Service handles: evaluation, recording via model, and publishing events
     # Business process handles: transitions and notifications
     # @param kase [CertificationCase]

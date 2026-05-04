@@ -6,7 +6,7 @@ class HoursComplianceDeterminationService
   class << self
     include ActivityAggregator
 
-    # Called by CertificationBusinessProcess at EX_PARTE_CE_CHECK step (initial check)
+    # NOTE: As of https://github.com/navapbc/oscer/pull/444 this method is no longer called
     # Publishes different events based on whether external hours exist:
     # - DeterminedActionRequired: No external hours found, member needs to report from scratch
     # - DeterminedHoursInsufficient: Has some external hours but needs more
