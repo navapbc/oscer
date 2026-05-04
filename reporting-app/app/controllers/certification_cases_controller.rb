@@ -79,9 +79,10 @@ class CertificationCasesController < StaffController
   end
 
   def fetch_member_activities
-    # Only include activities from approved activity reports to match the totals calculation
     return [] unless @activity_report
 
-    @activity_report.activities.where.not(hours: nil)
+    # All line items on the form for staff compliance tables (hours + income), not only rows with hours.
+    # Totals still come from HoursComplianceDeterminationService / IncomeComplianceDeterminationService.
+    @activity_report.activities.order(:month, :created_at)
   end
 end

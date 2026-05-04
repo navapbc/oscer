@@ -105,40 +105,39 @@
 
   <% component.with_heading { t(".activity_report") } %>
   <% component.with_body do %>
-    <% if @activity_report %>
-      <% state_name = ENV.fetch("STATE_NAME", "the State") %>
-      <% hours_has_data = @ex_parte_activities.any? || @member_activities.any? %>
-      <% income_has_data = @income_rows.any? || @member_income_activities.any? %>
-      <% if hours_has_data || income_has_data %>
-        <div class="certification-case-compliance-tables margin-bottom-4">
-          <% if hours_has_data %>
-            <%= render partial: "certification_cases/hours_reported_table",
-                locals: {
-                  ex_parte_activities: @ex_parte_activities,
-                  member_activities: @member_activities,
-                  hours_summary: @hours_summary,
-                  target_hours: @target_hours
-                } %>
-          <% end %>
+    <% state_name = ENV.fetch("STATE_NAME", "the State") %>
+    <% hours_has_data = @ex_parte_activities.any? || @member_activities.any? { |a| !a.read_attribute(:hours).nil? } %>
+    <% income_has_data = @income_rows.any? || @member_income_activities.any? %>
+    <% if hours_has_data || income_has_data %>
+      <div class="certification-case-compliance-tables margin-bottom-4">
+        <% if hours_has_data %>
+          <%= render partial: "certification_cases/hours_reported_table",
+              locals: {
+                ex_parte_activities: @ex_parte_activities,
+                member_activities: @member_activities,
+                hours_summary: @hours_summary,
+                target_hours: @target_hours
+              } %>
+        <% end %>
+        <% if income_has_data %>
           <%= render partial: "certification_cases/income_reported_table",
               locals: {
                 ex_parte_incomes: @income_rows,
-                member_income_activities: @member_income_activities,
+                member_activities: @member_activities,
                 income_summary: @income_summary,
                 target_income: @target_income,
-                state_name: state_name,
-                hours_has_data: hours_has_data
+                state_name: state_name
               } %>
-        </div>
-      <% else %>
-        <p><%= t(".no_hours_or_income_reported") %></p>
-      <% end %>
-      <% if Features.doc_ai_enabled? %>
-        <h3 class="margin-top-4"><%= t(".activity_line_items") %></h3>
-        <%= render partial: "activity_report_application_forms/staff_activity_report", locals: { activity_report: @activity_report } %>
-      <% end %>
+        <% end %>
+      </div>
+    <% elsif @activity_report %>
+      <p><%= t(".no_hours_or_income_reported") %></p>
     <% else %>
       <p><%= t(".no_activity_report") %></p>
+    <% end %>
+    <% if @activity_report && Features.doc_ai_enabled? %>
+      <h3 class="margin-top-4"><%= t(".activity_line_items") %></h3>
+      <%= render partial: "activity_report_application_forms/staff_activity_report", locals: { activity_report: @activity_report } %>
     <% end %>
   <% end %>
 <% end %>

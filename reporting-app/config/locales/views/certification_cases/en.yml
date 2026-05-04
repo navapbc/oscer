@@ -1,5 +1,6 @@
 en:
   certification_cases:
+    compliance_not_applicable: "—"
     case_layout:
       details: "Details"
       tasks: "Tasks"

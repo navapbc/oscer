@@ -1,7 +1,7 @@
 <% if activity_report.present? %>
   <p class="maxw-full"><%= t("certification_cases.ex_parte_data.summarized_under_activity_report") %></p>
 <% else %>
-  <% hours_has_data = ex_parte_activities.any? || member_activities.any? %>
+  <% hours_has_data = ex_parte_activities.any? || member_activities.any? { |a| !a.read_attribute(:hours).nil? } %>
   <% if hours_has_data %>
     <%= render partial: "certification_cases/hours_ex_parte_table",
         locals: {

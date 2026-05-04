@@ -1,11 +1,9 @@
 <% total_income = income_summary[:total_income].to_d %>
 <% income_needed = [ target_income.to_d - total_income, BigDecimal("0") ].max %>
-<% has_rows = ex_parte_incomes.any? || member_income_activities.any? %>
-<% hours_has_data = local_assigns.fetch(:hours_has_data, false) %>
+<% member_activities = local_assigns.fetch(:member_activities, []) %>
 
-<% if has_rows %>
-  <h3><%= t("certification_cases.income.table_title") %></h3>
-  <table class="usa-table width-full certification-case-compliance-table">
+<h3><%= t("certification_cases.income.table_title") %></h3>
+<table class="usa-table width-full certification-case-compliance-table">
     <thead>
       <tr>
         <th scope="col"><%= t("certification_cases.income.organization_name") %></th>
@@ -26,12 +24,18 @@
           <td><%= number_to_currency(row.gross_income) %></td>
         </tr>
       <% end %>
-      <% member_income_activities.each do |activity| %>
+      <% member_activities.each do |activity| %>
         <tr>
           <td><%= activity.name %></td>
           <td><%= t("certification_cases.hours_reported_table.source_self_reported") %></td>
           <td><%= activity.category.titleize %></td>
-          <td><%= number_to_currency(activity.income&.dollar_amount, precision: 0) %></td>
+          <td>
+            <% if activity.is_a?(IncomeActivity) %>
+              <%= number_to_currency(activity.income&.dollar_amount, precision: 0) %>
+            <% else %>
+              <%= t("certification_cases.compliance_not_applicable") %>
+            <% end %>
+          </td>
         </tr>
       <% end %>
     </tbody>
@@ -52,7 +56,3 @@
       <% end %>
     </tfoot>
   </table>
-<% elsif !hours_has_data %>
-  <h3><%= t("certification_cases.income.table_title") %></h3>
-  <p><%= t("certification_cases.income.no_rows_compliance") %></p>
-<% end %>

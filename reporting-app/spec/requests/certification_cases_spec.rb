@@ -168,6 +168,7 @@ RSpec.describe "/staff/certification_cases", type: :request do
         get "/staff/certification_cases/#{certification_case.id}"
         expect(response.body).to include("Hours reported")
         expect(response.body).not_to include("No income reported for this lookback.")
+        expect(response.body).not_to include("Additional income needed")
       end
     end
 
@@ -181,6 +182,31 @@ RSpec.describe "/staff/certification_cases", type: :request do
         get "/staff/certification_cases/#{certification_case.id}"
         expect(response.body).to include("Income reported")
         expect(response.body).to include("No income data from external sources for this lookback.")
+      end
+    end
+
+    context "with ex parte hours but no activity report form" do
+      let(:member_id) { certification.member_id }
+      let(:lookback_period) { certification.certification_requirements.continuous_lookback_period }
+
+      before do
+        period_start = lookback_period.start
+        period_end = lookback_period.start.end_of_month
+        create(:ex_parte_activity,
+               :employment,
+               member_id: member_id,
+               hours: 80,
+               period_start: period_start,
+               period_end: period_end)
+      end
+
+      it "shows compliance hours under Activity Report without an activity report form" do
+        get "/staff/certification_cases/#{certification_case.id}"
+        expect(response.body).to include("Activity Report")
+        expect(response.body).to include("Hours reported")
+        expect(response.body).to include("80")
+        expect(response.body).to include("Total reported")
+        expect(response.body).not_to include("Additional income needed")
       end
     end
 

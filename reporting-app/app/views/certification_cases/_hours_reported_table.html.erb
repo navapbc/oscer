@@ -1,6 +1,6 @@
 <% total_hours = hours_summary[:total_hours] %>
 <% hours_needed = [target_hours - total_hours, 0].max %>
-<% has_activities = ex_parte_activities.any? || member_activities.any? %>
+<% has_activities = ex_parte_activities.any? || member_activities.any? { |a| !a.read_attribute(:hours).nil? } %>
 <% i18n = "certification_cases.hours_reported_table" %>
 
 <% if has_activities %>
@@ -29,7 +29,13 @@
           <td><%= activity.name %></td>
           <td><%= t("#{i18n}.source_self_reported") %></td>
           <td><%= activity.category.titleize %></td>
-          <td><%= number_with_precision(activity.hours, precision: 0) %></td>
+          <td>
+            <% if activity.read_attribute(:hours).nil? %>
+              <%= t("certification_cases.compliance_not_applicable") %>
+            <% else %>
+              <%= number_with_precision(activity.hours, precision: 0) %>
+            <% end %>
+          </td>
         </tr>
       <% end %>
     </tbody>
