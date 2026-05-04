@@ -84,6 +84,13 @@ class HoursComplianceDeterminationService
       }
     end
 
+    # Check if total hours meet the compliance threshold
+    # @param total_hours [Float]
+    # @return [Boolean]
+    def compliant_for_total_hours?(total_hours)
+      total_hours.to_f >= TARGET_HOURS
+    end
+
     private
 
     # Shared logic for both initial and post-activity-report determination
@@ -111,7 +118,7 @@ class HoursComplianceDeterminationService
     end
 
     def determine_outcome(total_hours)
-      total_hours >= TARGET_HOURS ? :compliant : :not_compliant
+      compliant_for_total_hours?(total_hours) ? :compliant : :not_compliant
     end
 
     def merge_category_hours(external, member)

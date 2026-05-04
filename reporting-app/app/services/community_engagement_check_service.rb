@@ -35,7 +35,7 @@ class CommunityEngagementCheckService
     private
 
     def hours_compliant?(hours_data)
-      hours_data[:total_hours].to_f >= HoursComplianceDeterminationService::TARGET_HOURS
+      HoursComplianceDeterminationService.compliant_for_total_hours?(hours_data[:total_hours])
     end
 
     def publish_workflow_events(kase:, certification:, hours_data:, income_data:, either_track_compliant:)

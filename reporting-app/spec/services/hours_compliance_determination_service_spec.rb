@@ -277,6 +277,23 @@ RSpec.describe HoursComplianceDeterminationService do
     end
   end
 
+  describe ".compliant_for_total_hours?" do
+    let(:target_hours) { 50 }
+
+    before do
+      stub_const("HoursComplianceDeterminationService::TARGET_HOURS", target_hours)
+    end
+
+    context "when total is greater than or equal to target" do
+      it { expect(described_class).to be_compliant_for_total_hours(target_hours + 10) }
+      it { expect(described_class).to be_compliant_for_total_hours(target_hours) }
+    end
+
+    context "when total is less than target" do
+      it { expect(described_class).not_to be_compliant_for_total_hours(target_hours - 10) }
+    end
+  end
+
   describe ".summarize_hours" do
     context "when activities are blank" do
       it "returns a summary with zeroed values" do
