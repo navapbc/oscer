@@ -16,7 +16,7 @@ class Certifications::CreationService
     ActiveRecord::Base.transaction do
       # Create external hourly activities FIRST (before certification)
       create_external_hourly_activities
-      create_incomes
+      create_external_income_activities
 
       # Save certification
       unless certification.save
@@ -66,7 +66,7 @@ class Certifications::CreationService
     end
   end
 
-  def create_incomes
+  def create_external_income_activities
     return unless certification.member_data&.activities.present?
 
     income_activities = certification.member_data.activities.select { |a| a.type == "income" }
