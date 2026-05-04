@@ -201,8 +201,8 @@ RSpec.describe Certifications::CreationService, type: :service do
         }.to change(ExternalHourlyActivity, :count).from(0).to(1)
           .and change(ExternalIncomeActivity, :count).from(0).to(1)
 
-        epa = ExternalHourlyActivity.last
-        expect(epa.hours).to eq(40)
+        eha = ExternalHourlyActivity.last
+        expect(eha.hours).to eq(40)
 
         income = ExternalIncomeActivity.last
         expect(income.gross_income).to eq(580)
