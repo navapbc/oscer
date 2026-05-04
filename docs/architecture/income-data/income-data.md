@@ -228,18 +228,23 @@ end
 
 ### Determination Data Structure
 
+The **canonical contract** for income-based CE payloads (and the nested income branch inside combined ex parte CE) is **`Determinations::IncomeBasedDeterminationData`** in the reporting app: it validates aggregates from `IncomeComplianceDeterminationService` and produces the hash persisted on `Determination#determination_data`. Example serialized shape (values mirror what the value object emits; `calculated_at` is ISO 8601 at write time):
+
 ```json
 {
   "calculation_type": "income_based",
   "total_income": 620.0,
   "target_income": 580.0,
-  "income_by_source": { "income": 620.0, "activity": 0 },
+  "income_by_source": { "income": 620.0, "activity": 0.0 },
   "period_start": "2025-01-01",
   "period_end": "2025-01-31",
   "income_ids": ["uuid1"],
-  "calculation_method": "automated_income_intake"
+  "calculation_method": "automated_income_intake",
+  "calculated_at": "2025-02-15T14:30:00Z"
 }
 ```
+
+Hours-only and combined CE use **`Determinations::HoursBasedDeterminationData`** and **`Determinations::CECombinedDeterminationData`** respectively; see `Determination` model comments for legacy vs CE scope.
 
 ---
 
@@ -254,12 +259,12 @@ Mirror hours: income is saved **before** certification creation, and the busines
 3. Create certification → triggers business process.
 4. At `EX_PARTE_COMMUNITY_ENGAGEMENT_CHECK_STEP`, `CertificationBusinessProcess` invokes `CommunityEngagementCheckService.determine(kase)`.
    - Aggregates hours via `HoursComplianceDeterminationService.aggregate_hours_for_certification` and income via `IncomeComplianceDeterminationService.aggregate_income_for_certification`.
-   - `CertificationCase#record_ex_parte_ce_combined_assessment` persists **one** automated determination with `calculation_type` `ex_parte_ce_combined` (nested hours/income payloads and `satisfied_by`). Member is compliant if **either** track meets its threshold.
+   - `CertificationCase#record_ce_combined_assessment` persists **one** automated determination with `calculation_type` matching `Determination::CALCULATION_TYPE_CE_COMBINED` (`ce_combined`; nested hours/income payloads and `satisfied_by`). Member is compliant if **either** track meets its threshold. Historical rows may still use `Determination::CALCULATION_TYPE_CE_COMBINED_LEGACY` (`ex_parte_ce_combined`).
    - Publishes generic community-engagement Strata events: `DeterminedCommunityEngagementMet` (either track passes), `DeterminedCommunityEngagementInsufficient` (both fail but some ex parte hours; payload includes `hours_data` and `income_data`), `DeterminedCommunityEngagementActionRequired` (both fail and no ex parte hours). `CertificationBusinessProcess` transitions map these to `end` or `report_activities`.
    - Other flows (e.g. hours-only paths elsewhere) may still use `DeterminedHoursMet` / `DeterminedHoursInsufficient`; see `NotificationsEventListener`.
 5. For existing certifications: `CalculateComplianceJob` (or equivalent) may call `IncomeComplianceDeterminationService.calculate(certification_id)` for silent income-only recalculation (no workflow events) when new income arrives.
 
-**Testing / QE:** `spec/services/community_engagement_check_service_spec.rb` runs **real** `CommunityEngagementCheckService.determine` with factories (primary integration coverage for the combined CE step). Many specs (e.g. `certification_case_spec`, `certification_business_process_spec`) **stub** `CommunityEngagementCheckService.determine` on `CertificationCreated` so bootstrap does not persist an accidental compliant CE determination or send mail. Combined CE income uses `aggregate_income_for_certification`; **`member_reported_income_total` is stubbed to `0` until OSCER-405**, so only ex-parte-sourced income counts toward the threshold today. For ops triage, log/monitor **`DeterminedCommunityEngagementMet`**, **`DeterminedCommunityEngagementInsufficient`**, and **`DeterminedCommunityEngagementActionRequired`** alongside legacy `DeterminedHours*` where applicable.
+**Testing / QE:** `spec/services/community_engagement_check_service_spec.rb` runs **real** `CommunityEngagementCheckService.determine` with factories (primary integration coverage for the combined CE step). Contract specs lock serialized `determination_data`: `spec/models/determinations/hours_based_determination_data_spec.rb`, `income_based_determination_data_spec.rb`, `ce_combined_determination_data_spec.rb`, plus `spec/models/determination_spec.rb` (legacy `CALCULATION_TYPE_CE_COMBINED_LEGACY`). Many specs (e.g. `certification_case_spec`, `certification_business_process_spec`) **stub** `CommunityEngagementCheckService.determine` on `CertificationCreated` so bootstrap does not persist an accidental compliant CE determination or send mail. Combined CE income uses `aggregate_income_for_certification`; **`member_reported_income_total` is stubbed to `0` until OSCER-405**, so only ex-parte-sourced income counts toward the threshold today. For ops triage, log/monitor **`DeterminedCommunityEngagementMet`**, **`DeterminedCommunityEngagementInsufficient`**, and **`DeterminedCommunityEngagementActionRequired`** alongside legacy `DeterminedHours*` where applicable.
 
 ---
 
