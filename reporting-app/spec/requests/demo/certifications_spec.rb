@@ -180,13 +180,13 @@ RSpec.describe "/demo/certifications", type: :request do
       end
 
       it "creates Certification with 'Partially met income requirement'" do
-        create_attrs = valid_request_attributes.merge({ ex_parte_scenario: "Partially met income requirement" })
+        create_attrs = valid_request_attributes.merge({ external_scenario: "Partially met income requirement" })
 
         expect {
           post demo_certifications_url,
               params: { demo_certifications_create_form: create_attrs }
         }.to change(Certification, :count).by(1)
-          .and change(Income, :count).by(1)
+          .and change(ExternalIncomeActivity, :count).by(1)
 
         cert = Certification.order(created_at: :desc).last
         expect(cert.case_number).to eq(create_attrs[:case_number])
@@ -199,7 +199,7 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(cert.member_data.activities).not_to be_nil
         expect(cert.member_data.activities.sum(&:gross_income)).to eq(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY / 2.0)
 
-        activity = Income.last
+        activity = ExternalIncomeActivity.last
         expect(activity.member_id).to eq(cert.member_id)
         expect(activity.category).to eq("employment")
         expect(activity.gross_income).to eq(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY / 2.0)
@@ -210,13 +210,13 @@ RSpec.describe "/demo/certifications", type: :request do
       end
 
       it "creates Certification with 'Fully met income requirement'" do
-        create_attrs = valid_request_attributes.merge({ ex_parte_scenario: "Fully met income requirement" })
+        create_attrs = valid_request_attributes.merge({ external_scenario: "Fully met income requirement" })
 
         expect {
           post demo_certifications_url,
               params: { demo_certifications_create_form: create_attrs }
         }.to change(Certification, :count).by(1)
-          .and change(Income, :count).by(1)
+          .and change(ExternalIncomeActivity, :count).by(1)
 
         cert = Certification.order(created_at: :desc).last
         expect(cert.case_number).to eq(create_attrs[:case_number])
@@ -229,7 +229,7 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(cert.member_data.activities).not_to be_nil
         expect(cert.member_data.activities.sum(&:gross_income)).to eq(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY)
 
-        activity = Income.last
+        activity = ExternalIncomeActivity.last
         expect(activity.member_id).to eq(cert.member_id)
         expect(activity.category).to eq("employment")
         expect(activity.gross_income).to eq(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY)
