@@ -81,7 +81,7 @@ FactoryBot.define do
     trait :partially_met_income_requirement do
       with_no_exemptions
       activities {
-        num_months.times.map { |i|
+        [
           {
             "type": "income",
             "category": "employment",
@@ -92,14 +92,14 @@ FactoryBot.define do
             "employer": "Acme Corp",
             "verification_status": "verified"
           }
-        }
+        ]
       }
     end
 
     trait :fully_met_income_requirement do
       with_no_exemptions
       activities {
-        num_months.times.map { |i|
+        [
           {
             "type": "income",
             "category": "employment",
@@ -110,7 +110,7 @@ FactoryBot.define do
             "employer": "Acme Corp",
             "verification_status": "verified"
           }
-        }
+        ]
       }
     end
 
