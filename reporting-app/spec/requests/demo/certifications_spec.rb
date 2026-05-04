@@ -179,6 +179,66 @@ RSpec.describe "/demo/certifications", type: :request do
         )
       end
 
+      it "creates Certification with 'Partially met income requirement'" do
+        create_attrs = valid_request_attributes.merge({ ex_parte_scenario: "Partially met income requirement" })
+
+        expect {
+          post demo_certifications_url,
+              params: { demo_certifications_create_form: create_attrs }
+        }.to change(Certification, :count).by(1)
+          .and change(Income, :count).by(1)
+
+        cert = Certification.order(created_at: :desc).last
+        expect(cert.case_number).to eq(create_attrs[:case_number])
+        expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+        expect(cert.certification_requirements.due_date).not_to be_nil
+        expect(cert.member_name).to eq(Strata::Name.new({
+          "first": create_attrs[:member_name_first],
+          "last": create_attrs[:member_name_last]
+        }))
+        expect(cert.member_data.activities).not_to be_nil
+        expect(cert.member_data.activities.sum(&:gross_income)).to eq(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY / 2.0)
+
+        activity = Income.last
+        expect(activity.member_id).to eq(cert.member_id)
+        expect(activity.category).to eq("employment")
+        expect(activity.gross_income).to eq(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY / 2.0)
+        expect(activity.source_type).to eq("api")
+        expect(activity.period_start).to eq(cert.certification_requirements.certification_date.beginning_of_month)
+        expect(activity.period_end).to eq(cert.certification_requirements.certification_date.end_of_month)
+        expect(activity.source_id).to be_nil
+      end
+
+      it "creates Certification with 'Fully met income requirement'" do
+        create_attrs = valid_request_attributes.merge({ ex_parte_scenario: "Fully met income requirement" })
+
+        expect {
+          post demo_certifications_url,
+              params: { demo_certifications_create_form: create_attrs }
+        }.to change(Certification, :count).by(1)
+          .and change(Income, :count).by(1)
+
+        cert = Certification.order(created_at: :desc).last
+        expect(cert.case_number).to eq(create_attrs[:case_number])
+        expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+        expect(cert.certification_requirements.due_date).not_to be_nil
+        expect(cert.member_name).to eq(Strata::Name.new({
+          "first": create_attrs[:member_name_first],
+          "last": create_attrs[:member_name_last]
+        }))
+        expect(cert.member_data.activities).not_to be_nil
+        expect(cert.member_data.activities.sum(&:gross_income)).to eq(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY)
+
+        activity = Income.last
+        expect(activity.member_id).to eq(cert.member_id)
+        expect(activity.category).to eq("employment")
+        expect(activity.gross_income).to eq(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY)
+        expect(activity.source_type).to eq("api")
+        expect(activity.period_start).to eq(cert.certification_requirements.certification_date.beginning_of_month)
+        expect(activity.period_end).to eq(cert.certification_requirements.certification_date.end_of_month)
+        expect(activity.source_id).to be_nil
+      end
+
       it "creates a new Certification with 'Meets age-based exemption requirement' scenario and uses form DOB over scenario DOB" do
         create_attrs = valid_request_attributes.merge({ external_scenario: "Meets age-based exemption requirement" })
 

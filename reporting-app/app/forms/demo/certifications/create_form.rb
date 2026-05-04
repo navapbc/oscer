@@ -5,7 +5,8 @@ module Demo
     class CreateForm < BaseCreateForm
       EXTERNAL_SCENARIO_OPTIONS = [
         "No data", "Partially met work hours requirement", "Fully met work hours requirement",
-        "Meets age-based exemption requirement"
+        "Meets age-based exemption requirement", "Partially met income requirement",
+        "Fully met income requirement"
       ].freeze
 
       attribute :external_scenario, :enum, options: EXTERNAL_SCENARIO_OPTIONS
@@ -48,6 +49,18 @@ module Demo
           member_data.merge!(
             FactoryBot.build(
               :certification_member_data, :meets_age_based_exemption_requirement, cert_date: certification_date
+            ).attributes.compact
+          )
+        when "Partially met income requirement"
+          member_data.merge!(
+            FactoryBot.build(
+              :certification_member_data, :partially_met_income_requirement, cert_date: certification_date
+            ).attributes.compact
+          )
+        when "Fully met income requirement"
+          member_data.merge!(
+            FactoryBot.build(
+              :certification_member_data, :fully_met_income_requirement, cert_date: certification_date
             ).attributes.compact
           )
         end
