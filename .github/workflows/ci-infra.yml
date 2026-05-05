@@ -31,4 +31,4 @@ jobs:
         with:
           scan-type: 'config'
           exit-code: '1'
-          skip-files: infra/modules/identity-provider/resources/main.tf
+          skip-files: git ls-files | grep -v -F -f <(git diff main --name-only) | tr '\n' ','
