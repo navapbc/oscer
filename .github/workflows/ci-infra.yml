@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Set skip files
-        run: echo "SKIP_FILES=$(git ls-files | grep -v -F -f <(git diff main --name-only))" >> $GITHUB_ENV
+        run: echo "SKIP_FILES=$(git ls-files | grep -v -F -f <(git diff main --name-only infra))" >> $GITHUB_ENV
       - name: Run tfsec check
         uses: aquasecurity/trivy-action@v0.36.0
         with:
