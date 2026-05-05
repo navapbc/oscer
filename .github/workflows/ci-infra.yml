@@ -29,7 +29,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set skip files
-        run: echo "SKIP_FILES=$(git ls-files | grep -v -F -f <(git diff origin/main --name-only infra))" >> $GITHUB_ENV
+        run: echo "SKIP_FILES=$(git ls-files infra | grep -v -F -f <(git diff origin/main --name-only infra))" >> $GITHUB_ENV
       - name: Run tfsec check
         uses: aquasecurity/trivy-action@v0.36.0
         with:
