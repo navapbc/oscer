@@ -36,6 +36,7 @@ en:
     no_documents_text: "No supporting documents"
     upload_document_label: "Upload supporting document(s)"
     upload: "Upload document(s)"
+    upload_success: "Document(s) uploaded successfully."
   case_documents:
     title: "Documents"
     no_documents_text: "No documents available"

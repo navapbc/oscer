@@ -2,9 +2,10 @@
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig to read more about this file */
 
-    "baseUrl": ".",
     "target": "es2016",
     "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node"],
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,

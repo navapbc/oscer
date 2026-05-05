@@ -78,6 +78,42 @@ FactoryBot.define do
       date_of_birth { cert_date - rand(1..18).years } # random age between 1 and 18 years old (eligible for age exemption)
     end
 
+    trait :partially_met_income_requirement do
+      with_no_exemptions
+      activities {
+        [
+          {
+            "type": "income",
+            "category": "employment",
+            "gross_income": IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY / 2.0,
+            "period_start": cert_date.beginning_of_month,
+            "period_end": cert_date.end_of_month,
+            "source": "api",
+            "employer": "Acme Corp",
+            "verification_status": "verified"
+          }
+        ]
+      }
+    end
+
+    trait :fully_met_income_requirement do
+      with_no_exemptions
+      activities {
+        [
+          {
+            "type": "income",
+            "category": "employment",
+            "gross_income": IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY,
+            "period_start": cert_date.beginning_of_month,
+            "period_end": cert_date.end_of_month,
+            "source": "api",
+            "employer": "Acme Corp",
+            "verification_status": "verified"
+          }
+        ]
+      }
+    end
+
     trait :with_activities do
       activities {
         [

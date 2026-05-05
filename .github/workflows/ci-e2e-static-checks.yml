@@ -37,7 +37,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: e2e/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('e2e/package-lock.json') }}
 
       - name: Install dependencies
         if: steps.cache-node.outputs.cache-hit != 'true'

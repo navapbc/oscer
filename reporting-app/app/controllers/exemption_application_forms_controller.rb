@@ -78,10 +78,17 @@ class ExemptionApplicationFormsController < ApplicationController
   # POST /exemption_application_forms/1/upload_documents
   def upload_documents
     supporting_documents = params.require(:exemption_application_form).permit(supporting_documents: [])[:supporting_documents]
-    @exemption_application_form.supporting_documents.attach(supporting_documents)
+
+    # The partial re-submits hidden signed_id strings for each already-attached
+    # document. Filter to actual newly uploaded files so the success flash only
+    # fires when the user uploaded something new.
+    files_submitted = Array(supporting_documents).grep(ActionDispatch::Http::UploadedFile).any?
+
+    @exemption_application_form.supporting_documents.attach(supporting_documents) if supporting_documents.present?
 
     respond_to do |format|
       if @exemption_application_form.save
+        flash[:notice] = t("supporting_documents.upload_success") if files_submitted
         format.html { redirect_to documents_exemption_application_form_path(@exemption_application_form) }
         format.json { render :show, status: :ok, location: @exemption_application_form }
       else
