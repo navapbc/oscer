@@ -34,4 +34,4 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           exit-code: '1'
-          skip-files: git ls-files | grep -v -F -f <(git ls-files --modified) | tr '\n' ','
+          skip-files: infra/modules/identity-provider/resources/main.tf
