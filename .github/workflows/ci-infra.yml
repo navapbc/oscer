@@ -25,6 +25,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Set skip files
         run: echo "SKIP_FILES=$(git ls-files | grep -v -F -f <(git diff main --name-only infra))" >> $GITHUB_ENV
