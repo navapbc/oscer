@@ -33,4 +33,4 @@ jobs:
         with:
           scan-type: 'config'
           exit-code: '1'
-          skip-files: $SKIP_FILES
+          skip-files: ${{ env.SKIP_FILES }}
