@@ -28,4 +28,4 @@ jobs:
 
       - name: Run tfsec check
         run: |
-          git ls-files | grep -v -F -f <(git ls-files --modified)
+          git ls-files | grep -v -F -f <(git ls-files --modified) | tr '\n' ','
