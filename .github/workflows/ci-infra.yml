@@ -28,6 +28,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: check diff
-        run: |
-          git diff origin/main --name-only infra
+      - name: Set skip files
+        run: echo "SKIP_FILES=$(git ls-files infra | grep -v -F -f <(git diff origin/main --name-only infra) | tr '\n' ',')" >> $GITHUB_ENV
+      - name: Run tfsec check
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: 'config'
+          exit-code: '1'
+          skip-files: ${{ env.SKIP_FILES }}
