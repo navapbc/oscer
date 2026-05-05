@@ -30,8 +30,5 @@ jobs:
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: 'config'
-          hide-progress: true
-          format: 'sarif'
-          output: 'trivy-results.sarif'
           exit-code: '1'
           skip-files: infra/modules/identity-provider/resources/main.tf
