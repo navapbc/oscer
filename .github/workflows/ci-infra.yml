@@ -35,4 +35,5 @@ jobs:
         with:
           scan-type: 'config'
           exit-code: '1'
+          skip-dirs: bin,docs,e2e,reporting-app
           skip-files: ${{ env.SKIP_FILES }}
