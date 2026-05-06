@@ -46,7 +46,9 @@ class HoursComplianceDeterminationService
     end
 
     # Called by CalculateComplianceJob for async recalculation of existing certifications
-    # Records determination without triggering workflow events/notifications
+    # Records determination without triggering workflow events/notifications.
+    # When compliant, +record_hours_compliance+ closes the case (+CertificationCase#record_automated_ce_compliance+);
+    # +IncomeComplianceDeterminationService#calculate+ follows the same close-on-compliant rule for parity.
     # @param certification_id [String]
     # @return [void]
     def calculate(certification_id)

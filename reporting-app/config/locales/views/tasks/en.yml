@@ -42,7 +42,6 @@ en:
         heading: "Document: %{filename}"
         image_alt: "Preview of %{filename}"
         no_preview: "Preview not available for this file type."
-        download_link: "Download document"
         close: "Close preview"
         back_to_table: "Back to table"
         prefill_heading: "Activity details"

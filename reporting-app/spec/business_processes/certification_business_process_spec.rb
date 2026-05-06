@@ -11,9 +11,10 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     allow(Strata::EventManager).to receive(:publish).and_call_original
     allow(NotificationService).to receive(:send_email_notification)
 
-    # Stub hours compliance service for initial check
-    allow(HoursComplianceDeterminationService).to receive(:determine) do |kase|
-      Strata::EventManager.publish("DeterminedActionRequired", {
+    # Avoid persisting real ex parte CE combined determinations during factory/BP bootstrap (would
+    # close the case / mark compliant when income aggregate meets threshold).
+    allow(CommunityEngagementCheckService).to receive(:determine) do |kase|
+      Strata::EventManager.publish("DeterminedCommunityEngagementActionRequired", {
         case_id: kase.id,
         certification_id: kase.certification_id
       })

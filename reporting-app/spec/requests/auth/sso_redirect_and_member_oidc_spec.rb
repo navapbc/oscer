@@ -3,17 +3,6 @@
 require "rails_helper"
 
 RSpec.describe "OIDC redirect URI and member_oidc config (Story 1)", type: :request do
-  def with_env(overrides, &block)
-    old = {}
-    overrides.each do |key, value|
-      old[key] = ENV[key]
-      ENV[key] = value
-    end
-    block.call
-  ensure
-    old.each { |k, v| v.nil? ? ENV.delete(k) : ENV[k] = v }
-  end
-
   describe "build_oidc_redirect_uri" do
     it "returns HTTPS URI with default host and port when DISABLE_HTTPS is not set" do
       with_env("APP_HOST" => "app.example.com", "APP_PORT" => "443", "DISABLE_HTTPS" => "false") do

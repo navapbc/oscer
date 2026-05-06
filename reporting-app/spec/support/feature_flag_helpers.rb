@@ -12,12 +12,12 @@ module FeatureFlagHelpers
   Features::FEATURE_FLAGS.each do |flag_name, config|
     # Generate: with_<flag_name>_enabled { }
     define_method("with_#{flag_name}_enabled") do |&block|
-      with_env(config[:env_var], "true", &block)
+      with_temp_env_var(config[:env_var], "true", &block)
     end
 
     # Generate: with_<flag_name>_disabled { }
     define_method("with_#{flag_name}_disabled") do |&block|
-      with_env(config[:env_var], "false", &block)
+      with_temp_env_var(config[:env_var], "false", &block)
     end
   end
 
@@ -27,7 +27,7 @@ module FeatureFlagHelpers
   # @param key [String] the environment variable name
   # @param value [String] the value to set
   # @yield block to execute with the ENV variable set
-  def with_env(key, value)
+  def with_temp_env_var(key, value)
     original = ENV[key]
     ENV[key] = value
     yield

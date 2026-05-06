@@ -1,0 +1,55 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "bundler"
+    directory: "/reporting-app"
+    schedule:
+      interval: "weekly"
+    groups:
+      rails:
+        patterns:
+          - "rails"
+          - "active*"
+          - "action*"
+          - "railties"
+      rubocop:
+        patterns:
+          - "rubocop"
+          - "rubocop-*"
+      rspec:
+        patterns:
+          - "rspec"
+          - "rspec-*"
+      aws-sdk:
+        patterns:
+          - "aws-sdk-*"
+          - "aws-actionmailer-*"
+
+  - package-ecosystem: "npm"
+    directory: "/reporting-app"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "npm"
+    directory: "/e2e"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/reporting-app"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/e2e"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "terraform"
+    directory: "/infra/reporting-app/service"
+    schedule:
+      interval: "monthly"

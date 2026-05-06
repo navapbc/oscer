@@ -27,7 +27,7 @@ jobs:
       # Pass through env so shell steps are not script-injection vectors (github.head_ref in run:)
       HEAD_REF: ${{ github.head_ref }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # Use PR head SHA so fork PRs work (branch name from head_ref may not exist on upstream)
           ref: ${{ github.event.pull_request.head.sha }}

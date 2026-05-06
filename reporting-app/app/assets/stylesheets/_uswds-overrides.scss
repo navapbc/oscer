@@ -1,0 +1,164 @@
+@use "uswds-core" as *;
+
+// =========================================================
+// Base typography
+// =========================================================
+h1,
+h2,
+h3,
+h4,
+label,
+legend {
+  text-wrap: balance;
+}
+
+.usa-breadcrumb + h1 {
+  margin-top: units(3);
+}
+
+p,
+li,
+.usa-hint {
+  text-wrap: pretty;
+}
+
+// =========================================================
+// Custom utilities missing from USWDS (for now)
+// =========================================================
+
+// Gap - USWDS has grid-gap but it doesn't work with flexbox
+@for $i from 0 through 10 {
+  .gap-#{$i} {
+    gap: units($i);
+  }
+}
+
+// =========================================================
+// Developer tooling
+// =========================================================
+// This shows when an i18n key is missing a value
+.translation_missing {
+  color: red;
+  font-weight: bold;
+  border: 3px dashed red;
+}
+
+// =========================================================
+// Exemption screener overrides
+// =========================================================
+
+div.exemption-screener {
+  h1, h2,p {
+    text-wrap: auto;
+  }
+}
+
+// =========================================================
+// DocAI opt-in checkbox (non-tile variant)
+// =========================================================
+.doc-ai-skip-checkbox {
+  // Remove tile wrapper styling from the label
+  .usa-checkbox__label {
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    padding: units(1) 0 units(1) units(5);
+    box-shadow: none;
+  }
+
+  // Keep the standard checkbox square indicator
+  .usa-checkbox__label::before {
+    box-shadow: 0 0 0 2px #1b1b1b;
+    border-radius: 2px;
+    background-color: transparent;
+  }
+
+  // Ensure checked state doesn't re-apply tile background
+  .usa-checkbox__input:checked + .usa-checkbox__label {
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  // Neutralize hover/focus tile effects
+  .usa-checkbox__input:hover + .usa-checkbox__label,
+  .usa-checkbox__input:focus + .usa-checkbox__label {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+// =========================================================
+// DocAI attribution field styles
+// =========================================================
+[class*="bg-attribution-"] {
+  // Make all nested elements transparent so the parent tint shows through
+  *:not(svg):not(use) {
+    background-color: transparent !important;
+    background: transparent !important;
+  }
+
+  // Keep form inputs white for readability
+  .usa-input,
+  .usa-select {
+    background-color: white !important;
+  }
+
+  // Override disabled radio/checkbox label color to keep text readable
+  .usa-radio__input:disabled + [class*="__label"],
+  .usa-checkbox__input:disabled + [class*="__label"] {
+    color: color("ink") !important;
+  }
+}
+
+@mixin attribution-field($color) {
+  background-color: rgba($color, 0.1) !important;
+  border: 2px solid $color !important;
+
+  .usa-radio__input:checked:disabled + [class*="__label"]::before {
+    background-color: $color !important;
+    box-shadow: 0 0 0 2px $color, inset 0 0 0 2px white !important;
+  }
+}
+
+$attribution-primary: #005ea2;
+$attribution-gold: #ddaa01;
+$attribution-gold-bg: #FFF5C2;
+$attribution-green: #008817;
+$attribution-green-bg: #DDF9C7;
+
+.bg-attribution-primary { @include attribution-field($attribution-primary); }
+.bg-attribution-gold {
+  @include attribution-field($attribution-gold);
+  background-color: $attribution-gold-bg !important;
+}
+.bg-attribution-green {
+  @include attribution-field($attribution-green);
+  background-color: $attribution-green-bg !important;
+}
+
+.bg-attribution-error {
+  background-color: color("red-cool-5v") !important;
+}
+
+// =========================================================
+// Document scanning animation
+// =========================================================
+@keyframes scanning-progress {
+  0% { width: 20%; }
+  100% { width: 80%; }
+}
+
+// =========================================================
+// Anchor-as-button disabled state (OSCER-246)
+//
+// USWDS has no `usa-button--disabled` modifier for anchors —
+// their disabled story is the native `<button disabled>` attribute,
+// which doesn't apply to anchors. Use `aria-disabled="true"` +
+// this class on anchors that should look disabled; `pointer-events`
+// is belt-and-suspenders with the Stimulus click preventDefault.
+// =========================================================
+.usa-button.is-disabled-link[aria-disabled="true"] {
+  @include button-disabled;
+  pointer-events: none;
+}

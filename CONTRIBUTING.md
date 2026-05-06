@@ -127,7 +127,7 @@ If you prefer to run the application natively without Docker, follow these steps
 ### What You'll Need
 
 - **Ruby 3.4.6** (check `.ruby-version` file for exact version)
-- **PostgreSQL 14+** running locally
+- **PostgreSQL 16+** running locally
 - **Node.js 22+** and **npm** for asset compilation
 - **Git** to clone the repository
 - **Bundler** gem for Ruby dependency management
@@ -147,8 +147,8 @@ rbenv install 3.4.6
 rbenv global 3.4.6
 
 # Install PostgreSQL
-brew install postgresql@14
-brew services start postgresql@14
+brew install postgresql@16
+brew services start postgresql@16
 
 # Install Node.js
 brew install node@22

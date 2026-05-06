@@ -30,7 +30,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 5.81.0, < 6.0.0"
+      version = ">= 5.81.0, < 6.43.1"
     }
   }
 
@@ -101,7 +101,11 @@ module "service" {
     local.identity_provider_environment_variables,
     local.sso_environment_variables,
     local.notifications_environment_variables,
-    local.service_config.extra_environment_variables
+    local.service_config.extra_environment_variables,
+    # PR preview workspaces use the ALB URL for E2E (service_endpoint) while APP_HOST
+    # stays the stable dev domain for OIDC. Skip canonical host middleware so redirects
+    # match the URL Playwright uses.
+    local.is_temporary ? { SKIP_PUBLIC_REQUEST_HOST = "true" } : {}
   )
 
   secrets = concat(

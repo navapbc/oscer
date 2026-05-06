@@ -134,7 +134,7 @@ class ActivityReportApplicationFormsController < ApplicationController
       redirect_to @activity_report_application_form, notice: "Application submitted"
     else
       flash[:errors] = @activity_report_application_form.errors.full_messages
-      redirect_to edit_activity_report_application_form_url(@activity_report_application_form)
+      redirect_to edit_activity_report_application_form_path(@activity_report_application_form)
     end
   end
 

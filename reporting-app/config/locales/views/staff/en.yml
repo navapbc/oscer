@@ -8,6 +8,14 @@ en:
         my_tasks: "My tasks"
         task_type: "Task type"
         title: "Dashboard"
+        metrics: "Metrics"
+        time_to_close_hours:
+          zero: "Median time to close: no data"
+          one: "Median time to close: %{count} hour"
+          other: "Median time to close: %{count} hours"
+        time_to_close_days:
+          one: "Median time to close: %{count} day"
+          other: "Median time to close: %{count} days"
     tasks:
       index:
         confidence: "Confidence level"

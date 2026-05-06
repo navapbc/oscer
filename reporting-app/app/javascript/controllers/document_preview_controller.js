@@ -4,7 +4,7 @@ import * as pdfjsLib from "pdfjs-dist"
 const PDF_RENDER_SCALE = 1.5
 
 export default class extends Controller {
-  static targets = ["table", "previewArea", "prefillForm", "pdfContainer", "image", "fallback", "fallbackLink", "heading"]
+  static targets = ["table", "previewArea", "prefillForm", "pdfContainer", "image", "fallback", "heading"]
   static values = { workerUrl: String }
 
   #renderGeneration = 0
@@ -61,7 +61,6 @@ export default class extends Controller {
       this.imageTarget.alt = this.#interpolate(this.imageTarget.dataset.altTemplate, filename)
       this.imageTarget.classList.remove("display-none")
     } else {
-      this.fallbackLinkTarget.href = url
       this.fallbackTarget.classList.remove("display-none")
     }
   }
@@ -95,7 +94,6 @@ export default class extends Controller {
     } catch {
       if (generation !== this.#renderGeneration) return
       container.classList.add("display-none")
-      this.fallbackLinkTarget.href = url
       this.fallbackTarget.classList.remove("display-none")
     }
   }

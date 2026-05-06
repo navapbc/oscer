@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 The Rails application lives in `reporting-app/`. **All `make` commands below must be run from that subdirectory**, not the repo root.
 
 ```
-reporting-app/    # Rails 7.2 app (Ruby 3.4.7)
+reporting-app/    # Rails 8.0 app (Ruby 3.4.9)
 infra/            # Terraform infrastructure
 e2e/              # Playwright end-to-end tests (TypeScript)
 docs/             # Architecture & feature docs

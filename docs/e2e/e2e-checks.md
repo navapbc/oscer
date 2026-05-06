@@ -40,6 +40,7 @@ make e2e-test APP_NAME=app BASE_URL=http://host.docker.internal:3000
 
 >*Note that `BASE_URL` cannot be `localhost`
 
+**Reporting-app (`APP_HOST` vs Playwright origin):** If the Rails process has `APP_HOST` set (for example for OIDC redirect URIs) but `BASE_URL` uses another host such as `host.docker.internal`, canonical host middleware would otherwise make redirects use `APP_HOST` and leave the test origin. Start Rails with **`SKIP_PUBLIC_REQUEST_HOST=true`** on that process only so redirects stay on the URL Playwright uses. Omit this in real deployments where you depend on canonical host rewriting.
 
 ### Run tests natively
 
@@ -103,6 +104,8 @@ make e2e-clean-report
 ### PR preview environments
 
 The E2E tests are triggered in PR preview environments on each PR update. For more information on how PR environments work, please refer to [PR Environments Documentation](/docs/infra/pull-request-environments.md).
+
+For **reporting-app**, preview ECS tasks set **`SKIP_PUBLIC_REQUEST_HOST=true`** in Terraform (`infra/reporting-app/service/main.tf`) because Playwright uses the load-balancer `service_endpoint` while **`APP_HOST`** stays the environment’s configured domain for OIDC—so you do not set this in the GitHub Actions workflow itself.
 
 ### Workflows
 

@@ -40,14 +40,14 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.version || github.ref }}
 
       - name: Set up Terraform
         uses: ./.github/actions/setup-terraform
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: "infra/test/go.mod"
 

@@ -84,11 +84,11 @@ RSpec.describe "/staff/tasks", type: :request do
           )
         end
 
-        it "displays document links" do
+        it "displays document filenames" do
           get "/staff/tasks/#{activity_report_task.id}"
 
           expect(response.body).to include("test_document_1.pdf")
-          expect(response.body).to include("usa-link")
+          expect(response.body).not_to include("disposition=attachment")
         end
 
         it "renders the document preview panel with Stimulus targets" do
@@ -135,12 +135,22 @@ RSpec.describe "/staff/tasks", type: :request do
           end
         end
 
-        it "renders document links without preview panel when doc_ai is disabled" do
+        it "renders preview icon when doc_ai is enabled" do
+          with_doc_ai_enabled do
+            get "/staff/tasks/#{activity_report_task.id}"
+
+            expect(response.body).to include('data-action="document-preview#select')
+            expect(response.body).to include('aria-label="Preview test_document_1.pdf')
+            expect(response.body).to include("visibility")
+          end
+        end
+
+        it "renders document filenames without preview panel when doc_ai is disabled" do
           with_doc_ai_disabled do
             get "/staff/tasks/#{activity_report_task.id}"
 
             expect(response.body).to include("test_document_1.pdf")
-            expect(response.body).to include("usa-link")
+            expect(response.body).not_to include("disposition=attachment")
             expect(response.body).not_to include('data-controller="document-preview"')
           end
         end
@@ -242,6 +252,81 @@ RSpec.describe "/staff/tasks", type: :request do
         get "/staff/tasks/#{exemption_task.id}"
         expect(response).to be_successful
         expect(response.body).to include(exemption_task.id)
+      end
+    end
+
+    context "without information requests" do
+      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case) }
+      let(:activity_report_application_form) do
+        create(:activity_report_application_form, certification_case_id: certification_case.id)
+      end
+
+      before do
+        activity_report_application_form
+        get task_path(activity_report_task)
+      end
+
+      it "does not show the information requests table header" do
+        expect(response.body)
+          .not_to include(I18n.t("certification_cases.show.information_requests"))
+      end
+    end
+
+    context "with information requests" do
+      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case) }
+      let(:activity_report_application_form) do
+        create(:activity_report_application_form, certification_case_id: certification_case.id)
+      end
+      let(:staff_comment) { "Need more documentation" }
+      let(:documents_path) { "spec/fixtures/files/" }
+      let(:document_1_filename) { "test_document_1.pdf" }
+      let(:document_2_filename) { "test_document_3.docx" }
+      let(:information_request) do
+        create(
+          :activity_report_information_request,
+          application_form_id: activity_report_application_form.id,
+          application_form_type: ActivityReportApplicationForm.to_s,
+          staff_comment: staff_comment,
+          due_date: 7.days.from_now
+        ).tap do |ir|
+          ir.supporting_documents.attach(
+            fixture_file_upload("#{documents_path}/#{document_1_filename}", "application/pdf")
+          )
+          ir.supporting_documents.attach(
+            fixture_file_upload(
+              "#{documents_path}/#{document_2_filename}",
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
+          )
+        end
+      end
+
+      before do
+        information_request
+        get task_path(activity_report_task)
+      end
+
+      it "renders a successful response" do
+        expect(response).to have_http_status(:success)
+      end
+
+      it "shows the information requests table header" do
+        expect(response.body).to include(I18n.t("certification_cases.show.information_requests"))
+      end
+
+      it "shows the staff comment" do
+        expect(response.body).to include(staff_comment)
+      end
+
+      it "shows the due date" do
+        # date format is hardcoded in the template
+        expect(response.body).to include(information_request.due_date.strftime("%m/%d/%Y"))
+      end
+
+      it "displays supporting document names without links" do
+        expect(response.body).to include(document_1_filename)
+        expect(response.body).to include(document_2_filename)
+        expect(response.body).not_to include("disposition=attachment")
       end
     end
   end

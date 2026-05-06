@@ -28,7 +28,7 @@ if ! command -v pg_isready &>/dev/null; then
   echo ""
   echo "Please install postgresql:"
   echo "   MacOS: 'brew install postgresql'"
-  echo "   Linux: 'sudo apt install postgresql-client-14 postgresql-client-common'"
+  echo "   Linux: 'sudo apt install postgresql-client-16 postgresql-client-common'"
   echo ""
   echo "Sleeping for 5 seconds instead"
   sleep 5

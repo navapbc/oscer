@@ -25,19 +25,19 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: lts/*
 
       - name: Cache Node.js dependencies
         id: cache-node
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: e2e/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('e2e/package-lock.json') }}
 
       - name: Install dependencies
         if: steps.cache-node.outputs.cache-hit != 'true'

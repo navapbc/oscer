@@ -2,6 +2,7 @@
 
 require_relative "boot"
 require_relative "../lib/middleware/api_error_response.rb"
+require_relative "../lib/middleware/public_request_host.rb"
 
 require "rails/all"
 
@@ -22,7 +23,7 @@ module TemplateApplicationRails
     config.i18n.load_path += Dir[Rails.root.join("config", "locales", "**", "*.{rb,yml}")]
 
     # Initialize configuration defaults for originally generated Rails version.
-    config.load_defaults 7.2
+    config.load_defaults 8.0
 
     # Configured here (not in initializers/) so the acronym is registered before initializers run,
     # allowing Zeitwerk to autoload CECompliance without an explicit require.
@@ -48,6 +49,9 @@ module TemplateApplicationRails
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks generators])
+
+    # Canonical public host for redirects when the reverse proxy sends an internal Host.
+    config.middleware.unshift Middleware::PublicRequestHost
 
     # Prevent the form_with helper from wrapping input and labels with separate
     # div elements when an error is present, since this breaks USWDS styling
