@@ -164,9 +164,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_01_192515) do
     t.string "source_id", comment: "Source record ID (e.g., batch upload ID)"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["member_id"], name: "{to: :index_external_hourly_activities_on_member_id}", comment: "Lookup entries by member"
-    t.index ["period_start", "period_end"], name: "{to: :index_external_hourly_activities_on_period}", comment: "Date range queries"
-    t.index ["source_type", "source_id"], name: "{to: :index_external_hourly_activities_on_source}", comment: "Source tracking (batch upload lookups)"
+    t.index ["member_id"], name: "index_external_hourly_activities_on_member_id", comment: "Lookup entries by member"
+    t.index ["period_start", "period_end"], name: "index_external_hourly_activities_on_period", comment: "Date range queries"
+    t.index ["source_type", "source_id"], name: "index_external_hourly_activities_on_source", comment: "Source tracking (batch upload lookups)"
   end
 
   create_table "good_job_batches", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
