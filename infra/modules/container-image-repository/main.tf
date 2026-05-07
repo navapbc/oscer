@@ -81,6 +81,8 @@ data "aws_iam_policy_document" "image_access" {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
 data "aws_iam_policy_document" "kms_key_policy" {
   # checkov:skip=CKV_AWS_109:Root account requires full KMS permissions to enable IAM-based access control
   # checkov:skip=CKV_AWS_111:Root account requires full KMS permissions to enable IAM-based access control
