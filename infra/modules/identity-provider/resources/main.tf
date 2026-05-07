@@ -4,6 +4,14 @@
 ## - Configures MFA
 ############################################################################################
 
+resource "aws_secretsmanager_secret" "example" {
+  name = "example-password"
+}
+
+resource "aws_secretsmanager_secret_version" "example" {
+  secret_id     = aws_secretsmanager_secret.example.id
+  secret_string = "your-password-here"
+}
 resource "aws_cognito_user_pool" "main" {
   name = var.name
 
