@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Called by CertificationBusinessProcess at the ex parte community engagement step.
+# Called by CertificationBusinessProcess at the external community engagement step.
 # Aggregates hours and income, records a combined determination on the case, and publishes
 # generic community-engagement Strata events (+DeterminedCommunityEngagementMet+ / +Insufficient+ / +ActionRequired+;
 # see NotificationsEventListener).
@@ -15,7 +15,7 @@ class CommunityEngagementCheckService
       hours_ok = hours_compliant?(hours_data)
       income_ok = IncomeComplianceDeterminationService.compliant_for_total_income?(income_data[:total_income])
 
-      kase.record_ex_parte_ce_combined_assessment(
+      kase.record_external_ce_combined_assessment(
         certification: certification,
         hours_data: hours_data,
         income_data: income_data,
@@ -35,7 +35,7 @@ class CommunityEngagementCheckService
     private
 
     def hours_compliant?(hours_data)
-      hours_data[:total_hours].to_f >= HoursComplianceDeterminationService::TARGET_HOURS
+      HoursComplianceDeterminationService.compliant_for_total_hours?(hours_data[:total_hours])
     end
 
     def publish_workflow_events(kase:, certification:, hours_data:, income_data:, either_track_compliant:)
@@ -46,7 +46,7 @@ class CommunityEngagementCheckService
 
       if either_track_compliant
         Strata::EventManager.publish("DeterminedCommunityEngagementMet", payload_base)
-      elsif hours_data.dig(:hours_by_source, :ex_parte).to_f.positive?
+      elsif hours_data.dig(:hours_by_source, :external).to_f.positive?
         Strata::EventManager.publish("DeterminedCommunityEngagementInsufficient", payload_base.merge(
           hours_data: hours_data,
           income_data: income_data

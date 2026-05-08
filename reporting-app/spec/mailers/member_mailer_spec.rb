@@ -139,8 +139,9 @@ RSpec.describe MemberMailer, type: :mailer do
     let(:income_data) do
       {
         total_income: BigDecimal("400"),
-        income_by_source: { income: BigDecimal("400"), activity: BigDecimal("0") },
-        income_ids: [],
+        income_by_source: { external: BigDecimal("400"), activity: BigDecimal("0") },
+        external_income_activity_ids: [],
+        activity_ids: [],
         period_start: Date.current,
         period_end: Date.current
       }
@@ -149,8 +150,8 @@ RSpec.describe MemberMailer, type: :mailer do
       {
         total_hours: 50.0,
         hours_by_category: {},
-        hours_by_source: { ex_parte: 50, activity: 0 },
-        ex_parte_activity_ids: [],
+        hours_by_source: { external: 50, activity: 0 },
+        external_hourly_activity_ids: [],
         activity_ids: []
       }
     end
@@ -218,8 +219,8 @@ RSpec.describe MemberMailer, type: :mailer do
         {
           total_hours: 50.6,
           hours_by_category: {},
-          hours_by_source: { ex_parte: 50, activity: 0 },
-          ex_parte_activity_ids: [],
+          hours_by_source: { external: 50, activity: 0 },
+          external_hourly_activity_ids: [],
           activity_ids: []
         }
       end

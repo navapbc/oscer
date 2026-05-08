@@ -53,10 +53,11 @@ endpoints:
    member eligibility for CE exemptions. Returns exemption status and reason
 codes immediately. **No database writes.**
 
-2. **Compliance Check API** - Synchronous endpoint that evaluates member's ex
-   parte activity data against CE requirements. Returns compliance status and,
-if action is needed, creates a Certification/Case and returns a redirect URL
-for in-app reporting. **Database writes only when `action_required: true`.**
+2. **Compliance Check API** - Synchronous endpoint that evaluates member's
+   external activity data against CE requirements. Returns compliance status
+   and, if action is needed, creates a Certification/Case and returns a
+   redirect URL for in-app reporting. **Database writes only when
+   `action_required: true`.**
 
 3. **In-App Session Management** - Token-based redirect mechanism that allows
    members to seamlessly transition from state application to OSCER's member
@@ -253,7 +254,7 @@ include authentication credentials in API requests.
 
 **Endpoint:** `POST /api/compliance-check`
 
-**Purpose:** Evaluate if member's ex parte activities meet CE requirements.
+**Purpose:** Evaluate if member's external activities meet CE requirements.
 Returns compliance status and redirect URL if action needed.
 
 **Implementation:** Calls `HoursComplianceEvaluationService.evaluate()` which uses the `HoursCalculator` for stateless hours aggregation.
@@ -262,7 +263,7 @@ Returns compliance status and redirect URL if action needed.
 - **Stateless when compliant/exempt** - No database writes, pure calculation
 - **Creates records when action required** - When `action_required: true`, creates:
   1. **Certification** - Contains member demographic data (first_name, last_name, date_of_birth, state_member_id, email, phone) and certification requirements
-  2. **ExParteActivity** records - One record per activity in the `activities` array, linked via `member_id` (consistent with existing batch flow)
+  2. **ExternalHourlyActivity** records - One record per activity in the `activities` array, linked via `member_id` (consistent with existing batch flow)
   3. **CertificationOrigin** - Marks source as API with `in_app_flow: true` to suppress notifications
   4. **InAppSession** - Links to Certification for redirect flow and status tracking
   5. **CertificationCase** - Created automatically when `CertificationCreated` event triggers the business process
@@ -310,7 +311,7 @@ Returns compliance status and redirect URL if action needed.
     "employment": 85
   },
   "hours_by_source": {
-    "ex_parte": 85
+    "external": 85
   },
   "action_required": false,
   "evaluated_at": "2026-01-16T10:30:00Z"
@@ -328,7 +329,7 @@ Returns compliance status and redirect URL if action needed.
     "employment": 60
   },
   "hours_by_source": {
-    "ex_parte": 60
+    "external": 60
   },
   "action_required": true,
   "redirect_url": "https://oscer.example.com/in-app/tk_a1b2c3d4e5f6",
@@ -661,7 +662,7 @@ The in-app flow APIs reuse existing business logic to ensure consistency between
 
 ### Exemption Evaluation Integration
 
-**Existing Service:** `ExemptionDeterminationService` (called at `EX_PARTE_EXEMPTION_CHECK_STEP`)
+**Existing Service:** `ExemptionDeterminationService` (called at `EXTERNAL_EXEMPTION_CHECK_STEP`)
 - Orchestrates evaluation + saves determination + publishes events
 
 **New Service:** `ExemptionEvaluationService`
@@ -1052,7 +1053,7 @@ sequenceDiagram
     S->>M: Continue (no CE required)
 ```
 
-### Happy Path: Member Compliant via Ex Parte
+### Happy Path: Member Compliant via External Sources
 
 ```mermaid
 sequenceDiagram
@@ -1403,7 +1404,7 @@ components:
           type: string
         activities:
           type: array
-          description: Ex parte activities to be persisted as ExParteActivity records
+          description: External activities to be persisted as ExternalHourlyActivity records
           items:
             type: object
             required: [type, category, hours, period_start, period_end]

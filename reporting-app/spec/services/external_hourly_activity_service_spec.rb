@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe ExParteActivityService do
+RSpec.describe ExternalHourlyActivityService do
   describe ".create_entry" do
     let(:valid_params) do
       {
@@ -11,15 +11,15 @@ RSpec.describe ExParteActivityService do
         hours: 40.0,
         period_start: Date.current.beginning_of_month,
         period_end: Date.current.end_of_month,
-        source_type: ExParteActivity::SOURCE_TYPES[:api]
+        source_type: ExternalHourlyActivity::SOURCE_TYPES[:api]
       }
     end
 
     context "with valid data" do
-      it "creates an ExParteActivity" do
+      it "creates an ExternalHourlyActivity" do
         result = described_class.create_entry(**valid_params)
 
-        expect(result).to be_a(ExParteActivity)
+        expect(result).to be_a(ExternalHourlyActivity)
         expect(result).to be_persisted
         expect(result.member_id).to eq("123456789")
         expect(result.category).to eq("employment")
@@ -41,7 +41,7 @@ RSpec.describe ExParteActivityService do
 
     context "with duplicate entry" do
       before do
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                member_id: valid_params[:member_id],
                category: valid_params[:category],
                hours: valid_params[:hours],
@@ -60,7 +60,7 @@ RSpec.describe ExParteActivityService do
       it "does not create a new entry" do
         expect {
           described_class.create_entry(**valid_params)
-        }.not_to change(ExParteActivity, :count)
+        }.not_to change(ExternalHourlyActivity, :count)
       end
     end
 
@@ -110,11 +110,11 @@ RSpec.describe ExParteActivityService do
       it "creates entry with batch source_type and source_id" do
         result = described_class.create_entry(
           **valid_params,
-          source_type: ExParteActivity::SOURCE_TYPES[:batch],
+          source_type: ExternalHourlyActivity::SOURCE_TYPES[:batch],
           source_id: "upload-456"
         )
 
-        expect(result).to be_a(ExParteActivity)
+        expect(result).to be_a(ExternalHourlyActivity)
         expect(result.source_type).to eq("batch_upload")
         expect(result.source_id).to eq("upload-456")
       end
@@ -122,7 +122,7 @@ RSpec.describe ExParteActivityService do
   end
 
   describe ".duplicate_entry?" do
-    let(:existing_entry) { create(:ex_parte_activity, :employment) }
+    let(:existing_entry) { create(:external_hourly_activity, :employment) }
 
     context "with exact match" do
       it "returns true" do

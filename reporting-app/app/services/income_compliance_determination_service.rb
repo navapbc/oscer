@@ -6,13 +6,15 @@
 # Silent +#calculate+ matches +HoursComplianceDeterminationService#calculate+: no Strata workflow events,
 # and compliant outcomes close the case (see +CertificationCase#record_income_compliance+ and its
 # +close_on_compliant+ keyword for a future record-only mode).
-# Combined ex parte CE assessment and Strata workflow events live in +CommunityEngagementCheckService+.
+# Combined external CE assessment and Strata workflow events live in +CommunityEngagementCheckService+.
 # Single source for TARGET_INCOME_MONTHLY (CE compliance UI and statistics; parity with
 # HoursComplianceDeterminationService::TARGET_HOURS) via Rails.application.config.ce_compliance.
 class IncomeComplianceDeterminationService
   TARGET_INCOME_MONTHLY = Rails.application.config.ce_compliance[:income_threshold_monthly]
 
   class << self
+    include ActivityAggregator
+
     # Shared threshold check for combined CE (+CommunityEngagementCheckService+) and +#calculate+.
     # @param total_income [Numeric]
     # @return [Boolean]
@@ -20,9 +22,10 @@ class IncomeComplianceDeterminationService
       total_income >= TARGET_INCOME_MONTHLY
     end
 
-    # Silent recalculation (e.g. after +IncomeService+ saves a row for an open case). Same contract as
-    # +HoursComplianceDeterminationService#calculate+: no +Strata::EventManager.publish+, and compliant
-    # outcomes close the case via +record_income_compliance+ (default +close_on_compliant: true+).
+    # Silent recalculation (e.g. after +ExternalIncomeActivityService+ saves a row for an open
+    # case). Same contract as +HoursComplianceDeterminationService#calculate+: no
+    # +Strata::EventManager.publish+, and compliant outcomes close the case via
+    # +record_income_compliance+ (default +close_on_compliant: true+).
     # @param certification_id [String]
     # @return [void]
     def calculate(certification_id)
@@ -35,26 +38,28 @@ class IncomeComplianceDeterminationService
       kase.record_income_compliance(outcome, income_data)
     end
 
-    # Same lookback and query shape as ActivityAggregator#fetch_ex_parte_activities /
-    # Income.for_member(...).within_period(lookback) as used for ex parte hours parity.
+    # Same lookback and query shape as ActivityAggregator#fetch_external_hourly_activities /
+    # ExternalIncomeActivity.for_member(...).within_period(lookback) as used for external
+    # hours parity.
     # @param certification [Certification]
     # @return [Hash]
     def aggregate_income_for_certification(certification)
-      lookback = certification.certification_requirements.continuous_lookback_period
-      rows = Income.for_member(certification.member_id).within_period(lookback)
+      lookback_period = certification.certification_requirements.continuous_lookback_period
+      external_income_activities = fetch_external_income_activities(certification, lookback_period)
 
-      ex_total = BigDecimal(rows.sum(:gross_income).to_s)
-      member_total = member_reported_income_total(certification)
+      external_income = summarize_income(external_income_activities)
+      member_income = member_reported_income(certification)
 
       {
-        total_income: ex_total + member_total,
+        total_income: external_income[:total] + member_income[:total],
         income_by_source: {
-          income: ex_total,
-          activity: member_total
+          external: external_income[:total],
+          activity: member_income[:total]
         },
-        income_ids: rows.pluck(:id),
-        period_start: lookback&.start,
-        period_end: lookback&.end
+        external_income_activity_ids: external_income[:ids],
+        activity_ids: member_income[:ids],
+        period_start: lookback_period&.start,
+        period_end: lookback_period&.end
       }
     end
 
@@ -67,9 +72,12 @@ class IncomeComplianceDeterminationService
     # Approved member-reported income (e.g. from activity report) — stub until modeled.
     # @param _certification [Certification]
     # @return [BigDecimal]
-    def member_reported_income_total(_certification)
+    def member_reported_income(_certification)
       # TODO(OSCER-405): Sum approved member income activities when that model/workflow exists.
-      BigDecimal("0")
+      {
+        total: BigDecimal("0"),
+        ids: []
+      }
     end
   end
 end
