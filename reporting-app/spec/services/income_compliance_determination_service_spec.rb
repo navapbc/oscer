@@ -12,13 +12,14 @@ RSpec.describe IncomeComplianceDeterminationService do
     expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedCommunityEngagementActionRequired", anything)
   end
 
-  # Income rows aligned with the certification's continuous lookback (parity with hours ex parte helper).
+  # ExternalIncomeActivity rows aligned with the certification's continuous
+  # lookback (parity with external hours helper).
   def create_income_for(certification, gross_income:, **attrs)
     lookback = certification.certification_requirements.continuous_lookback_period
     period_start = lookback.start.to_date
     period_end = lookback.start.to_date.end_of_month
 
-    create(:income, member_id: certification.member_id,
+    create(:external_income_activity, member_id: certification.member_id,
            period_start: period_start, period_end: period_end, gross_income: gross_income, **attrs)
   end
 
@@ -102,7 +103,7 @@ RSpec.describe IncomeComplianceDeterminationService do
 
     let(:certification) { create(:certification) }
 
-    context "with multiple Income rows in lookback" do
+    context "with multiple ExternalIncomeActivity rows in lookback" do
       before do
         create_income_for(certification, gross_income: 300.0, category: "employment")
         create_income_for(certification, gross_income: 280.25, category: "education")
@@ -115,11 +116,18 @@ RSpec.describe IncomeComplianceDeterminationService do
         expect(determination.determination_data["total_income"]).to eq(580.25)
       end
 
-      it "includes income_ids" do
+      it "includes external_income_activity_ids" do
         described_class.calculate(certification.id)
 
         determination = Determination.where(subject_id: certification.id).last
-        expect(determination.determination_data["income_ids"].length).to eq(2)
+        expect(determination.determination_data["external_income_activity_ids"].length).to eq(2)
+      end
+
+      it "includes activity_ids (empty until member-reported income is implemented)" do
+        described_class.calculate(certification.id)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.determination_data["activity_ids"]).to eq([])
       end
     end
 
@@ -127,7 +135,7 @@ RSpec.describe IncomeComplianceDeterminationService do
       before do
         create_income_for(certification, gross_income: 300)
 
-        create(:income,
+        create(:external_income_activity,
                member_id: certification.member_id,
                gross_income: 10_000,
                period_start: 2.years.ago.to_date,
@@ -157,7 +165,7 @@ RSpec.describe IncomeComplianceDeterminationService do
 
     let(:certification) { create(:certification) }
 
-    it "includes member IncomeActivity amounts in totals with external Income rows" do
+    it "includes member IncomeActivity amounts in totals with external income rows" do
       kase = create(:certification_case, certification: certification)
       form = create(:activity_report_application_form, certification_case_id: kase.id)
       lookback = certification.certification_requirements.continuous_lookback_period
@@ -172,12 +180,31 @@ RSpec.describe IncomeComplianceDeterminationService do
       )
       create_income_for(certification, gross_income: 100)
 
-      agg = described_class.aggregate_income_for_certification(certification)
+      agg = described_class.aggregate_income_for_certification(certification, certification_case: kase)
 
       expect(agg[:income_by_source][:activity]).to eq(BigDecimal("50"))
-      expect(agg[:income_by_source][:income]).to eq(BigDecimal("100"))
+      expect(agg[:income_by_source][:external]).to eq(BigDecimal("100"))
       expect(agg[:total_income]).to eq(BigDecimal("150"))
-      expect_no_ce_workflow_events_published
+      expect(agg[:activity_ids].length).to eq(1)
+      expect(agg[:external_income_activity_ids].length).to eq(1)
+    end
+
+    it "returns expected aggregate structure" do
+      create_income_for(certification, gross_income: 100)
+      agg = described_class.aggregate_income_for_certification(certification)
+
+      expect(agg).to have_key(:total_income)
+      expect(agg).to have_key(:income_by_source)
+      expect(agg).to have_key(:external_income_activity_ids)
+      expect(agg).to have_key(:activity_ids)
+      expect(agg).to have_key(:period_start)
+      expect(agg).to have_key(:period_end)
+
+      expect(agg[:income_by_source]).to have_key(:external)
+      expect(agg[:income_by_source]).to have_key(:activity)
+
+      expect(agg[:external_income_activity_ids].length).to eq(1)
+      expect(agg[:activity_ids].length).to eq(0)
     end
   end
 end

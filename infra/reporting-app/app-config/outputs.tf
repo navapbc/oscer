@@ -26,12 +26,20 @@ output "has_incident_management_service" {
   value = local.has_incident_management_service
 }
 
+output "enable_document_data_extraction" {
+  value = local.enable_document_data_extraction
+}
+
 output "enable_identity_provider" {
   value = local.enable_identity_provider
 }
 
 output "enable_notifications" {
   value = local.enable_notifications
+}
+
+output "enable_sms_notifications" {
+  value = local.enable_sms_notifications
 }
 
 output "enable_waf" {

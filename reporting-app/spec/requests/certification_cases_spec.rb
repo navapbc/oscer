@@ -50,19 +50,19 @@ RSpec.describe "/staff/certification_cases", type: :request do
         period_start = lookback_period.start
         period_end = lookback_period.start.end_of_month
 
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                member_id: member_id,
                category: "employment",
                hours: 20,
                period_start: period_start,
                period_end: period_end)
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                member_id: member_id,
                category: "community_service",
                hours: 15,
                period_start: period_start,
                period_end: period_end)
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                member_id: member_id,
                category: "community_service",
                hours: 15,
@@ -80,9 +80,9 @@ RSpec.describe "/staff/certification_cases", type: :request do
         )
       end
 
-      it "summarizes ex parte data under Activity Report when a report exists" do
+      it "shows External Data and summarizes under Activity Report when a report exists" do
         get "/staff/certification_cases/#{certification_case.id}"
-        expect(response.body).to include("Ex Parte Data")
+        expect(response.body).to include("External Data")
         expect(response.body).to include("summarized under Activity Report below")
       end
 
@@ -94,7 +94,7 @@ RSpec.describe "/staff/certification_cases", type: :request do
         expect(response.body).to include("Activity type")
       end
 
-      it "displays ex parte activities" do
+      it "displays external hourly activities" do
         get "/staff/certification_cases/#{certification_case.id}"
         expect(response.body).to include("From the State")
         expect(response.body).to include("Employment")
@@ -185,14 +185,14 @@ RSpec.describe "/staff/certification_cases", type: :request do
       end
     end
 
-    context "with ex parte hours but no activity report form" do
+    context "with external hourly activities but no activity report form" do
       let(:member_id) { certification.member_id }
       let(:lookback_period) { certification.certification_requirements.continuous_lookback_period }
 
       before do
         period_start = lookback_period.start
         period_end = lookback_period.start.end_of_month
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                :employment,
                member_id: member_id,
                hours: 80,
@@ -230,12 +230,12 @@ RSpec.describe "/staff/certification_cases", type: :request do
         period_start = lookback_period.start.to_date
         period_end = lookback_period.start.to_date.end_of_month
 
-        create(:income, :employment,
+        create(:external_income_activity, :employment,
                member_id: member_id,
                gross_income: 1_234.56,
                period_start: period_start,
                period_end: period_end,
-               source_type: Income::SOURCE_TYPES[:api],
+               source_type: ExternalIncomeActivity::SOURCE_TYPES[:api],
                metadata: { "employer" => "Acme Corp" })
       end
 

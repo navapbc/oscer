@@ -1,6 +1,8 @@
 @forward "uswds-theme";
 @forward "uswds";
 @forward "sso";
+@forward "uswds-overrides";
+@forward "overrides";
 
 @use "uswds-core" as *;
 
@@ -149,7 +151,7 @@ table.usa-table.certification-case-compliance-table {
   }
 }
 
-// Ex parte hours summary (borderless): align numeric column; optional shortfall
+// External hourly summary (borderless): align numeric column; optional shortfall
 // row is always the third footer row when present.
 table.certification-case-hours-table-standard {
   thead th:last-child,

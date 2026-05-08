@@ -1,6 +1,5 @@
 # Changes here will be overwritten by Copier
-_commit: v1.0.0
+_commit: v1.0.0-3-gc7f7e95
 _src_path: https://github.com/navapbc/template-application-rails
 app_local_port: 3000
 app_name: reporting-app
-postgres_version: '16'

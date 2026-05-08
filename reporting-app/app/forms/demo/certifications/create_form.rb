@@ -3,12 +3,13 @@
 module Demo
   module Certifications
     class CreateForm < BaseCreateForm
-      EX_PARTE_SCENARIO_OPTIONS = [
+      EXTERNAL_SCENARIO_OPTIONS = [
         "No data", "Partially met work hours requirement", "Fully met work hours requirement",
-        "Meets age-based exemption requirement"
+        "Meets age-based exemption requirement", "Partially met income requirement",
+        "Fully met income requirement"
       ].freeze
 
-      attribute :ex_parte_scenario, :enum, options: EX_PARTE_SCENARIO_OPTIONS
+      attribute :external_scenario, :enum, options: EXTERNAL_SCENARIO_OPTIONS
 
       def self.new_for_certification_type(certification_type)
         certification_requirement_params = ::Certifications::RequirementTypeParams.cert_type_params_for(certification_type) || {}
@@ -32,7 +33,7 @@ module Demo
 
         member_data = {}
 
-        case ex_parte_scenario
+        case external_scenario
         when "Partially met work hours requirement"
           member_data.merge!(
             FactoryBot.build(
@@ -48,6 +49,18 @@ module Demo
           member_data.merge!(
             FactoryBot.build(
               :certification_member_data, :meets_age_based_exemption_requirement, cert_date: certification_date
+            ).attributes.compact
+          )
+        when "Partially met income requirement"
+          member_data.merge!(
+            FactoryBot.build(
+              :certification_member_data, :partially_met_income_requirement, cert_date: certification_date
+            ).attributes.compact
+          )
+        when "Fully met income requirement"
+          member_data.merge!(
+            FactoryBot.build(
+              :certification_member_data, :fully_met_income_requirement, cert_date: certification_date
             ).attributes.compact
           )
         end

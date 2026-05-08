@@ -1,6 +1,7 @@
 <% total_income = income_summary[:total_income].to_d %>
 <% income_needed = [ target_income.to_d - total_income, BigDecimal("0") ].max %>
 <% member_activities = local_assigns.fetch(:member_activities, []) %>
+<% external_income_activities = local_assigns.fetch(:external_income_activities, []) %>
 
 <h3><%= t("certification_cases.income.table_title") %></h3>
 <table class="usa-table width-full certification-case-compliance-table">
@@ -13,13 +14,13 @@
       </tr>
     </thead>
     <tbody>
-      <% ex_parte_incomes.each do |row| %>
+      <% external_income_activities.each do |row| %>
         <% category_name = row.category.titleize %>
         <tr>
           <td>
             <%= row.metadata&.dig("employer").presence || "#{category_name} #{t('certification_cases.hours_reported_table.activity_label')}" %>
           </td>
-          <td><%= t("certification_cases.hours_reported_table.source_ex_parte", state_name: state_name) %></td>
+          <td><%= t("certification_cases.hours_reported_table.source_external", state_name: state_name) %></td>
           <td><%= category_name %></td>
           <td><%= number_to_currency(row.gross_income) %></td>
         </tr>

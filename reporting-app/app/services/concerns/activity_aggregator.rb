@@ -1,11 +1,17 @@
 # frozen_string_literal: true
 
 module ActivityAggregator
-  def fetch_ex_parte_activities(certification)
-    return ExParteActivity.none unless certification&.member_id
+  def fetch_external_hourly_activities(certification)
+    return ExternalHourlyActivity.none unless certification&.member_id
 
     lookback_period = certification.certification_requirements.continuous_lookback_period
-    ExParteActivity.for_member(certification.member_id).within_period(lookback_period)
+    ExternalHourlyActivity.for_member(certification.member_id).within_period(lookback_period)
+  end
+
+  def fetch_external_income_activities(certification, lookback_period)
+    return ExternalIncomeActivity.none unless certification&.member_id
+
+    ExternalIncomeActivity.for_member(certification.member_id).within_period(lookback_period)
   end
 
   def fetch_member_activities(certification)
@@ -18,7 +24,7 @@ module ActivityAggregator
     form.activities
   end
 
-  def allocate_ex_parte_activities_by_month(activities)
+  def allocate_external_hourly_activities_by_month(activities)
     result = Hash.new { |h, k| h[k] = [] }
     activities.each do |activity|
       allocate_activity_to_months(activity, result)
@@ -30,6 +36,13 @@ module ActivityAggregator
     {
       total: activities.sum(:hours).to_f,
       by_category: activities.group(:category).sum(:hours).transform_values(&:to_f),
+      ids: activities.pluck(:id)
+    }
+  end
+
+  def summarize_income(activities)
+    {
+      total: BigDecimal(activities.sum(:gross_income).to_s),
       ids: activities.pluck(:id)
     }
   end

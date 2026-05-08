@@ -26,9 +26,9 @@ class CertificationCasesController < StaffController
     # Hours data for the "Hours reported" table
     @hours_summary = HoursComplianceDeterminationService.aggregate_hours_for_certification(@certification)
     @target_hours = HoursComplianceDeterminationService::TARGET_HOURS
-    @ex_parte_activities = fetch_ex_parte_activities
+    @external_hourly_activities = fetch_external_hourly_activities
     @member_activities = fetch_member_activities
-    @income_rows = fetch_incomes
+    @external_income_activities = fetch_external_income_activities
     @member_income_activities = IncomeComplianceDeterminationService.member_income_activities_for_certification(
       @certification,
       certification_case: @case
@@ -66,14 +66,14 @@ class CertificationCasesController < StaffController
     end.compact
   end
 
-  def fetch_ex_parte_activities
+  def fetch_external_hourly_activities
     lookback_period = @certification.certification_requirements.continuous_lookback_period
-    ExParteActivity.for_member(@certification.member_id).within_period(lookback_period)
+    ExternalHourlyActivity.for_member(@certification.member_id).within_period(lookback_period)
   end
 
-  def fetch_incomes
+  def fetch_external_income_activities
     lookback_period = @certification.certification_requirements.continuous_lookback_period
-    Income.for_member(@certification.member_id)
+    ExternalIncomeActivity.for_member(@certification.member_id)
       .within_period(lookback_period)
       .order(:period_start, :reported_at)
   end
