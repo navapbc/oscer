@@ -232,10 +232,11 @@ end
   "calculation_type": "income_based",
   "total_income": 620.0,
   "target_income": 580.0,
-  "income_by_source": { "income": 620.0, "activity": 0 },
+  "income_by_source": { "external": 620.0, "activity": 0 },
   "period_start": "2025-01-01",
   "period_end": "2025-01-31",
-  "income_ids": ["uuid1"],
+  "external_income_activity_ids": ["uuid1"],
+  "activity_ids": [],
   "calculation_method": "automated_income_intake"
 }
 ```
@@ -258,7 +259,7 @@ Mirror hours: income is saved **before** certification creation, and the busines
    - Other flows (e.g. hours-only paths elsewhere) may still use `DeterminedHoursMet` / `DeterminedHoursInsufficient`; see `NotificationsEventListener`.
 5. For existing certifications: `CalculateComplianceJob` (or equivalent) may call `IncomeComplianceDeterminationService.calculate(certification_id)` for silent income-only recalculation (no workflow events) when new income arrives.
 
-**Testing / QE:** `spec/services/community_engagement_check_service_spec.rb` runs **real** `CommunityEngagementCheckService.determine` with factories (primary integration coverage for the combined CE step). Many specs (e.g. `certification_case_spec`, `certification_business_process_spec`) **stub** `CommunityEngagementCheckService.determine` on `CertificationCreated` so bootstrap does not persist an accidental compliant CE determination or send mail. Combined CE income uses `aggregate_income_for_certification`; **`member_reported_income_total` is stubbed to `0` until OSCER-405**, so only external-sourced income counts toward the threshold today. For ops triage, log/monitor **`DeterminedCommunityEngagementMet`**, **`DeterminedCommunityEngagementInsufficient`**, and **`DeterminedCommunityEngagementActionRequired`** alongside legacy `DeterminedHours*` where applicable.
+**Testing / QE:** `spec/services/community_engagement_check_service_spec.rb` runs **real** `CommunityEngagementCheckService.determine` with factories (primary integration coverage for the combined CE step). Many specs (e.g. `certification_case_spec`, `certification_business_process_spec`) **stub** `CommunityEngagementCheckService.determine` on `CertificationCreated` so bootstrap does not persist an accidental compliant CE determination or send mail. Combined CE income uses `aggregate_income_for_certification`; **`member_reported_income[:total]` is stubbed to `0` until OSCER-405**, so only external-sourced income counts toward the threshold today. For ops triage, log/monitor **`DeterminedCommunityEngagementMet`**, **`DeterminedCommunityEngagementInsufficient`**, and **`DeterminedCommunityEngagementActionRequired`** alongside legacy `DeterminedHours*` where applicable.
 
 ---
 

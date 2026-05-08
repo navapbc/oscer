@@ -255,12 +255,13 @@ class CertificationCase < Strata::Case
       total_income: income_data[:total_income].to_f,
       target_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY.to_f,
       income_by_source: {
-        income: income_by[:income].to_f,
+        external: income_by[:external].to_f,
         activity: income_by[:activity].to_f
       },
       period_start: period_start&.respond_to?(:iso8601) ? period_start.iso8601 : period_start&.to_s,
       period_end: period_end&.respond_to?(:iso8601) ? period_end.iso8601 : period_end&.to_s,
-      income_ids: income_data[:income_ids],
+      external_income_activity_ids: income_data[:external_income_activity_ids],
+      activity_ids: income_data[:activity_ids],
       calculation_method: Determination::CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE,
       calculated_at: Time.current.iso8601
     }

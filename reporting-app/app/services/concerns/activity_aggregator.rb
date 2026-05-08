@@ -8,6 +8,12 @@ module ActivityAggregator
     ExternalHourlyActivity.for_member(certification.member_id).within_period(lookback_period)
   end
 
+  def fetch_external_income_activities(certification, lookback_period)
+    return ExternalIncomeActivity.none unless certification&.member_id
+
+    ExternalIncomeActivity.for_member(certification.member_id).within_period(lookback_period)
+  end
+
   def fetch_member_activities(certification)
     certification_case = CertificationCase.find_by(certification_id: certification.id)
     return Activity.none unless certification_case
@@ -30,6 +36,13 @@ module ActivityAggregator
     {
       total: activities.sum(:hours).to_f,
       by_category: activities.group(:category).sum(:hours).transform_values(&:to_f),
+      ids: activities.pluck(:id)
+    }
+  end
+
+  def summarize_income(activities)
+    {
+      total: BigDecimal(activities.sum(:gross_income).to_s),
       ids: activities.pluck(:id)
     }
   end

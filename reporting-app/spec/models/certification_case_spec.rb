@@ -228,8 +228,9 @@ RSpec.describe CertificationCase, type: :model do
     let(:income_data) do
       {
         total_income: BigDecimal("400"),
-        income_by_source: { income: BigDecimal("400"), activity: BigDecimal("0") },
-        income_ids: [],
+        income_by_source: { external: BigDecimal("400"), activity: BigDecimal("0") },
+        external_income_activity_ids: [],
+        activity_ids: [],
         period_start: Date.current,
         period_end: Date.current
       }
