@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: e28da687312a88f01465e6692d4b618014019076
+  revision: 3683fad1c749f9689fbd22c5c40147f5d73f80a8
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -383,9 +383,9 @@ GEM
       logger
       rack (>= 2.2.3)
       rack-protection
-    omniauth-rails_csrf_protection (0.1.2)
+    omniauth-rails_csrf_protection (2.0.1)
       actionpack (>= 4.2)
-      omniauth (>= 1.3.1)
+      omniauth (~> 2.0)
     omniauth_openid_connect (0.8.0)
       omniauth (>= 1.9, < 3)
       openid_connect (~> 2.2)
@@ -436,7 +436,7 @@ GEM
       date
       stringio
     public_suffix (7.0.5)
-    puma (7.0.2)
+    puma (8.0.1)
       nio4r (~> 2.0)
     pundit (2.5.2)
       activesupport (>= 3.0.0)
@@ -649,7 +649,7 @@ GEM
     validates_timeliness (8.0.0)
       activemodel (>= 8.0.0, < 9)
       timeliness (>= 0.3.10, < 1)
-    view_component (4.8.0)
+    view_component (4.9.0)
       actionview (>= 7.1.0)
       activesupport (>= 7.1.0)
       concurrent-ruby (~> 1)

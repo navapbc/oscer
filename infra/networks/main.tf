@@ -39,6 +39,9 @@ locals {
 
   # Whether any of the applications in the network has enabled notifications
   enable_notifications = anytrue([for app in local.apps_in_network : app.enable_notifications])
+
+  # Whether any of the applications in the network has enabled SMS notifications
+  enable_sms_notifications = anytrue([for app in local.apps_in_network : app.enable_sms_notifications])
 }
 
 terraform {
@@ -63,6 +66,15 @@ provider "aws" {
   }
 }
 
+provider "aws" {
+  alias  = "us-east-1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = local.tags
+  }
+}
+
 module "project_config" {
   source = "../project-config"
 }
@@ -81,7 +93,12 @@ module "network" {
 }
 
 module "domain" {
-  source              = "../modules/domain/resources"
+  source = "../modules/domain/resources"
+  providers = {
+    aws           = aws
+    aws.us-east-1 = aws.us-east-1
+  }
+
   name                = local.domain_config.hosted_zone
   manage_dns          = local.domain_config.manage_dns
   certificate_configs = local.domain_config.certificate_configs
