@@ -131,8 +131,9 @@ RSpec.describe NotificationsEventListener, type: :service do
 
         income_data = {
           total_income: BigDecimal("400"),
-          income_by_source: { income: BigDecimal("400"), activity: BigDecimal("0") },
-          income_ids: [],
+          income_by_source: { external: BigDecimal("400"), activity: BigDecimal("0") },
+          external_income_activity_ids: [],
+          activity_ids: [],
           period_start: Date.current,
           period_end: Date.current
         }
@@ -171,8 +172,9 @@ RSpec.describe NotificationsEventListener, type: :service do
 
         income_data = {
           total_income: BigDecimal("400"),
-          income_by_source: { income: BigDecimal("400"), activity: BigDecimal("0") },
-          income_ids: [],
+          income_by_source: { external: BigDecimal("400"), activity: BigDecimal("0") },
+          external_income_activity_ids: [],
+          activity_ids: [],
           period_start: Date.current,
           period_end: Date.current
         }
@@ -217,8 +219,9 @@ RSpec.describe NotificationsEventListener, type: :service do
         }
         income_data = {
           total_income: BigDecimal("0"),
-          income_by_source: { income: BigDecimal("0"), activity: BigDecimal("0") },
-          income_ids: [],
+          income_by_source: { external: BigDecimal("0"), activity: BigDecimal("0") },
+          external_income_activity_ids: [],
+          activity_ids: [],
           period_start: Date.current,
           period_end: Date.current
         }
