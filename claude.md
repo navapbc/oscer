@@ -60,10 +60,10 @@ make lint       # RuboCop with auto-fix
 
 - **Certifications** – `Certification` (aggregate root) → `CertificationCase` → `Activities`, `InformationRequests`, `Determination`
 - **Certification Batch Uploads** – `CertificationBatchUpload` → `CertificationBatchUploadAuditLog`, `CertificationBatchUploadError`; async chunked processing via GoodJob
-- **Activity Reporting** – `ActivityReportApplicationForm` → `Activity` (STI: `HourlyActivity`, `IncomeActivity`, `WorkActivity`, `ExPartActivity`) → `ActivityReportInformationRequest`
+- **Activity Reporting** – `ActivityReportApplicationForm` → `Activity` (STI: `HourlyActivity`, `IncomeActivity`, `WorkActivity`, `ExternalHourlyActivity`) → `ActivityReportInformationRequest`
 - **Exemptions** – `ExemptionApplicationForm` → `Exemption` → `ExemptionInformationRequest`; rules engine via `Rules::ExemptionRuleset`
 - **Document AI (DocAI)** – `StagedDocument` (pending → validated → rejected → failed) → `DocAiResult` (value object with `Payslip` subclass); confidence scoring, payslip-to-activity pre-fill. Feature-flagged via `FEATURE_DOC_AI`
-- **Ex Parte Activities** – `ExPartActivity` with source tracking (batch upload vs. API); imported via batch or VA integration
+- **External Hourly Activities** – `ExternalHourlyActivity` with source tracking (batch upload vs. API); imported via batch or VA integration
 - **Tasks** – `OscerTask` (extends `Strata::Task`), `ReviewActivityReportTask`, `ReviewExemptionClaimTask` – polymorphic work items for staff
 - **Auth** – `User` (Devise) with triple login: member form, member OIDC (`MemberOidcController`), staff SSO (`Auth::SsoController`)
 - **VA Integration** – `VeteranAffairsAdapter` → `VeteranDisabilityService` for eligibility/disability data

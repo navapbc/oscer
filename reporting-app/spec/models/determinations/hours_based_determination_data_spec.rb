@@ -13,8 +13,8 @@ RSpec.describe Determinations::HoursBasedDeterminationData do
     hours_data = {
       total_hours: 85,
       hours_by_category: { "employment" => 40.0, "education" => 45.0 },
-      hours_by_source: { ex_parte: 85.0, activity: 0.0 },
-      ex_parte_activity_ids: [ "11111111-1111-4111-8111-111111111111" ],
+      hours_by_source: { external: 85.0, activity: 0.0 },
+      external_hourly_activity_ids: [ "11111111-1111-4111-8111-111111111111" ],
       activity_ids: []
     }
 
@@ -24,8 +24,8 @@ RSpec.describe Determinations::HoursBasedDeterminationData do
         "total_hours" => 85.0,
         "target_hours" => HoursComplianceDeterminationService::TARGET_HOURS,
         "hours_by_category" => { "employment" => 40.0, "education" => 45.0 },
-        "hours_by_source" => { "ex_parte" => 85.0, "activity" => 0.0 },
-        "ex_parte_activity_ids" => [ "11111111-1111-4111-8111-111111111111" ],
+        "hours_by_source" => { "external" => 85.0, "activity" => 0.0 },
+        "external_hourly_activity_ids" => [ "11111111-1111-4111-8111-111111111111" ],
         "activity_ids" => [],
         "calculated_at" => calculated_at
       }
@@ -36,8 +36,8 @@ RSpec.describe Determinations::HoursBasedDeterminationData do
     hours_data = {
       total_hours: 10,
       hours_by_category: {},
-      hours_by_source: { ex_parte: 10.0, activity: 0.0 },
-      ex_parte_activity_ids: [],
+      hours_by_source: { external: 10.0, activity: 0.0 },
+      external_hourly_activity_ids: [],
       activity_ids: []
     }
 
@@ -49,8 +49,8 @@ RSpec.describe Determinations::HoursBasedDeterminationData do
     hours_data = {
       total_hours: 10,
       hours_by_category: {},
-      hours_by_source: { ex_parte: 10.0, activity: 0.0 },
-      ex_parte_activity_ids: [],
+      hours_by_source: { external: 10.0, activity: 0.0 },
+      external_hourly_activity_ids: [],
       activity_ids: []
     }
 

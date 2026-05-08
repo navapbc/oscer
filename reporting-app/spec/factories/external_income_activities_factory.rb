@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 FactoryBot.define do
-  factory :income do
+  factory :external_income_activity do
     member_id { Faker::NationalHealthService.british_number }
-    category { Income::ALLOWED_CATEGORIES.sample }
+    category { ExternalIncomeActivity::ALLOWED_CATEGORIES.sample }
     gross_income { Faker::Number.between(from: 1.0, to: 10_000.0).round(2) }
     period_start { Date.current.beginning_of_month }
     period_end { Date.current.end_of_month }
-    source_type { Income::SOURCE_TYPES[:api] }
+    source_type { ExternalIncomeActivity::SOURCE_TYPES[:api] }
     source_id { nil }
     reported_at { Time.current }
     metadata { {} }

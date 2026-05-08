@@ -12,10 +12,11 @@ RSpec.describe Determinations::IncomeBasedDeterminationData do
   it "serializes a stable income_based payload" do
     income_data = {
       total_income: BigDecimal("580.25"),
-      income_by_source: { income: BigDecimal("500"), activity: BigDecimal("80.25") },
+      income_by_source: { external: BigDecimal("500"), activity: BigDecimal("80.25") },
       period_start: Date.new(2026, 1, 1),
       period_end: Date.new(2026, 1, 31),
-      income_ids: [ "22222222-2222-4222-8222-222222222222", "33333333-3333-4333-8333-333333333333" ]
+      external_income_activity_ids: [ "22222222-2222-4222-8222-222222222222", "33333333-3333-4333-8333-333333333333" ],
+      activity_ids: []
     }
 
     expect(described_class.from_aggregate(income_data).to_h).to eq(
@@ -23,10 +24,11 @@ RSpec.describe Determinations::IncomeBasedDeterminationData do
         "calculation_type" => Determination::CALCULATION_TYPE_INCOME_BASED,
         "total_income" => 580.25,
         "target_income" => IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY.to_f,
-        "income_by_source" => { "income" => 500.0, "activity" => 80.25 },
+        "income_by_source" => { "external" => 500.0, "activity" => 80.25 },
         "period_start" => "2026-01-01",
         "period_end" => "2026-01-31",
-        "income_ids" => [ "22222222-2222-4222-8222-222222222222", "33333333-3333-4333-8333-333333333333" ],
+        "external_income_activity_ids" => [ "22222222-2222-4222-8222-222222222222", "33333333-3333-4333-8333-333333333333" ],
+        "activity_ids" => [],
         "calculation_method" => Determination::CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE,
         "calculated_at" => calculated_at
       }
@@ -36,10 +38,11 @@ RSpec.describe Determinations::IncomeBasedDeterminationData do
   it "includes compliant in the hash when provided for combined CE nesting" do
     income_data = {
       total_income: BigDecimal("580.25"),
-      income_by_source: { income: BigDecimal("500"), activity: BigDecimal("80.25") },
+      income_by_source: { external: BigDecimal("500"), activity: BigDecimal("80.25") },
       period_start: Date.new(2026, 1, 1),
       period_end: Date.new(2026, 1, 31),
-      income_ids: []
+      external_income_activity_ids: [],
+      activity_ids: []
     }
 
     h = described_class.from_aggregate(income_data, compliant: true).to_h
@@ -49,10 +52,11 @@ RSpec.describe Determinations::IncomeBasedDeterminationData do
   it "omits compliant from the hash when not passed (standalone income CE)" do
     income_data = {
       total_income: BigDecimal("580.25"),
-      income_by_source: { income: BigDecimal("500"), activity: BigDecimal("80.25") },
+      income_by_source: { external: BigDecimal("500"), activity: BigDecimal("80.25") },
       period_start: Date.new(2026, 1, 1),
       period_end: Date.new(2026, 1, 31),
-      income_ids: []
+      external_income_activity_ids: [],
+      activity_ids: []
     }
 
     h = described_class.from_aggregate(income_data).to_h

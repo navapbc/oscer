@@ -9,7 +9,8 @@ module Determinations
     attribute :income_by_source, default: -> { {} }
     attribute :period_start
     attribute :period_end
-    attribute :income_ids, default: -> { [] }
+    attribute :external_income_activity_ids, default: -> { [] }
+    attribute :activity_ids, default: -> { [] }
     attribute :calculated_at, :string
     attribute :compliant, :boolean
 
@@ -17,8 +18,8 @@ module Determinations
     validates :total_income, presence: true, numericality: true
     validate :income_by_source_is_hash
 
-    # @param income_data [Hash] +:total_income+, +:income_by_source+ (+:income+, +:activity+),
-    #   +:period_start+, +:period_end+, +:income_ids+
+    # @param income_data [Hash] +:total_income+, +:income_by_source+ (+:external+, +:activity+),
+    #   +:period_start+, +:period_end+, +:external_income_activity_ids+, +:activity_ids+
     # @param compliant [Boolean, nil] omit for income-only CE; set for combined nested +income+
     # @return [self]
     def self.from_aggregate(income_data, compliant: nil)
@@ -27,7 +28,8 @@ module Determinations
         income_by_source: income_data[:income_by_source] || {},
         period_start: income_data[:period_start],
         period_end: income_data[:period_end],
-        income_ids: Array(income_data[:income_ids]),
+        external_income_activity_ids: Array(income_data[:external_income_activity_ids]),
+        activity_ids: Array(income_data[:activity_ids]),
         calculated_at: Time.current.iso8601,
         compliant: compliant
       ).tap(&:validate!)
@@ -41,12 +43,13 @@ module Determinations
         "total_income" => total_income.to_f,
         "target_income" => IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY.to_f,
         "income_by_source" => {
-          "income" => income_by[:income].to_f,
+          "external" => income_by[:external].to_f,
           "activity" => income_by[:activity].to_f
         },
         "period_start" => serialize_period(period_start),
         "period_end" => serialize_period(period_end),
-        "income_ids" => income_ids.map(&:to_s),
+        "external_income_activity_ids" => external_income_activity_ids.map(&:to_s),
+        "activity_ids" => activity_ids.map(&:to_s),
         "calculation_method" => Determination::CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE,
         "calculated_at" => calculated_at
       }.tap do |h|

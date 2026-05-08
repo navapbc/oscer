@@ -6,10 +6,10 @@ class HoursComplianceDeterminationService
   class << self
     include ActivityAggregator
 
-    # Called by CertificationBusinessProcess at EX_PARTE_CE_CHECK step (initial check)
-    # Publishes different events based on whether ex parte hours exist:
-    # - DeterminedActionRequired: No ex parte hours found, member needs to report from scratch
-    # - DeterminedHoursInsufficient: Has some ex parte hours but needs more
+    # NOTE: As of https://github.com/navapbc/oscer/pull/444 this method is no longer called
+    # Publishes different events based on whether external hours exist:
+    # - DeterminedActionRequired: No external hours found, member needs to report from scratch
+    # - DeterminedHoursInsufficient: Has some external hours but needs more
     # @param kase [CertificationCase]
     def determine(kase)
       certification = Certification.find(kase.certification_id)
@@ -23,15 +23,15 @@ class HoursComplianceDeterminationService
           case_id: kase.id,
           certification_id: certification.id
         })
-      elsif hours_data[:hours_by_source][:ex_parte] > 0
-        # Has some ex parte hours but needs more - send insufficient hours email
+      elsif hours_data[:hours_by_source][:external] > 0
+        # Has some external hours but needs more - send insufficient hours email
         Strata::EventManager.publish("DeterminedHoursInsufficient", {
           case_id: kase.id,
           certification_id: certification.id,
           hours_data: hours_data
         })
       else
-        # No ex parte hours found - send action required email
+        # No external hours found - send action required email
         Strata::EventManager.publish("DeterminedActionRequired", {
           case_id: kase.id,
           certification_id: certification.id
@@ -61,27 +61,34 @@ class HoursComplianceDeterminationService
       kase.record_hours_compliance(outcome, hours_data)
     end
 
-    # PUBLIC: Aggregate hours from both ExParteActivity and approved Activity records
+    # PUBLIC: Aggregate hours from both ExternalHourlyActivity and approved Activity records
     # Called by business process notification steps to get hours data for emails
     # @param certification [Certification]
     # @return [Hash] with total_hours, hours_by_category, hours_by_source, etc.
     def aggregate_hours_for_certification(certification)
-      ex_parte_activities = fetch_ex_parte_activities(certification)
+      external_hourly_activities = fetch_external_hourly_activities(certification)
       member_activities = fetch_member_activities(certification).where.not(hours: nil)
 
-      ex_parte_hours = summarize_hours(ex_parte_activities)
+      external_hours = summarize_hours(external_hourly_activities)
       member_hours = summarize_hours(member_activities)
 
       {
-        total_hours: ex_parte_hours[:total] + member_hours[:total],
-        hours_by_category: merge_category_hours(ex_parte_hours[:by_category], member_hours[:by_category]),
+        total_hours: external_hours[:total] + member_hours[:total],
+        hours_by_category: merge_category_hours(external_hours[:by_category], member_hours[:by_category]),
         hours_by_source: {
-          ex_parte: ex_parte_hours[:total],
+          external: external_hours[:total],
           activity: member_hours[:total]
         },
-        ex_parte_activity_ids: ex_parte_hours[:ids],
+        external_hourly_activity_ids: external_hours[:ids],
         activity_ids: member_hours[:ids]
       }
+    end
+
+    # Check if total hours meet the compliance threshold
+    # @param total_hours [Float]
+    # @return [Boolean]
+    def compliant_for_total_hours?(total_hours)
+      total_hours.to_f >= TARGET_HOURS
     end
 
     private
@@ -111,12 +118,12 @@ class HoursComplianceDeterminationService
     end
 
     def determine_outcome(total_hours)
-      total_hours >= TARGET_HOURS ? :compliant : :not_compliant
+      compliant_for_total_hours?(total_hours) ? :compliant : :not_compliant
     end
 
-    def merge_category_hours(ex_parte, member)
-      (ex_parte.keys | member.keys).each_with_object({}) do |category, result|
-        result[category] = (ex_parte[category] || 0.0) + (member[category] || 0.0)
+    def merge_category_hours(external, member)
+      (external.keys | member.keys).each_with_object({}) do |category, result|
+        result[category] = (external[category] || 0.0) + (member[category] || 0.0)
       end
     end
   end

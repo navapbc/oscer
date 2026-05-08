@@ -12,10 +12,10 @@ module Determinations
     attribute :total_hours
     attribute :hours_by_category, default: -> { {} }
     attribute :hours_by_source, default: -> { {} }
-    attribute :ex_parte_activity_ids, default: -> { [] }
+    attribute :external_hourly_activity_ids, default: -> { [] }
     attribute :activity_ids, default: -> { [] }
     attribute :calculated_at, :string
-    # When set (nested +hours+ payload under +Determination::CALCULATION_TYPE_CE_COMBINED+), included in {#to_h}.
+    # When set (nested +hours+ payload under +Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED+), included in {#to_h}.
     attribute :compliant, :boolean
 
     validates :calculated_at, presence: true
@@ -24,7 +24,7 @@ module Determinations
     validate :hours_by_source_is_hash
 
     # @param hours_data [Hash] +:total_hours+, +:hours_by_category+, +:hours_by_source+,
-    #   +:ex_parte_activity_ids+, +:activity_ids+ (see aggregate service)
+    #   +:external_hourly_activity_ids+, +:activity_ids+ (see aggregate service)
     # @param compliant [Boolean, nil] omit for standalone hours CE; set for combined nested +hours+
     # @return [self]
     def self.from_aggregate(hours_data, compliant: nil)
@@ -32,7 +32,7 @@ module Determinations
         total_hours: hours_data[:total_hours],
         hours_by_category: hours_data[:hours_by_category] || {},
         hours_by_source: hours_data[:hours_by_source] || {},
-        ex_parte_activity_ids: Array(hours_data[:ex_parte_activity_ids]),
+        external_hourly_activity_ids: Array(hours_data[:external_hourly_activity_ids]),
         activity_ids: Array(hours_data[:activity_ids]),
         calculated_at: Time.current.iso8601,
         compliant: compliant
@@ -50,7 +50,7 @@ module Determinations
         "target_hours" => HoursComplianceDeterminationService::TARGET_HOURS,
         "hours_by_category" => by_category,
         "hours_by_source" => by_source,
-        "ex_parte_activity_ids" => ex_parte_activity_ids.map(&:to_s),
+        "external_hourly_activity_ids" => external_hourly_activity_ids.map(&:to_s),
         "activity_ids" => activity_ids.map(&:to_s),
         "calculated_at" => calculated_at
       }.tap do |h|

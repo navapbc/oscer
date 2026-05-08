@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
 module Determinations
-  # Canonical serialized shape for the combined hours + income CE step
-  # (+Determination::CALCULATION_TYPE_CE_COMBINED+): one automated determination with nested hours and
+  # Canonical serialized shape for the combined hours + income external CE step
+  # (+Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED+): one automated determination with nested hours and
   # income assessment payloads.
   #
   # Nested {HoursBasedDeterminationData} and {IncomeBasedDeterminationData} are validated during
   # {.build} (eager), not only when {#to_h} serializes, so invalid inner aggregates raise before persist.
   # After {.build}, nested instances are memoized so {#to_h} does not reconstruct them.
-  class CECombinedDeterminationData < ValueObject
+  class ExternalCECombinedDeterminationData < ValueObject
     attribute :hours_data
     attribute :income_data
     attribute :hours_ok, :boolean
@@ -41,7 +41,7 @@ module Determinations
     # @return [Hash{String => Object}] JSONB-safe keys and values for +Determination#determination_data+
     def to_h
       {
-        "calculation_type" => Determination::CALCULATION_TYPE_CE_COMBINED,
+        "calculation_type" => Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED,
         "satisfied_by" => satisfied_by,
         "hours" => nested_hours_hash,
         "income" => nested_income_hash,

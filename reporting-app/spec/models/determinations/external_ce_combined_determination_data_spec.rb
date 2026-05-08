@@ -2,27 +2,28 @@
 
 require "rails_helper"
 
-RSpec.describe Determinations::CECombinedDeterminationData do
+RSpec.describe Determinations::ExternalCECombinedDeterminationData do
   around do |example|
     travel_to(Time.zone.parse("2026-04-30 15:00:00")) { example.run }
   end
 
   let(:calculated_at) { Time.zone.parse("2026-04-30 15:00:00").iso8601 }
 
-  it "serializes a stable ce_combined payload with satisfied_by both when both tracks pass" do
+  it "serializes a stable external_ce_combined payload with satisfied_by both when both tracks pass" do
     hours_data = {
       total_hours: 80,
       hours_by_category: { "employment" => 80.0 },
-      hours_by_source: { ex_parte: 80.0, activity: 0.0 },
-      ex_parte_activity_ids: [ "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" ],
+      hours_by_source: { external: 80.0, activity: 0.0 },
+      external_hourly_activity_ids: [ "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" ],
       activity_ids: []
     }
     income_data = {
       total_income: BigDecimal("600"),
-      income_by_source: { income: BigDecimal("600"), activity: BigDecimal("0") },
+      income_by_source: { external: BigDecimal("600"), activity: BigDecimal("0") },
       period_start: Date.new(2026, 2, 1),
       period_end: Date.new(2026, 2, 28),
-      income_ids: [ "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" ]
+      external_income_activity_ids: [ "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" ],
+      activity_ids: []
     }
 
     payload = described_class.build(
@@ -32,7 +33,7 @@ RSpec.describe Determinations::CECombinedDeterminationData do
       income_ok: true
     ).to_h
 
-    expect(payload["calculation_type"]).to eq(Determination::CALCULATION_TYPE_CE_COMBINED)
+    expect(payload["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED)
     expect(payload["satisfied_by"]).to eq(Determination::SATISFIED_BY_BOTH)
     expect(payload["hours"]["compliant"]).to be true
     expect(payload["income"]["compliant"]).to be true
@@ -50,16 +51,17 @@ RSpec.describe Determinations::CECombinedDeterminationData do
     hours_data = {
       total_hours: 80,
       hours_by_category: { "employment" => 80.0 },
-      hours_by_source: { ex_parte: 80.0, activity: 0.0 },
-      ex_parte_activity_ids: [ "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" ],
+      hours_by_source: { external: 80.0, activity: 0.0 },
+      external_hourly_activity_ids: [ "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" ],
       activity_ids: []
     }
     income_data = {
       total_income: BigDecimal("0"),
-      income_by_source: { income: BigDecimal("0"), activity: BigDecimal("0") },
+      income_by_source: { external: BigDecimal("0"), activity: BigDecimal("0") },
       period_start: nil,
       period_end: nil,
-      income_ids: []
+      external_income_activity_ids: [],
+      activity_ids: []
     }
 
     payload = described_class.build(
@@ -78,16 +80,17 @@ RSpec.describe Determinations::CECombinedDeterminationData do
     hours_data = {
       total_hours: 0,
       hours_by_category: {},
-      hours_by_source: { ex_parte: 0.0, activity: 0.0 },
-      ex_parte_activity_ids: [],
+      hours_by_source: { external: 0.0, activity: 0.0 },
+      external_hourly_activity_ids: [],
       activity_ids: []
     }
     income_data = {
       total_income: BigDecimal("600"),
-      income_by_source: { income: BigDecimal("600"), activity: BigDecimal("0") },
+      income_by_source: { external: BigDecimal("600"), activity: BigDecimal("0") },
       period_start: Date.new(2026, 2, 1),
       period_end: Date.new(2026, 2, 28),
-      income_ids: [ "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" ]
+      external_income_activity_ids: [ "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" ],
+      activity_ids: []
     }
 
     payload = described_class.build(
@@ -106,16 +109,17 @@ RSpec.describe Determinations::CECombinedDeterminationData do
     hours_data = {
       total_hours: 0,
       hours_by_category: {},
-      hours_by_source: { ex_parte: 0.0, activity: 0.0 },
-      ex_parte_activity_ids: [],
+      hours_by_source: { external: 0.0, activity: 0.0 },
+      external_hourly_activity_ids: [],
       activity_ids: []
     }
     income_data = {
       total_income: BigDecimal("0"),
-      income_by_source: { income: BigDecimal("0"), activity: BigDecimal("0") },
+      income_by_source: { external: BigDecimal("0"), activity: BigDecimal("0") },
       period_start: nil,
       period_end: nil,
-      income_ids: []
+      external_income_activity_ids: [],
+      activity_ids: []
     }
 
     payload = described_class.build(
@@ -134,10 +138,11 @@ RSpec.describe Determinations::CECombinedDeterminationData do
     invalid_hours = { not_an_aggregate: true }
     valid_income = {
       total_income: BigDecimal("0"),
-      income_by_source: { income: BigDecimal("0"), activity: BigDecimal("0") },
+      income_by_source: { external: BigDecimal("0"), activity: BigDecimal("0") },
       period_start: nil,
       period_end: nil,
-      income_ids: []
+      external_income_activity_ids: [],
+      activity_ids: []
     }
 
     expect {
