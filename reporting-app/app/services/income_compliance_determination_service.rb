@@ -106,6 +106,15 @@ class IncomeComplianceDeterminationService
       return certification_case if certification_case
 
       scoped = CertificationCase.where(certification_id: certification.id)
+      # Multiple cases for one certification are unexpected in production; tie-break is deterministic.
+      # This message is trace-only (debug): it does not appear in typical production log levels.
+      # Use block form so the string is built only when debug logging is enabled.
+      if scoped.offset(1).exists?
+        Rails.logger.debug do
+          "IncomeComplianceDeterminationService: multiple CertificationCases for certification_id=#{certification.id}; " \
+            "tie-breaker selected newest case (with ActivityReportApplicationForm if any)."
+        end
+      end
       with_form = scoped.where(id: ActivityReportApplicationForm.select(:certification_case_id)).order(created_at: :desc).first
       with_form || scoped.order(created_at: :desc).first
     end
@@ -118,11 +127,11 @@ class IncomeComplianceDeterminationService
     # @param certification_case [CertificationCase, nil]
     # @return [Hash] :total (+BigDecimal+), :ids (+Array+ of activity UUIDs)
     def member_income_from_activities(certification, certification_case:)
-      activities = member_income_activities_for_certification(certification, certification_case: certification_case)
-      total = activities.inject(BigDecimal("0")) do |sum, activity|
+      rows = member_income_activities_for_certification(certification, certification_case: certification_case).to_a
+      total = rows.inject(BigDecimal("0")) do |sum, activity|
         sum + BigDecimal((activity.income&.dollar_amount || 0).to_s)
       end
-      { total: total, ids: activities.pluck(:id) }
+      { total: total, ids: rows.map(&:id) }
     end
   end
 end

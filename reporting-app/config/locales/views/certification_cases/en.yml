@@ -1,6 +1,13 @@
 en:
   certification_cases:
     compliance_not_applicable: "—"
+    # Shared labels for compliance summary tables (hours + income); read by both
+    # _hours_reported_table and _income_reported_table partials so the namespace
+    # owns them rather than one table borrowing from the other.
+    common:
+      activity_label: "Activity"
+      source_external: "From %{state_name}"
+      source_self_reported: "Self-reported"
     case_layout:
       details: "Details"
       tasks: "Tasks"
@@ -63,12 +70,9 @@ en:
       source: "Source"
       activity_type: "Activity type"
       hours_reported: "Hours reported"
-      source_external: "From %{state_name}"
-      source_self_reported: "Self-reported"
       total_reported: "Total reported"
       required: "Required"
       additional_hours_needed: "Additional hours needed"
       no_hours_reported: "No hours reported"
-      activity_label: "Activity"
     notes:
       title: "Notes"

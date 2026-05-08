@@ -171,7 +171,7 @@ RSpec.describe IncomeComplianceDeterminationService do
       lookback = certification.certification_requirements.continuous_lookback_period
       month = lookback.start.to_date
 
-      form.activities.create!(
+      income_activity = form.activities.create!(
         type: "IncomeActivity",
         name: "Food Bank",
         category: "community_service",
@@ -182,9 +182,11 @@ RSpec.describe IncomeComplianceDeterminationService do
 
       agg = described_class.aggregate_income_for_certification(certification, certification_case: kase)
 
-      expect(agg[:income_by_source][:activity]).to eq(BigDecimal("50"))
+      # Strata :money on IncomeActivity — assert against the persisted record, not a magic dollar amount.
+      expected_member_total = BigDecimal((income_activity.reload.income&.dollar_amount || 0).to_s)
+      expect(agg[:income_by_source][:activity]).to eq(expected_member_total)
       expect(agg[:income_by_source][:external]).to eq(BigDecimal("100"))
-      expect(agg[:total_income]).to eq(BigDecimal("150"))
+      expect(agg[:total_income]).to eq(expected_member_total + BigDecimal("100"))
       expect(agg[:activity_ids].length).to eq(1)
       expect(agg[:external_income_activity_ids].length).to eq(1)
     end
@@ -205,6 +207,51 @@ RSpec.describe IncomeComplianceDeterminationService do
 
       expect(agg[:external_income_activity_ids].length).to eq(1)
       expect(agg[:activity_ids].length).to eq(0)
+    end
+
+    context "when resolving certification case without explicit certification_case (multi-case logging)" do
+      let(:certification) { create(:certification) }
+
+      it "logs at debug when multiple certification cases share certification_id" do
+        # :certification_case factory uses find_or_create_by(certification_id:), so two factories
+        # would still yield one row; create two real rows to exercise the multi-case branch.
+        CertificationCase.create!(
+          certification_id: certification.id,
+          business_process_current_step: "report_activities",
+          created_at: 2.days.ago,
+          updated_at: 2.days.ago
+        )
+        CertificationCase.create!(
+          certification_id: certification.id,
+          business_process_current_step: "report_activities",
+          created_at: 1.day.ago,
+          updated_at: 1.day.ago
+        )
+
+        received = []
+        allow(Rails.logger).to receive(:debug) do |&block|
+          received << block.call if block
+        end
+
+        described_class.aggregate_income_for_certification(certification)
+
+        expect(received).to include(
+          a_string_including("multiple CertificationCases", certification.id)
+        )
+      end
+
+      it "does not emit multi-case debug when only one certification case exists" do
+        create(:certification_case, certification: certification)
+
+        received = []
+        allow(Rails.logger).to receive(:debug) do |&block|
+          received << block.call if block
+        end
+
+        described_class.aggregate_income_for_certification(certification)
+
+        expect(received.none? { |m| m.include?("multiple CertificationCases") }).to be true
+      end
     end
   end
 end

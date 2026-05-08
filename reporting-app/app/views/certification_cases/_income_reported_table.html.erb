@@ -18,9 +18,9 @@
         <% category_name = row.category.titleize %>
         <tr>
           <td>
-            <%= row.metadata&.dig("employer").presence || "#{category_name} #{t('certification_cases.hours_reported_table.activity_label')}" %>
+            <%= row.metadata&.dig("employer").presence || "#{category_name} #{t('certification_cases.common.activity_label')}" %>
           </td>
-          <td><%= t("certification_cases.hours_reported_table.source_external", state_name: state_name) %></td>
+          <td><%= t("certification_cases.common.source_external", state_name: state_name) %></td>
           <td><%= category_name %></td>
           <td><%= number_to_currency(row.gross_income) %></td>
         </tr>
@@ -28,7 +28,7 @@
       <% member_activities.each do |activity| %>
         <tr>
           <td><%= activity.name %></td>
-          <td><%= t("certification_cases.hours_reported_table.source_self_reported") %></td>
+          <td><%= t("certification_cases.common.source_self_reported") %></td>
           <td><%= activity.category.titleize %></td>
           <td>
             <% if activity.is_a?(IncomeActivity) %>
