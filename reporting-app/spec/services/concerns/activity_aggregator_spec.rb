@@ -3,11 +3,15 @@
 require "rails_helper"
 
 RSpec.describe ActivityAggregator, type: :concern do
-  class TestDeterminationService
-    include ActivityAggregator
+  subject(:service) { TestDeterminationService.new }
+
+  before do
+    stub_const(
+      "TestDeterminationService",
+      Class.new { include ActivityAggregator }
+    )
   end
 
-  let(:service) { TestDeterminationService.new }
 
   describe ".fetch_external_income_activities" do
     let(:certification) { create(:certification) }
