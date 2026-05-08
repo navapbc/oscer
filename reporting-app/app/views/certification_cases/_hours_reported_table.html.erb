@@ -1,6 +1,7 @@
 <% total_hours = hours_summary[:total_hours] %>
 <% hours_needed = [target_hours - total_hours, 0].max %>
-<% has_activities = external_hourly_activities.any? || member_activities.any? { |a| !a.read_attribute(:hours).nil? } %>
+<% hours_member_activities = local_assigns.fetch(:hours_member_activities) %>
+<% has_activities = external_hourly_activities.any? || hours_member_activities.any? %>
 <% i18n = "certification_cases.hours_reported_table" %>
 <% common = "certification_cases.common" %>
 
@@ -20,12 +21,12 @@
         <% category_name = activity.category.titleize %>
         <tr>
           <td><%= category_name %> <%= t("#{common}.activity_label") %></td>
-          <td><%= t("#{common}.source_external", state_name: ENV.fetch("STATE_NAME", "the State")) %></td>
+          <td><%= t("#{common}.source_external", state_name: state_name) %></td>
           <td><%= category_name %></td>
           <td><%= number_with_precision(activity.hours, precision: 0) %></td>
         </tr>
       <% end %>
-      <% member_activities.each do |activity| %>
+      <% hours_member_activities.each do |activity| %>
         <tr>
           <td><%= activity.name %></td>
           <td><%= t("#{common}.source_self_reported") %></td>

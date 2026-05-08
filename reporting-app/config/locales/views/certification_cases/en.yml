@@ -1,8 +1,8 @@
 en:
   certification_cases:
     compliance_not_applicable: "—"
-    # Shared labels for compliance summary tables (hours + income); read by both
-    # _hours_reported_table and _income_reported_table partials so the namespace
+    # Shared labels for compliance summary tables (hours + income); read by
+    # _hours_reported_table and _income_reported_table partials (Activity Report and External data) so the namespace
     # owns them rather than one table borrowing from the other.
     common:
       activity_label: "Activity"
@@ -17,6 +17,8 @@ en:
       title: "Certification Cases"
     ex_parte_data:
       summarized_under_activity_report: "Hours and income from the state and this member’s activity report are summarized under Activity Report below."
+      # External Data section when there is no activity report (ex parte layout); same plain meaning as hours_reported_table.no_hours_reported but scoped for translators.
+      no_hours_in_external_summary: "No hours reported"
     show:
       activity_line_items: "Activity line items"
       assigned_to: "Assigned to:"

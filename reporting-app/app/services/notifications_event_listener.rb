@@ -77,7 +77,7 @@ class NotificationsEventListener
         else
           IncomeComplianceDeterminationService.aggregate_income_for_certification(
             certification,
-            certification_case: certification_case_for_notification(payload)
+            certification_case: certification_case_for_notification(certification, payload)
           )
         end
 
@@ -138,11 +138,14 @@ class NotificationsEventListener
 
     # When recomputing aggregates for a notification, prefer the case from the event payload so member
     # income matches the case under workflow (same as CommunityEngagementCheckService / staff show).
-    def certification_case_for_notification(payload)
+    def certification_case_for_notification(certification, payload)
       case_id = payload[:case_id]
       return nil if case_id.blank?
 
-      CertificationCase.find_by(id: case_id)
+      kase = CertificationCase.find_by(id: case_id)
+      return nil if kase.blank? || kase.certification_id != certification.id
+
+      kase
     end
 
     def send_notification(certification, email_method)

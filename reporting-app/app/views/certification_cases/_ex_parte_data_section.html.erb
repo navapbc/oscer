@@ -1,21 +1,31 @@
 <% if activity_report.present? %>
   <p class="maxw-full"><%= t("certification_cases.ex_parte_data.summarized_under_activity_report") %></p>
 <% else %>
-  <% hours_has_data = external_hourly_activities.any? || member_activities.any? { |a| !a.read_attribute(:hours).nil? } %>
-  <% if hours_has_data %>
-    <%= render partial: "certification_cases/hours_ex_parte_table",
-        locals: {
-          external_hourly_activities: external_hourly_activities,
-          member_activities: member_activities,
-          hours_summary: hours_summary,
-          target_hours: target_hours
-        } %>
-  <% else %>
-    <p><%= t("certification_cases.hours_reported_table.no_hours_reported") %></p>
-  <% end %>
-  <%= render partial: "certification_cases/incomes_table",
-      locals: {
-        title: income_detail_title,
-        income_rows: income_rows
-      } %>
+  <% hours_has_data = external_hourly_activities.any? || hours_member_activities.any? %>
+  <% income_member_activities = local_assigns.fetch(:income_member_activities) %>
+  <% income_has_data = external_income_activities.any? || income_member_activities.any? %>
+  <div class="certification-case-compliance-tables margin-bottom-4">
+    <% if hours_has_data %>
+      <%= render partial: "certification_cases/hours_reported_table",
+          locals: {
+            external_hourly_activities: external_hourly_activities,
+            hours_member_activities: hours_member_activities,
+            hours_summary: hours_summary,
+            target_hours: target_hours
+          } %>
+    <% else %>
+      <p><%= t("certification_cases.ex_parte_data.no_hours_in_external_summary") %></p>
+    <% end %>
+    <% if income_has_data %>
+      <%= render partial: "certification_cases/income_reported_table",
+          locals: {
+            external_income_activities: external_income_activities,
+            income_member_activities: income_member_activities,
+            income_summary: income_summary,
+            target_income: target_income
+          } %>
+    <% else %>
+      <p><%= t("certification_cases.income.no_rows") %></p>
+    <% end %>
+  </div>
 <% end %>

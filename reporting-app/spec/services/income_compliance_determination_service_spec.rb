@@ -123,11 +123,37 @@ RSpec.describe IncomeComplianceDeterminationService do
         expect(determination.determination_data["external_income_activity_ids"].length).to eq(2)
       end
 
-      it "includes activity_ids (empty until member-reported income is implemented)" do
+      it "includes empty activity_ids when the case has no member IncomeActivity rows in the lookback" do
         described_class.calculate(certification.id)
 
         determination = Determination.where(subject_id: certification.id).last
         expect(determination.determination_data["activity_ids"]).to eq([])
+      end
+    end
+
+    context "with member IncomeActivity rows in the lookback" do
+      before do
+        allow(Strata::EventManager).to receive(:publish)
+        allow(NotificationService).to receive(:send_email_notification)
+        kase = create(:certification_case, certification: certification)
+        form = create(:activity_report_application_form, certification_case_id: kase.id)
+        lookback = certification.certification_requirements.continuous_lookback_period
+        month = lookback.start.to_date
+        form.activities.create!(
+          type: "IncomeActivity",
+          name: "Side gig",
+          category: "employment",
+          month: month,
+          income: 10_000
+        )
+        create_income_for(certification, gross_income: 300)
+      end
+
+      it "persists activity_ids for member IncomeActivity rows when calculating" do
+        described_class.calculate(certification.id)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.determination_data["activity_ids"].length).to eq(1)
       end
     end
 
@@ -191,6 +217,44 @@ RSpec.describe IncomeComplianceDeterminationService do
       expect(agg[:external_income_activity_ids].length).to eq(1)
     end
 
+    it "uses preloaded member income rows without calling member_income_activities_for_certification again" do
+      kase = create(:certification_case, certification: certification)
+      form = create(:activity_report_application_form, certification_case_id: kase.id)
+      lookback = certification.certification_requirements.continuous_lookback_period
+      month = lookback.start.to_date
+      form.activities.create!(
+        type: "IncomeActivity",
+        name: "Pantry",
+        category: "community_service",
+        month: month,
+        income: 2_000
+      )
+      ext_row = create_income_for(certification, gross_income: 50)
+      ext_scope = ExternalIncomeActivity.where(id: ext_row.id)
+      rows = described_class.member_income_activities_for_certification(
+        certification,
+        certification_case: kase
+      ).to_a
+
+      call_count = 0
+      original = described_class.method(:member_income_activities_for_certification)
+      allow(described_class).to receive(:member_income_activities_for_certification) do |*args, **kwargs|
+        call_count += 1
+        original.call(*args, **kwargs)
+      end
+
+      agg = described_class.aggregate_income_for_certification(
+        certification,
+        certification_case: kase,
+        external_income_activities: ext_scope,
+        member_income_activity_rows: rows
+      )
+
+      expect(call_count).to eq(0)
+      expect(agg[:activity_ids]).to eq(rows.map(&:id))
+      expect(agg[:external_income_activity_ids]).to eq([ ext_row.id ])
+    end
+
     it "returns expected aggregate structure" do
       create_income_for(certification, gross_income: 100)
       agg = described_class.aggregate_income_for_certification(certification)
@@ -207,6 +271,42 @@ RSpec.describe IncomeComplianceDeterminationService do
 
       expect(agg[:external_income_activity_ids].length).to eq(1)
       expect(agg[:activity_ids].length).to eq(0)
+    end
+
+    context "when resolving certification case without explicit certification_case (tie-break)" do
+      let(:certification) { create(:certification) }
+
+      it "prefers the case with an activity report form over a newer case without a form" do
+        older_case = CertificationCase.create!(
+          certification_id: certification.id,
+          business_process_current_step: "report_activities",
+          created_at: 3.days.ago,
+          updated_at: 3.days.ago
+        )
+        CertificationCase.create!(
+          certification_id: certification.id,
+          business_process_current_step: "report_activities",
+          created_at: 1.day.ago,
+          updated_at: 1.day.ago
+        )
+        form = create(:activity_report_application_form, certification_case_id: older_case.id)
+        lookback = certification.certification_requirements.continuous_lookback_period
+        month = lookback.start.to_date
+        income_activity = form.activities.create!(
+          type: "IncomeActivity",
+          name: "Co-op",
+          category: "employment",
+          month: month,
+          income: 7_000
+        )
+        create_income_for(certification, gross_income: 40)
+
+        agg = described_class.aggregate_income_for_certification(certification)
+
+        expect(agg[:activity_ids]).to eq([ income_activity.id ])
+        expected_member = BigDecimal((income_activity.reload.income&.dollar_amount || 0).to_s)
+        expect(agg[:income_by_source][:activity]).to eq(expected_member)
+      end
     end
 
     context "when resolving certification case without explicit certification_case (multi-case logging)" do

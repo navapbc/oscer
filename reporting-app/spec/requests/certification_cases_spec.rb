@@ -148,6 +148,15 @@ RSpec.describe "/staff/certification_cases", type: :request do
         expect(response.body).not_to include("No hours reported")
         expect(response.body).to include("Income reported")
       end
+
+      it "loads member income activities for aggregation only once on show" do
+        allow(IncomeComplianceDeterminationService).to receive(:member_income_activities_for_certification).and_call_original
+
+        get "/staff/certification_cases/#{certification_case.id}"
+
+        expect(response).to have_http_status(:success)
+        expect(IncomeComplianceDeterminationService).to have_received(:member_income_activities_for_certification).once
+      end
     end
 
     context "with only work activities on activity report (no income rows)" do
@@ -180,7 +189,6 @@ RSpec.describe "/staff/certification_cases", type: :request do
 
       it "displays the income section with no external income message" do
         get "/staff/certification_cases/#{certification_case.id}"
-        expect(response.body).to include("Income reported")
         expect(response.body).to include("No income data from external sources for this lookback.")
       end
     end
@@ -239,16 +247,15 @@ RSpec.describe "/staff/certification_cases", type: :request do
                metadata: { "employer" => "Acme Corp" })
       end
 
-      it "displays the income table with organization, pay period, source, and gross income" do
+      it "displays the income compliance table (same columns as Activity Report) under External data and when applicable under Activity Report" do
         get "/staff/certification_cases/#{certification_case.id}"
         expect(response.body).to include("Income reported")
         expect(response.body).to include("Organization name")
         expect(response.body).to include("Acme Corp")
-        expect(response.body).to include("Pay period")
         expect(response.body).to include("Source")
         expect(response.body).to include("Activity type")
-        expect(response.body).to include("Gross income")
-        expect(response.body).to include("State verification (API)")
+        state_name = ENV.fetch("STATE_NAME", "the State")
+        expect(response.body).to include(I18n.t("certification_cases.common.source_external", state_name: state_name))
         expect(response.body).to include("Employment")
         expect(response.body).to include("$1,234.56")
       end

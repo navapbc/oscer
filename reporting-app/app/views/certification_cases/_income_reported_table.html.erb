@@ -1,6 +1,6 @@
 <% total_income = income_summary[:total_income].to_d %>
 <% income_needed = [ target_income.to_d - total_income, BigDecimal("0") ].max %>
-<% member_activities = local_assigns.fetch(:member_activities, []) %>
+<% income_member_activities = local_assigns.fetch(:income_member_activities, []) %>
 <% external_income_activities = local_assigns.fetch(:external_income_activities, []) %>
 
 <h3><%= t("certification_cases.income.table_title") %></h3>
@@ -25,17 +25,13 @@
           <td><%= number_to_currency(row.gross_income) %></td>
         </tr>
       <% end %>
-      <% member_activities.each do |activity| %>
+      <% income_member_activities.each do |activity| %>
         <tr>
           <td><%= activity.name %></td>
           <td><%= t("certification_cases.common.source_self_reported") %></td>
           <td><%= activity.category.titleize %></td>
           <td>
-            <% if activity.is_a?(IncomeActivity) %>
-              <%= number_to_currency(activity.income&.dollar_amount, precision: 0) %>
-            <% else %>
-              <%= t("certification_cases.compliance_not_applicable") %>
-            <% end %>
+            <%= number_to_currency(activity.income&.dollar_amount, precision: 0) %>
           </td>
         </tr>
       <% end %>

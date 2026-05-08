@@ -44,14 +44,30 @@ class IncomeComplianceDeterminationService
     # hours parity.
     # @param certification [Certification]
     # @param certification_case [CertificationCase, nil] When nil, resolves the case that owns the activity report (if any) so member income is not read from the wrong row when multiple cases share a certification_id (e.g. test factories).
+    # @param external_income_activities [ActiveRecord::Relation<ExternalIncomeActivity>, Array<ExternalIncomeActivity>, nil] When set, skips fetching external rows again (e.g. staff +#show+ already loaded them).
+    # @param member_income_activity_rows [Array<IncomeActivity>, nil] When set, skips +member_income_activities_for_certification+ for totals/ids (rows must match +certification_case:+ when passed).
     # @return [Hash]
-    def aggregate_income_for_certification(certification, certification_case: nil)
+    def aggregate_income_for_certification(
+      certification,
+      certification_case: nil,
+      external_income_activities: nil,
+      member_income_activity_rows: nil
+    )
       lookback_period = certification.certification_requirements.continuous_lookback_period
-      external_income_activities = fetch_external_income_activities(certification, lookback_period)
+      external_source = if external_income_activities.nil?
+        fetch_external_income_activities(certification, lookback_period)
+      else
+        external_income_activities
+      end
 
-      external_income = summarize_income(external_income_activities)
-      resolved_case = certification_case_for_member_income(certification, certification_case)
-      member_income = member_income_from_activities(certification, certification_case: resolved_case)
+      external_income = summarize_income_for_aggregate(external_source)
+
+      member_income = if member_income_activity_rows.nil?
+        resolved_case = certification_case_for_member_income(certification, certification_case)
+        member_income_from_activities(certification, certification_case: resolved_case)
+      else
+        member_income_totals_from_rows(member_income_activity_rows)
+      end
 
       {
         total_income: external_income[:total] + member_income[:total],
@@ -123,11 +139,28 @@ class IncomeComplianceDeterminationService
       compliant_for_total_income?(total_income) ? :compliant : :not_compliant
     end
 
+    def summarize_income_for_aggregate(activities)
+      return summarize_income(activities) if activities.is_a?(ActiveRecord::Relation)
+
+      rows = Array(activities)
+      {
+        total: rows.sum { |r| BigDecimal(r.gross_income.to_s) },
+        ids: rows.map(&:id)
+      }
+    end
+
     # @param certification [Certification]
     # @param certification_case [CertificationCase, nil]
     # @return [Hash] :total (+BigDecimal+), :ids (+Array+ of activity UUIDs)
     def member_income_from_activities(certification, certification_case:)
       rows = member_income_activities_for_certification(certification, certification_case: certification_case).to_a
+      member_income_totals_from_rows(rows)
+    end
+
+    # @param rows [Array<#id, #income>]
+    # @return [Hash] :total (+BigDecimal+), :ids (+Array+ of activity UUIDs)
+    def member_income_totals_from_rows(rows)
+      rows = Array(rows)
       total = rows.inject(BigDecimal("0")) do |sum, activity|
         sum + BigDecimal((activity.income&.dollar_amount || 0).to_s)
       end

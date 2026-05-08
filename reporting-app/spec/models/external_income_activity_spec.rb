@@ -184,4 +184,14 @@ RSpec.describe ExternalIncomeActivity, type: :model do
       expect(ExternalIncomeActivity::SOURCE_TYPES[:api]).to eq('api')
     end
   end
+
+  describe 'i18n contract for source_type' do
+    it 'has a certification_cases.income.source_types entry for each allowed source type' do
+      ExternalIncomeActivity::ALLOWED_SOURCE_TYPES.each do |source_type|
+        key = "certification_cases.income.source_types.#{source_type}"
+        expect(I18n.exists?(key.to_sym, :en)).to be(true),
+                                                 "Missing locale :en key #{key.inspect} for ExternalIncomeActivity source_type #{source_type.inspect}"
+      end
+    end
+  end
 end

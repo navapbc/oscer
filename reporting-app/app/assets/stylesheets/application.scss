@@ -64,72 +64,72 @@ table.usa-table.certification-case-compliance-table {
   }
 
   tbody tr {
-    background-color: color("white") !important;
+    background-color: color("white");
   }
 
   tbody td {
-    border: none !important;
-    font-size: 1rem !important;
-    font-weight: font-weight("normal") !important;
-    line-height: 1.5 !important;
-    padding: units(1) units(2) !important;
+    border: none;
+    font-size: 1rem;
+    font-weight: font-weight("normal");
+    line-height: 1.5;
+    padding: units(1) units(2);
     vertical-align: middle;
 
     &:last-child {
-      background-color: color("base-lightest") !important;
+      background-color: color("base-lightest");
       text-align: right;
     }
   }
 
   tfoot td {
-    font-size: 1rem !important;
-    line-height: 1.5 !important;
-    padding: units(1) units(2) !important;
+    font-size: 1rem;
+    line-height: 1.5;
+    padding: units(1) units(2);
     vertical-align: middle;
   }
 
   tfoot,
   tfoot tr {
-    background-color: color("white") !important;
+    background-color: color("white");
   }
 
   tfoot tr:nth-child(1) td {
-    border-bottom: none !important;
-    border-left: none !important;
-    border-right: none !important;
-    border-top: 1px solid color("base-dark") !important;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+    border-top: 1px solid color("base-dark");
   }
 
   tfoot tr:nth-child(1) td:first-child,
   tfoot tr:nth-child(2) td:first-child {
-    background-color: color("white") !important;
-    font-weight: font-weight("normal") !important;
+    background-color: color("white");
+    font-weight: font-weight("normal");
   }
 
   tfoot tr:nth-child(1) td:last-child,
   tfoot tr:nth-child(2) td:last-child {
-    background-color: color("base-lightest") !important;
-    font-weight: font-weight("normal") !important;
+    background-color: color("base-lightest");
+    font-weight: font-weight("normal");
     text-align: right;
   }
 
   tfoot tr:nth-child(2) td {
-    border: none !important;
+    border: none;
   }
 
   tfoot tr:nth-child(3) td {
-    border-bottom: none !important;
-    border-left: none !important;
-    border-right: none !important;
-    border-top: 1px solid color("base-dark") !important;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+    border-top: 1px solid color("base-dark");
   }
 
   tfoot tr:nth-child(3) td:first-child {
-    background-color: color("base-lightest") !important;
+    background-color: color("base-lightest");
   }
 
   tfoot tr:nth-child(3) td:last-child {
-    background-color: color("base-lighter") !important;
+    background-color: color("base-lighter");
     font-weight: font-weight("bold");
     text-align: right;
   }
