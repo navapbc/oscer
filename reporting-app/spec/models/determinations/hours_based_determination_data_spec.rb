@@ -57,4 +57,71 @@ RSpec.describe Determinations::HoursBasedDeterminationData do
     h = described_class.from_aggregate(hours_data).to_h
     expect(h).not_to have_key("compliant")
   end
+
+  it "accepts string-keyed aggregate hashes" do
+    hours_data = {
+      "total_hours" => 85,
+      "hours_by_category" => { "employment" => 40.0 },
+      "hours_by_source" => { "external" => 85.0, "activity" => 0.0 },
+      "external_hourly_activity_ids" => [ "11111111-1111-4111-8111-111111111111" ],
+      "activity_ids" => []
+    }
+
+    expect(described_class.from_aggregate(hours_data).to_h["total_hours"]).to eq(85.0)
+  end
+
+  it "raises when total_hours is missing" do
+    hours_data = {
+      hours_by_category: {},
+      hours_by_source: { external: 0.0, activity: 0.0 },
+      external_hourly_activity_ids: [],
+      activity_ids: []
+    }
+
+    expect {
+      described_class.from_aggregate(hours_data)
+    }.to raise_error(ActiveModel::ValidationError)
+  end
+
+  it "raises when total_hours is not numeric" do
+    hours_data = {
+      total_hours: "not-a-number",
+      hours_by_category: {},
+      hours_by_source: { external: 0.0, activity: 0.0 },
+      external_hourly_activity_ids: [],
+      activity_ids: []
+    }
+
+    expect {
+      described_class.from_aggregate(hours_data)
+    }.to raise_error(ActiveModel::ValidationError)
+  end
+
+  it "raises when hours_by_source is not a Hash" do
+    hours_data = {
+      total_hours: 10,
+      hours_by_category: {},
+      hours_by_source: "invalid",
+      external_hourly_activity_ids: [],
+      activity_ids: []
+    }
+
+    expect {
+      described_class.from_aggregate(hours_data)
+    }.to raise_error(ActiveModel::ValidationError)
+  end
+
+  it "raises when hours_by_category is not a Hash" do
+    hours_data = {
+      total_hours: 10,
+      hours_by_category: "invalid",
+      hours_by_source: { external: 10.0, activity: 0.0 },
+      external_hourly_activity_ids: [],
+      activity_ids: []
+    }
+
+    expect {
+      described_class.from_aggregate(hours_data)
+    }.to raise_error(ActiveModel::ValidationError)
+  end
 end

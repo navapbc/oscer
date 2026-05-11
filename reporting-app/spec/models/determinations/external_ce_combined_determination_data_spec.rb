@@ -154,4 +154,32 @@ RSpec.describe Determinations::ExternalCECombinedDeterminationData do
       )
     }.to raise_error(ActiveModel::ValidationError)
   end
+
+  it "requires .build before #to_h so nested VOs are populated" do
+    hours_data = {
+      total_hours: 0,
+      hours_by_category: {},
+      hours_by_source: { external: 0.0, activity: 0.0 },
+      external_hourly_activity_ids: [],
+      activity_ids: []
+    }
+    income_data = {
+      total_income: BigDecimal("0"),
+      income_by_source: { external: BigDecimal("0"), activity: BigDecimal("0") },
+      period_start: nil,
+      period_end: nil,
+      external_income_activity_ids: [],
+      activity_ids: []
+    }
+
+    vo = described_class.new(
+      hours_data: hours_data,
+      income_data: income_data,
+      hours_ok: false,
+      income_ok: false,
+      calculated_at: calculated_at
+    )
+
+    expect { vo.to_h }.to raise_error(ArgumentError, /\.build/)
+  end
 end

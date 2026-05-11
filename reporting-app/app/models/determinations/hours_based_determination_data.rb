@@ -24,10 +24,12 @@ module Determinations
     validate :hours_by_source_is_hash
 
     # @param hours_data [Hash] +:total_hours+, +:hours_by_category+, +:hours_by_source+,
-    #   +:external_hourly_activity_ids+, +:activity_ids+ (see aggregate service)
+    #   +:external_hourly_activity_ids+, +:activity_ids+ (see aggregate service). Keys may be
+    #   strings or symbols (+with_indifferent_access+ is applied internally).
     # @param compliant [Boolean, nil] omit for standalone hours CE; set for combined nested +hours+
     # @return [self]
     def self.from_aggregate(hours_data, compliant: nil)
+      hours_data = hours_data.with_indifferent_access
       new(
         total_hours: hours_data[:total_hours],
         hours_by_category: hours_data[:hours_by_category] || {},

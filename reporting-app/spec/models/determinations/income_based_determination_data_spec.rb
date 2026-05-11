@@ -62,4 +62,76 @@ RSpec.describe Determinations::IncomeBasedDeterminationData do
     h = described_class.from_aggregate(income_data).to_h
     expect(h).not_to have_key("compliant")
   end
+
+  it "accepts string-keyed aggregate hashes" do
+    income_data = {
+      "total_income" => BigDecimal("580.25"),
+      "income_by_source" => { "external" => BigDecimal("500"), "activity" => BigDecimal("80.25") },
+      "period_start" => Date.new(2026, 1, 1),
+      "period_end" => Date.new(2026, 1, 31),
+      "external_income_activity_ids" => [],
+      "activity_ids" => []
+    }
+
+    expect(described_class.from_aggregate(income_data).to_h["total_income"]).to eq(580.25)
+  end
+
+  it "rejects unknown keys on income_by_source" do
+    income_data = {
+      total_income: BigDecimal("100"),
+      income_by_source: { external: BigDecimal("100"), activity: BigDecimal("0"), other: BigDecimal("1") },
+      period_start: nil,
+      period_end: nil,
+      external_income_activity_ids: [],
+      activity_ids: []
+    }
+
+    expect {
+      described_class.from_aggregate(income_data)
+    }.to raise_error(ActiveModel::ValidationError)
+  end
+
+  it "raises when total_income is missing" do
+    income_data = {
+      income_by_source: { external: BigDecimal("0"), activity: BigDecimal("0") },
+      period_start: nil,
+      period_end: nil,
+      external_income_activity_ids: [],
+      activity_ids: []
+    }
+
+    expect {
+      described_class.from_aggregate(income_data)
+    }.to raise_error(ActiveModel::ValidationError)
+  end
+
+  it "raises when total_income is not numeric" do
+    income_data = {
+      total_income: "not-a-number",
+      income_by_source: { external: BigDecimal("0"), activity: BigDecimal("0") },
+      period_start: nil,
+      period_end: nil,
+      external_income_activity_ids: [],
+      activity_ids: []
+    }
+
+    expect {
+      described_class.from_aggregate(income_data)
+    }.to raise_error(ActiveModel::ValidationError)
+  end
+
+  it "raises when income_by_source is not a Hash" do
+    income_data = {
+      total_income: BigDecimal("0"),
+      income_by_source: "invalid",
+      period_start: nil,
+      period_end: nil,
+      external_income_activity_ids: [],
+      activity_ids: []
+    }
+
+    expect {
+      described_class.from_aggregate(income_data)
+    }.to raise_error(ActiveModel::ValidationError)
+  end
 end

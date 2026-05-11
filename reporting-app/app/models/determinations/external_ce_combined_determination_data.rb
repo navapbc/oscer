@@ -5,9 +5,11 @@ module Determinations
   # (+Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED+): one automated determination with nested hours and
   # income assessment payloads.
   #
+  # Use only {.build} to construct instances: it runs eager nested validation and memoizes nested VOs.
+  # Calling {#to_h} without {.build} is unsupported and raises.
+  #
   # Nested {HoursBasedDeterminationData} and {IncomeBasedDeterminationData} are validated during
   # {.build} (eager), not only when {#to_h} serializes, so invalid inner aggregates raise before persist.
-  # After {.build}, nested instances are memoized so {#to_h} does not reconstruct them.
   class ExternalCECombinedDeterminationData < ValueObject
     attribute :hours_data
     attribute :income_data
@@ -26,9 +28,12 @@ module Determinations
     # @return [self]
     # @raise [ActiveModel::ValidationError] outer or nested aggregate payload is invalid
     def self.build(hours_data:, income_data:, hours_ok:, income_ok:)
+      hours_payload = hours_data.is_a?(Hash) ? hours_data.to_h.with_indifferent_access : hours_data
+      income_payload = income_data.is_a?(Hash) ? income_data.to_h.with_indifferent_access : income_data
+
       new(
-        hours_data: hours_data,
-        income_data: income_data,
+        hours_data: hours_payload,
+        income_data: income_payload,
         hours_ok: hours_ok,
         income_ok: income_ok,
         calculated_at: Time.current.iso8601
@@ -39,6 +44,7 @@ module Determinations
     end
 
     # @return [Hash{String => Object}] JSONB-safe keys and values for +Determination#determination_data+
+    # @raise [ArgumentError] if nested VOs were not populated via {.build} (e.g. +#to_h+ on an instance constructed with +new+). Invalid aggregates instead raise {ActiveModel::ValidationError} during {.build}.
     def to_h
       {
         "calculation_type" => Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED,
@@ -77,11 +83,15 @@ module Determinations
     end
 
     def nested_hours_vo
-      @nested_hours_vo ||= HoursBasedDeterminationData.from_aggregate(hours_data, compliant: hours_ok)
+      raise ArgumentError, "call #{self.class.name}.build(...) before #to_h" if @nested_hours_vo.nil?
+
+      @nested_hours_vo
     end
 
     def nested_income_vo
-      @nested_income_vo ||= IncomeBasedDeterminationData.from_aggregate(income_data, compliant: income_ok)
+      raise ArgumentError, "call #{self.class.name}.build(...) before #to_h" if @nested_income_vo.nil?
+
+      @nested_income_vo
     end
 
     def hours_data_is_hash

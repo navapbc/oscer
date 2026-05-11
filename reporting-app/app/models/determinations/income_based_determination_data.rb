@@ -17,12 +17,17 @@ module Determinations
     validates :calculated_at, presence: true
     validates :total_income, presence: true, numericality: true
     validate :income_by_source_is_hash
+    validate :income_by_source_keys_allowed
 
-    # @param income_data [Hash] +:total_income+, +:income_by_source+ (+:external+, +:activity+),
-    #   +:period_start+, +:period_end+, +:external_income_activity_ids+, +:activity_ids+
+    ALLOWED_INCOME_BY_SOURCE_KEYS = %w[external activity].freeze
+
+    # @param income_data [Hash] +:total_income+, +:income_by_source+ (only +:external+ and +:activity+ totals),
+    #   +:period_start+, +:period_end+, +:external_income_activity_ids+, +:activity_ids+. Keys may be
+    #   strings or symbols (+with_indifferent_access+ is applied internally). Unknown keys on +income_by_source+ fail validation.
     # @param compliant [Boolean, nil] omit for income-only CE; set for combined nested +income+
     # @return [self]
     def self.from_aggregate(income_data, compliant: nil)
+      income_data = income_data.with_indifferent_access
       new(
         total_income: income_data[:total_income],
         income_by_source: income_data[:income_by_source] || {},
@@ -61,6 +66,14 @@ module Determinations
 
     def income_by_source_is_hash
       errors.add(:income_by_source, :invalid) unless income_by_source.is_a?(Hash)
+    end
+
+    def income_by_source_keys_allowed
+      return unless income_by_source.is_a?(Hash)
+
+      keys = income_by_source.keys.map(&:to_s)
+      unknown = keys - ALLOWED_INCOME_BY_SOURCE_KEYS
+      errors.add(:income_by_source, :invalid) if unknown.any?
     end
 
     def serialize_period(value)
