@@ -184,7 +184,7 @@ RSpec.describe "/staff/certification_cases", type: :request do
     context "without hours reported" do
       it "displays no hours message" do
         get "/staff/certification_cases/#{certification_case.id}"
-        expect(response.body).to include("No hours reported")
+        expect(response.body).to include(I18n.t("certification_cases.external_data.no_hours_reported"))
       end
 
       it "displays the income section with no external income message" do

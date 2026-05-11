@@ -47,7 +47,10 @@ class NotificationsEventListener
 
     def handle_insufficient_hours(event)
       certification = fetch_certification(event)
-      hours_data = event[:payload][:hours_data] || HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
+      hours_data = event[:payload][:hours_data] || HoursComplianceDeterminationService.aggregate_hours_for_certification(
+        certification,
+        certification_case: certification_case_for_notification(certification, event[:payload])
+      )
 
       NotificationService.send_email_notification(
         MemberMailer,
@@ -67,7 +70,10 @@ class NotificationsEventListener
 
       hours_data = payload[:hours_data]
       if hours_data.nil? && payload[:show_hours_insufficient] == true
-        hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
+        hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(
+          certification,
+          certification_case: certification_case_for_notification(certification, payload)
+        )
       end
 
       income_key_present = payload.key?(:income_data)

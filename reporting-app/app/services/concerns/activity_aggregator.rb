@@ -15,13 +15,37 @@ module ActivityAggregator
   end
 
   def fetch_member_activities(certification)
-    certification_case = CertificationCase.find_by(certification_id: certification.id)
+    certification_case = certification_case_for_certification(certification)
     return Activity.none unless certification_case
 
     form = ActivityReportApplicationForm.find_by(certification_case_id: certification_case.id)
     return Activity.none unless form
 
     form.activities
+  end
+
+  # Selects the CertificationCase to use for member activity / income / hours aggregation.
+  # When +certification_case+ is given, returns it unchanged. Otherwise, when multiple
+  # +CertificationCase+ rows share a +certification_id+ (unexpected in production, common in
+  # test factories), prefers the case that owns an +ActivityReportApplicationForm+ (newest by
+  # +created_at+); otherwise falls back to the newest case. Single source of truth for the
+  # tie-break shared by +HoursComplianceDeterminationService+ and +IncomeComplianceDeterminationService+.
+  # @param certification [Certification]
+  # @param certification_case [CertificationCase, nil]
+  # @return [CertificationCase, nil]
+  def certification_case_for_certification(certification, certification_case = nil)
+    return certification_case if certification_case
+
+    scoped = CertificationCase.where(certification_id: certification.id)
+    if scoped.offset(1).exists?
+      Rails.logger.debug do
+        "ActivityAggregator: multiple CertificationCases for certification_id=#{certification.id}; " \
+          "tie-breaker selected newest case (with ActivityReportApplicationForm if any)."
+      end
+    end
+    with_form = scoped.where(id: ActivityReportApplicationForm.select(:certification_case_id))
+      .order(created_at: :desc).first
+    with_form || scoped.order(created_at: :desc).first
   end
 
   def allocate_external_hourly_activities_by_month(activities)

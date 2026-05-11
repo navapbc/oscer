@@ -53,24 +53,42 @@ class HoursComplianceDeterminationService
     # @return [void]
     def calculate(certification_id)
       certification = Certification.find(certification_id)
-      kase = CertificationCase.find_by!(certification_id: certification_id)
+      kase = certification_case_for_certification(certification)
+      raise ActiveRecord::RecordNotFound, "Couldn't find CertificationCase for Certification #{certification_id}" unless kase
 
-      hours_data = aggregate_hours_for_certification(certification)
+      hours_data = aggregate_hours_for_certification(certification, certification_case: kase)
       outcome = determine_outcome(hours_data[:total_hours])
 
       kase.record_hours_compliance(outcome, hours_data)
     end
 
     # PUBLIC: Aggregate hours from both ExternalHourlyActivity and approved Activity records
-    # Called by business process notification steps to get hours data for emails
+    # Called by business process notification steps to get hours data for emails.
+    #
     # @param certification [Certification]
+    # @param certification_case [CertificationCase, nil] When nil, resolves via the deterministic tie-break in
+    #   +ActivityAggregator#certification_case_for_certification+ so member hours are not read from the wrong row
+    #   when multiple cases share a certification_id (e.g. test factories).
+    # @param external_hourly_activities [ActiveRecord::Relation<ExternalHourlyActivity>, Array<ExternalHourlyActivity>, nil]
+    #   When set, skips fetching external rows again (e.g. staff +#show+ already loaded them).
+    # @param member_hour_activity_rows [Array<Activity>, nil] When set, skips
+    #   +member_hour_activities_for_certification+ for totals/ids (rows must match +certification_case:+ when passed).
     # @return [Hash] with total_hours, hours_by_category, hours_by_source, etc.
-    def aggregate_hours_for_certification(certification)
-      external_hourly_activities = fetch_external_hourly_activities(certification)
-      member_activities = fetch_member_activities(certification).where.not(hours: nil)
+    def aggregate_hours_for_certification(
+      certification,
+      certification_case: nil,
+      external_hourly_activities: nil,
+      member_hour_activity_rows: nil
+    )
+      external_source = external_hourly_activities.nil? ? fetch_external_hourly_activities(certification) : external_hourly_activities
+      external_hours = summarize_hours_for_aggregate(external_source)
 
-      external_hours = summarize_hours(external_hourly_activities)
-      member_hours = summarize_hours(member_activities)
+      member_hours = if member_hour_activity_rows.nil?
+        resolved_case = certification_case_for_certification(certification, certification_case)
+        member_hours_from_activities(certification, certification_case: resolved_case)
+      else
+        summarize_hours_for_aggregate(member_hour_activity_rows)
+      end
 
       {
         total_hours: external_hours[:total] + member_hours[:total],
@@ -88,15 +106,12 @@ class HoursComplianceDeterminationService
     # Used by staff +CertificationCasesController#show+ for the "Hours reported" table, parallel to
     # +IncomeComplianceDeterminationService.member_income_activities_for_certification+.
     #
-    # +aggregate_hours_for_certification+ is unchanged and still uses +ActivityAggregator#fetch_member_activities+
-    # when computing totals; pass +certification_case:+ from staff show so the table matches this case's form.
-    #
     # @param certification [Certification]
     # @param certification_case [CertificationCase, nil] When set, uses this case's activity report. When nil,
-    #   uses +CertificationCase.find_by(certification_id:+ …), matching +ActivityAggregator#fetch_member_activities+.
+    #   uses +ActivityAggregator#certification_case_for_certification+ (deterministic tie-break) to resolve.
     # @return [ActiveRecord::Relation<Activity>]
     def member_hour_activities_for_certification(certification, certification_case: nil)
-      kase = certification_case_for_member_hour_activities(certification, certification_case)
+      kase = certification_case_for_certification(certification, certification_case)
       return Activity.none unless kase
 
       form = ActivityReportApplicationForm.find_by(certification_case_id: kase.id)
@@ -113,12 +128,6 @@ class HoursComplianceDeterminationService
     end
 
     private
-
-    def certification_case_for_member_hour_activities(certification, certification_case)
-      return certification_case if certification_case
-
-      CertificationCase.find_by(certification_id: certification.id)
-    end
 
     # Shared logic for both initial and post-activity-report determination
     # @param kase [CertificationCase]
@@ -152,6 +161,25 @@ class HoursComplianceDeterminationService
       (external.keys | member.keys).each_with_object({}) do |category, result|
         result[category] = (external[category] || 0.0) + (member[category] || 0.0)
       end
+    end
+
+    def summarize_hours_for_aggregate(activities)
+      return summarize_hours(activities) if activities.is_a?(ActiveRecord::Relation)
+
+      rows = Array(activities)
+      {
+        total: rows.sum { |row| row.hours.to_f },
+        by_category: rows.group_by(&:category).transform_values { |group| group.sum { |row| row.hours.to_f } },
+        ids: rows.map(&:id)
+      }
+    end
+
+    def member_hours_from_activities(certification, certification_case:)
+      # +member_hour_activities_for_certification+ orders by month / created_at for the staff UI table.
+      # +summarize_hours+ adds +GROUP BY :category+, which Postgres rejects unless those ORDER BY columns
+      # are in the GROUP BY. Strip the ORDER BY before aggregating.
+      rel = member_hour_activities_for_certification(certification, certification_case: certification_case).reorder(nil)
+      summarize_hours(rel)
     end
   end
 end

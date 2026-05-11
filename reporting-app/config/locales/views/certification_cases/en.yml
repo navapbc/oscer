@@ -17,7 +17,7 @@ en:
       title: "Certification Cases"
     external_data:
       summarized_under_activity_report: "Hours and income from the state and this member’s activity report are summarized under Activity Report below."
-      # External Data section when there is no activity report (ex parte layout); same plain meaning as hours_reported_table.no_hours_reported but scoped for translators.
+      # External Data section when there is no activity report; same plain meaning as hours_reported_table.no_hours_reported but scoped for translators.
       no_hours_reported: "No hours reported from external sources for this lookback."
       no_income_reported: "No income reported from external sources for this lookback."
     show:
@@ -56,7 +56,6 @@ en:
       total_reported: "Total reported"
       required: "Required"
       additional_income_needed: "Additional income needed"
-      no_income_reported: "No income reported for this lookback."
       organization_name: "Organization name"
       organization_not_listed: "—"
       pay_period: "Pay period"

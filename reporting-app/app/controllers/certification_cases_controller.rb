@@ -24,12 +24,18 @@ class CertificationCasesController < StaffController
     @tasks = @case.tasks.order(created_at: :desc)
 
     # Hours data for the "Hours reported" table
-    @hours_summary = HoursComplianceDeterminationService.aggregate_hours_for_certification(@certification)
     @target_hours = HoursComplianceDeterminationService::TARGET_HOURS
     @external_hourly_activities = fetch_external_hourly_activities
     @hours_member_activities = HoursComplianceDeterminationService.member_hour_activities_for_certification(
       @certification,
       certification_case: @case
+    )
+    hours_member_rows = @hours_member_activities.to_a
+    @hours_summary = HoursComplianceDeterminationService.aggregate_hours_for_certification(
+      @certification,
+      certification_case: @case,
+      external_hourly_activities: @external_hourly_activities,
+      member_hour_activity_rows: hours_member_rows
     )
     @external_income_activities = fetch_external_income_activities
     @member_income_activities = IncomeComplianceDeterminationService.member_income_activities_for_certification(

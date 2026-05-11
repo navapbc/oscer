@@ -30,7 +30,7 @@ class IncomeComplianceDeterminationService
     # @return [void]
     def calculate(certification_id)
       certification = Certification.find(certification_id)
-      kase = certification_case_for_member_income(certification, nil)
+      kase = certification_case_for_certification(certification)
       raise ActiveRecord::RecordNotFound, "Couldn't find CertificationCase for Certification #{certification_id}" unless kase
 
       income_data = aggregate_income_for_certification(certification, certification_case: kase)
@@ -63,7 +63,7 @@ class IncomeComplianceDeterminationService
       external_income = summarize_income_for_aggregate(external_source)
 
       member_income = if member_income_activity_rows.nil?
-        resolved_case = certification_case_for_member_income(certification, certification_case)
+        resolved_case = certification_case_for_certification(certification, certification_case)
         member_income_from_activities(certification, certification_case: resolved_case)
       else
         member_income_totals_from_rows(member_income_activity_rows)
@@ -92,7 +92,7 @@ class IncomeComplianceDeterminationService
     # @param certification_case [CertificationCase, nil] See {.aggregate_income_for_certification}
     # @return [ActiveRecord::Relation<Activity>]
     def member_income_activities_for_certification(certification, certification_case: nil)
-      kase = certification_case_for_member_income(certification, certification_case)
+      kase = certification_case_for_certification(certification, certification_case)
       return Activity.none unless kase
 
       form = ActivityReportApplicationForm.find_by(certification_case_id: kase.id)
@@ -109,31 +109,6 @@ class IncomeComplianceDeterminationService
     end
 
     private
-
-    # When multiple +CertificationCase+ rows share a +certification_id+, +find_by(certification_id:)+ is
-    # nondeterministic and may return a case with no activity report, yielding empty member income.
-    #
-    # Resolution (OSCER-408): prefer the case that has an +ActivityReportApplicationForm+ (newest by
-    # +created_at+ if several); otherwise fall back to the newest case. Callers that know the correct
-    # case (e.g. +CertificationCasesController#show+ with +@case+) should pass +certification_case:+ so
-    # aggregation matches the staff view. Product has not required a different tie-break; revisit if
-    # multiple open cases with activity reports become a supported scenario.
-    def certification_case_for_member_income(certification, certification_case)
-      return certification_case if certification_case
-
-      scoped = CertificationCase.where(certification_id: certification.id)
-      # Multiple cases for one certification are unexpected in production; tie-break is deterministic.
-      # This message is trace-only (debug): it does not appear in typical production log levels.
-      # Use block form so the string is built only when debug logging is enabled.
-      if scoped.offset(1).exists?
-        Rails.logger.debug do
-          "IncomeComplianceDeterminationService: multiple CertificationCases for certification_id=#{certification.id}; " \
-            "tie-breaker selected newest case (with ActivityReportApplicationForm if any)."
-        end
-      end
-      with_form = scoped.where(id: ActivityReportApplicationForm.select(:certification_case_id)).order(created_at: :desc).first
-      with_form || scoped.order(created_at: :desc).first
-    end
 
     def determine_outcome(total_income)
       compliant_for_total_income?(total_income) ? :compliant : :not_compliant
