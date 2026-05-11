@@ -308,6 +308,81 @@ RSpec.describe HoursComplianceDeterminationService do
     end
   end
 
+  describe ".member_hour_activities_for_certification" do
+    before { allow(Strata::EventManager).to receive(:publish) }
+
+    let(:certification) { create(:certification) }
+    let(:certification_case) { create(:certification_case, certification_id: certification.id) }
+    let(:form) { create(:activity_report_application_form, certification_case_id: certification_case.id) }
+    let(:month_a) { Date.new(2024, 1, 1) }
+    let(:month_b) { Date.new(2024, 2, 1) }
+
+    it "returns no rows when the case has no activity report" do
+      other_case = create(:certification_case, certification_id: certification.id)
+
+      rel = described_class.member_hour_activities_for_certification(
+        certification,
+        certification_case: other_case
+      )
+
+      expect(rel).to be_none
+    end
+
+    it "excludes income rows and includes work rows with non-nil hours" do
+      create(:work_activity, activity_report_application_form_id: form.id, month: month_a, hours: 12)
+      create(:income_activity, activity_report_application_form_id: form.id, month: month_a)
+
+      rel = described_class.member_hour_activities_for_certification(
+        certification,
+        certification_case: certification_case
+      )
+
+      expect(rel.count).to eq(1)
+      expect(rel.first).to be_a(WorkActivity)
+      expect(rel.first.hours).to eq(12)
+    end
+
+    it "orders by month then created_at" do
+      first = create(:work_activity, activity_report_application_form_id: form.id, month: month_b, hours: 1)
+      second = create(:work_activity, activity_report_application_form_id: form.id, month: month_a, hours: 2)
+
+      rel = described_class.member_hour_activities_for_certification(
+        certification,
+        certification_case: certification_case
+      )
+
+      expect(rel.to_a).to eq([ second, first ])
+    end
+
+    it "scopes to the given certification case when multiple cases share a certification" do
+      other_case = create(:certification_case, certification_id: certification.id)
+      create(:work_activity, activity_report_application_form_id: form.id, month: month_a, hours: 5)
+
+      empty = described_class.member_hour_activities_for_certification(
+        certification,
+        certification_case: other_case
+      )
+      from_form_case = described_class.member_hour_activities_for_certification(
+        certification,
+        certification_case: certification_case
+      )
+
+      expect(empty).to be_none
+      expect(from_form_case.count).to eq(1)
+    end
+
+    context "when certification_case is omitted" do
+      it "uses CertificationCase.find_by(certification_id:) like ActivityAggregator when only one case exists" do
+        create(:work_activity, activity_report_application_form_id: form.id, month: month_a, hours: 7)
+
+        rel = described_class.member_hour_activities_for_certification(certification)
+
+        expect(rel.count).to eq(1)
+        expect(rel.first.hours).to eq(7)
+      end
+    end
+  end
+
   describe "TARGET_HOURS" do
     it "defaults to 80" do
       expect(described_class::TARGET_HOURS).to eq(80)

@@ -27,8 +27,10 @@ class CertificationCasesController < StaffController
     @hours_summary = HoursComplianceDeterminationService.aggregate_hours_for_certification(@certification)
     @target_hours = HoursComplianceDeterminationService::TARGET_HOURS
     @external_hourly_activities = fetch_external_hourly_activities
-    @member_activities = fetch_member_activities
-    @hours_member_activities = @member_activities.reject { |a| a.read_attribute(:hours).nil? }
+    @hours_member_activities = HoursComplianceDeterminationService.member_hour_activities_for_certification(
+      @certification,
+      certification_case: @case
+    )
     @external_income_activities = fetch_external_income_activities
     @member_income_activities = IncomeComplianceDeterminationService.member_income_activities_for_certification(
       @certification,
@@ -80,13 +82,5 @@ class CertificationCasesController < StaffController
     ExternalIncomeActivity.for_member(@certification.member_id)
       .within_period(lookback_period)
       .order(:period_start, :reported_at)
-  end
-
-  def fetch_member_activities
-    return [] unless @activity_report
-
-    # All line items on the form for staff compliance tables (hours + income), not only rows with hours.
-    # Totals still come from HoursComplianceDeterminationService / IncomeComplianceDeterminationService.
-    @activity_report.activities.order(:month, :created_at)
   end
 end

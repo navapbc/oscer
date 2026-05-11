@@ -1,5 +1,5 @@
 <% if activity_report.present? %>
-  <p class="maxw-full"><%= t("certification_cases.ex_parte_data.summarized_under_activity_report") %></p>
+  <p class="maxw-full"><%= t("certification_cases.external_data.summarized_under_activity_report") %></p>
 <% else %>
   <% hours_has_data = external_hourly_activities.any? || hours_member_activities.any? %>
   <% income_member_activities = local_assigns.fetch(:income_member_activities) %>
@@ -14,7 +14,7 @@
             target_hours: target_hours
           } %>
     <% else %>
-      <p><%= t("certification_cases.ex_parte_data.no_hours_in_external_summary") %></p>
+      <p><%= t("certification_cases.external_data.no_hours_reported") %></p>
     <% end %>
     <% if income_has_data %>
       <%= render partial: "certification_cases/income_reported_table",
@@ -25,7 +25,7 @@
             target_income: target_income
           } %>
     <% else %>
-      <p><%= t("certification_cases.income.no_rows") %></p>
+      <p><%= t("certification_cases.external_data.no_income_reported") %></p>
     <% end %>
   </div>
 <% end %>

@@ -84,6 +84,27 @@ class HoursComplianceDeterminationService
       }
     end
 
+    # Member-reported activity rows on the case activity report that carry hours (non-nil +hours+ column).
+    # Used by staff +CertificationCasesController#show+ for the "Hours reported" table, parallel to
+    # +IncomeComplianceDeterminationService.member_income_activities_for_certification+.
+    #
+    # +aggregate_hours_for_certification+ is unchanged and still uses +ActivityAggregator#fetch_member_activities+
+    # when computing totals; pass +certification_case:+ from staff show so the table matches this case's form.
+    #
+    # @param certification [Certification]
+    # @param certification_case [CertificationCase, nil] When set, uses this case's activity report. When nil,
+    #   uses +CertificationCase.find_by(certification_id:+ …), matching +ActivityAggregator#fetch_member_activities+.
+    # @return [ActiveRecord::Relation<Activity>]
+    def member_hour_activities_for_certification(certification, certification_case: nil)
+      kase = certification_case_for_member_hour_activities(certification, certification_case)
+      return Activity.none unless kase
+
+      form = ActivityReportApplicationForm.find_by(certification_case_id: kase.id)
+      return Activity.none unless form
+
+      form.activities.where.not(hours: nil).order(:month, :created_at)
+    end
+
     # Check if total hours meet the compliance threshold
     # @param total_hours [Float]
     # @return [Boolean]
@@ -92,6 +113,12 @@ class HoursComplianceDeterminationService
     end
 
     private
+
+    def certification_case_for_member_hour_activities(certification, certification_case)
+      return certification_case if certification_case
+
+      CertificationCase.find_by(certification_id: certification.id)
+    end
 
     # Shared logic for both initial and post-activity-report determination
     # @param kase [CertificationCase]
