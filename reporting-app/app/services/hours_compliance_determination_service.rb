@@ -80,14 +80,14 @@ class HoursComplianceDeterminationService
       external_hourly_activities: nil,
       member_hour_activity_rows: nil
     )
-      external_source = external_hourly_activities.nil? ? fetch_external_hourly_activities(certification) : external_hourly_activities
-      external_hours = summarize_hours_for_aggregate(external_source)
+      external_sources = external_hourly_activities.nil? ? fetch_external_hourly_activities(certification) : external_hourly_activities
+      external_hours = summarize_hours(external_sources)
 
       member_hours = if member_hour_activity_rows.nil?
         resolved_case = certification_case_for_certification(certification, certification_case)
         member_hours_from_activities(certification, certification_case: resolved_case)
       else
-        summarize_hours_for_aggregate(member_hour_activity_rows)
+        summarize_hours(member_hour_activity_rows)
       end
 
       {
@@ -161,17 +161,6 @@ class HoursComplianceDeterminationService
       (external.keys | member.keys).each_with_object({}) do |category, result|
         result[category] = (external[category] || 0.0) + (member[category] || 0.0)
       end
-    end
-
-    def summarize_hours_for_aggregate(activities)
-      return summarize_hours(activities) if activities.is_a?(ActiveRecord::Relation)
-
-      rows = Array(activities)
-      {
-        total: rows.sum { |row| row.hours.to_f },
-        by_category: rows.group_by(&:category).transform_values { |group| group.sum { |row| row.hours.to_f } },
-        ids: rows.map(&:id)
-      }
     end
 
     def member_hours_from_activities(certification, certification_case:)

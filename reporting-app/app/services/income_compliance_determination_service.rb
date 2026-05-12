@@ -54,13 +54,13 @@ class IncomeComplianceDeterminationService
       member_income_activity_rows: nil
     )
       lookback_period = certification.certification_requirements.continuous_lookback_period
-      external_source = if external_income_activities.nil?
+      external_sources = if external_income_activities.nil?
         fetch_external_income_activities(certification, lookback_period)
       else
         external_income_activities
       end
 
-      external_income = summarize_income_for_aggregate(external_source)
+      external_income = summarize_income(external_sources)
 
       member_income = if member_income_activity_rows.nil?
         resolved_case = certification_case_for_certification(certification, certification_case)
@@ -114,16 +114,6 @@ class IncomeComplianceDeterminationService
       compliant_for_total_income?(total_income) ? :compliant : :not_compliant
     end
 
-    def summarize_income_for_aggregate(activities)
-      return summarize_income(activities) if activities.is_a?(ActiveRecord::Relation)
-
-      rows = Array(activities)
-      {
-        total: rows.sum { |r| BigDecimal(r.gross_income.to_s) },
-        ids: rows.map(&:id)
-      }
-    end
-
     # @param certification [Certification]
     # @param certification_case [CertificationCase, nil]
     # @return [Hash] :total (+BigDecimal+), :ids (+Array+ of activity UUIDs)
@@ -132,8 +122,9 @@ class IncomeComplianceDeterminationService
       member_income_totals_from_rows(rows)
     end
 
-    # @param rows [Array<#id, #income>]
+    # @param rows [Array<IncomeActivity>]
     # @return [Hash] :total (+BigDecimal+), :ids (+Array+ of activity UUIDs)
+    # Uses +IncomeActivity#income+ (Strata +:money+), not +gross_income+ (+summarize_income+ is for +ExternalIncomeActivity+).
     def member_income_totals_from_rows(rows)
       rows = Array(rows)
       total = rows.inject(BigDecimal("0")) do |sum, activity|

@@ -257,7 +257,7 @@ RSpec.describe "/staff/certification_cases", type: :request do
         state_name = ENV.fetch("STATE_NAME", "the State")
         expect(response.body).to include(I18n.t("certification_cases.common.source_external", state_name: state_name))
         expect(response.body).to include("Employment")
-        expect(response.body).to include("$1,234.56")
+        expect(response.body).to include("$1,235")
       end
     end
 

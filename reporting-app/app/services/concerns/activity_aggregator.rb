@@ -57,18 +57,37 @@ module ActivityAggregator
   end
 
   def summarize_hours(activities)
-    {
-      total: activities.sum(:hours).to_f,
-      by_category: activities.group(:category).sum(:hours).transform_values(&:to_f),
-      ids: activities.pluck(:id)
-    }
+    if activities.is_a?(ActiveRecord::Relation)
+      {
+        total: activities.sum(:hours).to_f,
+        by_category: activities.group(:category).sum(:hours).transform_values(&:to_f),
+        ids: activities.pluck(:id)
+      }
+    else
+      rows = Array(activities)
+      {
+        total: rows.sum { |row| row.hours.to_f },
+        by_category: rows.group_by(&:category).transform_values { |group| group.sum { |row| row.hours.to_f } },
+        ids: rows.map(&:id)
+      }
+    end
   end
 
+  # Expects +ExternalIncomeActivity+ rows (+gross_income+). Do not pass +IncomeActivity+ / +activities+ here;
+  # member self-report totals use +IncomeComplianceDeterminationService#member_income_totals_from_rows+.
   def summarize_income(activities)
-    {
-      total: BigDecimal(activities.sum(:gross_income).to_s),
-      ids: activities.pluck(:id)
-    }
+    if activities.is_a?(ActiveRecord::Relation)
+      {
+        total: BigDecimal(activities.sum(:gross_income).to_s),
+        ids: activities.pluck(:id)
+      }
+    else
+      rows = Array(activities)
+      {
+        total: rows.sum { |row| BigDecimal(row.gross_income.to_s) },
+        ids: rows.map(&:id)
+      }
+    end
   end
 
   private

@@ -91,27 +91,14 @@
 
   <% component.with_heading { t(".external_data") } %>
   <% component.with_body do %>
-    <%= render partial: "certification_cases/external_data_section",
-        locals: {
-          activity_report: @activity_report,
-          external_hourly_activities: @external_hourly_activities,
-          hours_member_activities: @hours_member_activities,
-          hours_summary: @hours_summary,
-          target_hours: @target_hours,
-          external_income_activities: @external_income_activities,
-          income_member_activities: @member_income_activities,
-          income_summary: @income_summary,
-          target_income: @target_income
-        } %>
+    <%= render partial: "certification_cases/external_data_section" %>
   <% end %>
 
   <% component.with_heading { t(".activity_report") } %>
   <% component.with_body do %>
-    <% hours_has_data = @external_hourly_activities.any? || @hours_member_activities.any? %>
-    <% income_has_data = @external_income_activities.any? || @member_income_activities.any? %>
-    <% if hours_has_data || income_has_data %>
+    <% if @hours_has_data || @income_has_data %>
       <div class="certification-case-compliance-tables margin-bottom-4">
-        <% if hours_has_data %>
+        <% if @hours_has_data %>
           <%= render partial: "certification_cases/hours_reported_table",
               locals: {
                 external_hourly_activities: @external_hourly_activities,
@@ -120,11 +107,11 @@
                 target_hours: @target_hours
               } %>
         <% end %>
-        <% if income_has_data %>
+        <% if @income_has_data %>
           <%= render partial: "certification_cases/income_reported_table",
               locals: {
                 external_income_activities: @external_income_activities,
-                income_member_activities: @member_income_activities,
+                member_income_activities: @member_income_activities,
                 income_summary: @income_summary,
                 target_income: @target_income
               } %>
