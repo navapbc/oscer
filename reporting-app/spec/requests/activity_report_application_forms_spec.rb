@@ -78,7 +78,7 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
       end
     end
 
-    context "with ex_parte activities" do
+    context "with external hourly activities" do
       let(:member_id) { "MEMBER123" }
       let(:certification_with_member) do
         create(:certification,
@@ -98,8 +98,8 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
       end
 
       before do
-        # Create ex_parte activities for the member
-        create(:ex_parte_activity,
+        # Create external hourly activities for the member
+        create(:external_hourly_activity,
           member_id: member_id,
           category: "employment",
           hours: 40,
@@ -116,7 +116,7 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
         )
       end
 
-      it "displays both ex_parte and self-reported activities" do
+      it "displays both external and self-reported activities" do
         get activity_report_application_form_url(activity_report_with_member)
 
         expect(response).to be_successful

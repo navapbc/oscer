@@ -50,19 +50,19 @@ RSpec.describe "/staff/certification_cases", type: :request do
         period_start = lookback_period.start
         period_end = lookback_period.start.end_of_month
 
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                member_id: member_id,
                category: "employment",
                hours: 20,
                period_start: period_start,
                period_end: period_end)
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                member_id: member_id,
                category: "community_service",
                hours: 15,
                period_start: period_start,
                period_end: period_end)
-        create(:ex_parte_activity,
+        create(:external_hourly_activity,
                member_id: member_id,
                category: "community_service",
                hours: 15,
@@ -82,13 +82,13 @@ RSpec.describe "/staff/certification_cases", type: :request do
 
       it "displays the hours reported table" do
         get "/staff/certification_cases/#{certification_case.id}"
-        expect(response.body).to include("Ex Parte Data")
+        expect(response.body).to include("External Data")
         expect(response.body).to include("Organization name")
         expect(response.body).to include("Source")
         expect(response.body).to include("Activity type")
       end
 
-      it "displays ex parte activities" do
+      it "displays external hourly activities" do
         get "/staff/certification_cases/#{certification_case.id}"
         expect(response.body).to include("From the State")
         expect(response.body).to include("Employment")
