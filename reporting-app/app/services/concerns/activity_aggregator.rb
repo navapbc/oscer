@@ -37,11 +37,12 @@ module ActivityAggregator
     return certification_case if certification_case
 
     cc_scoped = CertificationCase.where(certification_id: certification.id)
-    if cc_scoped.offset(1).exists?
-      Rails.logger.debug do
-        "ActivityAggregator: multiple CertificationCases for certification_id=#{certification.id}; " \
-          "tie-breaker selected newest case (with ActivityReportApplicationForm if any)."
-      end
+    cases = cc_scoped.limit(2).to_a
+    return cases.first if cases.size <= 1
+
+    Rails.logger.debug do
+      "ActivityAggregator: multiple CertificationCases for certification_id=#{certification.id}; " \
+        "tie-breaker selected newest case (with ActivityReportApplicationForm if any)."
     end
     cc_with_form = cc_scoped.where(id: ActivityReportApplicationForm.select(:certification_case_id))
       .order(created_at: :desc).first
