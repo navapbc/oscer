@@ -36,16 +36,16 @@ module ActivityAggregator
   def certification_case_for_certification(certification, certification_case = nil)
     return certification_case if certification_case
 
-    scoped = CertificationCase.where(certification_id: certification.id)
-    if scoped.offset(1).exists?
+    cc_scoped = CertificationCase.where(certification_id: certification.id)
+    if cc_scoped.offset(1).exists?
       Rails.logger.debug do
         "ActivityAggregator: multiple CertificationCases for certification_id=#{certification.id}; " \
           "tie-breaker selected newest case (with ActivityReportApplicationForm if any)."
       end
     end
-    with_form = scoped.where(id: ActivityReportApplicationForm.select(:certification_case_id))
+    cc_with_form = cc_scoped.where(id: ActivityReportApplicationForm.select(:certification_case_id))
       .order(created_at: :desc).first
-    with_form || scoped.order(created_at: :desc).first
+    cc_with_form || cc_scoped.order(created_at: :desc).first
   end
 
   def allocate_external_hourly_activities_by_month(activities)
