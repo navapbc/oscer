@@ -149,7 +149,7 @@ class NotificationsEventListener
       return nil if case_id.blank?
 
       kase = CertificationCase.find_by(id: case_id)
-      return nil if kase.blank? || kase.certification_id != certification.id
+      return nil if kase&.certification_id != certification.id
 
       kase
     end
