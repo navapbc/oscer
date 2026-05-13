@@ -1,6 +1,7 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: b8d7e3cbe28c74e44844208c032d3f5e1d74b456
+  revision: 28e5bc3d8c51d704cee29337eff425330b70ac85
+  branch: jeffhorn/oscer-351-input-prefix-suffix
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
