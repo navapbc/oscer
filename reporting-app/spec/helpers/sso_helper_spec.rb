@@ -74,6 +74,16 @@ RSpec.describe SsoHelper, type: :helper do
         expect(helper.member_oidc_enabled?).to be false
       end
     end
+
+    context "when member_oidc config is not set" do
+      before do
+        allow(Rails.application.config).to receive(:member_oidc).and_raise(NoMethodError)
+      end
+
+      it "returns false" do
+        expect(helper.member_oidc_enabled?).to be false
+      end
+    end
   end
 
   describe "#member_oidc_member_auth_only?" do
