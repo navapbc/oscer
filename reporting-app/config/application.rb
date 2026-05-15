@@ -19,8 +19,16 @@ module TemplateApplicationRails
     I18n.default_locale = :"en"
     I18n.enforce_available_locales = true
 
-    # Support nested locale files
-    config.i18n.load_path += Dir[Rails.root.join("config", "locales", "**", "*.{rb,yml}")]
+    # Support nested locale files. Files under config/locales/overrides/ are a
+    # deployment-owned customization path (customization ladder Tier 2). They are
+    # loaded LAST so override keys win on duplicate-key conflicts. Explicit ordering
+    # is required because OSCER's locale subdirectories (services/, views/) sort
+    # alphabetically AFTER overrides/, so a naive single-glob load order would
+    # cause base keys in those directories to beat overrides.
+    base_locales = Dir[Rails.root.join("config", "locales", "**", "*.{rb,yml}")]
+      .reject { |p| p.include?("/locales/overrides/") }
+    override_locales = Dir[Rails.root.join("config", "locales", "overrides", "**", "*.{rb,yml}")]
+    config.i18n.load_path += base_locales + override_locales
 
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.0
