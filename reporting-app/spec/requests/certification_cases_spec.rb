@@ -80,9 +80,15 @@ RSpec.describe "/staff/certification_cases", type: :request do
         )
       end
 
-      it "displays the hours reported table" do
+      it "shows External Data and summarizes under Activity Report when a report exists" do
         get "/staff/certification_cases/#{certification_case.id}"
         expect(response.body).to include("External Data")
+        expect(response.body).to include("summarized under Activity Report below")
+      end
+
+      it "displays the hours reported table in the Activity Report section" do
+        get "/staff/certification_cases/#{certification_case.id}"
+        expect(response.body).to include("Activity Report")
         expect(response.body).to include("Organization name")
         expect(response.body).to include("Source")
         expect(response.body).to include("Activity type")
@@ -106,12 +112,152 @@ RSpec.describe "/staff/certification_cases", type: :request do
         expect(response.body).to include("Additional hours needed")
         expect(response.body).to include("20")
       end
+
+      it "shows activity line items heading before the Doc AI detailed activity table when Doc AI is enabled" do
+        with_doc_ai_enabled do
+          get "/staff/certification_cases/#{certification_case.id}"
+          expect(response.body).to include("Activity line items")
+        end
+      end
+
+      it "does not show the Doc AI activity line items grid when Doc AI is disabled (compliance tables only)" do
+        with_doc_ai_disabled do
+          get "/staff/certification_cases/#{certification_case.id}"
+          expect(response.body).not_to include("Activity line items")
+        end
+      end
+    end
+
+    context "with only income activities on activity report" do
+      let(:lookback_period) { certification.certification_requirements.continuous_lookback_period }
+
+      before do
+        month = lookback_period.start.to_date
+        form = create(:activity_report_application_form, certification_case_id: certification_case.id)
+        form.activities.create!(
+          type: "IncomeActivity",
+          name: "nava",
+          category: "employment",
+          month: month,
+          income: 500_000
+        )
+      end
+
+      it "does not show no hours reported when income rows exist" do
+        get "/staff/certification_cases/#{certification_case.id}"
+        expect(response.body).not_to include("No hours reported")
+        expect(response.body).to include("Income reported")
+      end
+
+      it "loads member income activities for aggregation only once on show" do
+        allow(IncomeComplianceDeterminationService).to receive(:member_income_activities_for_certification).and_call_original
+
+        get "/staff/certification_cases/#{certification_case.id}"
+
+        expect(response).to have_http_status(:success)
+        expect(IncomeComplianceDeterminationService).to have_received(:member_income_activities_for_certification).once
+      end
+    end
+
+    context "with only work activities on activity report (no income rows)" do
+      let(:lookback_period) { certification.certification_requirements.continuous_lookback_period }
+
+      before do
+        month = lookback_period.start.to_date
+        form = create(:activity_report_application_form, certification_case_id: certification_case.id)
+        form.activities.create!(
+          hours: 40,
+          name: "Solo Employer",
+          type: "WorkActivity",
+          month: month
+        )
+      end
+
+      it "does not show empty income compliance copy when hours exist" do
+        get "/staff/certification_cases/#{certification_case.id}"
+        expect(response.body).to include("Hours reported")
+        expect(response.body).not_to include("No income reported for this lookback.")
+        expect(response.body).not_to include("Additional income needed")
+      end
     end
 
     context "without hours reported" do
       it "displays no hours message" do
         get "/staff/certification_cases/#{certification_case.id}"
-        expect(response.body).to include("No hours reported")
+        expect(response.body).to include(I18n.t("certification_cases.external_data.no_hours_reported"))
+      end
+
+      it "displays the income section with no external income message" do
+        get "/staff/certification_cases/#{certification_case.id}"
+        expect(response.body).to include(I18n.t("certification_cases.external_data.no_income_reported"))
+      end
+    end
+
+    context "with external hourly activities but no activity report form" do
+      let(:member_id) { certification.member_id }
+      let(:lookback_period) { certification.certification_requirements.continuous_lookback_period }
+
+      before do
+        period_start = lookback_period.start
+        period_end = lookback_period.start.end_of_month
+        create(:external_hourly_activity,
+               :employment,
+               member_id: member_id,
+               hours: 80,
+               period_start: period_start,
+               period_end: period_end)
+      end
+
+      it "shows compliance hours under Activity Report without an activity report form" do
+        get "/staff/certification_cases/#{certification_case.id}"
+        expect(response.body).to include("Activity Report")
+        expect(response.body).to include("Hours reported")
+        expect(response.body).to include("80")
+        expect(response.body).to include("Total reported")
+        expect(response.body).not_to include("Additional income needed")
+      end
+    end
+
+    context "with activity report but no hours or income in compliance summary" do
+      before do
+        create(:activity_report_application_form, certification_case_id: certification_case.id, activities: [])
+      end
+
+      it "shows a single empty state under Activity Report" do
+        get "/staff/certification_cases/#{certification_case.id}"
+        expect(response.body).to include("No hours or income reported")
+        expect(response.body).not_to include("No income reported for this lookback.")
+      end
+    end
+
+    context "with external income in lookback" do
+      let(:member_id) { certification.member_id }
+      let(:lookback_period) { certification.certification_requirements.continuous_lookback_period }
+
+      before do
+        period_start = lookback_period.start.to_date
+        period_end = lookback_period.start.to_date.end_of_month
+
+        create(:external_income_activity, :employment,
+               member_id: member_id,
+               gross_income: 1_234.56,
+               period_start: period_start,
+               period_end: period_end,
+               source_type: ExternalIncomeActivity::SOURCE_TYPES[:api],
+               metadata: { "employer" => "Acme Corp" })
+      end
+
+      it "displays the income compliance table (same columns as Activity Report) under External data and when applicable under Activity Report" do
+        get "/staff/certification_cases/#{certification_case.id}"
+        expect(response.body).to include("Income reported")
+        expect(response.body).to include("Organization name")
+        expect(response.body).to include("Acme Corp")
+        expect(response.body).to include("Source")
+        expect(response.body).to include("Activity type")
+        state_name = ENV.fetch("STATE_NAME", "the State")
+        expect(response.body).to include(I18n.t("certification_cases.common.source_external", state_name: state_name))
+        expect(response.body).to include("Employment")
+        expect(response.body).to include("$1,234.56")
       end
     end
 
