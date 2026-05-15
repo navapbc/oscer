@@ -23,7 +23,7 @@
         <td><%= number_with_precision(activity.hours, precision: 0) %></td>
       </tr>
     <% end %>
-    <% @hours_member_activities.each do |activity| %>
+    <% @member_hour_activities.each do |activity| %>
       <tr>
         <td><%= activity.name %></td>
         <td><%= t("#{common}.source_self_reported") %></td>

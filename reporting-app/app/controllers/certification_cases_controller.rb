@@ -26,31 +26,31 @@ class CertificationCasesController < StaffController
     # Hours data for the "Hours reported" table
     @target_hours = HoursComplianceDeterminationService::TARGET_HOURS
     @external_hourly_activities = fetch_external_hourly_activities
-    @hours_member_activities = HoursComplianceDeterminationService.member_hour_activities_for_certification(
+    @member_hour_activities = HoursComplianceDeterminationService.member_hour_activities_for_certification(
       @certification,
       certification_case: @case
     )
-    hours_member_rows = @hours_member_activities.to_a
+    member_hour_rows = @member_hour_activities.to_a
     @hours_summary = HoursComplianceDeterminationService.aggregate_hours_for_certification(
       @certification,
       certification_case: @case,
       external_hourly_activities: @external_hourly_activities,
-      member_hour_activity_rows: hours_member_rows
+      member_hour_activity_rows: member_hour_rows
     )
     @external_income_activities = fetch_external_income_activities
     @member_income_activities = IncomeComplianceDeterminationService.member_income_activities_for_certification(
       @certification,
       certification_case: @case
     )
-    income_member_rows = @member_income_activities.to_a
+    member_income_rows = @member_income_activities.to_a
     @income_summary = IncomeComplianceDeterminationService.aggregate_income_for_certification(
       @certification,
       certification_case: @case,
       external_income_activities: @external_income_activities,
-      member_income_activity_rows: income_member_rows
+      member_income_activity_rows: member_income_rows
     )
     @target_income = IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY
-    @hours_has_data = @external_hourly_activities.any? || @hours_member_activities.any?
+    @hours_has_data = @external_hourly_activities.any? || @member_hour_activities.any?
     @income_has_data = @external_income_activities.any? || @member_income_activities.any?
     if Features.doc_ai_enabled? && @activity_report
       activity_ids = @activity_report.activities.pluck(:id)

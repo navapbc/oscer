@@ -37,8 +37,7 @@ module ActivityAggregator
     return certification_case if certification_case
 
     cc_scoped = CertificationCase.where(certification_id: certification.id)
-    cases = cc_scoped.limit(2).to_a
-    return cases.first if cases.size <= 1
+    return cc_scoped.first if cc_scoped.length <= 1
 
     Rails.logger.debug do
       "ActivityAggregator: multiple CertificationCases for certification_id=#{certification.id}; " \
