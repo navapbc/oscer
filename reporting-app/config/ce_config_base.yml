@@ -1,6 +1,7 @@
 # Community Engagement configuration — template-owned defaults.
-# Deployment-specific overrides go in config/ce_config.yml (excluded from
-# Copier updates so deployer customizations survive `nava-platform app update`).
+# Deployment-specific overrides go in config/ce_config.yml, which Copier
+# preserves across `nava-platform app update` via _skip_if_exists so deployer
+# customizations survive template upgrades.
 # See fork-and-customize-spec.md Layer 1 for the canonical design.
 
 # TODO: Add federal disaster declaration and medical care travel
