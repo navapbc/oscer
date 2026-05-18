@@ -1,0 +1,22 @@
+# Community Engagement configuration — template-owned defaults.
+# Deployment-specific overrides go in config/ce_config.yml, which Copier
+# preserves across `nava-platform app update` via _skip_if_exists so deployer
+# customizations survive template upgrades.
+# See fork-and-customize-spec.md Layer 1 for the canonical design.
+
+# TODO: Add federal disaster declaration and medical care travel
+exemption_types:
+  caregiver_disability:
+    enabled: true
+  caregiver_child:
+    enabled: true
+  medical_condition:
+    enabled: true
+  substance_treatment:
+    enabled: true
+  incarceration:
+    enabled: true
+  education_and_training:
+    enabled: true
+  received_medical_care:
+    enabled: true
