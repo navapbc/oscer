@@ -5,6 +5,11 @@ module ApplicationHelper
   # ViewComponent tests use ApplicationHelper as the view context; include here so render_inline works.
   include Strata::DateHelper
 
+  # Display name for the state in staff certification copy (e.g. "From %{state_name}").
+  def state_name
+    ENV.fetch("STATE_NAME", "the State")
+  end
+
   def us_form_with(model: false, scope: nil, url: nil, format: nil, **options, &block)
     options[:builder] = UswdsFormBuilder
 

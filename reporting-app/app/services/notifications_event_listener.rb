@@ -47,7 +47,10 @@ class NotificationsEventListener
 
     def handle_insufficient_hours(event)
       certification = fetch_certification(event)
-      hours_data = event[:payload][:hours_data] || HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
+      hours_data = event[:payload][:hours_data] || HoursComplianceDeterminationService.aggregate_hours_for_certification(
+        certification,
+        certification_case: certification_case_for_notification(certification, event[:payload])
+      )
 
       NotificationService.send_email_notification(
         MemberMailer,
@@ -67,11 +70,22 @@ class NotificationsEventListener
 
       hours_data = payload[:hours_data]
       if hours_data.nil? && payload[:show_hours_insufficient] == true
-        hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
+        hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(
+          certification,
+          certification_case: certification_case_for_notification(certification, payload)
+        )
       end
 
       income_key_present = payload.key?(:income_data)
-      income_data = income_key_present ? payload[:income_data] : IncomeComplianceDeterminationService.aggregate_income_for_certification(certification)
+      income_data =
+        if income_key_present
+          payload[:income_data]
+        else
+          IncomeComplianceDeterminationService.aggregate_income_for_certification(
+            certification,
+            certification_case: certification_case_for_notification(certification, payload)
+          )
+        end
 
       show_hours_insufficient = insufficient_ce_show_hours?(payload, hours_data)
       show_income_insufficient = insufficient_ce_show_income?(payload, income_key_present, income_data)
@@ -126,6 +140,18 @@ class NotificationsEventListener
     def fetch_certification(event)
       certification_id = event[:payload][:certification_id]
       Certification.find(certification_id)
+    end
+
+    # When recomputing aggregates for a notification, prefer the case from the event payload so member
+    # income matches the case under workflow (same as CommunityEngagementCheckService / staff show).
+    def certification_case_for_notification(certification, payload)
+      case_id = payload[:case_id]
+      return nil if case_id.blank?
+
+      kase = CertificationCase.find_by(id: case_id)
+      return nil if kase&.certification_id != certification.id
+
+      kase
     end
 
     def send_notification(certification, email_method)

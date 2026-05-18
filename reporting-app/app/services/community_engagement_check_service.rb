@@ -9,8 +9,14 @@ class CommunityEngagementCheckService
     # @param kase [CertificationCase]
     def determine(kase)
       certification = Certification.find(kase.certification_id)
-      hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
-      income_data = IncomeComplianceDeterminationService.aggregate_income_for_certification(certification)
+      hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(
+        certification,
+        certification_case: kase
+      )
+      income_data = IncomeComplianceDeterminationService.aggregate_income_for_certification(
+        certification,
+        certification_case: kase
+      )
 
       hours_ok = hours_compliant?(hours_data)
       income_ok = IncomeComplianceDeterminationService.compliant_for_total_income?(income_data[:total_income])

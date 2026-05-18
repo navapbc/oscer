@@ -1,7 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: 28e5bc3d8c51d704cee29337eff425330b70ac85
-  branch: jeffhorn/oscer-351-input-prefix-suffix
+  revision: d916465592abef54bfad5c1025684de252bb79e9
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -650,7 +649,7 @@ GEM
     validates_timeliness (8.0.0)
       activemodel (>= 8.0.0, < 9)
       timeliness (>= 0.3.10, < 1)
-    view_component (4.10.0)
+    view_component (4.11.0)
       actionview (>= 7.1.0)
       activesupport (>= 7.1.0)
       concurrent-ruby (~> 1)
@@ -676,7 +675,7 @@ GEM
     xpath (3.2.0)
       nokogiri (~> 1.8)
     yard (0.9.43)
-    zeitwerk (2.7.5)
+    zeitwerk (2.8.0)
 
 PLATFORMS
   aarch64-linux
