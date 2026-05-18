@@ -1,5 +1,13 @@
 en:
   certification_cases:
+    compliance_not_applicable: "—"
+    # Shared labels for compliance summary tables (hours + income); read by
+    # _hours_reported_table and _income_reported_table partials (Activity Report and External data) so the namespace
+    # owns them rather than one table borrowing from the other.
+    common:
+      activity_label: "Activity"
+      source_external: "From %{state_name}"
+      source_self_reported: "Self-reported"
     case_layout:
       details: "Details"
       tasks: "Tasks"
@@ -7,7 +15,13 @@ en:
       notes: "Notes"
     index:
       title: "Certification Cases"
+    external_data:
+      summarized_under_activity_report: "Hours and income from the state and this member’s activity report are summarized under Activity Report below."
+      # External Data section when there is no activity report; same plain meaning as hours_reported_table.no_hours_reported but scoped for translators.
+      no_hours_reported: "No hours reported from external sources for this lookback."
+      no_income_reported: "No income reported from external sources for this lookback."
     show:
+      activity_line_items: "Activity line items"
       assigned_to: "Assigned to:"
       caseworker: "Caseworker"
       certification_date: "Certification date:"
@@ -15,6 +29,7 @@ en:
       certification_due_date: "Certification due date:"
       last_updated: "Last updated:"
       activity_report: "Activity Report"
+      no_hours_or_income_reported: "No hours or income reported"
       no_activity_report: "No activity report submitted"
       external_data: "External Data"
       information_request_info: "Tasks will be updated once the member provides updated documents."
@@ -35,18 +50,30 @@ en:
       step: "Step:"
       tasks: "Tasks"
       title: "Case: %{case_number}"
+    income:
+      table_title: "Income reported"
+      income_reported_amount: "Income reported"
+      total_reported: "Total reported"
+      required: "Required"
+      additional_income_needed: "Additional income needed"
+      organization_name: "Organization name"
+      organization_not_listed: "—"
+      pay_period: "Pay period"
+      source: "Source"
+      activity_type: "Activity type"
+      gross_income: "Gross income"
+      # Labels for ExternalIncomeActivity#source_type (see ExternalIncomeActivity::ALLOWED_SOURCE_TYPES). Add a key when adding a type.
+      source_types:
+        api: "State verification (API)"
     hours_reported_table:
       title: "Hours reported"
       organization_name: "Organization name"
       source: "Source"
       activity_type: "Activity type"
       hours_reported: "Hours reported"
-      source_external: "From %{state_name}"
-      source_self_reported: "Self-reported"
       total_reported: "Total reported"
       required: "Required"
       additional_hours_needed: "Additional hours needed"
       no_hours_reported: "No hours reported"
-      activity_label: "Activity"
     notes:
       title: "Notes"
