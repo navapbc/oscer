@@ -19,8 +19,13 @@ class Certification < ApplicationRecord
   scope :by_member_id, ->(member_id) { where(member_id:) }
   scope :by_region, ->(region) { where("certification_requirements->>'region' = ?", region) }
 
-  after_create_commit do
-    Strata::EventManager.publish("CertificationCreated", { certification_id: id })
+  after_create_commit { self.class.publish_created_event(id) }
+
+  # Publish the CertificationCreated event that starts the Strata business process.
+  # Called from after_create_commit for single creates and directly from
+  # UnifiedRecordProcessor#bulk_persist! for insert_all! (which bypasses callbacks).
+  def self.publish_created_event(certification_id)
+    Strata::EventManager.publish("CertificationCreated", { certification_id: certification_id })
   end
 
   def member_account_email

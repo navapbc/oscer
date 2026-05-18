@@ -26,7 +26,8 @@ Error codes follow the pattern `[CATEGORY]_[NUMBER]`:
 
 ### Duplicate Errors (DUP_*)
 
-- **DUP_001** - Certification already exists (same `member_id`, `case_number`, `certification_date`)
+- **DUP_001** - Certification already exists in database (same `member_id`, `case_number`, `certification_date`)
+- **DUP_002** - Duplicate record within same batch chunk (same compound key appears multiple times)
 
 ### Database Errors (DB_*)
 
