@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CreateStrataAuditLines < ActiveRecord::Migration[7.2]
+class CreateStrataAuditLines < ActiveRecord::Migration[8.0]
   def change
     create_table :strata_audit_lines, id: :uuid, default: -> { "gen_random_uuid()" } do |t|
       # Required: what happened
