@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 # Loads Community Engagement configuration from a template-owned base
-# (config/ce_config_base.yml) deep-merged with an optional deployment-owned
-# override (config/ce_config.yml — Copier-excluded for zero-conflict updates).
+# (config/ce_config_base.yml) deep-merged with a deployment-owned override
+# (config/ce_config.yml — preserved across `nava-platform app update` via
+# Copier's _skip_if_exists directive for zero-conflict updates).
 module CEConfiguration
   class ConfigurationError < StandardError; end
 
