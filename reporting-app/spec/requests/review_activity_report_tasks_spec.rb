@@ -21,6 +21,8 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
 
   describe "PATCH /update" do
     context "with approve action" do
+      let(:approve_params) { { review_activity_report_task: { activity_report_decision: :yes } } }
+
       before do
         # Stub aggregate_hours_for_certification for the model's accept method
         allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
@@ -30,16 +32,19 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
           external_hourly_activity_ids: [],
           activity_ids: []
         })
-        patch review_activity_report_task_url(task), params: { review_activity_report_task: { activity_report_decision: "yes" } }
       end
 
       it "marks task as completed" do
+        patch review_activity_report_task_url(task), params: approve_params
+
         task.reload
 
         expect(task).to be_completed
       end
 
       it "marks case as approved and transitions to end" do
+        patch review_activity_report_task_url(task), params: approve_params
+
         kase.reload
 
         expect(kase.activity_report_approval_status).to eq("approved")
@@ -48,11 +53,21 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
       end
 
       it "redirects back to the task" do
+        patch review_activity_report_task_url(task), params: approve_params
         expect(response).to redirect_to(task_path(task))
+      end
+
+      it "logs to audit log" do
+        expect(task).not_to be_nil # Need to pre-load task to exclude setup audit lines from expectation
+        expect do
+          patch review_activity_report_task_url(task), params: approve_params
+        end.to change { Strata::AuditLine.where(subject: certification, action: 'case.approved').count }.by(1)
       end
     end
 
     context "with not acceptable action" do
+      let(:deny_params) { { review_activity_report_task: { activity_report_decision: "no-not-acceptable" } } }
+
       before do
         # Stub aggregate_hours_for_certification for the model's deny method
         allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
@@ -62,16 +77,17 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
           external_hourly_activity_ids: [],
           activity_ids: []
         })
-        patch review_activity_report_task_url(task), params: { review_activity_report_task: { activity_report_decision: "no-not-acceptable" } }
       end
 
       it "marks task as completed" do
+        patch review_activity_report_task_url(task), params: deny_params
         task.reload
 
         expect(task).to be_completed
       end
 
       it "marks case as denied and transitions to end (not compliant)" do
+        patch review_activity_report_task_url(task), params: deny_params
         kase.reload
 
         expect(kase.activity_report_approval_status).to eq("denied")
@@ -80,7 +96,15 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
       end
 
       it "redirects back to the task" do
+        patch review_activity_report_task_url(task), params: deny_params
         expect(response).to redirect_to(task_path(task))
+      end
+
+      it "logs to audit log" do
+        expect(task).not_to be_nil # Need to pre-load task to exclude setup audit lines from expectation
+        expect do
+          patch review_activity_report_task_url(task), params: deny_params
+        end.to change { Strata::AuditLine.where(subject: certification, action: 'case.denied').count }.by(1)
       end
     end
 

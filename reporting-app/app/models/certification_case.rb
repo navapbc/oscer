@@ -124,19 +124,17 @@ class CertificationCase < Strata::Case
   def record_exemption_determination(eligibility_fact)
     certification = Certification.find(certification_id)
 
-    transaction do
-      self.exemption_request_approval_status = "approved"
-      self.exemption_request_approval_status_updated_at = Time.current
-      close!
+    self.exemption_request_approval_status = "approved"
+    self.exemption_request_approval_status_updated_at = Time.current
+    close!
 
-      certification.record_determination!(
-        decision_method: :automated,
-        reasons: Determination.to_reason_codes(eligibility_fact),
-        outcome: :exempt,
-        determination_data: eligibility_fact.reasons.to_json,
-        determined_at: certification.certification_requirements.certification_date
-      )
-    end
+    certification.record_determination!(
+      decision_method: :automated,
+      reasons: Determination.to_reason_codes(eligibility_fact),
+      outcome: :exempt,
+      determination_data: eligibility_fact.reasons.to_json,
+      determined_at: certification.certification_requirements.certification_date
+    )
   end
 
   # Called by HoursComplianceDeterminationService (+#calculate+, etc.) to persist hours-based CE.

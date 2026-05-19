@@ -5,6 +5,7 @@
 # generic community-engagement Strata events (+DeterminedCommunityEngagementMet+ / +Insufficient+ / +ActionRequired+;
 # see NotificationsEventListener).
 class CommunityEngagementCheckService
+  include Strata::VirtualActor
   class << self
     # @param kase [CertificationCase]
     def determine(kase)
@@ -21,13 +22,19 @@ class CommunityEngagementCheckService
       hours_ok = hours_compliant?(hours_data)
       income_ok = IncomeComplianceDeterminationService.compliant_for_total_income?(income_data[:total_income])
 
-      kase.record_external_ce_combined_assessment(
-        certification: certification,
-        hours_data: hours_data,
-        income_data: income_data,
-        hours_ok: hours_ok,
-        income_ok: income_ok
-      )
+      Strata::AuditLog.record(actor: self) do |log|
+        kase.record_external_ce_combined_assessment(
+          certification: certification,
+          hours_data: hours_data,
+          income_data: income_data,
+          hours_ok: hours_ok,
+          income_ok: income_ok
+        )
+        log.add_line(
+          action: hours_ok || income_ok ? "case.approved" : "case.forwarded",
+          subject: certification
+        )
+      end
 
       publish_workflow_events(
         kase: kase,

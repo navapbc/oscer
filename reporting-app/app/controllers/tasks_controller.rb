@@ -28,8 +28,16 @@ class TasksController < Strata::TasksController
 
   def assign
     set_task
-    @task.assign(current_user.id)
-    flash["task-message"] = "Task assigned to you."
+    Strata::AuditLog.record(actor: current_user) do |log|
+      @task.assign(current_user.id)
+
+      log.add_line(
+        action: "case.task_picked_up",
+        subject: Certification.find(@task.case.certification_id),
+        data: { task_id: @task.id, task_type: @task.type }
+      )
+    end
+    flash["task-message"] = I18n.t("strata.tasks.messages.task_picked_up")
     redirect_to task_path(@task)
   end
 
@@ -41,12 +49,19 @@ class TasksController < Strata::TasksController
     # Default scope on Strata::Task is ordered by :due_on
     task = policy_scope(Strata::Task).incomplete.unassigned.first
 
-    if task && task.assign(current_user.id)
-      flash["task-message"] = I18n.t("strata.tasks.messages.task_picked_up")
-      redirect_to task_path(task)
-    else
-      flash["task-message"] = I18n.t("strata.tasks.messages.no_tasks_available")
-      redirect_to tasks_path
+    Strata::AuditLog.record(actor: current_user) do |log|
+      if task && task.assign(current_user.id)
+        log.add_line(
+          action: "case.task_picked_up",
+          subject: Certification.find(task.case.certification_id),
+          data: { task_id: task.id, task_type: task.type }
+        )
+        flash["task-message"] = I18n.t("strata.tasks.messages.task_picked_up")
+        redirect_to task_path(task)
+      else
+        flash["task-message"] = I18n.t("strata.tasks.messages.no_tasks_available")
+        redirect_to tasks_path
+      end
     end
   end
 

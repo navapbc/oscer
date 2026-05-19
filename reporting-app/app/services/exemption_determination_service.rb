@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class ExemptionDeterminationService
+  include Strata::VirtualActor
   class << self
     # Called by CertificationBusinessProcess at EXTERNAL_EXEMPTION_CHECK_STEP
     # Service handles: evaluation, recording via model, and publishing events
@@ -11,9 +12,21 @@ class ExemptionDeterminationService
       eligibility_fact = evaluate_exemption_eligibility(certification)
 
       if eligibility_fact.value
-        kase.record_exemption_determination(eligibility_fact)
+        Strata::AuditLog.record(actor: self) do |log|
+          kase.record_exemption_determination(eligibility_fact)
+          log.add_line(
+            action: "case.approved",
+            subject: certification,
+            data: eligibility_fact.value
+          )
+        end
         Strata::EventManager.publish("DeterminedExempt", { case_id: kase.id, certification_id: kase.certification_id })
       else
+        Strata::AuditLog.write!(
+          action: "case.forwarded",
+          actor: self,
+          subject: certification,
+        )
         Strata::EventManager.publish("DeterminedNotExempt", { case_id: kase.id, certification_id: kase.certification_id })
       end
     end
