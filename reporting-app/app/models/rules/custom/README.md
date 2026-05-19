@@ -14,11 +14,12 @@ here, namespaced under `Rules::Custom::`.
       end
     end
 
-## Federal-floor invariants
+## Federally-required exemptions
 
-Composition overrides may **add** exemption paths or **tighten** eligibility
-beyond OSCER's defaults, but must not relax federally-required rules. The
-base rulesets encode the federal floor.
+Deployments may grant additional exemptions beyond OSCER's defaults but
+must not narrow or remove the exemptions federal Medicaid law requires
+(disability, pregnancy, Native American / Alaska Native, age). The base
+rulesets encode that minimum.
 
 To wire a custom ruleset into evaluation, see CUSTOMIZATION.md
 "Layer 4: Service and Ruleset Customization".
