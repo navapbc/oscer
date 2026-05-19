@@ -16,13 +16,13 @@ here, namespaced under `Rules::Custom::`.
 
 ## Federally-required exemptions
 
-Deployments may grant additional exemptions beyond OSCER's defaults but
-must not narrow or remove the exemptions federal Medicaid law requires
-(disability, pregnancy, Native American / Alaska Native, age). The base
-rulesets encode that minimum.
+Deployments may grant additional exemptions but must not narrow or remove
+the exemptions federal Medicaid law requires (disability, pregnancy, Native
+American / Alaska Native, age). The base rulesets encode that minimum.
 
 To wire a custom ruleset into evaluation, see CUSTOMIZATION.md
-"Layer 4: Service and Ruleset Customization".
+"Layer 4: Service and Ruleset Customization" (in progress:
+[#539](https://github.com/navapbc/oscer/issues/539)).
 
 ## Ownership
 

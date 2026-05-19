@@ -21,7 +21,8 @@ Wire it into the base model with one `include` line:
     # app/models/certification.rb
     include Custom::CertificationExtensions
 
-For the full pattern, see CUSTOMIZATION.md "Layer 5: Model Customization".
+For the full pattern, see CUSTOMIZATION.md "Layer 5: Model Customization"
+(in progress: [#539](https://github.com/navapbc/oscer/issues/539)).
 
 ## Ownership
 

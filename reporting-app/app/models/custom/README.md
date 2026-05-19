@@ -17,7 +17,8 @@ Pundit policy (`make new-authz-policy MODEL=...`) — `ApplicationController`
 raises if `authorize`/`policy_scope` are skipped.
 
 To wire a custom model into existing flows, see CUSTOMIZATION.md
-"Layer 5: Model Customization".
+"Layer 5: Model Customization" (in progress:
+[#539](https://github.com/navapbc/oscer/issues/539)).
 
 ## Ownership
 

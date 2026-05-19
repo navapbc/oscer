@@ -13,7 +13,8 @@ here, namespaced under `Custom::`.
     end
 
 To wire a custom service into existing flows, see CUSTOMIZATION.md
-"Layer 4: Service and Ruleset Customization".
+"Layer 4: Service and Ruleset Customization" (in progress:
+[#539](https://github.com/navapbc/oscer/issues/539)).
 
 ## Ownership
 

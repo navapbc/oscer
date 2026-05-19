@@ -21,7 +21,8 @@ confirmations, CSRF-bearing forms) silently win when overridden. Preserve
 auth, CSRF tokens, and MFA prompts in any override you ship.
 
 For the full pattern, see CUSTOMIZATION.md "Layer 4: View and Mailer
-Overrides".
+Overrides" (in progress:
+[#539](https://github.com/navapbc/oscer/issues/539)).
 
 ## Ownership
 
