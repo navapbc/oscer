@@ -12,8 +12,12 @@ namespaced under `Custom::`.
       end
     end
 
-Ship a corresponding migration. To wire a custom model into existing flows,
-see CUSTOMIZATION.md "Layer 5: Model Customization".
+Ship a corresponding migration. Models exposed to controllers also need a
+Pundit policy (`make new-authz-policy MODEL=...`) — `ApplicationController`
+raises if `authorize`/`policy_scope` are skipped.
+
+To wire a custom model into existing flows, see CUSTOMIZATION.md
+"Layer 5: Model Customization".
 
 ## Ownership
 

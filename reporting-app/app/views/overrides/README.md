@@ -12,9 +12,16 @@ Override the certification show page by mirroring its path:
 
 Override a mailer template the same way:
 
-    # app/views/overrides/member_mailer/welcome.html.erb
+    # app/views/overrides/member_mailer/exempt_email.html.erb
 
-For the full pattern, see CUSTOMIZATION.md.
+## Override with care
+
+Security-critical templates (Devise sessions/MFA, destructive-action
+confirmations, CSRF-bearing forms) silently win when overridden. Preserve
+auth, CSRF tokens, and MFA prompts in any override you ship.
+
+For the full pattern, see CUSTOMIZATION.md "Layer 4: View and Mailer
+Overrides".
 
 ## Ownership
 

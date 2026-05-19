@@ -14,6 +14,12 @@ here, namespaced under `Rules::Custom::`.
       end
     end
 
+## Federal-floor invariants
+
+Composition overrides may **add** exemption paths or **tighten** eligibility
+beyond OSCER's defaults, but must not relax federally-required rules. The
+base rulesets encode the federal floor.
+
 To wire a custom ruleset into evaluation, see CUSTOMIZATION.md
 "Layer 4: Service and Ruleset Customization".
 
