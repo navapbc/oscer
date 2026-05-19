@@ -65,4 +65,73 @@ RSpec.describe "I18n load-path plumbing in config/application.rb" do # rubocop:d
       end
     end
   end
+
+  # End-to-end demonstration that overrides actually win at I18n.t lookup
+  # time for keys defined in services/ and views/ — the load-bearing property
+  # the application.rb plumbing exists to guarantee. Distinct from the index-
+  # position spec above: that one proves the load_path list is in the right
+  # order; this one proves the backend honors that order at resolution time.
+  describe "override-wins behavior at I18n.t lookup time for keys in services/ or views/" do
+    let(:tmp_root) { Dir.mktmpdir("i18n-override-wins-test") }
+    let(:tmp_locales) { File.join(tmp_root, "locales") }
+    let(:tmp_services) { File.join(tmp_locales, "services") }
+    let(:tmp_views) { File.join(tmp_locales, "views") }
+    let(:tmp_overrides) { File.join(tmp_locales, "overrides") }
+
+    # around lets us capture I18n state in local variables before any test
+    # mutates it, then restore via ensure so cleanup runs even on failure.
+    around do |example|
+      original_backend = I18n.backend
+      original_load_path = I18n.load_path.dup
+
+      begin
+        FileUtils.mkdir_p(tmp_services)
+        FileUtils.mkdir_p(tmp_views)
+        FileUtils.mkdir_p(tmp_overrides)
+
+        File.write(File.join(tmp_services, "en.yml"),
+          "en:\n  canary_in_services: from-services-base\n")
+        File.write(File.join(tmp_views, "en.yml"),
+          "en:\n  canary_in_views: from-views-base\n")
+        File.write(File.join(tmp_overrides, "deployment.en.yml"),
+          "en:\n  canary_in_services: from-overrides\n  canary_in_views: from-overrides\n")
+
+        example.run
+      ensure
+        I18n.load_path = original_load_path
+        I18n.backend = original_backend
+        FileUtils.rm_rf(tmp_root) if Dir.exist?(tmp_root)
+      end
+    end
+
+    def load_with_paths(paths)
+      I18n.backend = I18n::Backend::Simple.new
+      I18n.load_path = paths
+      I18n.backend.reload!
+    end
+
+    it "with the application.rb plumbing, overrides/ wins for keys defined in services/ AND views/" do
+      base_locales = Dir[File.join(tmp_locales, "**/*.{rb,yml}")]
+        .reject { |p| p.include?("/locales/overrides/") }
+      override_locales = Dir[File.join(tmp_overrides, "**/*.{rb,yml}")]
+
+      load_with_paths(base_locales + override_locales)
+
+      expect(I18n.t("canary_in_services")).to eq("from-overrides")
+      expect(I18n.t("canary_in_views")).to eq("from-overrides")
+    end
+
+    # Documents the bug the plumbing fixes: a naive recursive glob orders
+    # paths alphabetically, placing 'overrides/' before 'services/' and
+    # 'views/' — which lets the later-loaded base files silently beat the
+    # deployment's overrides at I18n.t lookup.
+    it "without the plumbing (naive recursive glob), services/ and views/ silently beat overrides/" do
+      naive_load_path = Dir[File.join(tmp_locales, "**/*.{rb,yml}")]
+
+      load_with_paths(naive_load_path)
+
+      expect(I18n.t("canary_in_services")).to eq("from-services-base")
+      expect(I18n.t("canary_in_views")).to eq("from-views-base")
+    end
+  end
 end
