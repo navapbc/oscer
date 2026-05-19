@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: 802d981880175e4b3a4dfdd98b1d03611f2a6436
+  revision: 4aaaa120360f84808be24c9c431b8ada6b32d6f8
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -327,7 +327,7 @@ GEM
       net-imap
       net-pop
       net-smtp
-    marcel (1.1.0)
+    marcel (1.1.1)
     matrix (0.4.3)
     method_source (1.1.0)
     mini_magick (5.3.1)
