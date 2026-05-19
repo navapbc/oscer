@@ -8,7 +8,7 @@ class DashboardController < ApplicationController
   before_action :set_activity_report_application_form, if: -> { @certification_case.present? }
   before_action :set_information_requests, if: -> { @exemption_application_form.present? || @activity_report_application_form.present? }
   before_action :set_member_status, if: -> { @certification.present? }
-  before_action :set_hours_compliance_data, if: -> { @certification.present? }
+  before_action :set_member_dashboard_compliance_read_model, if: -> { @certification.present? }
 
   # TODO: figure out authz
   skip_after_action :verify_policy_scoped
@@ -24,7 +24,7 @@ class DashboardController < ApplicationController
   end
 
   def set_certification_case
-    @certification_case = CertificationCase.find_by(certification_id: @certification&.id)
+    @certification_case = MemberDashboardComplianceData.case_for_certification(@certification)
   end
 
   def set_exemption_application_form
@@ -46,12 +46,18 @@ class DashboardController < ApplicationController
     @member_status = MemberStatusService.determine(@certification)
   end
 
-  def set_hours_compliance_data
-    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(@certification)
-    @total_hours_reported = hours_data[:total_hours].to_i
-    @target_hours = HoursComplianceDeterminationService::TARGET_HOURS
-    @hours_needed = [ @target_hours - @total_hours_reported, 0 ].max
-    @current_period = @certification.certification_requirements.certification_date
-    @period_end_date = @certification.certification_requirements.due_date
+  def set_member_dashboard_compliance_read_model
+    @member_dashboard_compliance = MemberDashboardComplianceData.build(
+      certification: @certification,
+      certification_case: @certification_case,
+      exemption_application_form: @exemption_application_form,
+      member_status: @member_status
+    )
+
+    @total_hours_reported = @member_dashboard_compliance.total_hours_reported
+    @target_hours = @member_dashboard_compliance.target_hours
+    @hours_needed = @member_dashboard_compliance.hours_needed
+    @current_period = @member_dashboard_compliance.certification_date
+    @period_end_date = @member_dashboard_compliance.due_date
   end
 end

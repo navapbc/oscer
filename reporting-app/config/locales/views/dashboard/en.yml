@@ -20,3 +20,7 @@ en:
         title: "Previous completed requirements"
         intro: "Review previously-completed certifications."
         review_previous_certifications_button: "Review previous certifications"
+    member_compliance:
+      external_income_descriptor: "%{category} income (external report)"
+      self_reported_income_descriptor: "Self-reported %{category} income"
+      exemption_type_unknown: "Exemption request"
