@@ -63,7 +63,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         expect(certification_case).to be_open
 
         # Step 2: System process determines applicant is eligible for exemption
-        certification_case.record_exemption_determination(eligibility_fact)
+        certification_case.record_exemption_determination(eligibility_fact, ExemptionDeterminationService)
         Strata::EventManager.publish("DeterminedExempt", { case_id: certification_case.id, certification_id: certification_case.certification_id })
         certification_case.reload
 

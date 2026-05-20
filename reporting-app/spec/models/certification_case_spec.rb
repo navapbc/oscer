@@ -199,7 +199,7 @@ RSpec.describe CertificationCase, type: :model do
       eligibility_fact = Strata::RulesEngine::Fact.new(
         :age_eligibility, true, reasons: [ age_fact ]
       )
-      certification_case.record_exemption_determination(eligibility_fact)
+      certification_case.record_exemption_determination(eligibility_fact, ExemptionDeterminationService)
       certification_case.reload
 
       expect(certification_case.exemption_request_approval_status).to eq("approved")
@@ -214,7 +214,7 @@ RSpec.describe CertificationCase, type: :model do
       eligibility_fact = Strata::RulesEngine::Fact.new(
         :age_eligibility, true, reasons: [ age_fact ]
       )
-      certification_case.record_exemption_determination(eligibility_fact)
+      certification_case.record_exemption_determination(eligibility_fact, ExemptionDeterminationService)
 
       determination = Determination.first
 
@@ -235,7 +235,7 @@ RSpec.describe CertificationCase, type: :model do
       eligibility_fact = Strata::RulesEngine::Fact.new(
         :eligible_for_exemption, true, reasons: [ age_fact, pregnant_fact ]
       )
-      certification_case.record_exemption_determination(eligibility_fact)
+      certification_case.record_exemption_determination(eligibility_fact, ExemptionDeterminationService)
 
       determination = Determination.first
 
@@ -273,6 +273,7 @@ RSpec.describe CertificationCase, type: :model do
 
     it "stores not_compliant with both insufficient reasons when both tracks fail" do
       certification_case.record_external_ce_combined_assessment(
+        actor: CommunityEngagementCheckService,
         certification: certification,
         hours_data: hours_data,
         income_data: income_data,
@@ -289,8 +290,22 @@ RSpec.describe CertificationCase, type: :model do
       expect(determination.determination_data["satisfied_by"]).to eq(Determination::SATISFIED_BY_NEITHER)
     end
 
+    it "logs denied decision to audit log" do
+      expect do
+        certification_case.record_external_ce_combined_assessment(
+          actor: CommunityEngagementCheckService,
+          certification: certification,
+          hours_data:,
+          income_data:,
+          hours_ok: false,
+          income_ok: false
+        )
+      end.to change { Strata::AuditLine.where(subject: certification, action: "case.activity_report.denied").count }.by(1)
+    end
+
     it "stores compliant when only income_ok" do
       certification_case.record_external_ce_combined_assessment(
+        actor: CommunityEngagementCheckService,
         certification: certification,
         hours_data: hours_data,
         income_data: income_data,
@@ -302,6 +317,19 @@ RSpec.describe CertificationCase, type: :model do
       expect(determination.outcome).to eq("compliant")
       expect(determination.reasons).to eq([ "income_reported_compliant" ])
       expect(certification_case.reload).to be_closed
+    end
+
+    it "logs approved decision to audit log" do
+      expect do
+        certification_case.record_external_ce_combined_assessment(
+          actor: CommunityEngagementCheckService,
+          certification: certification,
+          hours_data:,
+          income_data:,
+          hours_ok: false,
+          income_ok: true
+        )
+      end.to change { Strata::AuditLine.where(subject: certification, action: "case.activity_report.approved").count }.by(1)
     end
   end
 

@@ -150,20 +150,29 @@ class CertificationCase < Strata::Case
   # Called by ExemptionDeterminationService to record exemption determination
   # Model only handles state changes - service handles events
   # @param eligibility_fact [Strata::RulesEngine::Fact] the evaluation result
-  def record_exemption_determination(eligibility_fact)
-    certification = Certification.find(certification_id)
+  # @param actor [Strata::VirtualActor] recording the exemption
+  def record_exemption_determination(eligibility_fact, actor)
+    transaction do
+      certification = Certification.find(certification_id)
 
-    self.exemption_request_approval_status = "approved"
-    self.exemption_request_approval_status_updated_at = Time.current
-    close!
+      self.exemption_request_approval_status = "approved"
+      self.exemption_request_approval_status_updated_at = Time.current
+      close!
 
-    certification.record_determination!(
-      decision_method: :automated,
-      reasons: Determination.to_reason_codes(eligibility_fact),
-      outcome: :exempt,
-      determination_data: eligibility_fact.reasons.to_json,
-      determined_at: certification.certification_requirements.certification_date
-    )
+      certification.record_determination!(
+        decision_method: :automated,
+        reasons: Determination.to_reason_codes(eligibility_fact),
+        outcome: :exempt,
+        determination_data: eligibility_fact.reasons.to_json,
+        determined_at: certification.certification_requirements.certification_date
+      )
+
+      Strata::AuditLog.write!(
+        action: "case.exemption.approved",
+        actor:,
+        subject: certification
+      )
+    end
   end
 
   # Called by HoursComplianceDeterminationService (+#calculate+, etc.) to persist hours-based CE.
@@ -207,12 +216,13 @@ class CertificationCase < Strata::Case
   # Member is compliant if either +hours_ok+ or +income_ok+; not compliant only when both are false.
   # Events/notifications are published by CommunityEngagementCheckService (via Strata).
   #
+  # @param actor [Strata::VirtualActor] recording the assessment
   # @param certification [Certification] aggregate root for +record_determination!+
   # @param hours_data [Hash] from HoursComplianceDeterminationService.aggregate_hours_for_certification
   # @param income_data [Hash] from IncomeComplianceDeterminationService.aggregate_income_for_certification
   # @param hours_ok [Boolean]
   # @param income_ok [Boolean]
-  def record_external_ce_combined_assessment(certification:, hours_data:, income_data:, hours_ok:, income_ok:)
+  def record_external_ce_combined_assessment(actor:, certification:, hours_data:, income_data:, hours_ok:, income_ok:)
     outcome = (hours_ok || income_ok) ? :compliant : :not_compliant
     reasons = external_ce_combined_reason_codes(outcome: outcome, hours_ok: hours_ok, income_ok: income_ok)
     determination_data = build_external_ce_combined_determination_data(
@@ -222,12 +232,21 @@ class CertificationCase < Strata::Case
       income_ok: income_ok
     )
 
-    record_automated_ce_compliance(
-      outcome,
-      determination_data,
-      reasons: reasons,
-      certification: certification
-    )
+    transaction do
+      determination = record_automated_ce_compliance(
+        outcome,
+        determination_data,
+        reasons: reasons,
+        certification: certification
+      )
+
+      Strata::AuditLog.write!(
+        action: "case.activity_report.#{outcome == :compliant ? 'approved' : 'denied'}",
+        actor:,
+        subject: certification,
+        data: { determination_id: determination.id }
+      )
+    end
   end
 
   def member_status

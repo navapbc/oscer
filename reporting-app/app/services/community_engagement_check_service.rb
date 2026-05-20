@@ -22,21 +22,14 @@ class CommunityEngagementCheckService
       hours_ok = hours_compliant?(hours_data)
       income_ok = IncomeComplianceDeterminationService.compliant_for_total_income?(income_data[:total_income])
 
-      Strata::AuditLog.record(actor: self) do |log|
-        determination = kase.record_external_ce_combined_assessment(
-          certification: certification,
-          hours_data: hours_data,
-          income_data: income_data,
-          hours_ok: hours_ok,
-          income_ok: income_ok
-        )
-        log.add_line(
-          action: hours_ok || income_ok ? "case.activity_report.approved" : "case.activity_report.denied",
-          actor: self,
-          subject: certification,
-          data: { determination_id: determination.id }
-        )
-      end
+      kase.record_external_ce_combined_assessment(
+        actor: self,
+        certification: certification,
+        hours_data: hours_data,
+        income_data: income_data,
+        hours_ok: hours_ok,
+        income_ok: income_ok
+      )
 
       publish_workflow_events(
         kase: kase,
