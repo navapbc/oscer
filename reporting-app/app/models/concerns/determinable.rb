@@ -47,4 +47,25 @@ module Determinable
   include Strata::Determinable
 
   # Add custom validations, callbacks, or scopes for determinations here
+  def record_determination!(decision_method:, reasons:, outcome:, determination_data:, determined_at:, actor: nil)
+    determined_by_id = actor.is_a?(User) ? actor.id : nil
+    determination = super(
+      decision_method:,
+      reasons:,
+      outcome:,
+      determination_data:,
+      determined_at:,
+      determined_by_id:
+    )
+
+    determination_method = reasons.any? { |reason| reason.include?("exempt") } ? :exemption : :activity_report
+    determination_status = outcome == "not_compliant" ? :denied : :approved
+    Strata::AuditLog.write!(
+      action: "case.#{determination_method}.#{determination_status}",
+      actor:,
+      subject: self,
+      data: { determination_id: determination.id }
+    )
+    determination
+  end
 end
