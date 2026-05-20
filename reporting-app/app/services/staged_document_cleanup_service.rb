@@ -63,7 +63,7 @@ class StagedDocumentCleanupService
   end
 
   def log_both(message)
-    puts message
+    puts message unless Rails.env.test?
     Rails.logger.info(message)
   end
 end
