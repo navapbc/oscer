@@ -6,21 +6,23 @@ class ReviewActivityReportTasksController < TasksController
 
     if approving?
       Strata::AuditLog.record(actor: current_user) do |log|
-        kase.accept_activity_report
+        determination = kase.accept_activity_report
 
         log.add_line(
           action: "case.approved",
-          subject: Certification.find(kase.certification_id)
+          subject: Certification.find(kase.certification_id),
+          data: { determination_id: determination.id }
         )
       end
       notice = t("tasks.details.approved_message")
     elsif denying?
       Strata::AuditLog.record(actor: current_user) do |log|
-        kase.deny_activity_report
+        determination = kase.deny_activity_report
 
         log.add_line(
           action: "case.denied",
-          subject: Certification.find(kase.certification_id)
+          subject: Certification.find(kase.certification_id),
+          data: { determination_id: determination.id }
         )
       end
       notice = t("details.review_activity_report_task.denied_message")

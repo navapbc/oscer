@@ -6,11 +6,12 @@ class ReviewExemptionClaimTasksController < TasksController
 
     if approving?
       Strata::AuditLog.record(actor: current_user) do |log|
-        kase.accept_exemption_request
+        determination = kase.accept_exemption_request
 
         log.add_line(
           action: "case.approved",
-          subject: Certification.find(kase.certification_id)
+          subject: Certification.find(kase.certification_id),
+          data: { determination_id: determination.id }
         )
       end
       notice = t("tasks.details.approved_message")

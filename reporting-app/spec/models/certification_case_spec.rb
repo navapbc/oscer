@@ -39,9 +39,7 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'records compliant determination' do
-      certification_case.accept_activity_report
-
-      determination = Determination.first
+      determination = certification_case.accept_activity_report
 
       expect(determination.decision_method).to eq("manual")
       expect(determination.reasons).to include("hours_reported_compliant")
@@ -82,9 +80,7 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'records not_compliant determination' do
-      certification_case.deny_activity_report
-
-      determination = Determination.first
+      determination = certification_case.deny_activity_report
 
       expect(determination.decision_method).to eq("manual")
       expect(determination.reasons).to include("hours_reported_insufficient")
@@ -130,6 +126,10 @@ RSpec.describe CertificationCase, type: :model do
         "DeterminedExempt",
         { case_id: certification_case.id, certification_id: certification_case.certification_id }
       )
+    end
+
+    it 'returns a Strata::Determination' do
+      expect(certification_case.accept_exemption_request).to be_instance_of(Strata::Determination)
     end
   end
 

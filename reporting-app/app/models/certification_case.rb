@@ -48,66 +48,66 @@ class CertificationCase < Strata::Case
   end
 
   def accept_activity_report
+    # caller should wrap call in transaction
     certification = Certification.find(certification_id)
     hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, certification_case: self)
 
-    transaction do
-      self.activity_report_approval_status = "approved"
-      self.activity_report_approval_status_updated_at = Time.current
-      close!
+    self.activity_report_approval_status = "approved"
+    self.activity_report_approval_status_updated_at = Time.current
+    close!
 
-      certification.record_determination!(
-        decision_method: :manual,
-        reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_compliant] ],
-        outcome: :compliant,
-        determination_data: build_hours_determination_data(hours_data),
-        determined_at: certification.certification_requirements.certification_date
-      )
-    end
+    determination = certification.record_determination!(
+      decision_method: :manual,
+      reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_compliant] ],
+      outcome: :compliant,
+      determination_data: build_hours_determination_data(hours_data),
+      determined_at: certification.certification_requirements.certification_date
+    )
 
     Strata::EventManager.publish("ActivityReportApproved", { case_id: id, certification_id: certification_id })
+    determination
   end
 
   def deny_activity_report
+    # caller should wrap call in transaction
     certification = Certification.find(certification_id)
     hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, certification_case: self)
 
-    transaction do
-      self.activity_report_approval_status = "denied"
-      self.activity_report_approval_status_updated_at = Time.current
-      close!
+    self.activity_report_approval_status = "denied"
+    self.activity_report_approval_status_updated_at = Time.current
+    close!
 
-      certification.record_determination!(
-        decision_method: :manual,
-        reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_insufficient] ],
-        outcome: :not_compliant,
-        determination_data: build_hours_determination_data(hours_data),
-        determined_at: certification.certification_requirements.certification_date
-      )
-    end
+    determination = certification.record_determination!(
+      decision_method: :manual,
+      reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_insufficient] ],
+      outcome: :not_compliant,
+      determination_data: build_hours_determination_data(hours_data),
+      determined_at: certification.certification_requirements.certification_date
+    )
 
     Strata::EventManager.publish("ActivityReportDenied", { case_id: id, certification_id: certification_id })
+    determination
   end
 
   def accept_exemption_request
-    transaction do
-      self.exemption_request_approval_status = "approved"
-      self.exemption_request_approval_status_updated_at = Time.current
-      close!
+    # Calls should be wrapped in a transaction by caller
+    self.exemption_request_approval_status = "approved"
+    self.exemption_request_approval_status_updated_at = Time.current
+    close!
 
-      certification = Certification.find(certification_id)
-      certification.record_determination!(
-        decision_method: :manual,
-        reasons: [ Determination::REASON_CODE_MAPPING[:exemption_request_compliant] ],
-        outcome: :exempt,
-        determined_at: certification.certification_requirements.certification_date,
-        determination_data: {
-          exemption_type: "placeholder"
-        } # TODO: add determined_by_id
-      )
-    end
+    certification = Certification.find(certification_id)
+    determination = certification.record_determination!(
+      decision_method: :manual,
+      reasons: [ Determination::REASON_CODE_MAPPING[:exemption_request_compliant] ],
+      outcome: :exempt,
+      determined_at: certification.certification_requirements.certification_date,
+      determination_data: {
+        exemption_type: "placeholder"
+      } # TODO: add determined_by_id
+    )
 
     Strata::EventManager.publish("DeterminedExempt", { case_id: id, certification_id: certification_id })
+    determination
   end
 
   def deny_exemption_request
