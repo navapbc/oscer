@@ -1,0 +1,50 @@
+# Deployment-owned override surface for exemption type composition.
+#
+# This file is preserved across `nava-platform app update` via Copier's
+# `_skip_if_exists` directive, so customizations survive template upgrades.
+# The template ships this file with no active overrides (the empty hash
+# below); fill it in to tailor exemption-type composition to your program.
+#
+# Loader: app/services/exemption_types_loader.rb deep-merges this file
+# over the federal-floor defaults declared in
+# ExemptionTypesLoader::DEFAULTS. Keys present here win; keys absent
+# here inherit from the defaults. See docs/fork-and-customize-spec.md
+# Layer 1 for the design.
+#
+# ## Shape
+#
+# The top-level hash is keyed by exemption-type id, with attribute
+# hashes as values. The `enabled` key is required on every entry —
+# the loader raises a boot-time ConfigurationError otherwise.
+#
+# ## Examples
+#
+# Disable a default exemption type so it doesn't appear in screener or
+# application flows:
+#
+#     medical_condition:
+#       enabled: false
+#
+# Add a deployment-specific exemption type (will need matching locale
+# strings under config/locales/overrides/ for any user-facing labels):
+#
+#     disaster_evacuation:
+#       enabled: true
+#
+# Both at once:
+#
+#     medical_condition:
+#       enabled: false
+#     disaster_evacuation:
+#       enabled: true
+#
+# Federal-floor defaults shipped by OSCER live in
+# ExemptionTypesLoader::DEFAULTS (app/services/exemption_types_loader.rb).
+#
+# ## Empty-file note
+#
+# If you want to ship no overrides, leave the empty hash below as-is, or
+# delete the file entirely — the loader treats a missing file as no
+# overrides.
+
+{}
