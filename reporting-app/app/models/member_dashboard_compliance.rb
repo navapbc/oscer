@@ -1,16 +1,15 @@
 # frozen_string_literal: true
 
-# Read-side dashboard contract for OSCER-409: income/hours aggregates, report-status tokens,
-# exemption flow + history, and privacy-safe income line items (no employer-identifying fields).
-#
-# +#480+ can render from +@member_dashboard_compliance+; legacy ivars on +DashboardController+
-# stay in sync for existing partials.
+# Value object for the OSCER-409 member dashboard projection. Built by
+# +MemberDashboardComplianceService.build+; sibling to +MemberStatus+ (which is the
+# determination-driven status this projection wraps).
 #
 # == Lazy fields
-# +.build+ eagerly computes only what current dashboard partials read (hours, dates,
-# report status, exemption flow state). Income aggregates, +member_income_rows+, and
-# +exemption_history+ run their queries on first read, so members in +AWAITING_REPORT+
-# (no view consumer yet) do not pay for them.
+# Income aggregates, +member_income_rows+, and +exemption_history+ run their queries on
+# first read, not at construction. This keeps the +AWAITING_REPORT+ dashboard path off the
+# income aggregation until a view consumer reads those fields (OSCER-480). The instance
+# therefore holds AR refs (+@certification+, +@certification_case+, +@lookback+,
+# +@exemption_application_form+) so its lazy readers can run.
 #
 # == Attribute types
 # - +report_status_token+ — +String+, one of +MemberStatus::DASHBOARD_REPORT_*+
@@ -18,13 +17,11 @@
 #   +latest_determination.determination_data["satisfied_by"]+ for the
 #   +Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED+ split (hours / income / both / neither).
 # - +show_income_summary+ — +Boolean+. **Always gate income reads on this**; income-scoped
-#   attributes are +nil+ when false. Also false when +continuous_lookback_period+ is blank
-#   (see +.build+).
+#   attributes are +nil+ when false. Also false when +continuous_lookback_period+ is blank.
 # - +total_income+ / +target_income+ / +income_needed+ — +BigDecimal+ when
 #   +show_income_summary+, else +nil+. Lazy.
 # - +income_percent_of_requirement+ — +Float+ in 0.0..100.0 when +show_income_summary+, else +nil+. Lazy.
-# - +total_hours_reported+ / +target_hours+ / +hours_needed+ — +Integer+ (hours rounded to the
-#   nearest whole number at the read-model boundary via +Numeric#round+; see +.build+).
+# - +total_hours_reported+ / +target_hours+ / +hours_needed+ — +Integer+.
 # - +period_start_on+ / +period_end_on+ — +Date+ or +nil+ (nil when income is hidden). Lazy.
 # - +certification_date+ / +due_date+ — +Date+, sourced from +certification_requirements+.
 # - +income_summary+ — +Hash+ matching the +IncomeComplianceDeterminationService+ shape, or +nil+
@@ -32,9 +29,8 @@
 # - +hours_summary+ — +Hash+ matching the +HoursComplianceDeterminationService+ shape.
 # - +member_income_rows+ — +Array<MemberIncomeRow>+ (empty when income is hidden). Lazy.
 # - +exemption_flow_state+ — +String+, one of the +EXEMPTION_*+ constants.
-# - +exemption_history+ — +Array<ExemptionHistoryEntry>+ in reverse-chronological order
-#   (exempt +Determination+ rows for the certification, plus in-flight exemption form rows). Lazy.
-class MemberDashboardComplianceData
+# - +exemption_history+ — +Array<ExemptionHistoryEntry>+ in reverse-chronological order. Lazy.
+class MemberDashboardCompliance
   EXEMPTION_NOT_STARTED = "not_started"
   EXEMPTION_DRAFT = "draft"
   EXEMPTION_PENDING_REVIEW = "pending_review"
@@ -68,124 +64,13 @@ class MemberDashboardComplianceData
               :hours_summary,
               :exemption_flow_state
 
-  class << self
-    # Builds the dashboard read model.
-    #
-    # Hours aggregation runs unconditionally: the dashboard surfaces hours on both
-    # income-based and hours-based screens (the design only varies which numbers are
-    # foregrounded), so short-circuiting hours would force consumers to special-case
-    # an extra branch. Income aggregation, +member_income_rows+, and +exemption_history+
-    # are computed lazily on first access so pre-determination members don't pay for them.
-    def build(certification:, certification_case:, exemption_application_form:, member_status:)
-      latest = member_status.latest_determination
-      lookback = certification.certification_requirements.continuous_lookback_period
-      show_income = income_summary_visible?(latest, member_status) && lookback.present?
-
-      external_hourly_rel = lookback.present? ? aggregator.fetch_external_hourly_activities(certification) : ExternalHourlyActivity.none
-      # Pass only the external relation: +HoursComplianceDeterminationService+ will fetch and
-      # +.reorder(nil)+ member rows internally so its +GROUP BY :category+ aggregation hits
-      # the Postgres SUM path instead of erroring on the +ORDER BY+ on +member_hour_activities_for_certification+.
-      hours_summary = HoursComplianceDeterminationService.aggregate_hours_for_certification(
-        certification,
-        certification_case: certification_case,
-        external_hourly_activities: external_hourly_rel
-      )
-
-      target_hours = HoursComplianceDeterminationService::TARGET_HOURS
-      # +Numeric#round+ to the nearest integer (not +.to_i+, which truncates toward zero), e.g.
-      # 79.5 → 80 — keeps display parity with the staff side.
-      total_hours = hours_summary[:total_hours].to_f.round
-
-      new(
-        certification: certification,
-        certification_case: certification_case,
-        exemption_application_form: exemption_application_form,
-        member_status: member_status,
-        lookback: lookback,
-        report_status_token: member_status.dashboard_report_status,
-        latest_determination: latest,
-        show_income_summary: show_income,
-        total_hours_reported: total_hours,
-        target_hours: target_hours,
-        hours_needed: [ target_hours - total_hours, 0 ].max,
-        certification_date: certification.certification_requirements.certification_date,
-        due_date: certification.certification_requirements.due_date,
-        hours_summary: hours_summary,
-        exemption_flow_state: exemption_flow_state(
-          exemption_application_form: exemption_application_form,
-          certification_case: certification_case,
-          member_status: member_status
-        )
-      )
-    end
-
-    # Public class API for callers that only need the deterministic case tie-break (e.g.
-    # +DashboardController#set_certification_case+) without including +ActivityAggregator+.
-    # @param certification [Certification]
-    # @param certification_case [CertificationCase, nil]
-    # @return [CertificationCase, nil]
-    def case_for_certification(certification, certification_case = nil)
-      aggregator.certification_case_for_certification(certification, certification_case)
-    end
-
-    private
-
-    # Singleton holder for +ActivityAggregator+ instance methods, scoped private so
-    # +ActivityAggregator+'s 8 public methods do not become public class methods on
-    # +MemberDashboardComplianceData+.
-    def aggregator
-      @aggregator ||= Object.new.extend(ActivityAggregator)
-    end
-
-    # Returns true when the dashboard should surface income summary cards.
-    #
-    # @note A +nil+ +ce_calculation_type+ (no determination yet) defaults to +true+:
-    #   the pre-determination state assumes income reporting until product confirms an
-    #   alternate intake. If product narrows this rule (e.g. "no determination ⇒ hide
-    #   income"), update both this method and the
-    #   +"when latest determination is hours_based"+ / +"when member status is exempt"+
-    #   specs at +spec/read_models/member_dashboard_compliance_data_spec.rb+.
-    def income_summary_visible?(latest_determination, member_status)
-      return false if member_status.status == MemberStatus::EXEMPT
-
-      ct = latest_determination&.ce_calculation_type
-      return false if ct == Determination::CALCULATION_TYPE_HOURS_BASED
-
-      ct.nil? ||
-        ct == Determination::CALCULATION_TYPE_INCOME_BASED ||
-        ct == Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED
-    end
-
-    def exemption_flow_state(exemption_application_form:, certification_case:, member_status:)
-      return EXEMPTION_APPROVED if member_status.status == MemberStatus::EXEMPT
-
-      return EXEMPTION_NOT_STARTED if exemption_application_form.blank?
-
-      if !exemption_application_form.submitted?
-        return EXEMPTION_DRAFT
-      end
-
-      if certification_case&.exemption_request_approval_status == "approved"
-        return EXEMPTION_APPROVED
-      end
-
-      if certification_case&.exemption_request_approval_status == "denied"
-        return EXEMPTION_DENIED
-      end
-
-      # Submitted, no staff decision yet
-      EXEMPTION_PENDING_REVIEW
-    end
-  end
-
-  def initialize(certification:, certification_case:, exemption_application_form:, member_status:,
+  def initialize(certification:, certification_case:, exemption_application_form:,
                  lookback:, report_status_token:, latest_determination:, show_income_summary:,
                  total_hours_reported:, target_hours:, hours_needed:,
                  certification_date:, due_date:, hours_summary:, exemption_flow_state:)
     @certification = certification
     @certification_case = certification_case
     @exemption_application_form = exemption_application_form
-    @member_status = member_status
     @lookback = lookback
     @report_status_token = report_status_token
     @latest_determination = latest_determination
@@ -256,8 +141,9 @@ class MemberDashboardComplianceData
   end
 
   def build_income_data
-    external_income_rows = self.class.send(:aggregator)
-      .fetch_external_income_activities(@certification, @lookback)
+    external_income_rows = ExternalIncomeActivity
+      .for_member(@certification.member_id)
+      .within_period(@lookback)
       .order(:period_start, :reported_at).to_a
     member_income_activity_rows = IncomeComplianceDeterminationService
       .member_income_activities_for_certification(@certification, certification_case: @certification_case).to_a

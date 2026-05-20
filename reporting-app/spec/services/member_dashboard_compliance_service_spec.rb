@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe MemberDashboardComplianceData do
+RSpec.describe MemberDashboardComplianceService do
   before do
     allow(Strata::EventManager).to receive(:publish).and_call_original
     allow(HoursComplianceDeterminationService).to receive(:determine)
@@ -166,13 +166,13 @@ RSpec.describe MemberDashboardComplianceData do
       end
 
       it "marks exemption flow as approved without a form" do
-        expect(read_model.exemption_flow_state).to eq(described_class::EXEMPTION_APPROVED)
+        expect(read_model.exemption_flow_state).to eq(MemberDashboardCompliance::EXEMPTION_APPROVED)
       end
 
       it "includes automated exempt determination in exemption history" do
         expect(read_model.exemption_history.size).to eq(1)
         expect(read_model.exemption_history.first.exemption_type_key).to eq("age_under_19_exempt")
-        expect(read_model.exemption_history.first.status_token).to eq(described_class::EXEMPTION_APPROVED)
+        expect(read_model.exemption_history.first.status_token).to eq(MemberDashboardCompliance::EXEMPTION_APPROVED)
       end
 
       it "does not query ExternalIncomeActivity when income is hidden" do
@@ -216,9 +216,9 @@ RSpec.describe MemberDashboardComplianceData do
       let(:exemption_application_form) { create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
 
       it "exposes pending_review flow and exactly one history entry" do
-        expect(read_model.exemption_flow_state).to eq(described_class::EXEMPTION_PENDING_REVIEW)
+        expect(read_model.exemption_flow_state).to eq(MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW)
         expect(read_model.exemption_history.size).to eq(1)
-        expect(read_model.exemption_history.first.status_token).to eq(described_class::EXEMPTION_PENDING_REVIEW)
+        expect(read_model.exemption_history.first.status_token).to eq(MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW)
       end
     end
 
@@ -238,7 +238,7 @@ RSpec.describe MemberDashboardComplianceData do
 
       it "emits a single approved history entry (determination is canonical)" do
         expect(read_model.exemption_history.size).to eq(1)
-        expect(read_model.exemption_history.first.status_token).to eq(described_class::EXEMPTION_APPROVED)
+        expect(read_model.exemption_history.first.status_token).to eq(MemberDashboardCompliance::EXEMPTION_APPROVED)
       end
     end
 
@@ -258,7 +258,7 @@ RSpec.describe MemberDashboardComplianceData do
       it "includes staff exemption-approved history keyed by exemption type" do
         keys = read_model.exemption_history.map(&:exemption_type_key)
         expect(keys).to include("short_term_hardship")
-        expect(read_model.exemption_history.map(&:status_token)).to include(described_class::EXEMPTION_APPROVED)
+        expect(read_model.exemption_history.map(&:status_token)).to include(MemberDashboardCompliance::EXEMPTION_APPROVED)
       end
     end
 

@@ -48,7 +48,7 @@ RSpec.describe "/dashboard", type: :request do
 
       get dashboard_path
       expect(response).to be_successful
-      expect(assigns(:member_dashboard_compliance)).to be_a(MemberDashboardComplianceData)
+      expect(assigns(:member_dashboard_compliance)).to be_a(MemberDashboardCompliance)
       expect(assigns(:member_dashboard_compliance).report_status_token).to eq(MemberStatus::DASHBOARD_REPORT_IN_PROGRESS)
     end
 
