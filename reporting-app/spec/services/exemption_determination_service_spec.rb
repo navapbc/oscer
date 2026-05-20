@@ -51,7 +51,7 @@ RSpec.describe ExemptionDeterminationService do
       it 'logs approved event' do
         expect do
           service.determine(kase)
-        end.to change { Strata::AuditLine.where(subject: certification, action: 'case.approved').count }.by(1)
+        end.to change { Strata::AuditLine.where(subject: certification, action: 'case.exemption.approved').count }.by(1)
       end
     end
 
@@ -144,10 +144,10 @@ RSpec.describe ExemptionDeterminationService do
         expect(kase.exemption_request_approval_status).to be_nil
       end
 
-      it 'logs forwarded event' do
+      it 'logs denied event' do
         expect do
           service.determine(kase)
-        end.to change { Strata::AuditLine.where(subject: certification, action: 'case.forwarded').count }.by(1)
+        end.to change { Strata::AuditLine.where(subject: certification, action: 'case.exemption.denied').count }.by(1)
       end
     end
 

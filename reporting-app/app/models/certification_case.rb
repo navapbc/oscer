@@ -47,74 +47,103 @@ class CertificationCase < Strata::Case
       .pick(:certification_id)
   end
 
-  def accept_activity_report
-    # caller should wrap call in transaction
-    certification = Certification.find(certification_id)
-    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, certification_case: self)
+  def accept_activity_report(user)
+    transaction do
+      certification = Certification.find(certification_id)
+      hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, certification_case: self)
 
-    self.activity_report_approval_status = "approved"
-    self.activity_report_approval_status_updated_at = Time.current
-    close!
+      self.activity_report_approval_status = "approved"
+      self.activity_report_approval_status_updated_at = Time.current
+      close!
 
-    determination = certification.record_determination!(
-      decision_method: :manual,
-      reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_compliant] ],
-      outcome: :compliant,
-      determination_data: build_hours_determination_data(hours_data),
-      determined_at: certification.certification_requirements.certification_date
-    )
+      determination = certification.record_determination!(
+        decision_method: :manual,
+        reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_compliant] ],
+        outcome: :compliant,
+        determination_data: build_hours_determination_data(hours_data),
+        determined_at: certification.certification_requirements.certification_date
+      )
+
+      Strata::AuditLog.write!(
+        action: "case.activity_report.approved",
+        actor: user,
+        subject: certification,
+        data: { determination_id: determination.id }
+      )
+    end
 
     Strata::EventManager.publish("ActivityReportApproved", { case_id: id, certification_id: certification_id })
-    determination
   end
 
-  def deny_activity_report
-    # caller should wrap call in transaction
-    certification = Certification.find(certification_id)
-    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, certification_case: self)
+  def deny_activity_report(user)
+    transaction do
+      certification = Certification.find(certification_id)
+      hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, certification_case: self)
 
-    self.activity_report_approval_status = "denied"
-    self.activity_report_approval_status_updated_at = Time.current
-    close!
+      self.activity_report_approval_status = "denied"
+      self.activity_report_approval_status_updated_at = Time.current
+      close!
 
-    determination = certification.record_determination!(
-      decision_method: :manual,
-      reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_insufficient] ],
-      outcome: :not_compliant,
-      determination_data: build_hours_determination_data(hours_data),
-      determined_at: certification.certification_requirements.certification_date
-    )
+      determination = certification.record_determination!(
+        decision_method: :manual,
+        reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_insufficient] ],
+        outcome: :not_compliant,
+        determination_data: build_hours_determination_data(hours_data),
+        determined_at: certification.certification_requirements.certification_date
+      )
+
+      Strata::AuditLog.write!(
+        action: "case.activity_report.denied",
+        actor: user,
+        subject: certification,
+        data: { determination_id: determination.id }
+      )
+    end
 
     Strata::EventManager.publish("ActivityReportDenied", { case_id: id, certification_id: certification_id })
-    determination
   end
 
-  def accept_exemption_request
-    # Calls should be wrapped in a transaction by caller
-    self.exemption_request_approval_status = "approved"
-    self.exemption_request_approval_status_updated_at = Time.current
-    close!
+  def accept_exemption_request(user)
+    transaction do
+      self.exemption_request_approval_status = "approved"
+      self.exemption_request_approval_status_updated_at = Time.current
+      close!
 
-    certification = Certification.find(certification_id)
-    determination = certification.record_determination!(
-      decision_method: :manual,
-      reasons: [ Determination::REASON_CODE_MAPPING[:exemption_request_compliant] ],
-      outcome: :exempt,
-      determined_at: certification.certification_requirements.certification_date,
-      determination_data: {
-        exemption_type: "placeholder"
-      } # TODO: add determined_by_id
-    )
+      certification = Certification.find(certification_id)
+      determination = certification.record_determination!(
+        decision_method: :manual,
+        reasons: [ Determination::REASON_CODE_MAPPING[:exemption_request_compliant] ],
+        outcome: :exempt,
+        determined_at: certification.certification_requirements.certification_date,
+        determination_data: {
+          exemption_type: "placeholder"
+        } # TODO: add determined_by_id
+      )
+
+      Strata::AuditLog.write!(
+        action: "case.exemption.approved",
+        actor: user,
+        subject: certification,
+        data: { determination_id: determination.id }
+      )
+    end
 
     Strata::EventManager.publish("DeterminedExempt", { case_id: id, certification_id: certification_id })
-    determination
   end
 
-  def deny_exemption_request
-    self.exemption_request_approval_status = "denied"
-    self.exemption_request_approval_status_updated_at = Time.current
-    save!
+  def deny_exemption_request(user)
+    transaction do
+      self.exemption_request_approval_status = "denied"
+      self.exemption_request_approval_status_updated_at = Time.current
+      save!
 
+      certification = Certification.find(certification_id)
+      Strata::AuditLog.write!(
+        action: "case.exemption.denied",
+        actor: user,
+        subject: certification
+      )
+    end
     Strata::EventManager.publish("DeterminedNotExempt", { case_id: id, certification_id: certification_id })
   end
 

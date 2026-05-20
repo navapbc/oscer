@@ -15,7 +15,7 @@ class ExemptionDeterminationService
         Strata::AuditLog.record(actor: self) do |log|
           kase.record_exemption_determination(eligibility_fact)
           log.add_line(
-            action: "case.approved",
+            action: "case.exemption.approved",
             subject: certification,
             data: eligibility_fact.value
           )
@@ -23,7 +23,7 @@ class ExemptionDeterminationService
         Strata::EventManager.publish("DeterminedExempt", { case_id: kase.id, certification_id: kase.certification_id })
       else
         Strata::AuditLog.write!(
-          action: "case.forwarded",
+          action: "case.exemption.denied",
           actor: self,
           subject: certification,
         )

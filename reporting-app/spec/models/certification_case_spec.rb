@@ -18,6 +18,8 @@ RSpec.describe CertificationCase, type: :model do
   end
 
   describe '#accept_activity_report' do
+    let(:user) { create(:user) }
+
     before do
       allow(Strata::EventManager).to receive(:publish)
       allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
@@ -30,7 +32,7 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'sets approval status and closes case' do
-      certification_case.accept_activity_report
+      certification_case.accept_activity_report(user)
       certification_case.reload
 
       expect(certification_case.activity_report_approval_status).to eq("approved")
@@ -39,7 +41,9 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'records compliant determination' do
-      determination = certification_case.accept_activity_report
+      certification_case.accept_activity_report(user)
+
+      determination = Determination.first
 
       expect(determination.decision_method).to eq("manual")
       expect(determination.reasons).to include("hours_reported_compliant")
@@ -49,16 +53,24 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'publishes ActivityReportApproved event' do
-      certification_case.accept_activity_report
-
+      certification_case.accept_activity_report(user)
       expect(Strata::EventManager).to have_received(:publish).with(
         "ActivityReportApproved",
         { case_id: certification_case.id, certification_id: certification_case.certification_id }
       )
     end
+
+    it 'logs decision to audit log' do
+      certification = Certification.find(certification_case.certification_id)
+      expect do
+        certification_case.accept_activity_report(user)
+      end.to change { Strata::AuditLine.where(actor: user, subject: certification, action: "case.activity_report.approved").count }.by(1)
+    end
   end
 
   describe '#deny_activity_report' do
+    let(:user) { create(:user) }
+
     before do
       allow(Strata::EventManager).to receive(:publish)
       allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
@@ -71,7 +83,7 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'sets denial status and closes case' do
-      certification_case.deny_activity_report
+      certification_case.deny_activity_report(user)
       certification_case.reload
 
       expect(certification_case.activity_report_approval_status).to eq("denied")
@@ -80,7 +92,9 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'records not_compliant determination' do
-      determination = certification_case.deny_activity_report
+      certification_case.deny_activity_report(user)
+
+      determination = Determination.first
 
       expect(determination.decision_method).to eq("manual")
       expect(determination.reasons).to include("hours_reported_insufficient")
@@ -90,20 +104,29 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'publishes ActivityReportDenied event' do
-      certification_case.deny_activity_report
+      certification_case.deny_activity_report(user)
 
       expect(Strata::EventManager).to have_received(:publish).with(
         "ActivityReportDenied",
         { case_id: certification_case.id, certification_id: certification_case.certification_id }
       )
     end
+
+    it 'logs decision to audit log' do
+      certification = Certification.find(certification_case.certification_id)
+      expect do
+        certification_case.deny_activity_report(user)
+      end.to change { Strata::AuditLine.where(actor: user, subject: certification, action: "case.activity_report.denied").count }.by(1)
+    end
   end
 
   describe '#accept_exemption_request' do
+    let(:user) { create(:user) }
+
     before { allow(Strata::EventManager).to receive(:publish) }
 
     it 'sets approval status and closes case' do
-      certification_case.accept_exemption_request
+      certification_case.accept_exemption_request(user)
       certification_case.reload
 
       expect(certification_case.exemption_request_approval_status).to eq("approved")
@@ -120,7 +143,7 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'publishes DeterminedExempt event' do
-      certification_case.accept_exemption_request
+      certification_case.accept_exemption_request(user)
 
       expect(Strata::EventManager).to have_received(:publish).with(
         "DeterminedExempt",
@@ -128,16 +151,21 @@ RSpec.describe CertificationCase, type: :model do
       )
     end
 
-    it 'returns a Strata::Determination' do
-      expect(certification_case.accept_exemption_request).to be_instance_of(Strata::Determination)
+    it 'logs decision to audit log' do
+      certification = Certification.find(certification_case.certification_id)
+      expect do
+        certification_case.accept_exemption_request(user)
+      end.to change { Strata::AuditLine.where(actor: user, subject: certification, action: "case.exemption.approved").count }.by(1)
     end
   end
 
   describe '#deny_exemption_request' do
+    let(:user) { create(:user) }
+
     before { allow(Strata::EventManager).to receive(:publish) }
 
     it 'sets denial status' do
-      certification_case.deny_exemption_request
+      certification_case.deny_exemption_request(user)
       certification_case.reload
 
       expect(certification_case.exemption_request_approval_status).to eq("denied")
@@ -145,12 +173,19 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'publishes DeterminedNotExempt event' do
-      certification_case.deny_exemption_request
+      certification_case.deny_exemption_request(user)
 
       expect(Strata::EventManager).to have_received(:publish).with(
         "DeterminedNotExempt",
         { case_id: certification_case.id, certification_id: certification_case.certification_id }
       )
+    end
+
+    it 'logs decision to audit log' do
+      certification = Certification.find(certification_case.certification_id)
+      expect do
+        certification_case.deny_exemption_request(user)
+      end.to change { Strata::AuditLine.where(actor: user, subject: certification, action: "case.exemption.denied").count }.by(1)
     end
   end
 

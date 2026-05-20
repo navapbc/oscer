@@ -61,7 +61,7 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
         expect(task).not_to be_nil # Need to pre-load task to exclude setup audit lines from expectation
         expect do
           patch review_activity_report_task_url(task), params: approve_params
-        end.to change { Strata::AuditLine.where(subject: certification, action: 'case.approved').count }.by(1)
+        end.to change { Strata::AuditLine.where(subject: certification, action: 'case.activity_report.approved').count }.by(1)
       end
     end
 
@@ -104,7 +104,7 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
         expect(task).not_to be_nil # Need to pre-load task to exclude setup audit lines from expectation
         expect do
           patch review_activity_report_task_url(task), params: deny_params
-        end.to change { Strata::AuditLine.where(subject: certification, action: 'case.denied').count }.by(1)
+        end.to change { Strata::AuditLine.where(subject: certification, action: 'case.activity_report.denied').count }.by(1)
       end
     end
 

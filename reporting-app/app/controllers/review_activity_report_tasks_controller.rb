@@ -5,26 +5,10 @@ class ReviewActivityReportTasksController < TasksController
     kase = @task.case
 
     if approving?
-      Strata::AuditLog.record(actor: current_user) do |log|
-        determination = kase.accept_activity_report
-
-        log.add_line(
-          action: "case.approved",
-          subject: Certification.find(kase.certification_id),
-          data: { determination_id: determination.id }
-        )
-      end
+      kase.accept_activity_report(current_user)
       notice = t("tasks.details.approved_message")
     elsif denying?
-      Strata::AuditLog.record(actor: current_user) do |log|
-        determination = kase.deny_activity_report
-
-        log.add_line(
-          action: "case.denied",
-          subject: Certification.find(kase.certification_id),
-          data: { determination_id: determination.id }
-        )
-      end
+      kase.deny_activity_report(current_user)
       notice = t("details.review_activity_report_task.denied_message")
     elsif requesting_information?
       # Redirect to new information request form. Task will be marked as "on hold" when

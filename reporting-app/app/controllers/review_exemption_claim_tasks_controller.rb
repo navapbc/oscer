@@ -5,25 +5,10 @@ class ReviewExemptionClaimTasksController < TasksController
     kase = @task.case
 
     if approving?
-      Strata::AuditLog.record(actor: current_user) do |log|
-        determination = kase.accept_exemption_request
-
-        log.add_line(
-          action: "case.approved",
-          subject: Certification.find(kase.certification_id),
-          data: { determination_id: determination.id }
-        )
-      end
+      kase.accept_exemption_request(current_user)
       notice = t("tasks.details.approved_message")
     elsif denying?
-      Strata::AuditLog.record(actor: current_user) do |log|
-        kase.deny_exemption_request
-
-        log.add_line(
-          action: "case.denied",
-          subject: Certification.find(kase.certification_id)
-        )
-      end
+      kase.deny_exemption_request(current_user)
       notice = t("details.review_exemption_claim_task.denied_message")
     elsif requesting_information?
       # Redirect to new information request form. Task will be marked as "on hold" when
