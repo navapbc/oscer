@@ -279,4 +279,10 @@ RSpec.describe Determination, type: :model do
       expect(d.ce_calculation_type).to be_nil
     end
   end
+
+  describe 'combined external CE calculation_type constants' do
+    it 'exposes CALCULATION_TYPE_EXTERNAL_CE_COMBINED_LEGACY for historical JSON and BI filters' do
+      expect(described_class::CALCULATION_TYPE_EXTERNAL_CE_COMBINED_LEGACY).to eq('ex_parte_ce_combined')
+    end
+  end
 end
