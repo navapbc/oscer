@@ -40,6 +40,18 @@ To opt out of these checks on actions that don't need them, you can add `skip_af
 
 When running in test environments (or `dev` with `AUTH_ADAPTER=mock`), the application uses a mock authentication adapter to simulate interactions with an external auth provider. This allows you to test various authentication flows and error states without needing real external infrastructure.
 
+An important exception is local E2E runs. `AUTH_ADAPTER=mock` will reach registration but hang at the email-verification step, because mock auth does not deliver real verification emails. To run the full E2E suite locally you must:
+
+1. Have an AWS account with a provisioned IAM user that can read the Cognito user pool.
+2. Have the AWS CLI installed and configured locally (`aws configure`).
+3. Set the following in `reporting-app/.env`:
+   - `AUTH_ADAPTER=cognito`
+   - `COGNITO_USER_POOL_ID`
+   - `COGNITO_CLIENT_ID`
+   - `COGNITO_CLIENT_SECRET`
+
+See [E2E Tests](../e2e/e2e-checks.md) for more information.
+
 #### How to Trigger Different Auth Scenarios
 The mock adapter looks for specific keywords in the email or password fields during login to simulate different outcomes:
 

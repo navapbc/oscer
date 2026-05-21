@@ -18,11 +18,15 @@ Playwright end-to-end tests live in `e2e/` (TypeScript). Page Object pattern wit
 - Start: `make start-container` (Docker) or `make start-native` (native Ruby)
 - If app image needs rebuild first: `make build`
 
-### Running tests
+### Running E2E tests
+
+The canonical guide is [docs/e2e/e2e-checks.md](../../docs/e2e/e2e-checks.md). All `e2e-*` make targets run **from the repo root**, not `reporting-app/`. The suite requires `AUTH_ADAPTER=cognito` locally; mock auth cannot deliver verification emails.
+
+Run a single spec natively:
 
 ```bash
-cd oscer/e2e
-APP_NAME=reporting-app npx playwright test reporting-app/tests/<filename>.spec.ts
+make e2e-test-native APP_NAME=reporting-app \
+  E2E_ARGS=reporting-app/tests/<filename>.spec.ts
 ```
 
 ### Directory layout

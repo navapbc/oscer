@@ -7,18 +7,14 @@ This repository uses [Playwright](https://playwright.dev/) to perform end-to-end
 By default in CI, tests are sharded across 3 concurrent runs to reduce total runtime. As the test suite grows, consider increasing the shard count to further optimize execution time. This is set in the [workflow file](../../.github/workflows/e2e-tests.yml#L22).
 
 ## Folder Structure
-In order to support e2e for multiple apps, the folder structure will include a base playwright config (`/e2e/playwright.config.js`), and app-specific derived playwright config that override the base config. See the example folder structure below:
+In order to support e2e for multiple apps, the folder structure will include a base playwright config (`/e2e/playwright.config.js`), and app-specific derived playwright config that override the base config. This project's folder structure:
 ```
-- e2e
-  - playwright.config.js
-  - app/
-    - playwright.config.js
-    - tests/
-      - index.spec.js
-  - app2/
-    - playwright.config.js
-    - tests/
-      - index.spec.js
+e2e/
+  playwright.config.js
+  reporting-app/
+    playwright.config.js
+    tests/
+      *.spec.ts
 ```
 
 Some highlights:
@@ -29,54 +25,74 @@ Some highlights:
 
 ## Run tests locally
 
-### Run tests with docker (preferred)
+> **All E2E `make` targets live in the root `Makefile` and must be run from the repository root**, not from `reporting-app/`. The `e2e/` directory is a sibling of `reporting-app/`.
 
-First, make sure the application you want to test is running.
+### Prerequisites
 
-Then, run end-to-end tests using Docker with:
+1. **The application must be running** at `http://localhost:3000`. See [Getting Started](../how-to-guides/getting-started.md).
+2. **Auth adapter must be `cognito`** in `reporting-app/.env`. The mock adapter (`AUTH_ADAPTER=mock`) advances past registration but cannot deliver verification emails, so every auth-gated test will hang for ~3 minutes per test. See [Authentication](../reporting-app/auth.md#e2e-tests-require-cognito) for the AWS prerequisites (provisioned IAM user, AWS CLI configured locally, user pool ID, client ID, and client secret).
+3. **Set `SKIP_PUBLIC_REQUEST_HOST=true`** on the Rails process. Uncomment the line in `reporting-app/.env`:
+   ```bash
+   SKIP_PUBLIC_REQUEST_HOST=true
+   ```
+   Without this, Rails redirects rewrite to `APP_HOST` and Playwright (which talks to `host.docker.internal` or another origin) lands on a different host mid-test. Omit this only in real deployments where canonical-host rewriting is intended.
+
+### Run the suite in Docker (preferred)
+
+From the repository root:
+
 ```bash
-make e2e-test APP_NAME=app BASE_URL=http://host.docker.internal:3000
+make e2e-test APP_NAME=reporting-app BASE_URL=http://host.docker.internal:3000
 ```
 
->*Note that `BASE_URL` cannot be `localhost`
+> `BASE_URL` cannot be `localhost` when running in Docker, because the e2e container reaches the host via `host.docker.internal`.
 
-**Reporting-app (`APP_HOST` vs Playwright origin):** If the Rails process has `APP_HOST` set (for example for OIDC redirect URIs) but `BASE_URL` uses another host such as `host.docker.internal`, canonical host middleware would otherwise make redirects use `APP_HOST` and leave the test origin. Start Rails with **`SKIP_PUBLIC_REQUEST_HOST=true`** on that process only so redirects stay on the URL Playwright uses. Omit this in real deployments where you depend on canonical host rewriting.
+### Run the suite natively
 
-### Run tests natively
-
-First, make sure the application you want to test is running.
-
-To run end-to-end tests natively, first install Playwright with:
+First install Playwright (one time):
 
 ```bash
 make e2e-setup
 ```
 
-Then, run the tests with your app name and base url:
+Then run:
+
 ```bash
-make e2e-test-native APP_NAME=app
+make e2e-test-native APP_NAME=reporting-app
 ```
 
->* `BASE_URL` is optional for both `e2e-test-native` and `e2e-test-native-ui` targets. It will by default use the app-specific (`/e2e/<APP_NAME>/playwright.config.js`) `baseURL`
+> `BASE_URL` is optional for `e2e-test-native` and `e2e-test-native-ui`; it defaults to the `baseURL` in `e2e/reporting-app/playwright.config.js` (`http://localhost:3000`).
 
-### Run tests in UI mode
+### Run a single test
 
-When developing or debugging tests, it’s often helpful to see them running in real-time. You can achieve this by running the e2e tests in UI mode:
+Pass the spec path via `E2E_ARGS`. Paths are relative to `e2e/`.
 
+```bash
+# Docker
+make e2e-test APP_NAME=reporting-app BASE_URL=http://host.docker.internal:3000 \
+  E2E_ARGS=reporting-app/tests/exemptionApplication.spec.ts
+
+# Native
+make e2e-test-native APP_NAME=reporting-app \
+  E2E_ARGS=reporting-app/tests/exemptionApplication.spec.ts
 ```
-make e2e-test-native-ui APP_NAME=app
-```
 
+### Run tests in UI mode (native)
+
+```bash
+make e2e-test-native-ui APP_NAME=reporting-app
+```
 
 #### Run tests in parallel
 
 The following commands split test execution into 3 separate shards, with results consolidated into a merged report located in `/e2e/blob-report`. This setup emulates how the sharded tests run in CI.
+
 ```
 # ensure app is running on port 3000
 
-make e2e-test APP_NAME=app BASE_URL=http://host.docker.internal:3000 TOTAL_SHARDS=3 CURRENT_SHARD=1 CI=true && \
-make e2e-test APP_NAME=app BASE_URL=http://host.docker.internal:3000 TOTAL_SHARDS=3 CURRENT_SHARD=2 CI=true && \
-make e2e-test APP_NAME=app BASE_URL=http://host.docker.internal:3000 TOTAL_SHARDS=3 CURRENT_SHARD=3 CI=true
+make e2e-test APP_NAME=reporting-app BASE_URL=http://host.docker.internal:3000 TOTAL_SHARDS=3 CURRENT_SHARD=1 CI=true && \
+make e2e-test APP_NAME=reporting-app BASE_URL=http://host.docker.internal:3000 TOTAL_SHARDS=3 CURRENT_SHARD=2 CI=true && \
+make e2e-test APP_NAME=reporting-app BASE_URL=http://host.docker.internal:3000 TOTAL_SHARDS=3 CURRENT_SHARD=3 CI=true
 
 make e2e-merge-reports REPORT_PATH=blob-report # merge the blob reports into html
 make e2e-show-report # open the html report in browser
@@ -123,4 +139,4 @@ The E2E tests are configured using the following files:
 
 The app-specific configuration files extend the common base configuration.
 
-By default when running `make e2e-test APP_NAME=app BASE_URL=http://localhost:3000 ` - you don't necessarily need to pass an `BASE_URL` since the default is defined in the app-specific playwright config (`/e2e/<APP_NAME>/playwright.config.js`).
+`BASE_URL` is optional for native runs because the app-specific config (`/e2e/<APP_NAME>/playwright.config.js`) provides a default. In Docker, `BASE_URL` is required and must use a host the container can reach (typically `http://host.docker.internal:3000`).
