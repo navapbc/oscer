@@ -12,6 +12,13 @@ here, namespaced under `Custom::`.
       end
     end
 
+Note: OSCER's services live flat under `app/services/` with no `Services::`
+namespace, so the parent class is referenced as
+`::ExemptionDeterminationService` (not `::Services::ExemptionDeterminationService`).
+By contrast, `Rules::` and `Custom::` ARE proper namespaces. The full
+namespacing guidance will live in CUSTOMIZATION.md
+([#539](https://github.com/navapbc/oscer/issues/539)).
+
 To wire a custom service into existing flows, see CUSTOMIZATION.md
 "Layer 4: Service and Ruleset Customization" (in progress:
 [#539](https://github.com/navapbc/oscer/issues/539)).

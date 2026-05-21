@@ -21,6 +21,9 @@ Wire it into the base model with one `include` line:
     # app/models/certification.rb
     include Custom::CertificationExtensions
 
+Concerns under `Custom::` are plain Ruby modules — they can also be included
+in deployment-owned models, not only OSCER's base models.
+
 For the full pattern, see CUSTOMIZATION.md "Layer 5: Model Customization"
 (in progress: [#539](https://github.com/navapbc/oscer/issues/539)).
 
