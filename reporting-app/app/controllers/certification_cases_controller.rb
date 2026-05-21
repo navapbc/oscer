@@ -24,10 +24,34 @@ class CertificationCasesController < StaffController
     @tasks = @case.tasks.order(created_at: :desc)
 
     # Hours data for the "Hours reported" table
-    @hours_summary = HoursComplianceDeterminationService.aggregate_hours_for_certification(@certification)
     @target_hours = HoursComplianceDeterminationService::TARGET_HOURS
     @external_hourly_activities = fetch_external_hourly_activities
-    @member_activities = fetch_member_activities
+    @member_hour_activities = HoursComplianceDeterminationService.member_hour_activities_for_certification(
+      @certification,
+      certification_case: @case
+    )
+    member_hour_rows = @member_hour_activities.to_a
+    @hours_summary = HoursComplianceDeterminationService.aggregate_hours_for_certification(
+      @certification,
+      certification_case: @case,
+      external_hourly_activities: @external_hourly_activities,
+      member_hour_activity_rows: member_hour_rows
+    )
+    @external_income_activities = fetch_external_income_activities
+    @member_income_activities = IncomeComplianceDeterminationService.member_income_activities_for_certification(
+      @certification,
+      certification_case: @case
+    )
+    member_income_rows = @member_income_activities.to_a
+    @income_summary = IncomeComplianceDeterminationService.aggregate_income_for_certification(
+      @certification,
+      certification_case: @case,
+      external_income_activities: @external_income_activities,
+      member_income_activity_rows: member_income_rows
+    )
+    @target_income = IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY
+    @hours_has_data = @external_hourly_activities.any? || @member_hour_activities.any?
+    @income_has_data = @external_income_activities.any? || @member_income_activities.any?
     if Features.doc_ai_enabled? && @activity_report
       activity_ids = @activity_report.activities.pluck(:id)
       @confidence_by_activity = DocAiConfidenceService.new.confidence_by_activity_id(activity_ids)
@@ -61,10 +85,10 @@ class CertificationCasesController < StaffController
     ExternalHourlyActivity.for_member(@certification.member_id).within_period(lookback_period)
   end
 
-  def fetch_member_activities
-    # Only include activities from approved activity reports to match the totals calculation
-    return [] unless @activity_report
-
-    @activity_report.activities.where.not(hours: nil)
+  def fetch_external_income_activities
+    lookback_period = @certification.certification_requirements.continuous_lookback_period
+    ExternalIncomeActivity.for_member(@certification.member_id)
+      .within_period(lookback_period)
+      .order(:period_start, :reported_at)
   end
 end

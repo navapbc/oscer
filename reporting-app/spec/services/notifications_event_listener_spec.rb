@@ -99,7 +99,7 @@ RSpec.describe NotificationsEventListener, type: :service do
     describe "#handle_insufficient_hours" do
       it "sends insufficient_hours_email notification with hours data" do
         allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
-          .with(certification)
+          .with(certification, certification_case: certification_case)
           .and_return({ total_hours: 40, hours_by_source: { external: 40, activity: 0 } })
 
         event = {
@@ -209,6 +209,45 @@ RSpec.describe NotificationsEventListener, type: :service do
         expect(IncomeComplianceDeterminationService).not_to have_received(:aggregate_income_for_certification)
       end
 
+      it "aggregates income scoped to case_id when income_data is omitted from payload" do
+        allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
+        allow(IncomeComplianceDeterminationService).to receive(:aggregate_income_for_certification).and_call_original
+
+        event = {
+          payload: {
+            case_id: certification_case.id,
+            certification_id: certification.id
+          }
+        }
+
+        described_class.send(:handle_insufficient_community_engagement, event)
+
+        expect(IncomeComplianceDeterminationService).to have_received(:aggregate_income_for_certification)
+          .with(certification, certification_case: certification_case)
+        expect(NotificationService).to have_received(:send_email_notification)
+      end
+
+      it "passes nil certification_case when case_id points at a case for a different certification" do
+        allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
+        allow(IncomeComplianceDeterminationService).to receive(:aggregate_income_for_certification).and_call_original
+
+        other_certification = create(:certification)
+        other_case = create(:certification_case, certification: other_certification)
+
+        event = {
+          payload: {
+            case_id: other_case.id,
+            certification_id: certification.id
+          }
+        }
+
+        described_class.send(:handle_insufficient_community_engagement, event)
+
+        expect(IncomeComplianceDeterminationService).to have_received(:aggregate_income_for_certification)
+          .with(certification, certification_case: nil)
+        expect(NotificationService).to have_received(:send_email_notification)
+      end
+
       it "aggregates hours when show_hours_insufficient is true and hours_data is omitted" do
         aggregated_hours = {
           total_hours: 50.0,
@@ -227,7 +266,7 @@ RSpec.describe NotificationsEventListener, type: :service do
         }
 
         allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
-          .with(certification)
+          .with(certification, certification_case: certification_case)
           .and_return(aggregated_hours)
         allow(IncomeComplianceDeterminationService).to receive(:aggregate_income_for_certification)
 
@@ -243,7 +282,7 @@ RSpec.describe NotificationsEventListener, type: :service do
 
         described_class.send(:handle_insufficient_community_engagement, event)
 
-        expect(HoursComplianceDeterminationService).to have_received(:aggregate_hours_for_certification).with(certification)
+        expect(HoursComplianceDeterminationService).to have_received(:aggregate_hours_for_certification).with(certification, certification_case: certification_case)
         expect(IncomeComplianceDeterminationService).not_to have_received(:aggregate_income_for_certification)
         expect(NotificationService).to have_received(:send_email_notification).with(
           MemberMailer,
@@ -280,7 +319,7 @@ RSpec.describe NotificationsEventListener, type: :service do
     describe "#handle_activity_report_denied" do
       it "sends insufficient_hours_email notification" do
         allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
-          .with(certification)
+          .with(certification, certification_case: certification_case)
           .and_return({ total_hours: 30, hours_by_source: { external: 30, activity: 0 } })
 
         event = { payload: { case_id: certification_case.id, certification_id: certification.id } }
