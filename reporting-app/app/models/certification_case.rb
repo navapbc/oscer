@@ -60,7 +60,7 @@ class CertificationCase < Strata::Case
         decision_method: :manual,
         reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_compliant] ],
         outcome: :compliant,
-        determination_data: build_hours_determination_data(hours_data),
+        determination_data: Determinations::HoursBasedDeterminationData.from_aggregate(hours_data).to_h,
         determined_at: certification.certification_requirements.certification_date,
         actor: user
       )
@@ -82,7 +82,7 @@ class CertificationCase < Strata::Case
         decision_method: :manual,
         reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_insufficient] ],
         outcome: :not_compliant,
-        determination_data: build_hours_determination_data(hours_data),
+        determination_data: Determinations::HoursBasedDeterminationData.from_aggregate(hours_data).to_h,
         determined_at: certification.certification_requirements.certification_date,
         actor: user
       )
@@ -163,7 +163,7 @@ class CertificationCase < Strata::Case
     reason_key = outcome == :compliant ? :hours_reported_compliant : :hours_reported_insufficient
     record_automated_ce_compliance(
       outcome,
-      build_hours_determination_data(hours_data),
+      Determinations::HoursBasedDeterminationData.from_aggregate(hours_data).to_h,
       reasons: [ Determination::REASON_CODE_MAPPING[reason_key] ]
     )
   end
@@ -183,7 +183,7 @@ class CertificationCase < Strata::Case
     reason_key = outcome == :compliant ? :income_reported_compliant : :income_reported_insufficient
     record_automated_ce_compliance(
       outcome,
-      build_income_determination_data(income_data),
+      Determinations::IncomeBasedDeterminationData.from_aggregate(income_data).to_h,
       reasons: [ Determination::REASON_CODE_MAPPING[reason_key] ],
       close_on_compliant: close_on_compliant
     )
@@ -202,12 +202,12 @@ class CertificationCase < Strata::Case
   def record_external_ce_combined_assessment(actor:, certification:, hours_data:, income_data:, hours_ok:, income_ok:)
     outcome = (hours_ok || income_ok) ? :compliant : :not_compliant
     reasons = external_ce_combined_reason_codes(outcome: outcome, hours_ok: hours_ok, income_ok: income_ok)
-    determination_data = build_external_ce_combined_determination_data(
+    determination_data = Determinations::ExternalCECombinedDeterminationData.build(
       hours_data: hours_data,
       income_data: income_data,
       hours_ok: hours_ok,
       income_ok: income_ok
-    )
+    ).to_h
 
     record_automated_ce_compliance(
       outcome,
@@ -248,41 +248,6 @@ class CertificationCase < Strata::Case
     end
   end
 
-  def build_hours_determination_data(hours_data)
-    {
-      calculation_type: Determination::CALCULATION_TYPE_HOURS_BASED,
-      total_hours: hours_data[:total_hours],
-      target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
-      hours_by_category: hours_data[:hours_by_category],
-      hours_by_source: hours_data[:hours_by_source],
-      external_hourly_activity_ids: hours_data[:external_hourly_activity_ids],
-      activity_ids: hours_data[:activity_ids],
-      calculated_at: Time.current.iso8601
-    }
-  end
-
-  def build_income_determination_data(income_data)
-    income_by = income_data[:income_by_source]
-    period_start = income_data[:period_start]
-    period_end = income_data[:period_end]
-
-    {
-      calculation_type: Determination::CALCULATION_TYPE_INCOME_BASED,
-      total_income: income_data[:total_income].to_f,
-      target_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY.to_f,
-      income_by_source: {
-        external: income_by[:external].to_f,
-        activity: income_by[:activity].to_f
-      },
-      period_start: period_start&.respond_to?(:iso8601) ? period_start.iso8601 : period_start&.to_s,
-      period_end: period_end&.respond_to?(:iso8601) ? period_end.iso8601 : period_end&.to_s,
-      external_income_activity_ids: income_data[:external_income_activity_ids],
-      activity_ids: income_data[:activity_ids],
-      calculation_method: Determination::CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE,
-      calculated_at: Time.current.iso8601
-    }
-  end
-
   def external_ce_combined_reason_codes(outcome:, hours_ok:, income_ok:)
     if outcome == :compliant
       [].tap do |codes|
@@ -295,25 +260,5 @@ class CertificationCase < Strata::Case
         Determination::REASON_CODE_MAPPING[:income_reported_insufficient]
       ]
     end
-  end
-
-  def build_external_ce_combined_determination_data(hours_data:, income_data:, hours_ok:, income_ok:)
-    satisfied_by = if hours_ok && income_ok
-      Determination::SATISFIED_BY_BOTH
-    elsif hours_ok
-      Determination::SATISFIED_BY_HOURS
-    elsif income_ok
-      Determination::SATISFIED_BY_INCOME
-    else
-      Determination::SATISFIED_BY_NEITHER
-    end
-
-    {
-      calculation_type: Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED,
-      satisfied_by: satisfied_by,
-      hours: build_hours_determination_data(hours_data).merge(compliant: hours_ok),
-      income: build_income_determination_data(income_data).merge(compliant: income_ok),
-      calculated_at: Time.current.iso8601
-    }
   end
 end
