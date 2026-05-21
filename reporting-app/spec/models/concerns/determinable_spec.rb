@@ -6,6 +6,8 @@ RSpec.describe Determinable, type: :model do
   let(:certification) { create(:certification) }
   let(:user) { create(:user) }
 
+  before { stub_const("MockSubmitter", Class.new { include Strata::VirtualActor }) }
+
   RSpec.shared_examples "a submitted determination" do |reason_code|
     let(:base_params) do
       {
@@ -133,8 +135,4 @@ RSpec.describe Determinable, type: :model do
       it_behaves_like "an activity report", reason_code
     end
   end
-end
-
-class MockSubmitter
-  include Strata::VirtualActor
 end
