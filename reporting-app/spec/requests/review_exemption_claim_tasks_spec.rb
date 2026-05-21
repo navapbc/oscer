@@ -20,15 +20,17 @@ RSpec.describe "/review_exemption_claim_tasks", type: :request do
   end
 
   describe "PATCH /update" do
+    let(:approve_params) { { review_exemption_claim_task: { exemption_decision: :yes } } }
+
     context "with approve action" do
       it "marks task as completed" do
-        patch review_exemption_claim_task_url(task), params: { review_exemption_claim_task: { exemption_decision: "yes" } }
+        patch review_exemption_claim_task_url(task), params: approve_params
         task.reload
         expect(task).to be_completed
       end
 
       it "marks case exemption status as approved" do
-        patch review_exemption_claim_task_url(task), params: { review_exemption_claim_task: { exemption_decision: "yes" } }
+        patch review_exemption_claim_task_url(task), params: approve_params
         certification_case.reload
         expect(certification_case.exemption_request_approval_status).to eq("approved")
         expect(certification_case.business_process_instance.current_step).to eq("end")
@@ -36,46 +38,48 @@ RSpec.describe "/review_exemption_claim_tasks", type: :request do
       end
 
       it "redirects back to the task" do
-        patch review_exemption_claim_task_url(task), params: { review_exemption_claim_task: { exemption_decision: "yes" } }
+        patch review_exemption_claim_task_url(task), params: approve_params
         expect(response).to redirect_to(task_path(task))
       end
 
       it "logs to audit log" do
         expect(task).not_to be_nil # Need to pre-load task to exclude setup audit lines from expectation
         expect do
-          patch review_exemption_claim_task_url(task), params: { review_exemption_claim_task: { exemption_decision: "yes" } }
+          patch review_exemption_claim_task_url(task), params: approve_params
         end.to change { Strata::AuditLine.where(subject: certification, action: 'case.exemption.approved').count }.by(1)
       end
     end
 
     context "with deny action" do
+      let(:deny_params) { { review_exemption_claim_task: { exemption_decision: "no-not-acceptable" } } }
+
       it "marks task as completed" do
-        patch review_exemption_claim_task_url(task), params: { review_exemption_claim_task: { exemption_decision: "no-not-acceptable" } }
+        patch review_exemption_claim_task_url(task), params: deny_params
         task.reload
         expect(task).to be_completed
       end
 
       it "marks case exemption status as denied" do
-        patch review_exemption_claim_task_url(task), params: { review_exemption_claim_task: { exemption_decision: "no-not-acceptable" } }
+        patch review_exemption_claim_task_url(task), params: deny_params
         certification_case.reload
         expect(certification_case.exemption_request_approval_status).to eq("denied")
       end
 
       it "sets case step to report activities" do
-        patch review_exemption_claim_task_url(task), params: { review_exemption_claim_task: { exemption_decision: "no-not-acceptable" } }
+        patch review_exemption_claim_task_url(task), params: deny_params
         certification_case.reload
         expect(certification_case.business_process_instance.current_step).to eq("report_activities")
       end
 
       it "redirects back to the task" do
-        patch review_exemption_claim_task_url(task), params: { review_exemption_claim_task: { exemption_decision: "no-not-acceptable" } }
+        patch review_exemption_claim_task_url(task), params: deny_params
         expect(response).to redirect_to(task_path(task))
       end
 
       it "logs to audit log" do
         expect(task).not_to be_nil # Need to pre-load task to exclude setup audit lines from expectation
         expect do
-          patch review_exemption_claim_task_url(task), params: { review_exemption_claim_task: { exemption_decision: "no-not-acceptable" } }
+          patch review_exemption_claim_task_url(task), params: deny_params
         end.to change { Strata::AuditLine.where(subject: certification, action: 'case.exemption.denied').count }.by(1)
       end
     end

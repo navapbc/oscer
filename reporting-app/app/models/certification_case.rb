@@ -48,27 +48,21 @@ class CertificationCase < Strata::Case
   end
 
   def accept_activity_report(user)
-    transaction do
-      certification = Certification.find(certification_id)
-      hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, certification_case: self)
+    certification = Certification.find(certification_id)
+    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, certification_case: self)
 
+    transaction do
       self.activity_report_approval_status = "approved"
       self.activity_report_approval_status_updated_at = Time.current
       close!
 
-      determination = certification.record_determination!(
+      certification.record_determination!(
         decision_method: :manual,
         reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_compliant] ],
         outcome: :compliant,
         determination_data: build_hours_determination_data(hours_data),
-        determined_at: certification.certification_requirements.certification_date
-      )
-
-      Strata::AuditLog.write!(
-        action: "case.activity_report.approved",
-        actor: user,
-        subject: certification,
-        data: { determination_id: determination.id }
+        determined_at: certification.certification_requirements.certification_date,
+        actor: user
       )
     end
 
@@ -76,27 +70,21 @@ class CertificationCase < Strata::Case
   end
 
   def deny_activity_report(user)
-    transaction do
-      certification = Certification.find(certification_id)
-      hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, certification_case: self)
+    certification = Certification.find(certification_id)
+    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, certification_case: self)
 
+    transaction do
       self.activity_report_approval_status = "denied"
       self.activity_report_approval_status_updated_at = Time.current
       close!
 
-      determination = certification.record_determination!(
+      certification.record_determination!(
         decision_method: :manual,
         reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_insufficient] ],
         outcome: :not_compliant,
         determination_data: build_hours_determination_data(hours_data),
-        determined_at: certification.certification_requirements.certification_date
-      )
-
-      Strata::AuditLog.write!(
-        action: "case.activity_report.denied",
-        actor: user,
-        subject: certification,
-        data: { determination_id: determination.id }
+        determined_at: certification.certification_requirements.certification_date,
+        actor: user
       )
     end
 
@@ -110,21 +98,15 @@ class CertificationCase < Strata::Case
       close!
 
       certification = Certification.find(certification_id)
-      determination = certification.record_determination!(
+      certification.record_determination!(
         decision_method: :manual,
         reasons: [ Determination::REASON_CODE_MAPPING[:exemption_request_compliant] ],
         outcome: :exempt,
         determined_at: certification.certification_requirements.certification_date,
         determination_data: {
           exemption_type: "placeholder"
-        } # TODO: add determined_by_id
-      )
-
-      Strata::AuditLog.write!(
-        action: "case.exemption.approved",
-        actor: user,
-        subject: certification,
-        data: { determination_id: determination.id }
+        },
+        actor: user
       )
     end
 
@@ -152,9 +134,9 @@ class CertificationCase < Strata::Case
   # @param eligibility_fact [Strata::RulesEngine::Fact] the evaluation result
   # @param actor [Strata::VirtualActor] recording the exemption
   def record_exemption_determination(eligibility_fact, actor)
-    transaction do
-      certification = Certification.find(certification_id)
+    certification = Certification.find(certification_id)
 
+    transaction do
       self.exemption_request_approval_status = "approved"
       self.exemption_request_approval_status_updated_at = Time.current
       close!
@@ -165,12 +147,6 @@ class CertificationCase < Strata::Case
         outcome: :exempt,
         determination_data: eligibility_fact.reasons.to_json,
         determined_at: certification.certification_requirements.certification_date
-      )
-
-      Strata::AuditLog.write!(
-        action: "case.exemption.approved",
-        actor:,
-        subject: certification
       )
     end
   end
@@ -232,21 +208,12 @@ class CertificationCase < Strata::Case
       income_ok: income_ok
     )
 
-    transaction do
-      determination = record_automated_ce_compliance(
-        outcome,
-        determination_data,
-        reasons: reasons,
-        certification: certification
-      )
-
-      Strata::AuditLog.write!(
-        action: "case.activity_report.#{outcome == :compliant ? 'approved' : 'denied'}",
-        actor:,
-        subject: certification,
-        data: { determination_id: determination.id }
-      )
-    end
+    record_automated_ce_compliance(
+      outcome,
+      determination_data,
+      reasons: reasons,
+      certification: certification
+    )
   end
 
   def member_status

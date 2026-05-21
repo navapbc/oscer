@@ -4,6 +4,7 @@ require 'rails_helper'
 
 RSpec.describe CertificationCase, type: :model do
   let(:certification_case) { create(:certification_case) }
+  let(:user) { create(:user) }
 
   # Prevent real external CE from recording a compliant determination during certification bootstrap
   # (Income aggregate can meet threshold and close the case before examples run).
@@ -18,8 +19,6 @@ RSpec.describe CertificationCase, type: :model do
   end
 
   describe '#accept_activity_report' do
-    let(:user) { create(:user) }
-
     before do
       allow(Strata::EventManager).to receive(:publish)
       allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
@@ -69,8 +68,6 @@ RSpec.describe CertificationCase, type: :model do
   end
 
   describe '#deny_activity_report' do
-    let(:user) { create(:user) }
-
     before do
       allow(Strata::EventManager).to receive(:publish)
       allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
@@ -121,8 +118,6 @@ RSpec.describe CertificationCase, type: :model do
   end
 
   describe '#accept_exemption_request' do
-    let(:user) { create(:user) }
-
     before { allow(Strata::EventManager).to receive(:publish) }
 
     it 'sets approval status and closes case' do
@@ -160,8 +155,6 @@ RSpec.describe CertificationCase, type: :model do
   end
 
   describe '#deny_exemption_request' do
-    let(:user) { create(:user) }
-
     before { allow(Strata::EventManager).to receive(:publish) }
 
     it 'sets denial status' do
