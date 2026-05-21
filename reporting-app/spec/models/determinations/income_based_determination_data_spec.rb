@@ -3,11 +3,11 @@
 require "rails_helper"
 
 RSpec.describe Determinations::IncomeBasedDeterminationData do
-  around do |example|
-    travel_to(Time.zone.parse("2026-04-30 15:00:00")) { example.run }
-  end
+  let(:expected_calculated_at) { Time.zone.parse("2026-04-30 15:00:00").iso8601 }
 
-  let(:calculated_at) { Time.zone.parse("2026-04-30 15:00:00").iso8601 }
+  around do |example|
+    travel_to(Time.zone.parse(expected_calculated_at)) { example.run }
+  end
 
   it "serializes a stable income_based payload" do
     income_data = {
@@ -30,7 +30,7 @@ RSpec.describe Determinations::IncomeBasedDeterminationData do
         "external_income_activity_ids" => [ "22222222-2222-4222-8222-222222222222", "33333333-3333-4333-8333-333333333333" ],
         "activity_ids" => [],
         "calculation_method" => Determination::CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE,
-        "calculated_at" => calculated_at
+        "calculated_at" => expected_calculated_at
       }
     )
   end

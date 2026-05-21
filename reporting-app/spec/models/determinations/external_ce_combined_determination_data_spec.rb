@@ -3,11 +3,11 @@
 require "rails_helper"
 
 RSpec.describe Determinations::ExternalCECombinedDeterminationData do
-  around do |example|
-    travel_to(Time.zone.parse("2026-04-30 15:00:00")) { example.run }
-  end
+  let(:expected_calculated_at) { Time.zone.parse("2026-04-30 15:00:00").iso8601 }
 
-  let(:calculated_at) { Time.zone.parse("2026-04-30 15:00:00").iso8601 }
+  around do |example|
+    travel_to(Time.zone.parse(expected_calculated_at)) { example.run }
+  end
 
   it "serializes a stable external_ce_combined payload with satisfied_by both when both tracks pass" do
     hours_data = {
@@ -37,7 +37,7 @@ RSpec.describe Determinations::ExternalCECombinedDeterminationData do
     expect(payload["satisfied_by"]).to eq(Determination::SATISFIED_BY_BOTH)
     expect(payload["hours"]["compliant"]).to be true
     expect(payload["income"]["compliant"]).to be true
-    expect(payload["calculated_at"]).to eq(calculated_at)
+    expect(payload["calculated_at"]).to eq(expected_calculated_at)
 
     expect(payload["hours"]).to eq(
       Determinations::HoursBasedDeterminationData.from_aggregate(hours_data, compliant: true).to_h
@@ -177,7 +177,7 @@ RSpec.describe Determinations::ExternalCECombinedDeterminationData do
       income_data: income_data,
       hours_ok: false,
       income_ok: false,
-      calculated_at: calculated_at
+      calculated_at: expected_calculated_at
     )
 
     expect { vo.to_h }.to raise_error(ArgumentError, /\.build/)

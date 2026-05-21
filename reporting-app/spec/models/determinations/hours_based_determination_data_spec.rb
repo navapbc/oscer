@@ -3,11 +3,11 @@
 require "rails_helper"
 
 RSpec.describe Determinations::HoursBasedDeterminationData do
-  around do |example|
-    travel_to(Time.zone.parse("2026-04-30 15:00:00")) { example.run }
-  end
+  let(:expected_calculated_at) { Time.zone.parse("2026-04-30 15:00:00").iso8601 }
 
-  let(:calculated_at) { Time.zone.parse("2026-04-30 15:00:00").iso8601 }
+  around do |example|
+    travel_to(Time.zone.parse(expected_calculated_at)) { example.run }
+  end
 
   it "serializes a stable hours_based payload" do
     hours_data = {
@@ -27,7 +27,7 @@ RSpec.describe Determinations::HoursBasedDeterminationData do
         "hours_by_source" => { "external" => 85.0, "activity" => 0.0 },
         "external_hourly_activity_ids" => [ "11111111-1111-4111-8111-111111111111" ],
         "activity_ids" => [],
-        "calculated_at" => calculated_at
+        "calculated_at" => expected_calculated_at
       }
     )
   end
