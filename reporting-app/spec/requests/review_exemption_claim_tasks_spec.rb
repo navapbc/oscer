@@ -43,10 +43,9 @@ RSpec.describe "/review_exemption_claim_tasks", type: :request do
       end
 
       it "logs to audit log" do
-        expect(task).not_to be_nil # Need to pre-load task to exclude setup audit lines from expectation
         expect do
           patch review_exemption_claim_task_url(task), params: approve_params
-        end.to change { Strata::AuditLine.where(subject: certification, action: 'case.exemption.approved').count }.by(1)
+        end.to change { Strata::AuditLine.where(actor: user, subject: certification, action: 'case.exemption.approved').count }.by(1)
       end
     end
 
@@ -77,10 +76,9 @@ RSpec.describe "/review_exemption_claim_tasks", type: :request do
       end
 
       it "logs to audit log" do
-        expect(task).not_to be_nil # Need to pre-load task to exclude setup audit lines from expectation
         expect do
           patch review_exemption_claim_task_url(task), params: deny_params
-        end.to change { Strata::AuditLine.where(subject: certification, action: 'case.exemption.denied').count }.by(1)
+        end.to change { Strata::AuditLine.where(actor: user, subject: certification, action: 'case.exemption.denied').count }.by(1)
       end
     end
 
