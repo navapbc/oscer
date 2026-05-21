@@ -75,7 +75,7 @@ RSpec.describe CommunityEngagementCheckService do
       it 'logs approved event' do
         expect do
           described_class.determine(certification_case)
-        end.to change { Strata::AuditLine.where(subject: certification, action: 'case.activity_report.approved').count }.by(1)
+        end.to change { Strata::AuditLine.where(subject: certification, actor_type: described_class.name, action: 'case.activity_report.approved').count }.by(1)
       end
     end
 
@@ -109,7 +109,7 @@ RSpec.describe CommunityEngagementCheckService do
       it 'logs approved event' do
         expect do
           described_class.determine(certification_case)
-        end.to change { Strata::AuditLine.where(subject: certification, action: 'case.activity_report.approved').count }.by(1)
+        end.to change { Strata::AuditLine.where(subject: certification, actor_type: described_class.name, action: 'case.activity_report.approved').count }.by(1)
       end
     end
 
@@ -178,7 +178,7 @@ RSpec.describe CommunityEngagementCheckService do
       it 'logs denied event' do
         expect do
           described_class.determine(certification_case)
-        end.to change { Strata::AuditLine.where(action: 'case.activity_report.denied').count }.by(1)
+        end.to change { Strata::AuditLine.where(subject: certification, actor_type: described_class.name, action: 'case.activity_report.denied').count }.by(1)
       end
     end
 

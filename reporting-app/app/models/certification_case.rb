@@ -146,7 +146,8 @@ class CertificationCase < Strata::Case
         reasons: Determination.to_reason_codes(eligibility_fact),
         outcome: :exempt,
         determination_data: eligibility_fact.reasons.to_json,
-        determined_at: certification.certification_requirements.certification_date
+        determined_at: certification.certification_requirements.certification_date,
+        actor:
       )
     end
   end
@@ -212,7 +213,8 @@ class CertificationCase < Strata::Case
       outcome,
       determination_data,
       reasons: reasons,
-      certification: certification
+      certification: certification,
+      actor:
     )
   end
 
@@ -229,7 +231,7 @@ class CertificationCase < Strata::Case
   # @param close_on_compliant [Boolean] when +true+ (default), +:compliant+ outcomes call +close!+ before
   #   persisting the determination. When +false+, the determination is still written but the case stays open
   #   (+record_income_compliance+ may pass +false+; +record_hours_compliance+ always uses the default).
-  def record_automated_ce_compliance(outcome, determination_data, reasons:, certification: nil, close_on_compliant: true)
+  def record_automated_ce_compliance(outcome, determination_data, reasons:, certification: nil, close_on_compliant: true, actor: nil)
     certification ||= Certification.find(certification_id)
 
     transaction do
@@ -240,7 +242,8 @@ class CertificationCase < Strata::Case
         reasons: reasons,
         outcome: outcome,
         determination_data: determination_data,
-        determined_at: certification.certification_requirements.certification_date
+        determined_at: certification.certification_requirements.certification_date,
+        actor:
       )
     end
   end
