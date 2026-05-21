@@ -30,4 +30,4 @@ For the full pattern, see CUSTOMIZATION.md "Layer 5: Model Customization"
 ## Ownership
 
 `.rb` files here are deployment-owned and untouched by `nava-platform app
-update`. `README.md` and `.keep` are template-owned and refresh on update.
+update`. `README.md` is template-owned and refreshes on update.

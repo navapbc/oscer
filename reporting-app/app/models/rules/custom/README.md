@@ -27,4 +27,4 @@ To wire a custom ruleset into evaluation, see CUSTOMIZATION.md
 ## Ownership
 
 `.rb` files here are deployment-owned and untouched by `nava-platform app
-update`. `README.md` and `.keep` are template-owned and refresh on update.
+update`. `README.md` is template-owned and refreshes on update.
