@@ -184,6 +184,8 @@ RSpec.describe CertificationCase, type: :model do
 
   describe '#record_exemption_determination' do
     # Model only records state - service handles conditional logic and events
+    before { stub_const("MockSubmitter", Class.new { include Strata::VirtualActor }) }
+
 
     it 'sets approval status and closes case' do
       age_fact = Strata::RulesEngine::Fact.new(
@@ -192,12 +194,26 @@ RSpec.describe CertificationCase, type: :model do
       eligibility_fact = Strata::RulesEngine::Fact.new(
         :age_eligibility, true, reasons: [ age_fact ]
       )
-      certification_case.record_exemption_determination(eligibility_fact, ExemptionDeterminationService)
+      certification_case.record_exemption_determination(eligibility_fact, MockSubmitter)
       certification_case.reload
 
       expect(certification_case.exemption_request_approval_status).to eq("approved")
       expect(certification_case.exemption_request_approval_status_updated_at).to be_present
       expect(certification_case).to be_closed
+    end
+
+
+    it "logs approved decision to audit log" do
+      age_fact = Strata::RulesEngine::Fact.new(
+        :age_under_19, true, reasons: []
+      )
+      eligibility_fact = Strata::RulesEngine::Fact.new(
+        :age_eligibility, true, reasons: [ age_fact ]
+      )
+      certification = Certification.find(certification_case.certification_id)
+      expect do
+        certification_case.record_exemption_determination(eligibility_fact, MockSubmitter)
+      end.to change { Strata::AuditLine.where(subject: certification, actor_type: MockSubmitter.name, action: "case.exemption.approved").count }.by(1)
     end
 
     it 'creates determination with correct attributes' do
@@ -207,7 +223,7 @@ RSpec.describe CertificationCase, type: :model do
       eligibility_fact = Strata::RulesEngine::Fact.new(
         :age_eligibility, true, reasons: [ age_fact ]
       )
-      certification_case.record_exemption_determination(eligibility_fact, ExemptionDeterminationService)
+      certification_case.record_exemption_determination(eligibility_fact, MockSubmitter)
 
       determination = Determination.first
 
@@ -228,7 +244,7 @@ RSpec.describe CertificationCase, type: :model do
       eligibility_fact = Strata::RulesEngine::Fact.new(
         :eligible_for_exemption, true, reasons: [ age_fact, pregnant_fact ]
       )
-      certification_case.record_exemption_determination(eligibility_fact, ExemptionDeterminationService)
+      certification_case.record_exemption_determination(eligibility_fact, MockSubmitter)
 
       determination = Determination.first
 
@@ -238,6 +254,8 @@ RSpec.describe CertificationCase, type: :model do
   end
 
   describe "#record_external_ce_combined_assessment" do
+    before { stub_const("MockSubmitter", Class.new { include Strata::VirtualActor }) }
+
     def latest_determination_for(certification_id)
       Determination.unscope(:order).where(subject_id: certification_id).order(created_at: :desc).first
     end
@@ -266,7 +284,7 @@ RSpec.describe CertificationCase, type: :model do
 
     it "stores not_compliant with both insufficient reasons when both tracks fail" do
       certification_case.record_external_ce_combined_assessment(
-        actor: CommunityEngagementCheckService,
+        actor: MockSubmitter,
         certification: certification,
         hours_data: hours_data,
         income_data: income_data,
@@ -286,19 +304,19 @@ RSpec.describe CertificationCase, type: :model do
     it "logs denied decision to audit log" do
       expect do
         certification_case.record_external_ce_combined_assessment(
-          actor: CommunityEngagementCheckService,
+          actor: MockSubmitter,
           certification: certification,
           hours_data:,
           income_data:,
           hours_ok: false,
           income_ok: false
         )
-      end.to change { Strata::AuditLine.where(subject: certification, action: "case.activity_report.denied").count }.by(1)
+      end.to change { Strata::AuditLine.where(subject: certification, actor_type: MockSubmitter.name, action: "case.activity_report.denied").count }.by(1)
     end
 
     it "stores compliant when only income_ok" do
       certification_case.record_external_ce_combined_assessment(
-        actor: CommunityEngagementCheckService,
+        actor: MockSubmitter,
         certification: certification,
         hours_data: hours_data,
         income_data: income_data,
@@ -315,14 +333,14 @@ RSpec.describe CertificationCase, type: :model do
     it "logs approved decision to audit log" do
       expect do
         certification_case.record_external_ce_combined_assessment(
-          actor: CommunityEngagementCheckService,
+          actor: MockSubmitter,
           certification: certification,
           hours_data:,
           income_data:,
           hours_ok: false,
           income_ok: true
         )
-      end.to change { Strata::AuditLine.where(subject: certification, action: "case.activity_report.approved").count }.by(1)
+      end.to change { Strata::AuditLine.where(subject: certification, actor_type: MockSubmitter.name, action: "case.activity_report.approved").count }.by(1)
     end
   end
 
