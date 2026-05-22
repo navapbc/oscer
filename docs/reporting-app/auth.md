@@ -9,6 +9,40 @@ Authentication is the process of verifying the credentials of a user. We use AWS
 - Custom pages are built for the AWS Cognito flows (login, signup, forgot password, etc.). We aren't using the hosted UI that Cognito provides since we need more control over the UI and content.
 - [Devise](https://www.rubydoc.info/github/heartcombo/devise/main) and [Warden](https://github.com/wardencommunity/warden/wiki) facilitate auth and session management
 
+The application switches between two auth adapters via the `AUTH_ADAPTER` environment variable: `cognito` for production and any flow that needs real verification emails, `mock` for local development and most tests.
+
+### Cognito Adapter (production, E2E)
+
+The Cognito adapter is the production path. Use it locally when you need real Cognito flows, most notably during E2E tests. Mock auth does not deliver real verification emails. To run the full E2E suite locally you must:
+
+1. Have an AWS account with a provisioned IAM user that can read the Cognito user pool.
+2. Have the AWS CLI installed, configured (`aws configure`), and authenticated (`aws login`).
+3. Use the information in `~/.aws/config` and `~/.aws/credentials` to set the following in `reporting-app/.env`:
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+   - `AWS_DEFAULT_REGION`
+4. Also configure these values in `reporting-app/.env`. You will need to obtain these through the AWS console:
+   - `AUTH_ADAPTER=cognito`
+   - `COGNITO_USER_POOL_ID`
+   - `COGNITO_CLIENT_ID`
+   - `COGNITO_CLIENT_SECRET`
+
+See [E2E Tests](../e2e/e2e-checks.md) for more information.
+
+### Mock Adapter (development, test)
+
+When running in test environments (or `dev` with `AUTH_ADAPTER=mock`), the application uses a mock authentication adapter to simulate interactions with an external auth provider. This allows you to test various authentication flows and error states without needing real external infrastructure.
+
+#### How to Trigger Different Auth Scenarios
+The mock adapter looks for specific keywords in the email or password fields during login to simulate different outcomes:
+
+| Scenario | How to Trigger | Result |
+| -------- | -------------- | ------ |
+| Unconfirmed account |	Use an email containing the word unconfirmed | Raises Auth::Errors::UserNotConfirmed |
+| Invalid credentials |	Use the password wrong	                     | Raises Auth::Errors::InvalidCredentials
+| MFA challenge       |	Use an email containing the word mfa	     | Returns a response with challenge_name: SOFTWARE_TOKEN_MFA
+| Successful login    |	Use any other email and password combination | Returns a mock token and UID
+
 ## Authorization
 
 Authorization is the process of determining whether a user has access to a specific resource. We use [Pundit](https://github.com/varvet/pundit) for authorization.
@@ -35,33 +69,3 @@ We use a few `after_action` Pundit callbacks in the application controller to ve
 - If you forget to call `policy_scope` in a controller action, you'll see an exception like `PolicyScopingNotPerformedError`.
 
 To opt out of these checks on actions that don't need them, you can add `skip_after_action :verify_authorized` or `skip_after_action :verify_policy_scoped` to your controller. Alternatively, you can add `skip_authorization` or `skip_policy_scope` to your controller action.
-
-### Mock Auth Adapter Behavior (Development & Test)
-
-When running in test environments (or `dev` with `AUTH_ADAPTER=mock`), the application uses a mock authentication adapter to simulate interactions with an external auth provider. This allows you to test various authentication flows and error states without needing real external infrastructure.
-
-An important exception is local E2E runs. `AUTH_ADAPTER=mock` will reach registration but hang at the email-verification step, because mock auth does not deliver real verification emails. To run the full E2E suite locally you must:
-
-1. Have an AWS account with a provisioned IAM user that can read the Cognito user pool.
-2. Have the AWS CLI installed, configured, (`aws configure`), and authenticated (`aws login`). Use the information in ~/.aws/config and ~/.aws/credentials to set the following in `reporting-app/.env`:
-
-- AWS_ACCESS_KEY_ID
-- AWS_SECRET_ACCESS_KEY
-- AWS_DEFAULT_REGION
-3. Set the following in `reporting-app/.env`:
-   - `AUTH_ADAPTER=cognito`
-   - `COGNITO_USER_POOL_ID`
-   - `COGNITO_CLIENT_ID`
-   - `COGNITO_CLIENT_SECRET`
-
-See [E2E Tests](../e2e/e2e-checks.md) for more information.
-
-#### How to Trigger Different Auth Scenarios
-The mock adapter looks for specific keywords in the email or password fields during login to simulate different outcomes:
-
-| Scenario | How to Trigger | Result |
-| -------- | -------------- | ------ |
-| Unconfirmed account |	Use an email containing the word unconfirmed | Raises Auth::Errors::UserNotConfirmed |
-| Invalid credentials |	Use the password wrong	                     | Raises Auth::Errors::InvalidCredentials
-| MFA challenge       |	Use an email containing the word mfa	     | Returns a response with challenge_name: SOFTWARE_TOKEN_MFA
-| Successful login    |	Use any other email and password combination | Returns a mock token and UID

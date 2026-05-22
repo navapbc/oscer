@@ -30,8 +30,9 @@ Some highlights:
 ### Prerequisites
 
 1. **The application must be running** at `http://localhost:3000`. See [Getting Started](../how-to-guides/getting-started.md).
-2. **Auth adapter must be `cognito`** in `reporting-app/.env`. The mock adapter (`AUTH_ADAPTER=mock`) advances past registration but cannot deliver verification emails, so every auth-gated test will hang for ~3 minutes per test. See [Authentication](../reporting-app/auth.md#e2e-tests-require-cognito) for the AWS prerequisites (provisioned IAM user, AWS CLI configured locally, user pool ID, client ID, and client secret).
-3. **Set `SKIP_PUBLIC_REQUEST_HOST=true`** on the Rails process. Uncomment the line in `reporting-app/.env`:
+2. **Auth adapter must be `cognito`** in `reporting-app/.env`. The mock adapter (`AUTH_ADAPTER=mock`) advances past registration but cannot deliver verification emails, so every auth-gated test will hang for ~3 minutes per test. See [Authentication](../reporting-app/auth.md#cognito-adapter-production-e2e) for the AWS prerequisites (provisioned IAM user, AWS CLI configured locally, user pool ID, client ID, and client secret).
+3. **DocAI must be configured and enabled** in `reporting-app/.env`. E2E flows that exercise document staging and activity pre-fill depend on the DocAI service. See [Configuring DocAI](../how-to-guides/configuring-doc-ai.md) for the full variable set and feature-flag toggle.
+4. **Set `SKIP_PUBLIC_REQUEST_HOST=true`** on the Rails process. Uncomment the line in `reporting-app/.env`:
    ```bash
    SKIP_PUBLIC_REQUEST_HOST=true
    ```
