@@ -43,7 +43,11 @@ When running in test environments (or `dev` with `AUTH_ADAPTER=mock`), the appli
 An important exception is local E2E runs. `AUTH_ADAPTER=mock` will reach registration but hang at the email-verification step, because mock auth does not deliver real verification emails. To run the full E2E suite locally you must:
 
 1. Have an AWS account with a provisioned IAM user that can read the Cognito user pool.
-2. Have the AWS CLI installed and configured locally (`aws configure`).
+2. Have the AWS CLI installed, configured, (`aws configure`), and authenticated (`aws login`). Use the information in ~/.aws/config and ~/.aws/credentials to set the following in `reporting-app/.env`:
+
+- AWS_ACCESS_KEY_ID
+- AWS_SECRET_ACCESS_KEY
+- AWS_DEFAULT_REGION
 3. Set the following in `reporting-app/.env`:
    - `AUTH_ADAPTER=cognito`
    - `COGNITO_USER_POOL_ID`
