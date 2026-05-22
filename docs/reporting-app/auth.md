@@ -13,7 +13,7 @@ The application switches between two auth adapters via the `AUTH_ADAPTER` enviro
 
 ### Cognito Adapter (production, E2E)
 
-The Cognito adapter is the production path. Use it locally when you need real Cognito flows, most notably during E2E tests. Mock auth does not deliver real verification emails. To run the full E2E suite locally you must:
+The Cognito adapter is the production path. Use it locally when you need real Cognito flows, most notably during E2E tests. Mock auth does not deliver real verification emails. To use the cognito adapter locally you must:
 
 1. Have an AWS account with a provisioned IAM user that can read the Cognito user pool.
 2. Have the AWS CLI installed, configured (`aws configure`), and authenticated (`aws login`).
