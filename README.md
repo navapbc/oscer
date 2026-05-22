@@ -168,6 +168,7 @@ This is the administrative interface where staff can review and process member c
 - **[Getting Started](docs/how-to-guides/getting-started.md)** - Instructions for getting started
 - **[System Architecture](docs/system-architecture.md)** - High-level system overview
 - **[Reporting App Documentation](docs/reporting-app/)** - Detailed application documentation
+- **[End-to-End (E2E) Tests](docs/e2e/e2e-checks.md)** - Running the Playwright suite locally and in CI
 - **[Infrastructure Guide](docs/infra/)** - Deployment and infrastructure management
 - **[Contributing Guidelines](CONTRIBUTING.md)** - How to contribute to the project
 - **[Security Policy](SECURITY.md)** - Security practices and reporting

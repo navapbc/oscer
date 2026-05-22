@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository structure
 
-The Rails application lives in `reporting-app/`. **All `make` commands below must be run from that subdirectory**, not the repo root.
+The Rails application lives in `reporting-app/`. **Most `make` commands below run from that subdirectory**, not the repo root. E2E targets (`e2e-*`) are the exception: they live in the root `Makefile` and must be run from the repo root. See [E2E Tests](docs/e2e/e2e-checks.md).
 
 ```
 reporting-app/    # Rails 8.0 app (Ruby 3.4.9)
