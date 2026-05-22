@@ -13,6 +13,7 @@ FactoryBot.define do
 
   factory :review_exemption_claim_task, parent: :oscer_task, class: ReviewExemptionClaimTask do
     type { "ReviewExemptionClaimTask" }
+    association :application_form, factory: :exemption_application_form
   end
 
   factory :review_activity_report_task, parent: :oscer_task, class: ReviewActivityReportTask do
