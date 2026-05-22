@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_18_150145) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_22_182945) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -344,6 +344,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_18_150145) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "case_type"
+    t.uuid "application_form_id"
     t.index ["assignee_id"], name: "index_strata_tasks_on_assignee_id"
     t.index ["case_id", "case_type"], name: "index_strata_tasks_on_case_id_and_case_type"
     t.index ["status"], name: "index_strata_tasks_on_status"
