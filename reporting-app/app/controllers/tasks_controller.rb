@@ -29,13 +29,14 @@ class TasksController < Strata::TasksController
   def assign
     set_task
     Strata::AuditLog.record(actor: current_user) do |log|
-      @task.assign(current_user.id)
+      if @task.assign(current_user.id)
 
-      log.add_line(
-        action: "case.task_picked_up",
-        subject: Certification.find(@task.case.certification_id),
-        data: { task_id: @task.id, task_type: @task.type }
-      )
+        log.add_line(
+          action: "case.task_picked_up",
+          subject: Certification.find(@task.case.certification_id),
+          data: { task_id: @task.id, task_type: @task.type }
+        )
+      end
     end
     flash["task-message"] = I18n.t("strata.tasks.messages.task_picked_up")
     redirect_to task_path(@task)

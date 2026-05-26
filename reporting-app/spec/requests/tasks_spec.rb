@@ -562,6 +562,14 @@ RSpec.describe "/staff/tasks", type: :request do
           patch "/staff/tasks/#{unassigned_task.id}/assign"
         end.to change { Strata::AuditLine.where(action: "case.task_picked_up").count }.by(1)
       end
+
+      it "does not log to audit log if task does not save" do
+        allow(Strata::Task).to receive(:find).and_return(unassigned_task)
+        allow(unassigned_task).to receive(:assign).and_return(false)
+        expect do
+          patch "/staff/tasks/#{unassigned_task.id}/assign"
+        end.not_to change { Strata::AuditLine.where(action: "case.task_picked_up").count }
+      end
     end
   end
 
