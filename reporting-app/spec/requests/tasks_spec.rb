@@ -20,7 +20,7 @@ RSpec.describe "/staff/tasks", type: :request do
   describe "GET /show" do
     context "with ActivityReportApplicationForm" do
       let(:activity_report_application_form) { create(:activity_report_application_form, certification_case_id: certification_case.id, user_id: user.id) }
-      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case) }
+      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case, application_form: nil) }
 
       before { activity_report_application_form.save! }
 
@@ -232,7 +232,7 @@ RSpec.describe "/staff/tasks", type: :request do
     end
 
     context "with both an ActivityReportApplicationForm and an ExemptionApplicationForm" do
-      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case) }
+      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case, application_form: nil) }
       let(:exemption_task) { create(:review_exemption_claim_task, case: certification_case) }
       let(:exemption_application_form) { build(:exemption_application_form, certification_case_id: certification_case.id) }
       let(:activity_report_application_form) { build(:activity_report_application_form, certification_case_id: certification_case.id) }
@@ -256,7 +256,7 @@ RSpec.describe "/staff/tasks", type: :request do
     end
 
     context "without information requests" do
-      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case) }
+      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case, application_form: nil) }
       let(:activity_report_application_form) do
         create(:activity_report_application_form, certification_case_id: certification_case.id)
       end
@@ -273,7 +273,7 @@ RSpec.describe "/staff/tasks", type: :request do
     end
 
     context "with information requests" do
-      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case) }
+      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case, application_form: nil) }
       let(:activity_report_application_form) do
         create(:activity_report_application_form, certification_case_id: certification_case.id)
       end
@@ -333,7 +333,7 @@ RSpec.describe "/staff/tasks", type: :request do
 
   describe "GET /show with doc_ai" do
     let(:activity_report_application_form) { create(:activity_report_application_form, certification_case_id: certification_case.id, user_id: user.id) }
-    let(:activity_report_task) { create(:review_activity_report_task, case: certification_case) }
+    let(:activity_report_task) { create(:review_activity_report_task, case: certification_case, application_form: nil) }
 
     before do
       activity_report_application_form.save!
@@ -364,6 +364,7 @@ RSpec.describe "/staff/tasks", type: :request do
       end
 
       it "shows evidence source icon" do
+        expect(activity_report_task.application_form).to eq(activity_report_application_form)
         activity_report_application_form.activities.create!(
           name: "Manual Employer",
           type: "WorkActivity",
