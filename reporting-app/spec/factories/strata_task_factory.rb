@@ -18,5 +18,6 @@ FactoryBot.define do
 
   factory :review_activity_report_task, parent: :oscer_task, class: ReviewActivityReportTask do
     type { "ReviewActivityReportTask" }
+    association :application_form, factory: :activity_report_application_form
   end
 end

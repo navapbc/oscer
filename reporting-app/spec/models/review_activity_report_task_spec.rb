@@ -13,4 +13,14 @@ RSpec.describe ReviewActivityReportTask, type: :model do
       expect(task.case_type).to eq("CertificationCase")
     end
   end
+
+  describe "create" do
+    let(:certification_case) { create(:certification_case) }
+    let!(:activity_report_application_form) { create(:activity_report_application_form, certification_case_id: certification_case.id) }
+
+    it "binds to application form" do
+      task = described_class.create!(case: certification_case)
+      expect(task.application_form_id).to eq(activity_report_application_form.id)
+    end
+  end
 end
