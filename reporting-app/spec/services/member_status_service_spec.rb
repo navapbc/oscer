@@ -73,6 +73,52 @@ RSpec.describe MemberStatusService do
       end
     end
 
+    context 'when latest Determination is income_based automated compliant (OSCER-409)' do
+      before do
+        create(:determination,
+               subject: certification,
+               outcome: "compliant",
+               decision_method: "automated",
+               reasons: [ "income_reported_compliant" ],
+               determination_data: {
+                 "calculation_type" => Determination::CALCULATION_TYPE_INCOME_BASED,
+                 "total_income" => 600
+               })
+      end
+
+      it 'returns compliant status (parity with hours-based compliant outcome)' do
+        result = service.determine(certification)
+        expect(result.status).to eq("compliant")
+        expect(result.dashboard_report_status).to eq(MemberStatus::DASHBOARD_REPORT_COMPLIANT)
+      end
+
+      it 'attaches the latest Determination to MemberStatus (OSCER-409 dashboard reuse)' do
+        result = service.determine(certification)
+        expect(result.latest_determination).to be_a(Determination)
+        expect(result.latest_determination.ce_calculation_type).to eq(Determination::CALCULATION_TYPE_INCOME_BASED)
+      end
+    end
+
+    context 'when latest Determination is income_based not compliant' do
+      before do
+        create(:determination,
+               subject: certification,
+               outcome: "not_compliant",
+               decision_method: "automated",
+               reasons: [ "income_reported_insufficient" ],
+               determination_data: {
+                 "calculation_type" => Determination::CALCULATION_TYPE_INCOME_BASED,
+                 "total_income" => 100
+               })
+      end
+
+      it 'returns not_compliant with stable dashboard token' do
+        result = service.determine(certification)
+        expect(result.status).to eq("not_compliant")
+        expect(result.dashboard_report_status).to eq(MemberStatus::DASHBOARD_REPORT_NOT_COMPLIANT)
+      end
+    end
+
     context 'when multiple Determinations exist' do
       before do
         create(:determination,
@@ -112,6 +158,11 @@ RSpec.describe MemberStatusService do
         it 'returns empty reason_codes' do
           result = service.determine(certification_case)
           expect(result.reason_codes).to be_empty
+        end
+
+        it 'returns nil latest_determination (case-step fallback)' do
+          result = service.determine(certification_case)
+          expect(result.latest_determination).to be_nil
         end
       end
 
