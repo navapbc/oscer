@@ -74,6 +74,15 @@ class Determination < Strata::Determination
     is_veteran_with_disability: "veteran_disability_exempt"
   }.freeze
 
+  EXEMPTION_REASONS = REASON_CODE_MAPPING.values_at(
+    :age_under_19,
+    :age_over_65,
+    :is_pregnant,
+    :is_american_indian_or_alaska_native,
+    :exemption_request_compliant,
+    :is_veteran_with_disability
+  ).freeze
+
   VALID_REASONS = REASON_CODE_MAPPING.values.freeze
 
   enum :decision_method, { automated: "automated", manual: "manual" }
@@ -98,5 +107,13 @@ class Determination < Strata::Determination
   def self.to_reason_codes(eligibility_fact)
     eligibility_fact_reasons = eligibility_fact.reasons.select { |reason| reason.value }.map(&:name).map(&:to_sym)
     eligibility_fact_reasons.map { |reason| REASON_CODE_MAPPING[reason] }
+  end
+
+  # CE automated/manual payload uses +determination_data["calculation_type"]+ with string keys from JSON.
+  # @return [String, nil] e.g. +CALCULATION_TYPE_INCOME_BASED+, +CALCULATION_TYPE_HOURS_BASED+, +CALCULATION_TYPE_EXTERNAL_CE_COMBINED+
+  def ce_calculation_type
+    return nil if determination_data.blank?
+
+    determination_data.stringify_keys["calculation_type"].presence
   end
 end
