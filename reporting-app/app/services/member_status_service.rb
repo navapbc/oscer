@@ -2,7 +2,12 @@
 
 # Service for determining a member's certification status.
 #
-# The service checks for Determinations first (automated or manual decisions).
+# When a latest +Determination+ exists, its +outcome+ drives +MemberStatus+ (automated CE,
+# manual staff review, or attested paths). Income-based CE uses the same outcome values as
+# hours-based CE (+compliant+ / +not_compliant+) with income-specific +reasons+ and
+# +determination_data["calculation_type"]+ of +Determination::CALCULATION_TYPE_INCOME_BASED+;
+# report-state tokens for the member dashboard come from +MemberStatus#dashboard_report_status+ (OSCER-409).
+#
 # If no Determination exists, it falls back to examining the CertificationCase
 # approval statuses and related application forms to derive the current status.
 #
@@ -136,7 +141,8 @@ class MemberStatusService
         status: determination.outcome,
         determination_method: determination.decision_method,
         reason_codes: determination.reasons,
-        human_readable_reason_codes: human_readable_reason_codes(determination.reasons)
+        human_readable_reason_codes: human_readable_reason_codes(determination.reasons),
+        latest_determination: determination
       )
     end
 
