@@ -265,4 +265,29 @@ RSpec.describe Determination, type: :model do
       end
     end
   end
+
+  describe '#ce_calculation_type' do
+    it 'returns calculation_type when stored with string keys' do
+      expect(
+        build(
+          :determination,
+          determination_data: {
+            'calculation_type' => Determination::CALCULATION_TYPE_INCOME_BASED
+            }
+        ).ce_calculation_type
+      ).to eq(Determination::CALCULATION_TYPE_INCOME_BASED)
+    end
+
+    it 'returns nil when absent' do
+      expect(
+        build(:determination, determination_data: {}).ce_calculation_type
+      ).to be_nil
+    end
+  end
+
+  describe 'combined external CE calculation_type constants' do
+    it 'exposes CALCULATION_TYPE_EXTERNAL_CE_COMBINED_LEGACY for historical JSON and BI filters' do
+      expect(described_class::CALCULATION_TYPE_EXTERNAL_CE_COMBINED_LEGACY).to eq('ex_parte_ce_combined')
+    end
+  end
 end

@@ -47,9 +47,9 @@ class CertificationCase < Strata::Case
       .pick(:certification_id)
   end
 
-  def accept_activity_report
+  def accept_activity_report(user)
     certification = Certification.find(certification_id)
-    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
+    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, certification_case: self)
 
     transaction do
       self.activity_report_approval_status = "approved"
@@ -60,17 +60,18 @@ class CertificationCase < Strata::Case
         decision_method: :manual,
         reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_compliant] ],
         outcome: :compliant,
-        determination_data: build_hours_determination_data(hours_data),
-        determined_at: certification.certification_requirements.certification_date
+        determination_data: Determinations::HoursBasedDeterminationData.from_aggregate(hours_data).to_h,
+        determined_at: certification.certification_requirements.certification_date,
+        actor: user
       )
     end
 
     Strata::EventManager.publish("ActivityReportApproved", { case_id: id, certification_id: certification_id })
   end
 
-  def deny_activity_report
+  def deny_activity_report(user)
     certification = Certification.find(certification_id)
-    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
+    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, certification_case: self)
 
     transaction do
       self.activity_report_approval_status = "denied"
@@ -81,15 +82,16 @@ class CertificationCase < Strata::Case
         decision_method: :manual,
         reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_insufficient] ],
         outcome: :not_compliant,
-        determination_data: build_hours_determination_data(hours_data),
-        determined_at: certification.certification_requirements.certification_date
+        determination_data: Determinations::HoursBasedDeterminationData.from_aggregate(hours_data).to_h,
+        determined_at: certification.certification_requirements.certification_date,
+        actor: user
       )
     end
 
     Strata::EventManager.publish("ActivityReportDenied", { case_id: id, certification_id: certification_id })
   end
 
-  def accept_exemption_request
+  def accept_exemption_request(user)
     transaction do
       self.exemption_request_approval_status = "approved"
       self.exemption_request_approval_status_updated_at = Time.current
@@ -103,25 +105,35 @@ class CertificationCase < Strata::Case
         determined_at: certification.certification_requirements.certification_date,
         determination_data: {
           exemption_type: "placeholder"
-        } # TODO: add determined_by_id
+        },
+        actor: user
       )
     end
 
     Strata::EventManager.publish("DeterminedExempt", { case_id: id, certification_id: certification_id })
   end
 
-  def deny_exemption_request
-    self.exemption_request_approval_status = "denied"
-    self.exemption_request_approval_status_updated_at = Time.current
-    save!
+  def deny_exemption_request(user)
+    transaction do
+      self.exemption_request_approval_status = "denied"
+      self.exemption_request_approval_status_updated_at = Time.current
+      save!
 
+      certification = Certification.find(certification_id)
+      Strata::AuditLog.write!(
+        action: "case.exemption.denied",
+        actor: user,
+        subject: certification
+      )
+    end
     Strata::EventManager.publish("DeterminedNotExempt", { case_id: id, certification_id: certification_id })
   end
 
   # Called by ExemptionDeterminationService to record exemption determination
   # Model only handles state changes - service handles events
   # @param eligibility_fact [Strata::RulesEngine::Fact] the evaluation result
-  def record_exemption_determination(eligibility_fact)
+  # @param actor [Strata::VirtualActor] recording the exemption
+  def record_exemption_determination(eligibility_fact, actor)
     certification = Certification.find(certification_id)
 
     transaction do
@@ -134,7 +146,8 @@ class CertificationCase < Strata::Case
         reasons: Determination.to_reason_codes(eligibility_fact),
         outcome: :exempt,
         determination_data: eligibility_fact.reasons.to_json,
-        determined_at: certification.certification_requirements.certification_date
+        determined_at: certification.certification_requirements.certification_date,
+        actor:
       )
     end
   end
@@ -150,7 +163,7 @@ class CertificationCase < Strata::Case
     reason_key = outcome == :compliant ? :hours_reported_compliant : :hours_reported_insufficient
     record_automated_ce_compliance(
       outcome,
-      build_hours_determination_data(hours_data),
+      Determinations::HoursBasedDeterminationData.from_aggregate(hours_data).to_h,
       reasons: [ Determination::REASON_CODE_MAPPING[reason_key] ]
     )
   end
@@ -170,7 +183,7 @@ class CertificationCase < Strata::Case
     reason_key = outcome == :compliant ? :income_reported_compliant : :income_reported_insufficient
     record_automated_ce_compliance(
       outcome,
-      build_income_determination_data(income_data),
+      Determinations::IncomeBasedDeterminationData.from_aggregate(income_data).to_h,
       reasons: [ Determination::REASON_CODE_MAPPING[reason_key] ],
       close_on_compliant: close_on_compliant
     )
@@ -180,26 +193,28 @@ class CertificationCase < Strata::Case
   # Member is compliant if either +hours_ok+ or +income_ok+; not compliant only when both are false.
   # Events/notifications are published by CommunityEngagementCheckService (via Strata).
   #
+  # @param actor [Strata::VirtualActor] recording the assessment
   # @param certification [Certification] aggregate root for +record_determination!+
   # @param hours_data [Hash] from HoursComplianceDeterminationService.aggregate_hours_for_certification
   # @param income_data [Hash] from IncomeComplianceDeterminationService.aggregate_income_for_certification
   # @param hours_ok [Boolean]
   # @param income_ok [Boolean]
-  def record_external_ce_combined_assessment(certification:, hours_data:, income_data:, hours_ok:, income_ok:)
+  def record_external_ce_combined_assessment(actor:, certification:, hours_data:, income_data:, hours_ok:, income_ok:)
     outcome = (hours_ok || income_ok) ? :compliant : :not_compliant
     reasons = external_ce_combined_reason_codes(outcome: outcome, hours_ok: hours_ok, income_ok: income_ok)
-    determination_data = build_external_ce_combined_determination_data(
+    determination_data = Determinations::ExternalCECombinedDeterminationData.build(
       hours_data: hours_data,
       income_data: income_data,
       hours_ok: hours_ok,
       income_ok: income_ok
-    )
+    ).to_h
 
     record_automated_ce_compliance(
       outcome,
       determination_data,
       reasons: reasons,
-      certification: certification
+      certification: certification,
+      actor:
     )
   end
 
@@ -216,7 +231,7 @@ class CertificationCase < Strata::Case
   # @param close_on_compliant [Boolean] when +true+ (default), +:compliant+ outcomes call +close!+ before
   #   persisting the determination. When +false+, the determination is still written but the case stays open
   #   (+record_income_compliance+ may pass +false+; +record_hours_compliance+ always uses the default).
-  def record_automated_ce_compliance(outcome, determination_data, reasons:, certification: nil, close_on_compliant: true)
+  def record_automated_ce_compliance(outcome, determination_data, reasons:, certification: nil, close_on_compliant: true, actor: nil)
     certification ||= Certification.find(certification_id)
 
     transaction do
@@ -227,44 +242,10 @@ class CertificationCase < Strata::Case
         reasons: reasons,
         outcome: outcome,
         determination_data: determination_data,
-        determined_at: certification.certification_requirements.certification_date
+        determined_at: certification.certification_requirements.certification_date,
+        actor:
       )
     end
-  end
-
-  def build_hours_determination_data(hours_data)
-    {
-      calculation_type: Determination::CALCULATION_TYPE_HOURS_BASED,
-      total_hours: hours_data[:total_hours],
-      target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
-      hours_by_category: hours_data[:hours_by_category],
-      hours_by_source: hours_data[:hours_by_source],
-      external_hourly_activity_ids: hours_data[:external_hourly_activity_ids],
-      activity_ids: hours_data[:activity_ids],
-      calculated_at: Time.current.iso8601
-    }
-  end
-
-  def build_income_determination_data(income_data)
-    income_by = income_data[:income_by_source]
-    period_start = income_data[:period_start]
-    period_end = income_data[:period_end]
-
-    {
-      calculation_type: Determination::CALCULATION_TYPE_INCOME_BASED,
-      total_income: income_data[:total_income].to_f,
-      target_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY.to_f,
-      income_by_source: {
-        external: income_by[:external].to_f,
-        activity: income_by[:activity].to_f
-      },
-      period_start: period_start&.respond_to?(:iso8601) ? period_start.iso8601 : period_start&.to_s,
-      period_end: period_end&.respond_to?(:iso8601) ? period_end.iso8601 : period_end&.to_s,
-      external_income_activity_ids: income_data[:external_income_activity_ids],
-      activity_ids: income_data[:activity_ids],
-      calculation_method: Determination::CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE,
-      calculated_at: Time.current.iso8601
-    }
   end
 
   def external_ce_combined_reason_codes(outcome:, hours_ok:, income_ok:)
@@ -279,25 +260,5 @@ class CertificationCase < Strata::Case
         Determination::REASON_CODE_MAPPING[:income_reported_insufficient]
       ]
     end
-  end
-
-  def build_external_ce_combined_determination_data(hours_data:, income_data:, hours_ok:, income_ok:)
-    satisfied_by = if hours_ok && income_ok
-      Determination::SATISFIED_BY_BOTH
-    elsif hours_ok
-      Determination::SATISFIED_BY_HOURS
-    elsif income_ok
-      Determination::SATISFIED_BY_INCOME
-    else
-      Determination::SATISFIED_BY_NEITHER
-    end
-
-    {
-      calculation_type: Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED,
-      satisfied_by: satisfied_by,
-      hours: build_hours_determination_data(hours_data).merge(compliant: hours_ok),
-      income: build_income_determination_data(income_data).merge(compliant: income_ok),
-      calculated_at: Time.current.iso8601
-    }
   end
 end

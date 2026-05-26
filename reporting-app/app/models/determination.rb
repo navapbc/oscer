@@ -30,13 +30,31 @@
 # @see Strata::Determination for available associations, validations, and scopes
 # @see Strata::Determinable for the +record_determination!+ method to use in models
 #
+# Determination rows store arbitrary JSON in +determination_data+. For **automated CE**
+# (hours, income, and combined hours + income CE), the canonical serialized contract is defined by
+# {Determinations::HoursBasedDeterminationData}, {Determinations::IncomeBasedDeterminationData},
+# and {Determinations::ExternalCECombinedDeterminationData} — those classes validate and emit the
+# payloads written by {CertificationCase}. Other flows (manual activity report, exemption
+# placeholder, automated eligibility JSON) use different shapes and are not covered by those VOs.
+#
+# ## Legacy and non-CE +determination_data+
+#
+# Existing production rows may predate this contract or use ad-hoc keys (for example exemption
+# placeholders or +Strata::RulesEngine+ fact JSON). The app does **not** coerce or re-validate those
+# on read. Consumers should treat unknown +calculation_type+ or missing keys defensively. Older
+# combined external CE rows may still store +calculation_type+ as
+# +Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED_LEGACY+ (+ex_parte_ce_combined+); new writes use
+# +CALCULATION_TYPE_EXTERNAL_CE_COMBINED+. A future backfill or strict read path can be ticketed
+# separately if product needs normalized history.
 class Determination < Strata::Determination
   # Stored in +determination_data+ JSON for CE compliance automated calculations.
   CALCULATION_TYPE_HOURS_BASED = "hours_based"
   CALCULATION_TYPE_INCOME_BASED = "income_based"
   # External CE step: one determination with both hours and income assessments (OR compliant).
   CALCULATION_TYPE_EXTERNAL_CE_COMBINED = "external_ce_combined"
-  # Stored in +determination_data["satisfied_by"]+ when +calculation_type+ is +CALCULATION_TYPE_EXTERNAL_CE_COMBINED+.
+  # Historical +determination_data["calculation_type"]+ before +external_ce_combined+; use for BI/read filters on old rows.
+  CALCULATION_TYPE_EXTERNAL_CE_COMBINED_LEGACY = "ex_parte_ce_combined"
+  # Stored in +determination_data["satisfied_by"]+ when +calculation_type+ is +CALCULATION_TYPE_EXTERNAL_CE_COMBINED+ (or legacy).
   SATISFIED_BY_BOTH = "both"
   SATISFIED_BY_HOURS = "hours"
   SATISFIED_BY_INCOME = "income"
@@ -55,6 +73,15 @@ class Determination < Strata::Determination
     exemption_request_compliant: "exemption_request_compliant",
     is_veteran_with_disability: "veteran_disability_exempt"
   }.freeze
+
+  EXEMPTION_REASONS = REASON_CODE_MAPPING.values_at(
+    :age_under_19,
+    :age_over_65,
+    :is_pregnant,
+    :is_american_indian_or_alaska_native,
+    :exemption_request_compliant,
+    :is_veteran_with_disability
+  ).freeze
 
   VALID_REASONS = REASON_CODE_MAPPING.values.freeze
 
@@ -80,5 +107,13 @@ class Determination < Strata::Determination
   def self.to_reason_codes(eligibility_fact)
     eligibility_fact_reasons = eligibility_fact.reasons.select { |reason| reason.value }.map(&:name).map(&:to_sym)
     eligibility_fact_reasons.map { |reason| REASON_CODE_MAPPING[reason] }
+  end
+
+  # CE automated/manual payload uses +determination_data["calculation_type"]+ with string keys from JSON.
+  # @return [String, nil] e.g. +CALCULATION_TYPE_INCOME_BASED+, +CALCULATION_TYPE_HOURS_BASED+, +CALCULATION_TYPE_EXTERNAL_CE_COMBINED+
+  def ce_calculation_type
+    return nil if determination_data.blank?
+
+    determination_data.stringify_keys["calculation_type"].presence
   end
 end

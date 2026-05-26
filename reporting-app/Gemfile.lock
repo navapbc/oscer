@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: b8d7e3cbe28c74e44844208c032d3f5e1d74b456
+  revision: 1cc41e04102c38d94d741244d79ff139f08c17ea
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -98,11 +98,11 @@ GEM
       aws-sdk-ses (~> 1, >= 1.50.0)
       aws-sdk-sesv2 (~> 1, >= 1.34.0)
     aws-eventstream (1.4.0)
-    aws-partitions (1.1241.0)
-    aws-sdk-cognitoidentityprovider (1.140.0)
-      aws-sdk-core (~> 3, >= 3.244.0)
+    aws-partitions (1.1251.0)
+    aws-sdk-cognitoidentityprovider (1.142.0)
+      aws-sdk-core (~> 3, >= 3.247.0)
       aws-sigv4 (~> 1.5)
-    aws-sdk-core (3.246.0)
+    aws-sdk-core (3.247.0)
       aws-eventstream (~> 1, >= 1.3.0)
       aws-partitions (~> 1, >= 1.992.0)
       aws-sigv4 (~> 1.9)
@@ -110,8 +110,8 @@ GEM
       bigdecimal
       jmespath (~> 1, >= 1.6.1)
       logger
-    aws-sdk-kms (1.124.0)
-      aws-sdk-core (~> 3, >= 3.244.0)
+    aws-sdk-kms (1.126.0)
+      aws-sdk-core (~> 3, >= 3.247.0)
       aws-sigv4 (~> 1.5)
     aws-sdk-rails (5.1.0)
       aws-sdk-core (~> 3)
@@ -119,8 +119,8 @@ GEM
     aws-sdk-rds (1.310.0)
       aws-sdk-core (~> 3, >= 3.244.0)
       aws-sigv4 (~> 1.5)
-    aws-sdk-s3 (1.220.0)
-      aws-sdk-core (~> 3, >= 3.244.0)
+    aws-sdk-s3 (1.223.0)
+      aws-sdk-core (~> 3, >= 3.247.0)
       aws-sdk-kms (~> 1)
       aws-sigv4 (~> 1.5)
     aws-sdk-ses (1.97.0)
@@ -167,7 +167,7 @@ GEM
       bigdecimal
       rexml
     crass (1.0.6)
-    css_parser (2.0.0)
+    css_parser (2.1.0)
       addressable
     cssbundling-rails (1.4.3)
       railties (>= 6.0.0)
@@ -177,7 +177,7 @@ GEM
       irb (~> 1.10)
       reline (>= 0.3.8)
     deep_merge (1.2.2)
-    devise (5.0.3)
+    devise (5.0.4)
       bcrypt (~> 3.0)
       orm_adapter (~> 0.1)
       railties (>= 7.0)
@@ -202,7 +202,7 @@ GEM
     factory_bot_rails (6.5.1)
       factory_bot (~> 6.5)
       railties (>= 6.1.0)
-    faker (3.7.1)
+    faker (3.8.0)
       i18n (>= 1.8.11, < 2)
     faraday (2.14.1)
       faraday-net_http (>= 2.0, < 3.5)
@@ -273,7 +273,7 @@ GEM
       prism (>= 1.3.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    jbuilder (2.14.1)
+    jbuilder (2.15.0)
       actionview (>= 7.0.0)
       activesupport (>= 7.0.0)
     jmespath (1.6.2)
@@ -290,7 +290,7 @@ GEM
       hana (~> 1.3)
       regexp_parser (~> 2.0)
       simpleidn (~> 0.2)
-    jwt (3.1.2)
+    jwt (3.2.0)
       base64
     language_server-protocol (3.17.0.5)
     launchy (3.1.1)
@@ -327,7 +327,7 @@ GEM
       net-imap
       net-pop
       net-smtp
-    marcel (1.1.0)
+    marcel (1.2.1)
     matrix (0.4.3)
     method_source (1.1.0)
     mini_magick (5.3.1)
@@ -375,7 +375,7 @@ GEM
       deep_merge (~> 1.2, >= 1.2.2)
       method_source (~> 1.0)
       yard (~> 0.9)
-    oas_rails (1.3.5)
+    oas_rails (1.3.6)
       easy_talk_two (~> 1.1.3)
       oas_core (>= 1.1.0)
     omniauth (2.1.4)
@@ -516,9 +516,9 @@ GEM
     regexp_parser (2.12.0)
     reline (0.6.3)
       io-console (~> 0.5)
-    responders (3.1.1)
-      actionpack (>= 5.2)
-      railties (>= 5.2)
+    responders (3.2.0)
+      actionpack (>= 7.0)
+      railties (>= 7.0)
     rexml (3.4.4)
     rouge (4.7.0)
     route_translator (16.0.1)
@@ -596,9 +596,9 @@ GEM
     ruby-vips (2.3.0)
       ffi (~> 1.12)
       logger
-    rubyzip (3.2.2)
+    rubyzip (3.3.0)
     securerandom (0.4.1)
-    selenium-webdriver (4.43.0)
+    selenium-webdriver (4.44.0)
       base64 (~> 0.2)
       logger (~> 1.4)
       rexml (~> 3.2, >= 3.2.5)
@@ -612,7 +612,7 @@ GEM
     simplecov-html (0.13.2)
     simplecov_json_formatter (0.1.4)
     simpleidn (0.2.3)
-    sorbet-runtime (0.6.13133)
+    sorbet-runtime (0.6.13214)
     sprockets (4.2.2)
       concurrent-ruby (~> 1.0)
       logger
@@ -649,7 +649,7 @@ GEM
     validates_timeliness (8.0.0)
       activemodel (>= 8.0.0, < 9)
       timeliness (>= 0.3.10, < 1)
-    view_component (4.10.0)
+    view_component (4.11.0)
       actionview (>= 7.1.0)
       activesupport (>= 7.1.0)
       concurrent-ruby (~> 1)
@@ -674,8 +674,8 @@ GEM
     websocket-extensions (0.1.5)
     xpath (3.2.0)
       nokogiri (~> 1.8)
-    yard (0.9.42)
-    zeitwerk (2.7.5)
+    yard (0.9.43)
+    zeitwerk (2.8.1)
 
 PLATFORMS
   aarch64-linux
@@ -693,7 +693,7 @@ PLATFORMS
 DEPENDENCIES
   active_storage_validations
   aws-actionmailer-ses
-  aws-sdk-cognitoidentityprovider (~> 1.140)
+  aws-sdk-cognitoidentityprovider (~> 1.142)
   aws-sdk-rails
   aws-sdk-s3
   azure-blob
@@ -706,7 +706,7 @@ DEPENDENCIES
   devise (~> 5.0)
   dotenv
   factory_bot_rails
-  faker (~> 3.7)
+  faker (~> 3.8)
   faraday
   faraday-multipart
   good_job (~> 4.18)

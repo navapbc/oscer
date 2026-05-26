@@ -66,7 +66,7 @@ gem "bootsnap", require: false
 gem "image_processing", "~> 1.14"
 
 # Authentication and Authorization
-gem "aws-sdk-cognitoidentityprovider", "~> 1.140"
+gem "aws-sdk-cognitoidentityprovider", "~> 1.142"
 gem "devise", "~> 5.0"
 gem "jwt"
 gem "pundit"
@@ -92,7 +92,7 @@ gem "faraday"
 gem "faraday-multipart"
 
 # Create fake data (outside of dev/test block to support seeding lower environments)
-gem "faker", "~> 3.7"
+gem "faker", "~> 3.8"
 gem "factory_bot_rails"
 
 gem "lookbook", ">= 2.3.9"

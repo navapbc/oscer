@@ -56,7 +56,7 @@ RSpec.describe Users::MfaController do
 
   describe "new" do
     it "renders the MFA setup form" do
-      user = create(:user, access_token: JWT.encode({ exp: 1.day.from_now.to_i }, nil))
+      user = create(:user, access_token: JWT.encode({ exp: 1.day.from_now.to_i }, "test"))
       sign_in user
 
       get :new, params: { locale: "en" }
@@ -66,7 +66,7 @@ RSpec.describe Users::MfaController do
     end
 
     it "redirects to the login page if the access token is close to expiring" do
-      user = create(:user, access_token: JWT.encode({ exp: 5.minutes.from_now.to_i }, nil))
+      user = create(:user, access_token: JWT.encode({ exp: 5.minutes.from_now.to_i }, "test"))
       sign_in user
 
       get :new, params: { locale: "en" }
@@ -80,7 +80,7 @@ RSpec.describe Users::MfaController do
       user = create(
         :user,
         mfa_preference: nil,
-        access_token: JWT.encode({ exp: 1.day.from_now.to_i }, nil)
+        access_token: JWT.encode({ exp: 1.day.from_now.to_i }, "test")
       )
       sign_in user
 
@@ -97,7 +97,7 @@ RSpec.describe Users::MfaController do
     end
 
     it "redirects back to the setup page if the code is invalid" do
-      user = create(:user, access_token: JWT.encode({ exp: 1.day.from_now.to_i }, nil))
+      user = create(:user, access_token: JWT.encode({ exp: 1.day.from_now.to_i }, "test"))
       sign_in user
 
       post :create, params: {
@@ -110,7 +110,7 @@ RSpec.describe Users::MfaController do
     end
 
     it "redirects back to the setup page if the code is incorrect" do
-      user = create(:user, access_token: JWT.encode({ exp: 1.day.from_now.to_i }, nil))
+      user = create(:user, access_token: JWT.encode({ exp: 1.day.from_now.to_i }, "test"))
       sign_in user
 
       post :create, params: {

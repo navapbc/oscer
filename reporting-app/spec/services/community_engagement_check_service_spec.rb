@@ -41,6 +41,15 @@ RSpec.describe CommunityEngagementCheckService do
         create_external_hourly_activity_for(certification, hours: 85)
       end
 
+      it "aggregates income scoped to the case under assessment" do
+        allow(IncomeComplianceDeterminationService).to receive(:aggregate_income_for_certification).and_call_original
+
+        described_class.determine(certification_case)
+
+        expect(IncomeComplianceDeterminationService).to have_received(:aggregate_income_for_certification)
+          .with(certification, certification_case: certification_case)
+      end
+
       it "records combined determination with hours satisfied and income assessed" do
         described_class.determine(certification_case)
 
@@ -61,6 +70,12 @@ RSpec.describe CommunityEngagementCheckService do
           "DeterminedCommunityEngagementMet",
           hash_including(case_id: certification_case.id)
         )
+      end
+
+      it 'logs approved event' do
+        expect do
+          described_class.determine(certification_case)
+        end.to change { Strata::AuditLine.where(subject: certification, actor_type: described_class.name, action: 'case.activity_report.approved').count }.by(1)
       end
     end
 
@@ -89,6 +104,12 @@ RSpec.describe CommunityEngagementCheckService do
           "DeterminedCommunityEngagementMet",
           hash_including(case_id: certification_case.id)
         )
+      end
+
+      it 'logs approved event' do
+        expect do
+          described_class.determine(certification_case)
+        end.to change { Strata::AuditLine.where(subject: certification, actor_type: described_class.name, action: 'case.activity_report.approved').count }.by(1)
       end
     end
 
@@ -152,6 +173,12 @@ RSpec.describe CommunityEngagementCheckService do
             income_data: kind_of(Hash)
           )
         )
+      end
+
+      it 'logs denied event' do
+        expect do
+          described_class.determine(certification_case)
+        end.to change { Strata::AuditLine.where(subject: certification, actor_type: described_class.name, action: 'case.activity_report.denied').count }.by(1)
       end
     end
 

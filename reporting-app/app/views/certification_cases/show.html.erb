@@ -20,7 +20,7 @@
   </p>
 </div>
 
-<%= render Strata::US::AccordionComponent.new(heading_tag: :h4, is_multiselectable: true) do |component| %>
+<%= render Strata::US::AccordionComponent.new(heading_tag: :h4, is_bordered: true, is_multiselectable: true) do |component| %>
   <% component.with_heading { t(".certification_details") } %>
   <% component.with_body do %>
     <p>
@@ -91,21 +91,40 @@
 
   <% component.with_heading { t(".external_data") } %>
   <% component.with_body do %>
-    <%= render partial: 'hours_reported_table',
-        locals: {
-          external_hourly_activities: @external_hourly_activities,
-          member_activities: @member_activities,
-          hours_summary: @hours_summary,
-          target_hours: @target_hours
-        } %>
+    <%= render partial: "certification_cases/external_data_section" %>
   <% end %>
 
   <% component.with_heading { t(".activity_report") } %>
   <% component.with_body do %>
-    <% if @activity_report %>
-      <%= render partial: 'activity_report_application_forms/staff_activity_report', locals: { activity_report: @activity_report } %>
+    <% if @hours_has_data || @income_has_data %>
+      <div class="certification-case-compliance-tables margin-bottom-4">
+        <% if @hours_has_data %>
+          <%= render partial: "certification_cases/hours_reported_table",
+              locals: {
+                external_hourly_activities: @external_hourly_activities,
+                member_hour_activities: @member_hour_activities,
+                hours_summary: @hours_summary,
+                target_hours: @target_hours
+              } %>
+        <% end %>
+        <% if @income_has_data %>
+          <%= render partial: "certification_cases/income_reported_table",
+              locals: {
+                external_income_activities: @external_income_activities,
+                member_income_activities: @member_income_activities,
+                income_summary: @income_summary,
+                target_income: @target_income
+              } %>
+        <% end %>
+      </div>
+    <% elsif @activity_report %>
+      <p><%= t(".no_hours_or_income_reported") %></p>
     <% else %>
       <p><%= t(".no_activity_report") %></p>
+    <% end %>
+    <% if @activity_report && Features.doc_ai_enabled? %>
+      <h3 class="margin-top-4"><%= t(".activity_line_items") %></h3>
+      <%= render partial: "activity_report_application_forms/staff_activity_report", locals: { activity_report: @activity_report } %>
     <% end %>
   <% end %>
 <% end %>

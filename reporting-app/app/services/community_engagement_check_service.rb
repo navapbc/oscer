@@ -5,17 +5,25 @@
 # generic community-engagement Strata events (+DeterminedCommunityEngagementMet+ / +Insufficient+ / +ActionRequired+;
 # see NotificationsEventListener).
 class CommunityEngagementCheckService
+  include Strata::VirtualActor
   class << self
     # @param kase [CertificationCase]
     def determine(kase)
       certification = Certification.find(kase.certification_id)
-      hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
-      income_data = IncomeComplianceDeterminationService.aggregate_income_for_certification(certification)
+      hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(
+        certification,
+        certification_case: kase
+      )
+      income_data = IncomeComplianceDeterminationService.aggregate_income_for_certification(
+        certification,
+        certification_case: kase
+      )
 
       hours_ok = hours_compliant?(hours_data)
       income_ok = IncomeComplianceDeterminationService.compliant_for_total_income?(income_data[:total_income])
 
       kase.record_external_ce_combined_assessment(
+        actor: self,
         certification: certification,
         hours_data: hours_data,
         income_data: income_data,

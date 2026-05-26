@@ -1,0 +1,28 @@
+<% if @activity_report.present? %>
+  <p class="maxw-full"><%= t("certification_cases.external_data.summarized_under_activity_report") %></p>
+<% else %>
+  <div class="certification-case-compliance-tables margin-bottom-4">
+    <% if @hours_has_data %>
+      <%= render partial: "certification_cases/hours_reported_table",
+          locals: {
+            external_hourly_activities: @external_hourly_activities,
+            member_hour_activities: @member_hour_activities,
+            hours_summary: @hours_summary,
+            target_hours: @target_hours
+          } %>
+    <% else %>
+      <p><%= t("certification_cases.external_data.no_hours_reported") %></p>
+    <% end %>
+    <% if @income_has_data %>
+      <%= render partial: "certification_cases/income_reported_table",
+          locals: {
+            external_income_activities: @external_income_activities,
+            member_income_activities: @member_income_activities,
+            income_summary: @income_summary,
+            target_income: @target_income
+          } %>
+    <% else %>
+      <p><%= t("certification_cases.external_data.no_income_reported") %></p>
+    <% end %>
+  </div>
+<% end %>
