@@ -7,4 +7,14 @@ class OscerTask < Strata::Task
   def self.policy_class
     Strata::TaskPolicy
   end
+
+  private
+
+  def ensure_application_form
+    if application_form.nil?
+      application_forms = self.class.application_form_class.joins("LEFT JOIN strata_tasks ON #{self.class.application_form_class.table_name}.id = strata_tasks.application_form_id")
+                                 .where("certification_case_id = ? AND strata_tasks.application_form_id IS NULL", case_id)
+      self.application_form = application_forms.first
+    end
+  end
 end
