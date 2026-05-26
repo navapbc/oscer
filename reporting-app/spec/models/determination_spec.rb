@@ -268,15 +268,20 @@ RSpec.describe Determination, type: :model do
 
   describe '#ce_calculation_type' do
     it 'returns calculation_type when stored with string keys' do
-      d = build(:determination, determination_data: {
-        'calculation_type' => Determination::CALCULATION_TYPE_INCOME_BASED
-      })
-      expect(d.ce_calculation_type).to eq(Determination::CALCULATION_TYPE_INCOME_BASED)
+      expect(
+        build(
+          :determination,
+          determination_data: {
+            'calculation_type' => Determination::CALCULATION_TYPE_INCOME_BASED
+            }
+        ).ce_calculation_type
+      ).to eq(Determination::CALCULATION_TYPE_INCOME_BASED)
     end
 
     it 'returns nil when absent' do
-      d = build(:determination, determination_data: {})
-      expect(d.ce_calculation_type).to be_nil
+      expect(
+        build(:determination, determination_data: {}).ce_calculation_type
+      ).to be_nil
     end
   end
 
