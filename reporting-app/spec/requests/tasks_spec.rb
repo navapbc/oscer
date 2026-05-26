@@ -402,9 +402,9 @@ RSpec.describe "/staff/tasks", type: :request do
   end
 
   describe "GET /index" do
-    let(:pending_task) { build(:review_activity_report_task, case: certification_case, status: :pending) }
-    let(:completed_task) { build(:review_activity_report_task, case: certification_case, status: :completed) }
-    let(:on_hold_task) { build(:review_activity_report_task, case: certification_case, status: :on_hold) }
+    let(:pending_task) { build(:review_activity_report_task_with_form, case: certification_case, status: :pending) }
+    let(:completed_task) { build(:review_activity_report_task_with_form, case: certification_case, status: :completed) }
+    let(:on_hold_task) { build(:review_activity_report_task_with_form, case: certification_case, status: :on_hold) }
 
     before do
       pending_task.save!
@@ -540,7 +540,7 @@ RSpec.describe "/staff/tasks", type: :request do
 
   describe "POST /pick_up_next_task" do
     context "when there is an unassigned task in the user's region" do
-      let(:unassigned_task) { create(:review_activity_report_task, case: certification_case) }
+      let(:unassigned_task) { create(:review_activity_report_task_with_form, case: certification_case) }
 
       before { unassigned_task }
 
@@ -564,7 +564,7 @@ RSpec.describe "/staff/tasks", type: :request do
     context "when there are no unassigned tasks in the user's region" do
       before do
         # Create a completed task (not unassigned)
-        create(:review_activity_report_task, case: certification_case, status: :completed)
+        create(:review_activity_report_task_with_form, case: certification_case, status: :completed)
       end
 
       it "does not assign any task" do
@@ -592,7 +592,7 @@ RSpec.describe "/staff/tasks", type: :request do
         )
       end
       let(:other_certification_case) { create(:certification_case, certification_id: other_certification.id) }
-      let(:other_region_task) { create(:review_activity_report_task, case: other_certification_case) }
+      let(:other_region_task) { create(:review_activity_report_task_with_form, case: other_certification_case) }
 
       before { other_region_task }
 
@@ -613,8 +613,8 @@ RSpec.describe "/staff/tasks", type: :request do
     end
 
     context "when there are multiple unassigned tasks in the user's region" do
-      let(:first_task) { create(:review_activity_report_task, case: certification_case, due_on: 1.day.from_now) }
-      let(:second_task) { create(:review_activity_report_task, case: certification_case, due_on: 2.days.from_now) }
+      let(:first_task) { create(:review_activity_report_task_with_form, case: certification_case, due_on: 1.day.from_now) }
+      let(:second_task) { create(:review_activity_report_task_with_form, case: certification_case, due_on: 2.days.from_now) }
 
       before do
         first_task

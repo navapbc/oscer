@@ -5,7 +5,7 @@ require "rails_helper"
 RSpec.describe Staff::TaskRowComponent, type: :component do
   let(:certification) { create(:certification, certification_requirements: build(:certification_certification_requirements, region: "Southeast")) }
   let(:certification_case) { create(:certification_case, certification_id: certification.id) }
-  let(:task) { create(:review_activity_report_task, case: certification_case) }
+  let(:task) { create(:review_activity_report_task_with_form, case: certification_case) }
 
   describe ".columns" do
     it "matches the SDK base columns when doc_ai is disabled" do

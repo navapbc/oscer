@@ -13,10 +13,18 @@ FactoryBot.define do
 
   factory :review_exemption_claim_task, parent: :oscer_task, class: ReviewExemptionClaimTask do
     type { "ReviewExemptionClaimTask" }
+  end
+
+  factory :review_exemption_claim_task_with_form, parent: :oscer_task, class: ReviewExemptionClaimTask do
+    type { "ReviewExemptionClaimTask" }
     association :application_form, factory: :exemption_application_form
   end
 
   factory :review_activity_report_task, parent: :oscer_task, class: ReviewActivityReportTask do
+    type { "ReviewActivityReportTask" }
+  end
+
+  factory :review_activity_report_task_with_form, parent: :oscer_task, class: ReviewActivityReportTask do
     type { "ReviewActivityReportTask" }
     association :application_form, factory: :activity_report_application_form
   end
