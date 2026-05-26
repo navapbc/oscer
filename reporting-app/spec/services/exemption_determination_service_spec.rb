@@ -47,6 +47,12 @@ RSpec.describe ExemptionDeterminationService do
         kase.reload
         expect(kase.exemption_request_approval_status_updated_at).to be_present
       end
+
+      it 'logs approved event' do
+        expect do
+          service.determine(kase)
+        end.to change { Strata::AuditLine.where(subject: certification, actor_type: described_class.name, action: 'case.exemption.approved').count }.by(1)
+      end
     end
 
     context 'when applicant is 65 years old or older' do
@@ -136,6 +142,12 @@ RSpec.describe ExemptionDeterminationService do
         service.determine(kase)
         kase.reload
         expect(kase.exemption_request_approval_status).to be_nil
+      end
+
+      it 'logs denied event' do
+        expect do
+          service.determine(kase)
+        end.to change { Strata::AuditLine.where(subject: certification, actor_type: described_class.name, action: 'case.exemption.denied').count }.by(1)
       end
     end
 
