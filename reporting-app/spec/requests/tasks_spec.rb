@@ -538,6 +538,42 @@ RSpec.describe "/staff/tasks", type: :request do
     end
   end
 
+  describe "PATCH /assign" do
+    context "when there is an unassigned task in the user's region" do
+      let!(:unassigned_task) { create(:review_activity_report_task, case: certification_case) }
+
+      it "assigns the task to the user" do
+        expect {
+          patch "/staff/tasks/#{unassigned_task.id}/assign"
+        }.to change { unassigned_task.reload.assignee_id }.from(nil).to(user.id)
+      end
+
+      it "redirects to the task show page" do
+        patch "/staff/tasks/#{unassigned_task.id}/assign"
+        expect(response).to redirect_to(task_path(unassigned_task))
+      end
+
+      it "sets a success flash message" do
+        patch "/staff/tasks/#{unassigned_task.id}/assign"
+        expect(flash["task-message"]).to eq(I18n.t("strata.tasks.messages.task_picked_up"))
+      end
+
+      it "logs to audit log" do
+        expect do
+          patch "/staff/tasks/#{unassigned_task.id}/assign"
+        end.to change { Strata::AuditLine.where(action: "case.task_picked_up").count }.by(1)
+      end
+
+      it "does not log to audit log if task does not save" do
+        allow(Strata::Task).to receive(:find).and_return(unassigned_task)
+        allow(unassigned_task).to receive(:assign).and_return(false)
+        expect do
+          patch "/staff/tasks/#{unassigned_task.id}/assign"
+        end.not_to change { Strata::AuditLine.where(action: "case.task_picked_up").count }
+      end
+    end
+  end
+
   describe "POST /pick_up_next_task" do
     context "when there is an unassigned task in the user's region" do
       let(:unassigned_task) { create(:review_activity_report_task_with_form, case: certification_case) }
@@ -558,6 +594,12 @@ RSpec.describe "/staff/tasks", type: :request do
       it "sets a success flash message" do
         post "/staff/tasks/pick_up_next_task"
         expect(flash["task-message"]).to eq(I18n.t("strata.tasks.messages.task_picked_up"))
+      end
+
+      it "logs to audit log" do
+        expect do
+          post "/staff/tasks/pick_up_next_task"
+        end.to change { Strata::AuditLine.where(subject: certification, action: "case.task_picked_up").count }.by(1)
       end
     end
 
@@ -580,6 +622,12 @@ RSpec.describe "/staff/tasks", type: :request do
       it "sets a 'no tasks available' flash message" do
         post "/staff/tasks/pick_up_next_task"
         expect(flash["task-message"]).to eq(I18n.t("strata.tasks.messages.no_tasks_available"))
+      end
+
+      it "does not log to audit log" do
+        expect do
+          post "/staff/tasks/pick_up_next_task"
+        end.not_to change { Strata::AuditLine.where(action: "case.task_picked_up").count }
       end
     end
 

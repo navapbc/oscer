@@ -47,7 +47,7 @@ class CertificationCase < Strata::Case
       .pick(:certification_id)
   end
 
-  def accept_activity_report
+  def accept_activity_report(user)
     certification = Certification.find(certification_id)
     hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, certification_case: self)
 
@@ -61,14 +61,15 @@ class CertificationCase < Strata::Case
         reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_compliant] ],
         outcome: :compliant,
         determination_data: Determinations::HoursBasedDeterminationData.from_aggregate(hours_data).to_h,
-        determined_at: certification.certification_requirements.certification_date
+        determined_at: certification.certification_requirements.certification_date,
+        actor: user
       )
     end
 
     Strata::EventManager.publish("ActivityReportApproved", { case_id: id, certification_id: certification_id })
   end
 
-  def deny_activity_report
+  def deny_activity_report(user)
     certification = Certification.find(certification_id)
     hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, certification_case: self)
 
@@ -82,14 +83,15 @@ class CertificationCase < Strata::Case
         reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_insufficient] ],
         outcome: :not_compliant,
         determination_data: Determinations::HoursBasedDeterminationData.from_aggregate(hours_data).to_h,
-        determined_at: certification.certification_requirements.certification_date
+        determined_at: certification.certification_requirements.certification_date,
+        actor: user
       )
     end
 
     Strata::EventManager.publish("ActivityReportDenied", { case_id: id, certification_id: certification_id })
   end
 
-  def accept_exemption_request
+  def accept_exemption_request(user)
     transaction do
       self.exemption_request_approval_status = "approved"
       self.exemption_request_approval_status_updated_at = Time.current
@@ -103,25 +105,35 @@ class CertificationCase < Strata::Case
         determined_at: certification.certification_requirements.certification_date,
         determination_data: {
           exemption_type: "placeholder"
-        } # TODO: add determined_by_id
+        },
+        actor: user
       )
     end
 
     Strata::EventManager.publish("DeterminedExempt", { case_id: id, certification_id: certification_id })
   end
 
-  def deny_exemption_request
-    self.exemption_request_approval_status = "denied"
-    self.exemption_request_approval_status_updated_at = Time.current
-    save!
+  def deny_exemption_request(user)
+    transaction do
+      self.exemption_request_approval_status = "denied"
+      self.exemption_request_approval_status_updated_at = Time.current
+      save!
 
+      certification = Certification.find(certification_id)
+      Strata::AuditLog.write!(
+        action: "case.exemption.denied",
+        actor: user,
+        subject: certification
+      )
+    end
     Strata::EventManager.publish("DeterminedNotExempt", { case_id: id, certification_id: certification_id })
   end
 
   # Called by ExemptionDeterminationService to record exemption determination
   # Model only handles state changes - service handles events
   # @param eligibility_fact [Strata::RulesEngine::Fact] the evaluation result
-  def record_exemption_determination(eligibility_fact)
+  # @param actor [Strata::VirtualActor] recording the exemption
+  def record_exemption_determination(eligibility_fact, actor)
     certification = Certification.find(certification_id)
 
     transaction do
@@ -134,7 +146,8 @@ class CertificationCase < Strata::Case
         reasons: Determination.to_reason_codes(eligibility_fact),
         outcome: :exempt,
         determination_data: eligibility_fact.reasons.to_json,
-        determined_at: certification.certification_requirements.certification_date
+        determined_at: certification.certification_requirements.certification_date,
+        actor:
       )
     end
   end
@@ -180,12 +193,13 @@ class CertificationCase < Strata::Case
   # Member is compliant if either +hours_ok+ or +income_ok+; not compliant only when both are false.
   # Events/notifications are published by CommunityEngagementCheckService (via Strata).
   #
+  # @param actor [Strata::VirtualActor] recording the assessment
   # @param certification [Certification] aggregate root for +record_determination!+
   # @param hours_data [Hash] from HoursComplianceDeterminationService.aggregate_hours_for_certification
   # @param income_data [Hash] from IncomeComplianceDeterminationService.aggregate_income_for_certification
   # @param hours_ok [Boolean]
   # @param income_ok [Boolean]
-  def record_external_ce_combined_assessment(certification:, hours_data:, income_data:, hours_ok:, income_ok:)
+  def record_external_ce_combined_assessment(actor:, certification:, hours_data:, income_data:, hours_ok:, income_ok:)
     outcome = (hours_ok || income_ok) ? :compliant : :not_compliant
     reasons = external_ce_combined_reason_codes(outcome: outcome, hours_ok: hours_ok, income_ok: income_ok)
     determination_data = Determinations::ExternalCECombinedDeterminationData.build(
@@ -199,7 +213,8 @@ class CertificationCase < Strata::Case
       outcome,
       determination_data,
       reasons: reasons,
-      certification: certification
+      certification: certification,
+      actor:
     )
   end
 
@@ -216,7 +231,7 @@ class CertificationCase < Strata::Case
   # @param close_on_compliant [Boolean] when +true+ (default), +:compliant+ outcomes call +close!+ before
   #   persisting the determination. When +false+, the determination is still written but the case stays open
   #   (+record_income_compliance+ may pass +false+; +record_hours_compliance+ always uses the default).
-  def record_automated_ce_compliance(outcome, determination_data, reasons:, certification: nil, close_on_compliant: true)
+  def record_automated_ce_compliance(outcome, determination_data, reasons:, certification: nil, close_on_compliant: true, actor: nil)
     certification ||= Certification.find(certification_id)
 
     transaction do
@@ -227,7 +242,8 @@ class CertificationCase < Strata::Case
         reasons: reasons,
         outcome: outcome,
         determination_data: determination_data,
-        determined_at: certification.certification_requirements.certification_date
+        determined_at: certification.certification_requirements.certification_date,
+        actor:
       )
     end
   end
