@@ -99,4 +99,12 @@ class Determination < Strata::Determination
     eligibility_fact_reasons = eligibility_fact.reasons.select { |reason| reason.value }.map(&:name).map(&:to_sym)
     eligibility_fact_reasons.map { |reason| REASON_CODE_MAPPING[reason] }
   end
+
+  # CE automated/manual payload uses +determination_data["calculation_type"]+ with string keys from JSON.
+  # @return [String, nil] e.g. +CALCULATION_TYPE_INCOME_BASED+, +CALCULATION_TYPE_HOURS_BASED+, +CALCULATION_TYPE_EXTERNAL_CE_COMBINED+
+  def ce_calculation_type
+    return nil if determination_data.blank?
+
+    determination_data.stringify_keys["calculation_type"].presence
+  end
 end
