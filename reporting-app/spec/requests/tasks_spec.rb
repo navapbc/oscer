@@ -540,7 +540,7 @@ RSpec.describe "/staff/tasks", type: :request do
 
   describe "PATCH /assign" do
     context "when there is an unassigned task in the user's region" do
-      let!(:unassigned_task) { create(:review_activity_report_task, case: certification_case) }
+      let!(:unassigned_task) { create(:review_activity_report_task_with_form, case: certification_case) }
 
       it "assigns the task to the user" do
         expect {
