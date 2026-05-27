@@ -13,133 +13,6 @@ RSpec.describe HoursComplianceDeterminationService do
            period_start: period_start, period_end: period_end, **attrs)
   end
 
-  describe ".determine" do
-    # Stub EventManager BEFORE creating certification to prevent auto-triggering business process
-    before do
-      allow(Strata::EventManager).to receive(:publish)
-      allow(NotificationService).to receive(:send_email_notification)
-    end
-
-    let(:certification) { create(:certification) }
-    let(:certification_case) { create(:certification_case, certification_id: certification.id) }
-
-    context "when hours meet target" do
-      before do
-        create_external_hourly_activity_for(certification, hours: 85)
-      end
-
-      it "publishes DeterminedHoursMet event" do
-        described_class.determine(certification_case)
-
-        expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedHoursMet",
-          hash_including(case_id: certification_case.id)
-        )
-      end
-
-      it "creates a compliant determination" do
-        described_class.determine(certification_case)
-
-        determination = Determination.where(subject_id: certification.id).last
-        expect(determination.outcome).to eq("compliant")
-        expect(determination.reasons).to include("hours_reported_compliant")
-      end
-
-      it "closes the case" do
-        described_class.determine(certification_case)
-
-        expect(certification_case.reload).to be_closed
-      end
-
-      it "includes determination_data with calculation details" do
-        described_class.determine(certification_case)
-
-        determination = Determination.where(subject_id: certification.id).last
-        data = determination.determination_data
-
-        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_HOURS_BASED)
-        expect(data["total_hours"]).to eq(85.0)
-        expect(data["target_hours"]).to eq(80)
-      end
-    end
-
-    context "when hours are below target with external hours" do
-      before do
-        create_external_hourly_activity_for(certification, hours: 50)
-      end
-
-      it "publishes DeterminedHoursInsufficient event (has some hours but needs more)" do
-        described_class.determine(certification_case)
-
-        expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedHoursInsufficient",
-          hash_including(case_id: certification_case.id)
-        )
-      end
-
-      it "creates a not_compliant determination" do
-        described_class.determine(certification_case)
-
-        determination = Determination.where(subject_id: certification.id).last
-        expect(determination.outcome).to eq("not_compliant")
-        expect(determination.reasons).to include("hours_reported_insufficient")
-      end
-
-      it "does not close the case" do
-        described_class.determine(certification_case)
-
-        expect(certification_case.reload).not_to be_closed
-      end
-    end
-
-    context "when hours are below target with NO external hours" do
-      # No external hourly activities created - member needs to report from scratch
-
-      it "publishes DeterminedActionRequired event (no hours found)" do
-        described_class.determine(certification_case)
-
-        expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedActionRequired",
-          hash_including(case_id: certification_case.id)
-        )
-      end
-
-      it "creates a not_compliant determination" do
-        described_class.determine(certification_case)
-
-        determination = Determination.where(subject_id: certification.id).last
-        expect(determination.outcome).to eq("not_compliant")
-        expect(determination.reasons).to include("hours_reported_insufficient")
-      end
-    end
-
-    context "when hours exactly meet target" do
-      before do
-        create_external_hourly_activity_for(certification, hours: 80)
-      end
-
-      it "publishes DeterminedHoursMet event" do
-        described_class.determine(certification_case)
-
-        expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedHoursMet",
-          hash_including(case_id: certification_case.id)
-        )
-      end
-    end
-
-    context "with no hours data" do
-      it "publishes DeterminedActionRequired event" do
-        described_class.determine(certification_case)
-
-        expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedActionRequired",
-          hash_including(case_id: certification_case.id)
-        )
-      end
-    end
-  end
-
   describe ".calculate" do
     before do
       allow(Strata::EventManager).to receive(:publish)
@@ -197,6 +70,25 @@ RSpec.describe HoursComplianceDeterminationService do
         expect(determination.outcome).to eq("not_compliant")
         expect(determination.reasons).to include("hours_reported_insufficient")
       end
+
+      it "does not close the case" do
+        described_class.calculate(certification.id)
+        kase = CertificationCase.find_by!(certification_id: certification.id)
+
+        expect(kase).to be_open
+      end
+    end
+
+    context "when hours are below target with NO external hours" do
+      # No external hourly activities created - member needs to report from scratch
+
+      it "creates a not_compliant determination" do
+        described_class.calculate(certification.id)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.outcome).to eq("not_compliant")
+        expect(determination.reasons).to include("hours_reported_insufficient")
+      end
     end
   end
 
@@ -217,14 +109,14 @@ RSpec.describe HoursComplianceDeterminationService do
       end
 
       it "sums hours across all entries" do
-        described_class.determine(certification_case)
+        described_class.calculate(certification_case.certification_id)
 
         determination = Determination.where(subject_id: certification.id).last
         expect(determination.determination_data["total_hours"]).to eq(85.0)
       end
 
       it "groups hours by category" do
-        described_class.determine(certification_case)
+        described_class.calculate(certification_case.certification_id)
 
         determination = Determination.where(subject_id: certification.id).last
         by_category = determination.determination_data["hours_by_category"]
@@ -235,7 +127,7 @@ RSpec.describe HoursComplianceDeterminationService do
       end
 
       it "tracks hours by source" do
-        described_class.determine(certification_case)
+        described_class.calculate(certification_case.certification_id)
 
         determination = Determination.where(subject_id: certification.id).last
         by_source = determination.determination_data["hours_by_source"]
@@ -245,7 +137,7 @@ RSpec.describe HoursComplianceDeterminationService do
       end
 
       it "includes entry IDs in determination_data" do
-        described_class.determine(certification_case)
+        described_class.calculate(certification_case.certification_id)
 
         determination = Determination.where(subject_id: certification.id).last
         expect(determination.determination_data["external_hourly_activity_ids"].length).to eq(3)
@@ -266,7 +158,7 @@ RSpec.describe HoursComplianceDeterminationService do
       end
 
       it "only counts hours within the lookback period" do
-        described_class.determine(certification_case)
+        described_class.calculate(certification_case.certification_id)
 
         determination = Determination.where(subject_id: certification.id).last
         # Should only count 50 hours (within period), not 150 (50 + 100)

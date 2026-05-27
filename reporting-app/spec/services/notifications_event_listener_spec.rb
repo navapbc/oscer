@@ -15,7 +15,6 @@ RSpec.describe NotificationsEventListener, type: :service do
   before do
     allow(NotificationService).to receive(:send_email_notification)
     # Stub services that may publish events during certification creation
-    allow(HoursComplianceDeterminationService).to receive(:determine)
     allow(ExemptionDeterminationService).to receive(:determine)
   end
 
