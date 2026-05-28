@@ -70,8 +70,7 @@ class NotificationsEventListener
       hours_data = payload[:hours_data]
       if hours_data.nil? && payload[:show_hours_insufficient] == true
         hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(
-          certification,
-          certification_case: certification_case_for_notification(certification, payload)
+          certification
         )
       end
 
@@ -81,8 +80,7 @@ class NotificationsEventListener
           payload[:income_data]
         else
           IncomeComplianceDeterminationService.aggregate_income_for_certification(
-            certification,
-            certification_case: certification_case_for_notification(certification, payload)
+            certification
           )
         end
 

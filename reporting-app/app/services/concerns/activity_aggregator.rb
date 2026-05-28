@@ -14,11 +14,7 @@ module ActivityAggregator
     ExternalIncomeActivity.for_member(certification.member_id).within_period(lookback_period)
   end
 
-  def fetch_member_activities(certification)
-    certification_case = certification_case_for_certification(certification)
-    return Activity.none unless certification_case
-
-    form = ActivityReportApplicationForm.find_by(certification_case_id: certification_case.id)
+  def fetch_member_activities(form)
     return Activity.none unless form
 
     form.activities

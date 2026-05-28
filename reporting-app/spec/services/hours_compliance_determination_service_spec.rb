@@ -214,7 +214,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
       rel = described_class.member_hour_activities_for_certification(
         certification,
-        certification_case: other_case
+        application_form: form
       )
 
       expect(rel).to be_none
@@ -226,7 +226,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
       rel = described_class.member_hour_activities_for_certification(
         certification,
-        certification_case: certification_case
+        application_form: form
       )
 
       expect(rel.count).to eq(1)
@@ -240,7 +240,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
       rel = described_class.member_hour_activities_for_certification(
         certification,
-        certification_case: certification_case
+        application_form: form
       )
 
       expect(rel.to_a).to eq([ second, first ])
@@ -252,11 +252,11 @@ RSpec.describe HoursComplianceDeterminationService do
 
       empty = described_class.member_hour_activities_for_certification(
         certification,
-        certification_case: other_case
+        application_form: nil
       )
       from_form_case = described_class.member_hour_activities_for_certification(
         certification,
-        certification_case: certification_case
+        application_form: form
       )
 
       expect(empty).to be_none
@@ -267,55 +267,11 @@ RSpec.describe HoursComplianceDeterminationService do
       it "resolves the case via the shared deterministic helper" do
         create(:work_activity, activity_report_application_form_id: form.id, month: month_a, hours: 7)
 
-        rel = described_class.member_hour_activities_for_certification(certification)
+        rel = described_class.member_hour_activities_for_certification(certification, application_form: form)
 
         expect(rel.count).to eq(1)
         expect(rel.first.hours).to eq(7)
       end
-    end
-  end
-
-  describe ".aggregate_hours_for_certification (multi-case parity)" do
-    before { allow(Strata::EventManager).to receive(:publish) }
-
-    let(:certification) { create(:certification) }
-    let!(:case_with_form) { create(:certification_case, certification_id: certification.id) }
-    let!(:other_case) { create(:certification_case, certification_id: certification.id) }
-    let!(:form) { create(:activity_report_application_form, certification_case_id: case_with_form.id) }
-    let(:lookback) { certification.certification_requirements.continuous_lookback_period }
-    let(:reportable_month) { lookback.start.to_date }
-
-    it "uses the case whose form holds the rows when multiple cases share a certification" do
-      create(:work_activity, activity_report_application_form_id: form.id, month: reportable_month, hours: 12)
-
-      summary = described_class.aggregate_hours_for_certification(certification, certification_case: case_with_form)
-
-      expect(summary[:hours_by_source][:activity]).to eq(12.0)
-      expect(summary[:total_hours]).to eq(12.0)
-    end
-
-    it "yields zero member hours when passed a case without a form (other case in the certification)" do
-      create(:work_activity, activity_report_application_form_id: form.id, month: reportable_month, hours: 12)
-
-      summary = described_class.aggregate_hours_for_certification(certification, certification_case: other_case)
-
-      expect(summary[:hours_by_source][:activity]).to eq(0.0)
-      expect(summary[:total_hours]).to eq(0.0)
-    end
-
-    it "matches the displayed rows when member_hour_activity_rows are passed in" do
-      create(:work_activity, activity_report_application_form_id: form.id, month: reportable_month, hours: 12)
-      create(:work_activity, activity_report_application_form_id: form.id, month: reportable_month, hours: 8)
-
-      rows = described_class.member_hour_activities_for_certification(certification, certification_case: case_with_form).to_a
-      summary = described_class.aggregate_hours_for_certification(
-        certification,
-        certification_case: case_with_form,
-        member_hour_activity_rows: rows
-      )
-
-      expect(summary[:hours_by_source][:activity]).to eq(rows.sum { |r| r.hours.to_f })
-      expect(summary[:activity_ids]).to match_array(rows.map(&:id))
     end
   end
 

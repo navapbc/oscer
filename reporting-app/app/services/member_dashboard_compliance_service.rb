@@ -24,7 +24,6 @@ class MemberDashboardComplianceService
       # the Postgres SUM path instead of erroring on the +ORDER BY+ on +member_hour_activities_for_certification+.
       hours_summary = HoursComplianceDeterminationService.aggregate_hours_for_certification(
         certification,
-        certification_case: certification_case,
         external_hourly_activities: external_hourly_rel
       )
 
