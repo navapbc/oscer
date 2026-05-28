@@ -8,7 +8,7 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
   let(:user) { create(:user, :as_caseworker, region: "Southeast") }
   let(:certification) { create(:certification, certification_requirements: build(:certification_certification_requirements, region: "Southeast")) }
   let(:kase) { create(:certification_case, certification_id: certification.id, business_process_current_step: "review_activity_report") }
-  let(:task) { create(:review_activity_report_task, case: kase) }
+  let(:task) { create(:review_activity_report_task_with_form, case: kase) }
 
   before do
     login_as user

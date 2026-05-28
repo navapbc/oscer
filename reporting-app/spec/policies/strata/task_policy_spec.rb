@@ -19,7 +19,7 @@ RSpec.describe Strata::TaskPolicy, type: :policy do
     )
   end
   let(:certification_case) { create(:certification_case, certification_id: certification.id) }
-  let(:record) { create(:review_activity_report_task, case: certification_case) }
+  let(:record) { create(:review_activity_report_task_with_form, case: certification_case) }
 
   let(:resolved_scope) do
     described_class::Scope.new(user, Strata::Task.all).resolve
@@ -45,7 +45,7 @@ RSpec.describe Strata::TaskPolicy, type: :policy do
         )
       end
       let(:other_certification_case) { create(:certification_case, certification_id: other_certification.id) }
-      let(:other_region_task) { create(:review_activity_report_task, case: other_certification_case) }
+      let(:other_region_task) { create(:review_activity_report_task_with_form, case: other_certification_case) }
 
       before do
         record # ensure record is created
