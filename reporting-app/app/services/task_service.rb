@@ -3,7 +3,7 @@
 module TaskService
   def self.request_more_information(task, params)
     ActiveRecord::Base.transaction do
-      application_form = task.class.application_form_class.find_by(certification_case_id: task.case_id)
+      application_form = task.application_form
       information_request = application_form.class.information_request_class.new(params)
       information_request.application_form_id = application_form.id
       information_request.application_form_type = application_form.class.name
@@ -21,7 +21,7 @@ module TaskService
       information_request.update!(params)
       application_form = information_request.application_form_type.constantize.find(information_request.application_form_id)
       task = information_request.class.task_class.find_by!(
-        case_id: application_form.certification_case_id,
+        application_form: application_form,
         status: :on_hold
       )
       task.pending!
