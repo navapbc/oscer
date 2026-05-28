@@ -6,7 +6,7 @@
 # Subscribed events and their notifications:
 # - DeterminedExempt → exempt_email
 # - DeterminedHoursMet / DeterminedCommunityEngagementMet → compliant_email
-# - DeterminedActionRequired / DeterminedCommunityEngagementActionRequired → action_required_email
+# - DeterminedCommunityEngagementActionRequired → action_required_email
 # - DeterminedHoursInsufficient → insufficient_hours_email
 # - DeterminedCommunityEngagementInsufficient → insufficient_community_engagement_email (hours and/or income sections).
 #   Payload carries optional +hours_data+ / +income_data+ aggregates; mailer +show_*+ flags are derived in
@@ -20,7 +20,6 @@ class NotificationsEventListener
       Strata::EventManager.subscribe("DeterminedExempt", method(:handle_exempt))
       Strata::EventManager.subscribe("DeterminedHoursMet", method(:handle_compliant))
       Strata::EventManager.subscribe("DeterminedCommunityEngagementMet", method(:handle_compliant))
-      Strata::EventManager.subscribe("DeterminedActionRequired", method(:handle_action_required))
       Strata::EventManager.subscribe("DeterminedCommunityEngagementActionRequired", method(:handle_action_required))
       Strata::EventManager.subscribe("DeterminedHoursInsufficient", method(:handle_insufficient_hours))
       Strata::EventManager.subscribe("DeterminedCommunityEngagementInsufficient", method(:handle_insufficient_community_engagement))
