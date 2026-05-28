@@ -8,7 +8,7 @@ RSpec.describe "/review_exemption_claim_tasks", type: :request do
   let(:user) { create(:user, :as_caseworker, region: "Southeast") }
   let(:certification) { create(:certification, certification_requirements: build(:certification_certification_requirements, region: "Southeast")) }
   let(:certification_case) { create(:certification_case, certification_id: certification.id, business_process_current_step: "review_exemption_claim") }
-  let(:task) { create(:review_exemption_claim_task, case: certification_case) }
+  let(:task) { create(:review_exemption_claim_task_with_form, case: certification_case) }
 
   before do
     login_as user
