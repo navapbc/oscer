@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: ae097817b3967369314846978d7125caf2fddd5b
+  revision: c7bb4ca90b81bcccfd163d9a920bdf73d2188609
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
