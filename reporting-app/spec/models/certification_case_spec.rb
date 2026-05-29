@@ -68,6 +68,8 @@ RSpec.describe CertificationCase, type: :model do
   end
 
   describe '#deny_activity_report' do
+    let(:application_form) { create(:activity_report_application_form) }
+
     before do
       allow(Strata::EventManager).to receive(:publish)
       allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
@@ -80,7 +82,7 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'sets denial status and closes case' do
-      certification_case.deny_activity_report(user)
+      certification_case.deny_activity_report(user, application_form)
       certification_case.reload
 
       expect(certification_case.activity_report_approval_status).to eq("denied")
@@ -89,7 +91,7 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'records not_compliant determination' do
-      certification_case.deny_activity_report(user)
+      certification_case.deny_activity_report(user, application_form)
 
       determination = Determination.first
 
@@ -101,18 +103,18 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'publishes ActivityReportDenied event' do
-      certification_case.deny_activity_report(user)
+      certification_case.deny_activity_report(user, application_form)
 
       expect(Strata::EventManager).to have_received(:publish).with(
         "ActivityReportDenied",
-        { case_id: certification_case.id, certification_id: certification_case.certification_id }
+        { case_id: certification_case.id, certification_id: certification_case.certification_id, application_form_id: application_form.id }
       )
     end
 
     it 'logs decision to audit log' do
       certification = Certification.find(certification_case.certification_id)
       expect do
-        certification_case.deny_activity_report(user)
+        certification_case.deny_activity_report(user, application_form)
       end.to change { Strata::AuditLine.where(actor: user, subject: certification, action: "case.activity_report.denied").count }.by(1)
     end
   end

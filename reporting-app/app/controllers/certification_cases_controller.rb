@@ -28,24 +28,24 @@ class CertificationCasesController < StaffController
     @external_hourly_activities = fetch_external_hourly_activities
     @member_hour_activities = HoursComplianceDeterminationService.member_hour_activities_for_certification(
       @certification,
-      certification_case: @case
+      application_form: @activity_report
     )
     member_hour_rows = @member_hour_activities.to_a
     @hours_summary = HoursComplianceDeterminationService.aggregate_hours_for_certification(
       @certification,
-      certification_case: @case,
+      application_form: @activity_report,
       external_hourly_activities: @external_hourly_activities,
       member_hour_activity_rows: member_hour_rows
     )
     @external_income_activities = fetch_external_income_activities
     @member_income_activities = IncomeComplianceDeterminationService.member_income_activities_for_certification(
       @certification,
-      certification_case: @case
+      application_form: @activity_report
     )
     member_income_rows = @member_income_activities.to_a
     @income_summary = IncomeComplianceDeterminationService.aggregate_income_for_certification(
       @certification,
-      certification_case: @case,
+      application_form: @activity_report,
       external_income_activities: @external_income_activities,
       member_income_activity_rows: member_income_rows
     )

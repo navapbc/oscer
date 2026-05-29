@@ -144,7 +144,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         certification_case.reload
 
         # Staff denies activity report
-        certification_case.deny_activity_report(user)
+        certification_case.deny_activity_report(user, activity_report)
         certification_case.reload
       end
 

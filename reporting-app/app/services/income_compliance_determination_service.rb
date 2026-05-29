@@ -34,7 +34,7 @@ class IncomeComplianceDeterminationService
       raise ActiveRecord::RecordNotFound, "Couldn't find CertificationCase for Certification #{certification_id}" unless kase
 
       application_form = ActivityReportApplicationForm.find_by(certification_case_id: kase.id)
-      
+
       income_data = aggregate_income_for_certification(certification, application_form:)
       outcome = determine_outcome(income_data[:total_income])
 

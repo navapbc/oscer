@@ -97,7 +97,7 @@ RSpec.describe NotificationsEventListener, type: :service do
     describe "#handle_insufficient_hours" do
       it "sends insufficient_hours_email notification with hours data" do
         allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
-          .with(certification)
+          .with(certification, application_form: nil)
           .and_return({ total_hours: 40, hours_by_source: { external: 40, activity: 0 } })
 
         event = {
@@ -315,12 +315,14 @@ RSpec.describe NotificationsEventListener, type: :service do
     end
 
     describe "#handle_activity_report_denied" do
+      let(:application_form) { create(:activity_report_application_form) }
+
       it "sends insufficient_hours_email notification" do
         allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
-          .with(certification, certification_case: certification_case)
+          .with(certification, application_form: application_form)
           .and_return({ total_hours: 30, hours_by_source: { external: 30, activity: 0 } })
 
-        event = { payload: { case_id: certification_case.id, certification_id: certification.id } }
+        event = { payload: { case_id: certification_case.id, certification_id: certification.id, application_form_id: application_form.id } }
 
         described_class.send(:handle_activity_report_denied, event)
 

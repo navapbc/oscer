@@ -13,7 +13,7 @@ class MemberDashboardComplianceService
     # @param exemption_application_form [ExemptionApplicationForm, nil]
     # @param member_status [MemberStatus]
     # @return [MemberDashboardCompliance]
-    def build(certification:, certification_case:, exemption_application_form:, member_status:)
+    def build(certification:, certification_case:, activity_report_application_form:, exemption_application_form:, member_status:)
       latest = member_status.latest_determination
       lookback = certification.certification_requirements.continuous_lookback_period
       show_income = income_summary_visible?(latest, member_status) && lookback.present?
@@ -24,6 +24,7 @@ class MemberDashboardComplianceService
       # the Postgres SUM path instead of erroring on the +ORDER BY+ on +member_hour_activities_for_certification+.
       hours_summary = HoursComplianceDeterminationService.aggregate_hours_for_certification(
         certification,
+        application_form: activity_report_application_form,
         external_hourly_activities: external_hourly_rel
       )
 
@@ -35,6 +36,7 @@ class MemberDashboardComplianceService
       MemberDashboardCompliance.new(
         certification: certification,
         certification_case: certification_case,
+        activity_report_application_form: activity_report_application_form,
         exemption_application_form: exemption_application_form,
         lookback: lookback,
         report_status_token: member_status.dashboard_report_status,

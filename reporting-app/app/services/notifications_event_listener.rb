@@ -46,9 +46,9 @@ class NotificationsEventListener
 
     def handle_insufficient_hours(event)
       certification = fetch_certification(event)
-      hours_data = event[:payload][:hours_data] || HoursComplianceDeterminationService.aggregate_hours_for_certification(
+      hours_data = event.dig(:payload, :hours_data) || HoursComplianceDeterminationService.aggregate_hours_for_certification(
         certification,
-        certification_case: certification_case_for_notification(certification, event[:payload])
+        application_form: ActivityReportApplicationForm.where(id: event.dig(:payload, :application_form_id)).first
       )
 
       NotificationService.send_email_notification(

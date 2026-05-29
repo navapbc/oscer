@@ -27,6 +27,10 @@ class DashboardController < ApplicationController
     @certification_case = MemberDashboardComplianceService.case_for_certification(@certification)
   end
 
+  def set_activity_report_application_form
+    @activity_report_application_form = ActivityReportApplicationForm.find_by_certification_case_id(@certification_case&.id)
+  end
+
   def set_exemption_application_form
     @exemption_application_form = ExemptionApplicationForm.find_by_certification_case_id(@certification_case&.id)
   end
@@ -50,6 +54,7 @@ class DashboardController < ApplicationController
     @member_dashboard_compliance = MemberDashboardComplianceService.build(
       certification: @certification,
       certification_case: @certification_case,
+      activity_report_application_form: @activity_report_application_form,
       exemption_application_form: @exemption_application_form,
       member_status: @member_status
     )

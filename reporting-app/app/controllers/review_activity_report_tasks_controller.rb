@@ -8,7 +8,7 @@ class ReviewActivityReportTasksController < TasksController
       kase.accept_activity_report(current_user)
       notice = t("tasks.details.approved_message")
     elsif denying?
-      kase.deny_activity_report(current_user)
+      kase.deny_activity_report(current_user, @task.application_form)
       notice = t("details.review_activity_report_task.denied_message")
     elsif requesting_information?
       # Redirect to new information request form. Task will be marked as "on hold" when
