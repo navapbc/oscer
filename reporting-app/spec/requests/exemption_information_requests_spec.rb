@@ -9,7 +9,7 @@ RSpec.describe "/exemption_information_requests", type: :request do
   let(:other_user) { create(:user) }
   let(:certification_case) { create(:certification_case) }
   let(:application_form) { create(:exemption_application_form, user_id: user.id, certification_case_id: certification_case.id) }
-  let(:task) { create(:review_exemption_claim_task, case: certification_case, status: :on_hold) }
+  let(:task) { create(:review_exemption_claim_task, case: certification_case, application_form:, status: :on_hold) }
   let(:information_request) { create(:exemption_information_request, application_form_id: application_form.id, application_form_type: application_form.class.name) }
 
   before do

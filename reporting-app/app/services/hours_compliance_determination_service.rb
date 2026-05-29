@@ -6,39 +6,6 @@ class HoursComplianceDeterminationService
   class << self
     include ActivityAggregator
 
-    # NOTE: As of https://github.com/navapbc/oscer/pull/444 this method is no longer called
-    # Publishes different events based on whether external hours exist:
-    # - DeterminedActionRequired: No external hours found, member needs to report from scratch
-    # - DeterminedHoursInsufficient: Has some external hours but needs more
-    # @param kase [CertificationCase]
-    def determine(kase)
-      certification = Certification.find(kase.certification_id)
-      hours_data = aggregate_hours_for_certification(certification)
-      outcome = determine_outcome(hours_data[:total_hours])
-
-      kase.record_hours_compliance(outcome, hours_data)
-
-      if outcome == :compliant
-        Strata::EventManager.publish("DeterminedHoursMet", {
-          case_id: kase.id,
-          certification_id: certification.id
-        })
-      elsif hours_data[:hours_by_source][:external] > 0
-        # Has some external hours but needs more - send insufficient hours email
-        Strata::EventManager.publish("DeterminedHoursInsufficient", {
-          case_id: kase.id,
-          certification_id: certification.id,
-          hours_data: hours_data
-        })
-      else
-        # No external hours found - send action required email
-        Strata::EventManager.publish("DeterminedActionRequired", {
-          case_id: kase.id,
-          certification_id: certification.id
-        })
-      end
-    end
-
     # Called by CertificationBusinessProcess after ActivityReportApproved event
     # @param kase [CertificationCase]
     def determine_after_activity_report(kase)

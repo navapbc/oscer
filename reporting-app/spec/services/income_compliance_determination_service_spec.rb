@@ -6,7 +6,6 @@ RSpec.describe IncomeComplianceDeterminationService do
   def expect_no_ce_workflow_events_published
     expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedHoursMet", anything)
     expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedHoursInsufficient", anything)
-    expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedActionRequired", anything)
     expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedCommunityEngagementMet", anything)
     expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedCommunityEngagementInsufficient", anything)
     expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedCommunityEngagementActionRequired", anything)

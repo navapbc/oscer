@@ -9,7 +9,7 @@ RSpec.describe "/activity_report_information_requests", type: :request do
   let(:other_user) { create(:user) }
   let(:certification_case) { create(:certification_case) }
   let(:application_form) { create(:activity_report_application_form, user_id: user.id, certification_case_id: certification_case.id) }
-  let(:task) { create(:review_activity_report_task, case: certification_case, status: :on_hold) }
+  let(:task) { create(:review_activity_report_task, application_form:, case: certification_case, status: :on_hold) }
   let(:information_request) { build(:activity_report_information_request, application_form_id: application_form.id, application_form_type: application_form.class.name) }
 
   before do

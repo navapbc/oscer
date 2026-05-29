@@ -20,7 +20,7 @@ RSpec.describe "/staff/tasks", type: :request do
   describe "GET /show" do
     context "with ActivityReportApplicationForm" do
       let(:activity_report_application_form) { create(:activity_report_application_form, certification_case_id: certification_case.id, user_id: user.id) }
-      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case) }
+      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case, application_form: nil) }
 
       before { activity_report_application_form.save! }
 
@@ -232,7 +232,7 @@ RSpec.describe "/staff/tasks", type: :request do
     end
 
     context "with both an ActivityReportApplicationForm and an ExemptionApplicationForm" do
-      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case) }
+      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case, application_form: nil) }
       let(:exemption_task) { create(:review_exemption_claim_task, case: certification_case) }
       let(:exemption_application_form) { build(:exemption_application_form, certification_case_id: certification_case.id) }
       let(:activity_report_application_form) { build(:activity_report_application_form, certification_case_id: certification_case.id) }
@@ -256,7 +256,7 @@ RSpec.describe "/staff/tasks", type: :request do
     end
 
     context "without information requests" do
-      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case) }
+      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case, application_form: nil) }
       let(:activity_report_application_form) do
         create(:activity_report_application_form, certification_case_id: certification_case.id)
       end
@@ -273,7 +273,7 @@ RSpec.describe "/staff/tasks", type: :request do
     end
 
     context "with information requests" do
-      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case) }
+      let(:activity_report_task) { create(:review_activity_report_task, case: certification_case, application_form: nil) }
       let(:activity_report_application_form) do
         create(:activity_report_application_form, certification_case_id: certification_case.id)
       end
@@ -333,7 +333,7 @@ RSpec.describe "/staff/tasks", type: :request do
 
   describe "GET /show with doc_ai" do
     let(:activity_report_application_form) { create(:activity_report_application_form, certification_case_id: certification_case.id, user_id: user.id) }
-    let(:activity_report_task) { create(:review_activity_report_task, case: certification_case) }
+    let(:activity_report_task) { create(:review_activity_report_task, case: certification_case, application_form: nil) }
 
     before do
       activity_report_application_form.save!
@@ -364,6 +364,7 @@ RSpec.describe "/staff/tasks", type: :request do
       end
 
       it "shows evidence source icon" do
+        expect(activity_report_task.application_form).to eq(activity_report_application_form)
         activity_report_application_form.activities.create!(
           name: "Manual Employer",
           type: "WorkActivity",
@@ -401,9 +402,9 @@ RSpec.describe "/staff/tasks", type: :request do
   end
 
   describe "GET /index" do
-    let(:pending_task) { build(:review_activity_report_task, case: certification_case, status: :pending) }
-    let(:completed_task) { build(:review_activity_report_task, case: certification_case, status: :completed) }
-    let(:on_hold_task) { build(:review_activity_report_task, case: certification_case, status: :on_hold) }
+    let(:pending_task) { build(:review_activity_report_task_with_form, case: certification_case, status: :pending) }
+    let(:completed_task) { build(:review_activity_report_task_with_form, case: certification_case, status: :completed) }
+    let(:on_hold_task) { build(:review_activity_report_task_with_form, case: certification_case, status: :on_hold) }
 
     before do
       pending_task.save!
@@ -539,7 +540,7 @@ RSpec.describe "/staff/tasks", type: :request do
 
   describe "PATCH /assign" do
     context "when there is an unassigned task in the user's region" do
-      let!(:unassigned_task) { create(:review_activity_report_task, case: certification_case) }
+      let!(:unassigned_task) { create(:review_activity_report_task_with_form, case: certification_case) }
 
       it "assigns the task to the user" do
         expect {
@@ -575,7 +576,7 @@ RSpec.describe "/staff/tasks", type: :request do
 
   describe "POST /pick_up_next_task" do
     context "when there is an unassigned task in the user's region" do
-      let(:unassigned_task) { create(:review_activity_report_task, case: certification_case) }
+      let(:unassigned_task) { create(:review_activity_report_task_with_form, case: certification_case) }
 
       before { unassigned_task }
 
@@ -605,7 +606,7 @@ RSpec.describe "/staff/tasks", type: :request do
     context "when there are no unassigned tasks in the user's region" do
       before do
         # Create a completed task (not unassigned)
-        create(:review_activity_report_task, case: certification_case, status: :completed)
+        create(:review_activity_report_task_with_form, case: certification_case, status: :completed)
       end
 
       it "does not assign any task" do
@@ -639,7 +640,7 @@ RSpec.describe "/staff/tasks", type: :request do
         )
       end
       let(:other_certification_case) { create(:certification_case, certification_id: other_certification.id) }
-      let(:other_region_task) { create(:review_activity_report_task, case: other_certification_case) }
+      let(:other_region_task) { create(:review_activity_report_task_with_form, case: other_certification_case) }
 
       before { other_region_task }
 
@@ -660,8 +661,8 @@ RSpec.describe "/staff/tasks", type: :request do
     end
 
     context "when there are multiple unassigned tasks in the user's region" do
-      let(:first_task) { create(:review_activity_report_task, case: certification_case, due_on: 1.day.from_now) }
-      let(:second_task) { create(:review_activity_report_task, case: certification_case, due_on: 2.days.from_now) }
+      let(:first_task) { create(:review_activity_report_task_with_form, case: certification_case, due_on: 1.day.from_now) }
+      let(:second_task) { create(:review_activity_report_task_with_form, case: certification_case, due_on: 2.days.from_now) }
 
       before do
         first_task

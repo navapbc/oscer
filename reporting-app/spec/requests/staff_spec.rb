@@ -22,8 +22,8 @@ RSpec.describe "/staff", type: :request do
     context "when no tasks are assigned to the current user" do
       before do
         # Create tasks assigned to other user
-        task1 = create(:review_activity_report_task, case: certification_case, status: :pending)
-        task2 = create(:review_exemption_claim_task, case: certification_case, status: :pending)
+        task1 = create(:review_activity_report_task_with_form, case: certification_case, status: :pending)
+        task2 = create(:review_exemption_claim_task_with_form, case: certification_case, status: :pending)
         task1.assign(other_user.id)
         task2.assign(other_user.id)
       end
@@ -40,9 +40,9 @@ RSpec.describe "/staff", type: :request do
     end
 
     context "when tasks are assigned to the current user" do
-      let(:review_activity_report_task) { create(:review_activity_report_task, case: certification_case, status: :pending) }
-      let(:review_exemption_claim_task) { create(:review_exemption_claim_task, case: certification_case, status: :pending) }
-      let(:other_task) { create(:review_exemption_claim_task, case: certification_case, status: :pending) }
+      let(:review_activity_report_task) { create(:review_activity_report_task_with_form, case: certification_case, status: :pending) }
+      let(:review_exemption_claim_task) { create(:review_exemption_claim_task_with_form, case: certification_case, status: :pending) }
+      let(:other_task) { create(:review_exemption_claim_task_with_form, case: certification_case, status: :pending) }
 
       before do
         review_activity_report_task.assign(user.id)
@@ -81,7 +81,7 @@ RSpec.describe "/staff", type: :request do
     context "when only completed tasks are assigned to the current user" do
       before do
         # Create completed tasks for current user
-        completed_task = create(:review_activity_report_task, case: certification_case, status: :completed)
+        completed_task = create(:review_activity_report_task_with_form, case: certification_case, status: :completed)
         completed_task.assign(user.id)
       end
 

@@ -5,7 +5,6 @@ require "rails_helper"
 RSpec.describe MemberDashboardComplianceService do
   before do
     allow(Strata::EventManager).to receive(:publish).and_call_original
-    allow(HoursComplianceDeterminationService).to receive(:determine)
     allow(ExemptionDeterminationService).to receive(:determine)
     allow(NotificationService).to receive(:send_email_notification)
   end
