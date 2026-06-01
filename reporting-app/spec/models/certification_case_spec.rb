@@ -388,4 +388,71 @@ RSpec.describe CertificationCase, type: :model do
       expect(described_class.open_certification_id_for_member(member_id)).to eq(newer.id)
     end
   end
+
+  describe "verification window" do
+    describe "VERIFICATION_WINDOW_DURATION_DAYS" do
+      it "has a value" do
+        expect(CertificationCase::VERIFICATION_WINDOW_DURATION_DAYS).to be_present
+      end
+    end
+
+    describe "verification_window_start_date" do
+      it "has a verification_window_start_date attribute" do
+        expect(certification_case).to respond_to(:verification_window_start_date)
+      end
+
+      it "is nil by default" do
+        expect(certification_case.verification_window_start_date).to be_nil
+      end
+
+      it "can be set to a date" do
+        certification_case.verification_window_start_date = Date.today
+        expect(certification_case.verification_window_start_date).to eq(Date.today)
+      end
+    end
+
+    describe "verification_window_end_date" do
+      it "has a verification_window_end_date attribute" do
+        expect(certification_case).to respond_to(:verification_window_end_date)
+      end
+
+      it "is nil by default" do
+        expect(certification_case.verification_window_end_date).to be_nil
+      end
+
+      it "can be set to a date" do
+        certification_case.verification_window_end_date = Date.today
+        expect(certification_case.verification_window_end_date).to eq(Date.today)
+      end
+    end
+  end
+
+  describe ".open_verification_window" do
+    it "sets the window at the expected duration" do
+      certification_case.open_verification_window
+      start_date = Date.today
+      duration = CertificationCase::VERIFICATION_WINDOW_DURATION_DAYS
+
+      expect(certification_case.verification_window_start_date).to eq start_date
+      expect(certification_case.verification_window_end_date).to eq start_date + duration
+    end
+
+    it "doesn't set the window if it's already set" do
+      # set the window a week ago
+      past_start_date = Date.today - 7
+      travel_to(past_start_date) do
+        certification_case.open_verification_window
+      end
+
+      # verify
+      expect(certification_case.verification_window_start_date).to eq past_start_date
+
+      # try to set it again now
+      start_date = Date.today
+      certification_case.open_verification_window
+
+      # verify
+      expect(certification_case.verification_window_start_date).not_to eq start_date
+    end
+  end
 end
