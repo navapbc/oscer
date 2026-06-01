@@ -64,12 +64,13 @@ class MemberDashboardCompliance
               :hours_summary,
               :exemption_flow_state
 
-  def initialize(certification:, certification_case:, exemption_application_form:,
+  def initialize(certification:, certification_case:, exemption_application_form:, activity_report_application_form:,
                  lookback:, report_status_token:, latest_determination:, show_income_summary:,
                  total_hours_reported:, target_hours:, hours_needed:,
                  certification_date:, due_date:, hours_summary:, exemption_flow_state:)
     @certification = certification
     @certification_case = certification_case
+    @activity_report_application_form = activity_report_application_form
     @exemption_application_form = exemption_application_form
     @lookback = lookback
     @report_status_token = report_status_token
@@ -146,11 +147,12 @@ class MemberDashboardCompliance
       .within_period(@lookback)
       .order(:period_start, :reported_at).to_a
     member_income_activity_rows = IncomeComplianceDeterminationService
-      .member_income_activities_for_certification(@certification, certification_case: @certification_case).to_a
+                                    .member_income_activities_for_certification(@certification,
+                                                                                application_form: @activity_report_application_form).to_a
 
     income_summary = IncomeComplianceDeterminationService.aggregate_income_for_certification(
       @certification,
-      certification_case: @certification_case,
+      application_form: @activity_report_application_form,
       external_income_activities: external_income_rows,
       member_income_activity_rows: member_income_activity_rows
     )
