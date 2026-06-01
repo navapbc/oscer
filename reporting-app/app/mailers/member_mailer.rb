@@ -105,7 +105,6 @@ class MemberMailer < ApplicationMailer
   def hours_reported_and_needed_for_mailer(hours_data, target_hours)
     raw_total = BigDecimal(hours_data[:total_hours].to_s)
     raw_needed = [ BigDecimal(target_hours.to_s) - raw_total, 0 ].max
-
     [
       raw_total.round(0, :half_up).to_i,
       raw_needed.round(0, :half_up).to_i
