@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_22_182945) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_01_163009) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -119,6 +119,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_22_182945) do
     t.jsonb "facts"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.date "verification_window_start_date", comment: "The start date for the time a member is given to resolve a negative determination on their CE certification"
+    t.date "verification_window_end_date", comment: "The end date for the time a member is given to resolve a negative determination on their CE certification"
     t.index ["certification_id"], name: "index_certification_cases_on_certification_id"
   end
 
