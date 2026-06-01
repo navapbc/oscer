@@ -6,7 +6,8 @@ class ExemptionApplicationForm < Strata::ApplicationForm
 
   enum :exemption_type, Exemption.enum_hash
   validates :exemption_type, inclusion: { in: Exemption.types + LEGACY_EXEMPTION_TYPES }, allow_nil: true
-  validates :certification_case_id, uniqueness: true
+  # At most one in-progress form per case; any number of submitted forms may accumulate over resubmissions.
+  validates :certification_case_id, uniqueness: { conditions: -> { in_progress } }
 
   has_many_attached :supporting_documents
 

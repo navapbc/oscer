@@ -12,7 +12,8 @@ class ActivityReportApplicationForm < Strata::ApplicationForm
   strata_attribute :number_of_months_to_certify, :integer
   strata_attribute :months_that_can_be_certified, :year_month, array: true
 
-  validates :certification_case_id, presence: true, uniqueness: true
+  # At most one in-progress form per case; any number of submitted forms may accumulate over resubmissions.
+  validates :certification_case_id, presence: true, uniqueness: { conditions: -> { in_progress } }
   validates :reporting_periods,
     length: {
       is: :number_of_months_to_certify,
