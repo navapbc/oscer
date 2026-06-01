@@ -6,12 +6,6 @@ class HoursComplianceDeterminationService
   class << self
     include ActivityAggregator
 
-    # Called by CertificationBusinessProcess after ActivityReportApproved event
-    # @param kase [CertificationCase]
-    def determine_after_activity_report(kase)
-      perform_determination(kase, not_compliant_event: "DeterminedHoursInsufficient")
-    end
-
     # Called by CalculateComplianceJob for async recalculation of existing certifications
     # Records determination without triggering workflow events/notifications.
     # When compliant, +record_hours_compliance+ closes the case (+CertificationCase#record_automated_ce_compliance+);
@@ -89,30 +83,6 @@ class HoursComplianceDeterminationService
     end
 
     private
-
-    # Shared logic for both initial and post-activity-report determination
-    # @param kase [CertificationCase]
-    # @param not_compliant_event [String] event name to publish when not compliant
-    def perform_determination(kase, not_compliant_event:)
-      certification = Certification.find(kase.certification_id)
-      hours_data = aggregate_hours_for_certification(certification)
-      outcome = determine_outcome(hours_data[:total_hours])
-
-      kase.record_hours_compliance(outcome, hours_data)
-
-      if outcome == :compliant
-        Strata::EventManager.publish("DeterminedHoursMet", {
-          case_id: kase.id,
-          certification_id: certification.id
-        })
-      else
-        Strata::EventManager.publish(not_compliant_event, {
-          case_id: kase.id,
-          certification_id: certification.id,
-          hours_data: hours_data
-        })
-      end
-    end
 
     def determine_outcome(total_hours)
       compliant_for_total_hours?(total_hours) ? :compliant : :not_compliant

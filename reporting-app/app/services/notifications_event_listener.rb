@@ -139,18 +139,6 @@ class NotificationsEventListener
       Certification.find(certification_id)
     end
 
-    # When recomputing aggregates for a notification, prefer the case from the event payload so member
-    # income matches the case under workflow (same as CommunityEngagementCheckService / staff show).
-    def certification_case_for_notification(certification, payload)
-      case_id = payload[:case_id]
-      return nil if case_id.blank?
-
-      kase = CertificationCase.find_by(id: case_id)
-      return nil if kase&.certification_id != certification.id
-
-      kase
-    end
-
     def send_notification(certification, email_method)
       NotificationService.send_email_notification(
         MemberMailer,
