@@ -47,7 +47,7 @@ class IncomeComplianceDeterminationService
     # @param certification [Certification]
     # @param application_form [ActivityReportApplicationForm, nil]
     # @param external_income_activities [ActiveRecord::Relation<ExternalIncomeActivity>, Array<ExternalIncomeActivity>, nil] When set, skips fetching external rows again (e.g. staff +#show+ already loaded them).
-    # @param member_income_activity_rows [Array<IncomeActivity>, nil] When set, skips +member_income_activities_for_certification+ for totals/ids (rows must match +certification_case:+ when passed).
+    # @param member_income_activity_rows [Array<IncomeActivity>, nil] When set, skips +member_income_activities_for_certification+ for totals/ids (rows must match +application_form:+ when passed).
     # @return [Hash]
     def aggregate_income_for_certification(
       certification,

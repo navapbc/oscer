@@ -209,12 +209,10 @@ RSpec.describe HoursComplianceDeterminationService do
     let(:month_a) { Date.new(2024, 1, 1) }
     let(:month_b) { Date.new(2024, 2, 1) }
 
-    it "returns no rows when the case has no activity report" do
-      other_case = create(:certification_case, certification_id: certification.id)
-
+    it "returns no rows when no application_form is given" do
       rel = described_class.member_hour_activities_for_certification(
         certification,
-        application_form: form
+        application_form: nil
       )
 
       expect(rel).to be_none
@@ -246,32 +244,69 @@ RSpec.describe HoursComplianceDeterminationService do
       expect(rel.to_a).to eq([ second, first ])
     end
 
-    it "scopes to the given certification case when multiple cases share a certification" do
+    it "scopes rows to the given application_form, not other forms in the certification" do
       other_case = create(:certification_case, certification_id: certification.id)
+      other_form = create(:activity_report_application_form, certification_case_id: other_case.id)
       create(:work_activity, activity_report_application_form_id: form.id, month: month_a, hours: 5)
+      create(:work_activity, activity_report_application_form_id: other_form.id, month: month_a, hours: 99)
 
-      empty = described_class.member_hour_activities_for_certification(
-        certification,
-        application_form: nil
-      )
-      from_form_case = described_class.member_hour_activities_for_certification(
-        certification,
-        application_form: form
-      )
+      rel = described_class.member_hour_activities_for_certification(certification, application_form: form)
 
-      expect(empty).to be_none
-      expect(from_form_case.count).to eq(1)
+      expect(rel.count).to eq(1)
+      expect(rel.first.hours).to eq(5)
+    end
+  end
+
+  describe ".aggregate_hours_for_certification" do
+    before { allow(Strata::EventManager).to receive(:publish) }
+
+    let(:certification) { create(:certification) }
+    let(:certification_case) { create(:certification_case, certification_id: certification.id) }
+    let(:form) { create(:activity_report_application_form, certification_case_id: certification_case.id) }
+    let(:reportable_month) { certification.certification_requirements.continuous_lookback_period.start.to_date }
+
+    it "includes member WorkActivity hours in totals alongside external hours" do
+      create_external_hourly_activity_for(certification, category: "employment", hours: 40)
+      create(:work_activity, activity_report_application_form_id: form.id, month: reportable_month, category: "education", hours: 12)
+
+      summary = described_class.aggregate_hours_for_certification(certification, application_form: form)
+
+      expect(summary[:hours_by_source][:external]).to eq(40.0)
+      expect(summary[:hours_by_source][:activity]).to eq(12.0)
+      expect(summary[:total_hours]).to eq(52.0)
+      expect(summary[:hours_by_category]["employment"]).to eq(40.0)
+      expect(summary[:hours_by_category]["education"]).to eq(12.0)
+      expect(summary[:activity_ids].length).to eq(1)
     end
 
-    context "when certification_case is omitted" do
-      it "resolves the case via the shared deterministic helper" do
-        create(:work_activity, activity_report_application_form_id: form.id, month: month_a, hours: 7)
+    it "yields zero member hours when no application_form is given" do
+      create_external_hourly_activity_for(certification, hours: 40)
+      create(:work_activity, activity_report_application_form_id: form.id, month: reportable_month, hours: 12)
 
-        rel = described_class.member_hour_activities_for_certification(certification, application_form: form)
+      summary = described_class.aggregate_hours_for_certification(certification, application_form: nil)
 
-        expect(rel.count).to eq(1)
-        expect(rel.first.hours).to eq(7)
-      end
+      expect(summary[:hours_by_source][:activity]).to eq(0.0)
+      expect(summary[:hours_by_source][:external]).to eq(40.0)
+      expect(summary[:total_hours]).to eq(40.0)
+      expect(summary[:activity_ids]).to be_empty
+    end
+
+    it "uses preloaded member_hour_activity_rows without re-querying member_hour_activities_for_certification" do
+      create_external_hourly_activity_for(certification, hours: 40)
+      create(:work_activity, activity_report_application_form_id: form.id, month: reportable_month, hours: 7)
+      create(:work_activity, activity_report_application_form_id: form.id, month: reportable_month, hours: 5)
+      rows = described_class.member_hour_activities_for_certification(certification, application_form: form).to_a
+      allow(described_class).to receive(:member_hour_activities_for_certification)
+
+      summary = described_class.aggregate_hours_for_certification(
+        certification,
+        application_form: form,
+        member_hour_activity_rows: rows
+      )
+
+      expect(described_class).not_to have_received(:member_hour_activities_for_certification)
+      expect(summary[:hours_by_source][:activity]).to eq(rows.sum { |r| r.hours.to_f })
+      expect(summary[:activity_ids]).to match_array(rows.map(&:id))
     end
   end
 

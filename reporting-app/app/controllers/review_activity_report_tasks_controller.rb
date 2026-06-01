@@ -5,7 +5,7 @@ class ReviewActivityReportTasksController < TasksController
     kase = @task.case
 
     if approving?
-      kase.accept_activity_report(current_user)
+      kase.accept_activity_report(current_user, @task.application_form)
       notice = t("tasks.details.approved_message")
     elsif denying?
       kase.deny_activity_report(current_user, @task.application_form)

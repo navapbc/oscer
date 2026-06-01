@@ -19,6 +19,8 @@ RSpec.describe CertificationCase, type: :model do
   end
 
   describe '#accept_activity_report' do
+    let(:application_form) { create(:activity_report_application_form) }
+
     before do
       allow(Strata::EventManager).to receive(:publish)
       allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
@@ -31,7 +33,7 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'sets approval status and closes case' do
-      certification_case.accept_activity_report(user)
+      certification_case.accept_activity_report(user, application_form)
       certification_case.reload
 
       expect(certification_case.activity_report_approval_status).to eq("approved")
@@ -40,7 +42,7 @@ RSpec.describe CertificationCase, type: :model do
     end
 
     it 'records compliant determination' do
-      certification_case.accept_activity_report(user)
+      certification_case.accept_activity_report(user, application_form)
 
       determination = Determination.first
 
@@ -51,8 +53,15 @@ RSpec.describe CertificationCase, type: :model do
       expect(determination.determination_data["total_hours"]).to eq(85)
     end
 
+    it 'aggregates hours against the given application form' do
+      certification_case.accept_activity_report(user, application_form)
+
+      expect(HoursComplianceDeterminationService).to have_received(:aggregate_hours_for_certification)
+        .with(anything, application_form: application_form)
+    end
+
     it 'publishes ActivityReportApproved event' do
-      certification_case.accept_activity_report(user)
+      certification_case.accept_activity_report(user, application_form)
       expect(Strata::EventManager).to have_received(:publish).with(
         "ActivityReportApproved",
         { case_id: certification_case.id, certification_id: certification_case.certification_id }
@@ -62,7 +71,7 @@ RSpec.describe CertificationCase, type: :model do
     it 'logs decision to audit log' do
       certification = Certification.find(certification_case.certification_id)
       expect do
-        certification_case.accept_activity_report(user)
+        certification_case.accept_activity_report(user, application_form)
       end.to change { Strata::AuditLine.where(actor: user, subject: certification, action: "case.activity_report.approved").count }.by(1)
     end
   end
@@ -100,6 +109,13 @@ RSpec.describe CertificationCase, type: :model do
       expect(determination.outcome).to eq("not_compliant")
       expect(determination.determined_at).to be_present
       expect(determination.determination_data["total_hours"]).to eq(40)
+    end
+
+    it 'aggregates hours against the given application form' do
+      certification_case.deny_activity_report(user, application_form)
+
+      expect(HoursComplianceDeterminationService).to have_received(:aggregate_hours_for_certification)
+        .with(anything, application_form: application_form)
     end
 
     it 'publishes ActivityReportDenied event' do

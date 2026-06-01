@@ -39,7 +39,7 @@ class HoursComplianceDeterminationService
     # @param external_hourly_activities [ActiveRecord::Relation<ExternalHourlyActivity>, Array<ExternalHourlyActivity>, nil]
     #   When set, skips fetching external rows again (e.g. staff +#show+ already loaded them).
     # @param member_hour_activity_rows [Array<Activity>, nil] When set, skips
-    #   +member_hour_activities_for_certification+ for totals/ids (rows must match +certification_case:+ when passed).
+    #   +member_hour_activities_for_certification+ for totals/ids (rows must match +application_form:+ when passed).
     # @return [Hash] with total_hours, hours_by_category, hours_by_source, etc.
     def aggregate_hours_for_certification(
       certification,

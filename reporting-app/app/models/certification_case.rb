@@ -47,9 +47,9 @@ class CertificationCase < Strata::Case
       .pick(:certification_id)
   end
 
-  def accept_activity_report(user)
+  def accept_activity_report(user, application_form)
     certification = Certification.find(certification_id)
-    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
+    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, application_form:)
 
     transaction do
       self.activity_report_approval_status = "approved"
@@ -71,7 +71,7 @@ class CertificationCase < Strata::Case
 
   def deny_activity_report(user, application_form)
     certification = Certification.find(certification_id)
-    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
+    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, application_form:)
 
     transaction do
       self.activity_report_approval_status = "denied"
