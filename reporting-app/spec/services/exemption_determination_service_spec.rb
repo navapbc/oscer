@@ -14,7 +14,16 @@ RSpec.describe ExemptionDeterminationService do
   end
 
   describe '#determine' do
-    let(:certification) { create(:certification, member_data: member_data) }
+    let(:certification) do
+      create(
+        :certification,
+        member_data: member_data,
+        # Pin the evaluation date to the same anchor as the DOBs (cert_date). The
+        # factory default is a random future date, which flips age-boundary cases
+        # (under-19, 64) by calendar day — a non-deterministic flake.
+        certification_requirements: build(:certification_certification_requirements, certification_date: cert_date)
+      )
+    end
     let(:kase) { create(:certification_case, certification_id: certification.id) }
 
     before do
