@@ -8,8 +8,9 @@
 # Loader: app/services/exemption_types_loader.rb deep-merges this file
 # over the federal-floor defaults declared in
 # ExemptionTypesLoader::DEFAULTS. Keys present here win; keys absent
-# here inherit from the defaults. See docs/fork-and-customize-spec.md
-# Layer 1 for the design.
+# here inherit from the defaults. See
+# https://github.com/navapbc/oscer/blob/main/docs/architecture/open-source-strategy/customize-and-extend.md
+# (Layer 1) for the design.
 #
 # ## Shape
 #
