@@ -39,6 +39,14 @@ RSpec.describe "/dashboard", type: :request do
       expect(response.body).to include(activity_report_application_form_path(form))
     end
 
+    it "sets the most recent activity report application form if only submitted exist" do
+      older_submitted_form = create(:activity_report_application_form, :with_submitted_status, user_id: user.id, certification_case_id: certification_case.id, created_at: 1.day.ago)
+      younger_submitted_form = create(:activity_report_application_form, :with_submitted_status, user_id: user.id, certification_case_id: certification_case.id)
+      get "/dashboard"
+      expect(response.body).not_to include(activity_report_application_form_path(older_submitted_form))
+      expect(response.body).to include(activity_report_application_form_path(younger_submitted_form))
+    end
+
     it "sets the exemption application form" do
       form = create(:exemption_application_form, user_id: user.id, certification_case_id: certification_case.id)
       get "/dashboard"
@@ -51,6 +59,14 @@ RSpec.describe "/dashboard", type: :request do
       get "/dashboard"
       expect(response.body).not_to include(exemption_application_form_path(submitted_form))
       expect(response.body).to include(exemption_application_form_path(form))
+    end
+
+    it "sets the most recent exemption application form if only submitted exist" do
+      older_submitted_form = create(:exemption_application_form, :with_submitted_status, user_id: user.id, certification_case_id: certification_case.id, created_at: 1.day.ago)
+      younger_submitted_form = create(:exemption_application_form, :with_submitted_status, user_id: user.id, certification_case_id: certification_case.id)
+      get "/dashboard"
+      expect(response.body).not_to include(exemption_application_form_path(older_submitted_form))
+      expect(response.body).to include(exemption_application_form_path(younger_submitted_form))
     end
   end
 end
