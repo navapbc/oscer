@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_01_163009) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_01_172517) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -65,7 +65,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_01_163009) do
     t.datetime "submitted_at"
     t.uuid "certification_case_id"
     t.jsonb "reporting_periods"
-    t.index ["certification_case_id"], name: "idx_on_certification_case_id_df9964575c", unique: true
+    t.index ["certification_case_id"], name: "idx_on_certification_case_id_df9964575c"
   end
 
   create_table "certification_batch_upload_audit_logs", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -153,7 +153,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_01_163009) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.uuid "certification_case_id"
-    t.index ["certification_case_id"], name: "index_exemption_application_forms_on_certification_case_id", unique: true
+    t.index ["certification_case_id"], name: "index_exemption_application_forms_on_certification_case_id"
   end
 
   create_table "external_hourly_activities", id: :uuid, default: -> { "gen_random_uuid()" }, comment: "Hours data from external sources (API/batch) for compliance calculation", force: :cascade do |t|
