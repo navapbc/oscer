@@ -50,6 +50,7 @@ class DashboardController < ApplicationController
     @member_dashboard_compliance = MemberDashboardComplianceService.build(
       certification: @certification,
       certification_case: @certification_case,
+      activity_report_application_form: @activity_report_application_form,
       exemption_application_form: @exemption_application_form,
       member_status: @member_status
     )

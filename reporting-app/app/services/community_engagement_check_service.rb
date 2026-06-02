@@ -11,12 +11,10 @@ class CommunityEngagementCheckService
     def determine(kase)
       certification = Certification.find(kase.certification_id)
       hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(
-        certification,
-        certification_case: kase
+        certification
       )
       income_data = IncomeComplianceDeterminationService.aggregate_income_for_certification(
-        certification,
-        certification_case: kase
+        certification
       )
 
       hours_ok = hours_compliant?(hours_data)

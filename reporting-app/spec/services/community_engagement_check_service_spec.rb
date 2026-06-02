@@ -47,7 +47,7 @@ RSpec.describe CommunityEngagementCheckService do
         described_class.determine(certification_case)
 
         expect(IncomeComplianceDeterminationService).to have_received(:aggregate_income_for_certification)
-          .with(certification, certification_case: certification_case)
+          .with(certification)
       end
 
       it "records combined determination with hours satisfied and income assessed" do

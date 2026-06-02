@@ -126,7 +126,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
              period_start: lookback.start.to_date,
              period_end: lookback.start.to_date.end_of_month)
 
-      certification_case.accept_activity_report(user)
+      certification_case.accept_activity_report(user, activity_report)
       certification_case.reload
 
       expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
@@ -144,7 +144,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         certification_case.reload
 
         # Staff denies activity report
-        certification_case.deny_activity_report(user)
+        certification_case.deny_activity_report(user, activity_report)
         certification_case.reload
       end
 
@@ -239,7 +239,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
 
       # Approve activity report - reviewer determines compliance
       expect {
-        certification_case.accept_activity_report(user)
+        certification_case.accept_activity_report(user, activity_report)
       }.to have_published_event("ActivityReportApproved")
     end
 

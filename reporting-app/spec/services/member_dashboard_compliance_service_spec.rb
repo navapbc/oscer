@@ -23,6 +23,7 @@ RSpec.describe MemberDashboardComplianceService do
       described_class.build(
         certification: certification,
         certification_case: certification_case,
+        activity_report_application_form: activity_report_application_form,
         exemption_application_form: exemption_application_form,
         member_status: member_status
       )
@@ -31,6 +32,7 @@ RSpec.describe MemberDashboardComplianceService do
     let(:certification) { create(:certification) }
     let(:certification_case) { create(:certification_case, certification_id: certification.id) }
     let(:exemption_application_form) { nil }
+    let(:activity_report_application_form) { nil }
     let(:member_status) { MemberStatusService.determine(certification) }
 
 
@@ -298,13 +300,28 @@ RSpec.describe MemberDashboardComplianceService do
     end
 
     context "when hours aggregation runs against the open case" do
+      let(:activity_report_application_form) { create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
+
       before do
-        form = create(:activity_report_application_form, certification_case_id: certification_case.id)
-        create(:hourly_activity, activity_report_application_form_id: form.id, hours: 30.0)
+        create(:hourly_activity, activity_report_application_form_id: activity_report_application_form.id, hours: 30.0)
+        activity_report_application_form.reload
       end
 
       it "includes member-reported hours in the summary (aligned with staff case lookups)" do
         expect(read_model.total_hours_reported).to eq(30)
+      end
+    end
+
+    context "when income aggregation runs against the open case" do
+      let(:activity_report_application_form) { create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
+
+      before do
+        create(:income_activity, activity_report_application_form_id: activity_report_application_form.id, income: 30_00)
+        activity_report_application_form.reload
+      end
+
+      it "includes member-reported hours in the summary (aligned with staff case lookups)" do
+        expect(read_model.total_income).to eq(30)
       end
     end
   end

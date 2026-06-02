@@ -47,9 +47,9 @@ class CertificationCase < Strata::Case
       .pick(:certification_id)
   end
 
-  def accept_activity_report(user)
+  def accept_activity_report(user, application_form)
     certification = Certification.find(certification_id)
-    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, certification_case: self)
+    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, application_form:)
 
     transaction do
       self.activity_report_approval_status = "approved"
@@ -69,9 +69,9 @@ class CertificationCase < Strata::Case
     Strata::EventManager.publish("ActivityReportApproved", { case_id: id, certification_id: certification_id })
   end
 
-  def deny_activity_report(user)
+  def deny_activity_report(user, application_form)
     certification = Certification.find(certification_id)
-    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, certification_case: self)
+    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, application_form:)
 
     transaction do
       self.activity_report_approval_status = "denied"
@@ -88,7 +88,7 @@ class CertificationCase < Strata::Case
       )
     end
 
-    Strata::EventManager.publish("ActivityReportDenied", { case_id: id, certification_id: certification_id })
+    Strata::EventManager.publish("ActivityReportDenied", { case_id: id, certification_id: certification_id, application_form_id: application_form.id })
   end
 
   def accept_exemption_request(user)

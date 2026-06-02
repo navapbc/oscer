@@ -46,9 +46,9 @@ class NotificationsEventListener
 
     def handle_insufficient_hours(event)
       certification = fetch_certification(event)
-      hours_data = event[:payload][:hours_data] || HoursComplianceDeterminationService.aggregate_hours_for_certification(
+      hours_data = event.dig(:payload, :hours_data) || HoursComplianceDeterminationService.aggregate_hours_for_certification(
         certification,
-        certification_case: certification_case_for_notification(certification, event[:payload])
+        application_form: ActivityReportApplicationForm.where(id: event.dig(:payload, :application_form_id)).first
       )
 
       NotificationService.send_email_notification(
@@ -70,8 +70,7 @@ class NotificationsEventListener
       hours_data = payload[:hours_data]
       if hours_data.nil? && payload[:show_hours_insufficient] == true
         hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(
-          certification,
-          certification_case: certification_case_for_notification(certification, payload)
+          certification
         )
       end
 
@@ -81,8 +80,7 @@ class NotificationsEventListener
           payload[:income_data]
         else
           IncomeComplianceDeterminationService.aggregate_income_for_certification(
-            certification,
-            certification_case: certification_case_for_notification(certification, payload)
+            certification
           )
         end
 
@@ -139,18 +137,6 @@ class NotificationsEventListener
     def fetch_certification(event)
       certification_id = event[:payload][:certification_id]
       Certification.find(certification_id)
-    end
-
-    # When recomputing aggregates for a notification, prefer the case from the event payload so member
-    # income matches the case under workflow (same as CommunityEngagementCheckService / staff show).
-    def certification_case_for_notification(certification, payload)
-      case_id = payload[:case_id]
-      return nil if case_id.blank?
-
-      kase = CertificationCase.find_by(id: case_id)
-      return nil if kase&.certification_id != certification.id
-
-      kase
     end
 
     def send_notification(certification, email_method)

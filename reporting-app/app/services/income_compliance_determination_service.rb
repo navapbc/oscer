@@ -33,7 +33,9 @@ class IncomeComplianceDeterminationService
       kase = certification_case_for_certification(certification)
       raise ActiveRecord::RecordNotFound, "Couldn't find CertificationCase for Certification #{certification_id}" unless kase
 
-      income_data = aggregate_income_for_certification(certification, certification_case: kase)
+      application_form = ActivityReportApplicationForm.find_by(certification_case_id: kase.id)
+
+      income_data = aggregate_income_for_certification(certification, application_form:)
       outcome = determine_outcome(income_data[:total_income])
 
       kase.record_income_compliance(outcome, income_data)
@@ -43,13 +45,13 @@ class IncomeComplianceDeterminationService
     # ExternalIncomeActivity.for_member(...).within_period(lookback) as used for external
     # hours parity.
     # @param certification [Certification]
-    # @param certification_case [CertificationCase, nil] When nil, resolves the case that owns the activity report (if any) so member income is not read from the wrong row when multiple cases share a certification_id (e.g. test factories).
+    # @param application_form [ActivityReportApplicationForm, nil]
     # @param external_income_activities [ActiveRecord::Relation<ExternalIncomeActivity>, Array<ExternalIncomeActivity>, nil] When set, skips fetching external rows again (e.g. staff +#show+ already loaded them).
-    # @param member_income_activity_rows [Array<IncomeActivity>, nil] When set, skips +member_income_activities_for_certification+ for totals/ids (rows must match +certification_case:+ when passed).
+    # @param member_income_activity_rows [Array<IncomeActivity>, nil] When set, skips +member_income_activities_for_certification+ for totals/ids (rows must match +application_form:+ when passed).
     # @return [Hash]
     def aggregate_income_for_certification(
       certification,
-      certification_case: nil,
+      application_form: nil,
       external_income_activities: nil,
       member_income_activity_rows: nil
     )
@@ -63,8 +65,7 @@ class IncomeComplianceDeterminationService
       external_income = summarize_income(external_sources)
 
       member_income = if member_income_activity_rows.nil?
-        resolved_case = certification_case_for_certification(certification, certification_case)
-        member_income_from_activities(certification, certification_case: resolved_case)
+        member_income_from_activities(certification, application_form:)
       else
         member_income_totals_from_rows(member_income_activity_rows)
       end
@@ -89,14 +90,10 @@ class IncomeComplianceDeterminationService
     # association, so +includes(:income)+ does not apply and does not address N+1 for dollar amounts.
     #
     # @param certification [Certification]
-    # @param certification_case [CertificationCase, nil] See {.aggregate_income_for_certification}
+    # @param application_form [ActivityReportApplicationForm, nil]
     # @return [ActiveRecord::Relation<Activity>]
-    def member_income_activities_for_certification(certification, certification_case: nil)
-      kase = certification_case_for_certification(certification, certification_case)
-      return Activity.none unless kase
-
-      form = ActivityReportApplicationForm.find_by(certification_case_id: kase.id)
-      return Activity.none unless form
+    def member_income_activities_for_certification(certification, application_form:)
+      return Activity.none unless application_form
 
       lookback = certification.certification_requirements.continuous_lookback_period
       return Activity.none unless lookback&.start.present? && lookback.end.present?
@@ -105,7 +102,7 @@ class IncomeComplianceDeterminationService
       start_date = lookback.start.to_date
       end_date = lookback.end.to_date.end_of_month
 
-      form.activities.where(type: IncomeActivity.name).where(month: start_date..end_date).order(:month, :created_at)
+      application_form.activities.where(type: IncomeActivity.name).where(month: start_date..end_date).order(:month, :created_at)
     end
 
     private
@@ -115,10 +112,10 @@ class IncomeComplianceDeterminationService
     end
 
     # @param certification [Certification]
-    # @param certification_case [CertificationCase, nil]
+    # @param application_form [ActivityReportApplicationForm, nil]
     # @return [Hash] :total (+BigDecimal+), :ids (+Array+ of activity UUIDs)
-    def member_income_from_activities(certification, certification_case:)
-      rows = member_income_activities_for_certification(certification, certification_case: certification_case).to_a
+    def member_income_from_activities(certification, application_form:)
+      rows = member_income_activities_for_certification(certification, application_form:).to_a
       member_income_totals_from_rows(rows)
     end
 

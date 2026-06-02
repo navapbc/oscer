@@ -130,7 +130,8 @@ RSpec.describe "/staff/tasks", type: :request do
 
             expect(response.body).to include('data-document-preview-target="prefillForm"')
             expect(response.body).to include("data-activity-id=\"#{activity.id}\"")
-            expect(response.body).to include(activity.name)
+            # Escape: Faker names can contain HTML-special chars (e.g. "O'Kon" -> &#39;).
+            expect(response.body).to include(CGI.escapeHTML(activity.name))
             expect(response.body).to include('data-action="document-preview#close"')
           end
         end
@@ -211,7 +212,8 @@ RSpec.describe "/staff/tasks", type: :request do
           with_doc_ai_enabled do
             get "/staff/tasks/#{activity_report_task.id}"
 
-            expect(response.body).to include(activity.name)
+            # Escape: Faker names can contain HTML-special chars (e.g. "O'Kon" -> &#39;).
+            expect(response.body).to include(CGI.escapeHTML(activity.name))
             expect(response.body).not_to include('data-document-preview-target="previewArea"')
           end
         end

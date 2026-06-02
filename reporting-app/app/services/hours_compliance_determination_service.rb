@@ -6,12 +6,6 @@ class HoursComplianceDeterminationService
   class << self
     include ActivityAggregator
 
-    # Called by CertificationBusinessProcess after ActivityReportApproved event
-    # @param kase [CertificationCase]
-    def determine_after_activity_report(kase)
-      perform_determination(kase, not_compliant_event: "DeterminedHoursInsufficient")
-    end
-
     # Called by CalculateComplianceJob for async recalculation of existing certifications
     # Records determination without triggering workflow events/notifications.
     # When compliant, +record_hours_compliance+ closes the case (+CertificationCase#record_automated_ce_compliance+);
@@ -23,7 +17,9 @@ class HoursComplianceDeterminationService
       kase = certification_case_for_certification(certification)
       raise ActiveRecord::RecordNotFound, "Couldn't find CertificationCase for Certification #{certification_id}" unless kase
 
-      hours_data = aggregate_hours_for_certification(certification, certification_case: kase)
+      # TODO: the logic behind which forms are updated tbd
+      application_form = ActivityReportApplicationForm.where(certification_case_id: kase.id).first
+      hours_data = aggregate_hours_for_certification(certification, application_form:)
       outcome = determine_outcome(hours_data[:total_hours])
 
       kase.record_hours_compliance(outcome, hours_data)
@@ -33,17 +29,15 @@ class HoursComplianceDeterminationService
     # Called by business process notification steps to get hours data for emails.
     #
     # @param certification [Certification]
-    # @param certification_case [CertificationCase, nil] When nil, resolves via the deterministic tie-break in
-    #   +ActivityAggregator#certification_case_for_certification+ so member hours are not read from the wrong row
-    #   when multiple cases share a certification_id (e.g. test factories).
+    # @param application_form [ActivityReportApplicationForm, nil]
     # @param external_hourly_activities [ActiveRecord::Relation<ExternalHourlyActivity>, Array<ExternalHourlyActivity>, nil]
     #   When set, skips fetching external rows again (e.g. staff +#show+ already loaded them).
     # @param member_hour_activity_rows [Array<Activity>, nil] When set, skips
-    #   +member_hour_activities_for_certification+ for totals/ids (rows must match +certification_case:+ when passed).
+    #   +member_hour_activities_for_certification+ for totals/ids (rows must match +application_form:+ when passed).
     # @return [Hash] with total_hours, hours_by_category, hours_by_source, etc.
     def aggregate_hours_for_certification(
       certification,
-      certification_case: nil,
+      application_form: nil,
       external_hourly_activities: nil,
       member_hour_activity_rows: nil
     )
@@ -51,8 +45,7 @@ class HoursComplianceDeterminationService
       external_hours = summarize_hours(external_sources)
 
       member_hours = if member_hour_activity_rows.nil?
-        resolved_case = certification_case_for_certification(certification, certification_case)
-        member_hours_from_activities(certification, certification_case: resolved_case)
+        member_hours_from_activities(certification, application_form:)
       else
         summarize_hours(member_hour_activity_rows)
       end
@@ -74,17 +67,12 @@ class HoursComplianceDeterminationService
     # +IncomeComplianceDeterminationService.member_income_activities_for_certification+.
     #
     # @param certification [Certification]
-    # @param certification_case [CertificationCase, nil] When set, uses this case's activity report. When nil,
-    #   uses +ActivityAggregator#certification_case_for_certification+ (deterministic tie-break) to resolve.
+    # @param application_form [ActivityReportApplicationForm, nil]
     # @return [ActiveRecord::Relation<Activity>]
-    def member_hour_activities_for_certification(certification, certification_case: nil)
-      kase = certification_case_for_certification(certification, certification_case)
-      return Activity.none unless kase
+    def member_hour_activities_for_certification(certification, application_form:)
+      return Activity.none unless application_form
 
-      form = ActivityReportApplicationForm.find_by(certification_case_id: kase.id)
-      return Activity.none unless form
-
-      form.activities.where.not(hours: nil).order(:month, :created_at)
+      application_form.activities.where.not(hours: nil).order(:month, :created_at)
     end
 
     # Check if total hours meet the compliance threshold
@@ -96,30 +84,6 @@ class HoursComplianceDeterminationService
 
     private
 
-    # Shared logic for both initial and post-activity-report determination
-    # @param kase [CertificationCase]
-    # @param not_compliant_event [String] event name to publish when not compliant
-    def perform_determination(kase, not_compliant_event:)
-      certification = Certification.find(kase.certification_id)
-      hours_data = aggregate_hours_for_certification(certification)
-      outcome = determine_outcome(hours_data[:total_hours])
-
-      kase.record_hours_compliance(outcome, hours_data)
-
-      if outcome == :compliant
-        Strata::EventManager.publish("DeterminedHoursMet", {
-          case_id: kase.id,
-          certification_id: certification.id
-        })
-      else
-        Strata::EventManager.publish(not_compliant_event, {
-          case_id: kase.id,
-          certification_id: certification.id,
-          hours_data: hours_data
-        })
-      end
-    end
-
     def determine_outcome(total_hours)
       compliant_for_total_hours?(total_hours) ? :compliant : :not_compliant
     end
@@ -130,11 +94,11 @@ class HoursComplianceDeterminationService
       end
     end
 
-    def member_hours_from_activities(certification, certification_case:)
+    def member_hours_from_activities(certification, application_form: nil)
       # +member_hour_activities_for_certification+ orders by month / created_at for the staff UI table.
       # +summarize_hours+ adds +GROUP BY :category+, which Postgres rejects unless those ORDER BY columns
       # are in the GROUP BY. Strip the ORDER BY before aggregating.
-      rel = member_hour_activities_for_certification(certification, certification_case: certification_case).reorder(nil)
+      rel = member_hour_activities_for_certification(certification, application_form:).reorder(nil)
       summarize_hours(rel)
     end
   end
