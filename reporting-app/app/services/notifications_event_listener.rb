@@ -9,11 +9,24 @@
 # - DeterminedCommunityEngagementActionRequired → action_required_email
 # - DeterminedHoursInsufficient → insufficient_hours_email
 # - DeterminedCommunityEngagementInsufficient → insufficient_community_engagement_email (hours and/or income sections).
-#   Payload carries optional +hours_data+ / +income_data+ aggregates; mailer +show_*+ flags are derived in
-#   +handle_insufficient_community_engagement+ unless +show_hours_insufficient+ / +show_income_insufficient+
-#   are set explicitly (e.g. hours-only mail with +income_data+ omitted or present but hidden).
 # - ActivityReportApproved → compliant_email (reviewer determined compliance)
 # - ActivityReportDenied → insufficient_hours_email (reviewer determined non-compliance)
+#
+# Payload may carry:
+# - case_id
+# - certification_id
+# - hours_data (aggregate)
+# - income_data (aggregate)
+# - show_hours_insufficient
+# - show_income_insufficient
+# - source
+#
+# The +source+ flag can be set to indicate the source of the event
+#
+# Mailer +show_* flags are derived in +handle_insufficient_community_engagement+ unless
+# +show_hours_insufficient+ / +show_income_insufficient+ are set explicitly (e.g. hours-only
+# mail with +income_data+ omitted or present but hidden)
+
 class NotificationsEventListener
   class << self
     def subscribe
@@ -46,17 +59,21 @@ class NotificationsEventListener
 
     def handle_insufficient_hours(event)
       certification = fetch_certification(event)
+      case_id = event.dig(:payload, :case_id)
       hours_data = event.dig(:payload, :hours_data) || HoursComplianceDeterminationService.aggregate_hours_for_certification(
         certification,
         application_form: ActivityReportApplicationForm.where(id: event.dig(:payload, :application_form_id)).first
       )
+      open_verification_window = event.dig(:payload, :source) == :activity_report_denied
 
       NotificationService.send_email_notification(
         MemberMailer,
         {
           certification: certification,
           hours_data: hours_data,
-          target_hours: HoursComplianceDeterminationService::TARGET_HOURS
+          target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
+          open_verification_window: open_verification_window,
+          case_id: case_id
         },
         :insufficient_hours_email,
         [ certification.member_email ]
@@ -131,7 +148,10 @@ class NotificationsEventListener
 
     def handle_activity_report_denied(event)
       # Reviewer denied = member is not compliant
-      handle_insufficient_hours(event)
+      event_with_source = event.merge(
+        payload: event[:payload].merge(source: :activity_report_denied)
+      )
+      handle_insufficient_hours(event_with_source)
     end
 
     def fetch_certification(event)

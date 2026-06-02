@@ -114,7 +114,9 @@ RSpec.describe NotificationsEventListener, type: :service do
           {
             certification: certification,
             hours_data: { total_hours: 40, hours_by_source: { external: 40, activity: 0 } },
-            target_hours: HoursComplianceDeterminationService::TARGET_HOURS
+            target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
+            open_verification_window: false,
+            case_id: certification_case.id
           },
           :insufficient_hours_email,
           [ certification.member_email ]
@@ -331,7 +333,9 @@ RSpec.describe NotificationsEventListener, type: :service do
           {
             certification: certification,
             hours_data: { total_hours: 30, hours_by_source: { external: 30, activity: 0 } },
-            target_hours: HoursComplianceDeterminationService::TARGET_HOURS
+            target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
+            open_verification_window: true,
+            case_id: certification_case.id
           },
           :insufficient_hours_email,
           [ certification.member_email ]
