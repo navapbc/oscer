@@ -28,11 +28,11 @@ class DashboardController < ApplicationController
   end
 
   def set_exemption_application_form
-    @exemption_application_form = ExemptionApplicationForm.find_by_certification_case_id(@certification_case&.id)
+    @exemption_application_form = ExemptionApplicationForm.where(certification_case_id: @certification_case&.id).order(:status, created_at: :desc).first
   end
 
   def set_activity_report_application_form
-    @activity_report_application_form = ActivityReportApplicationForm.find_by_certification_case_id(@certification_case&.id)
+    @activity_report_application_form = ActivityReportApplicationForm.where(certification_case_id: @certification_case&.id).order(:status, created_at: :desc).first
   end
 
   def set_information_requests

@@ -22,16 +22,32 @@ RSpec.describe ExemptionApplicationForm, type: :model do
   end
 
   describe "validations" do
-    describe "certification_case_id uniqueness" do
+    describe "certification_case_id" do
       let(:certification) { create(:certification) }
       let(:certification_case) { create(:certification_case, certification: certification) }
 
-      it "requires unique certification_case_id" do
+      before { allow(Strata::EventManager).to receive(:publish) }
+
+      it "allows only one in-progress form per case" do
         create(:exemption_application_form, certification_case_id: certification_case.id)
         second_form = build(:exemption_application_form, certification_case_id: certification_case.id)
 
         expect(second_form.save).to be(false)
         expect(second_form.errors[:certification_case_id]).to include("has already been taken")
+      end
+
+      it "allows a new in-progress form once the prior form is submitted" do
+        create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        second_form = build(:exemption_application_form, certification_case_id: certification_case.id)
+
+        expect(second_form.save).to be(true)
+      end
+
+      it "allows multiple submitted forms for the same case" do
+        create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        second_form = create(:exemption_application_form, certification_case_id: certification_case.id)
+
+        expect(second_form.submit_application).to be(true)
       end
 
       it "allows different certification_case_ids" do
