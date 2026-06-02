@@ -59,12 +59,12 @@ class NotificationsEventListener
 
     def handle_insufficient_hours(event)
       certification = fetch_certification(event)
-      case_id = event.dig(:payload, :case_id)
       hours_data = event.dig(:payload, :hours_data) || HoursComplianceDeterminationService.aggregate_hours_for_certification(
         certification,
         application_form: ActivityReportApplicationForm.where(id: event.dig(:payload, :application_form_id)).first
       )
       open_verification_window = event.dig(:payload, :source) == :activity_report_denied
+      case_id = event.dig(:payload, :case_id)
 
       NotificationService.send_email_notification(
         MemberMailer,
