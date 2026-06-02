@@ -120,11 +120,9 @@ class MemberMailer < ApplicationMailer
   #    @open_verification_window is true)
   # 2) We have a valid @case_id
   def maybe_set_verification_window
-    return unless @open_verification_window == true
+    return unless @open_verification_window
 
     certification_case = CertificationCase.find_by(id: @case_id)
-    return if certification_case.blank?
-
-    certification_case.open_verification_window
+    certification_case&.open_verification_window
   end
 end
