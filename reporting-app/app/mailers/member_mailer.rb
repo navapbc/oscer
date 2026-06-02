@@ -38,7 +38,7 @@ class MemberMailer < ApplicationMailer
     hours_data = params[:hours_data]
     target_hours = params[:target_hours] || HoursComplianceDeterminationService::TARGET_HOURS
     @case_id = params[:case_id]
-    @open_verification_window = params[:open_verification_window].presence
+    @open_verification_window = params[:open_verification_window]
 
     @first_name = certification.member_name.first
     @hours_reported, @hours_needed = hours_reported_and_needed_for_mailer(hours_data, target_hours)
