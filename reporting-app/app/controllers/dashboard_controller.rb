@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class DashboardController < ApplicationController
+  layout "dashboard"
+
   before_action :authenticate_user!
   before_action :set_certifications
   before_action :set_certification_case, if: -> { @certification.present? }
@@ -60,5 +62,13 @@ class DashboardController < ApplicationController
     @hours_needed = @member_dashboard_compliance.hours_needed
     @current_period = @member_dashboard_compliance.certification_date
     @period_end_date = @member_dashboard_compliance.due_date
+
+    return if @activity_report_application_form.blank?
+
+    @activity_report_continue_path = if Features.doc_ai_enabled? && !session[:doc_ai_skip]
+      doc_ai_upload_activity_report_application_form_path(@activity_report_application_form)
+    else
+      activity_report_application_form_path(@activity_report_application_form)
+    end
   end
 end

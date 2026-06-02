@@ -1,6 +1,19 @@
-<div class="grid-container">
-  <%= render AlertComponent.new(type: AlertComponent::TYPES::ERROR, heading: t(".heading"), message: t(".intro"), heading_level: 3) %>
-  <div class="margin-top-3">
-    <%= link_to t(".view_activity_report_button"), activity_report_application_form_path(activity_report), class: "usa-button" %>
-  </div>
-</div>
+<%# Denial heading/intro (including appeal language) matches pre-#480 denied partials; confirm with product if copy changes. %>
+<%= render "dashboard/member_compliance_dashboard",
+           compliance: compliance,
+           activity_report: activity_report,
+           activity_report_continue_path: local_assigns[:activity_report_continue_path],
+           exemption_application: exemption_application,
+           certification_case: certification_case,
+           current_period: current_period,
+           target_hours: target_hours,
+           period_end_date: period_end_date,
+           total_hours_reported: total_hours_reported,
+           hours_needed: hours_needed,
+           state_alert: {
+             type: AlertComponent::TYPES::ERROR,
+             heading: t(".heading"),
+             message: t(".intro")
+           },
+           supplementary_button_label: t(".view_activity_report_button"),
+           supplementary_button_path: activity_report_application_form_path(activity_report) %>

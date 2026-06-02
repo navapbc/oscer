@@ -1,0 +1,17 @@
+<%# OSCER-337 frame: Exempt / exemption approved (Figma 7203:4841) %>
+<% compliance = local_assigns.fetch(:compliance) %>
+
+<div class="member-dashboard-compliance__exemption-status">
+  <div class="member-dashboard-compliance__alert member-dashboard-compliance__alert--success"
+       role="alert"
+       aria-labelledby="member-compliance-exemption-approved-alert-heading">
+    <h3 id="member-compliance-exemption-approved-alert-heading" class="member-dashboard-compliance__alert-heading">
+      <%= t("dashboard.member_compliance.exemption_alerts.approved.title") %>
+    </h3>
+    <p class="member-dashboard-compliance__alert-text">
+      <%= t("dashboard.member_compliance.exemption_alerts.approved.body") %>
+    </p>
+  </div>
+
+  <%= render "dashboard/member_compliance_exemption_history", compliance: compliance %>
+</div>

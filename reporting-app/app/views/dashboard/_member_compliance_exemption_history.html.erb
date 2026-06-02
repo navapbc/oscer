@@ -1,0 +1,30 @@
+<% compliance = local_assigns.fetch(:compliance) %>
+<% history = compliance.exemption_history %>
+
+<% if history.present? %>
+  <h3 class="member-dashboard-compliance__history-heading"><%= t("dashboard.member_compliance.exemption_request_history_heading") %></h3>
+
+  <div class="member-dashboard-compliance__history">
+    <% history.each do |entry| %>
+      <div class="member-dashboard-compliance__history-entry">
+        <div class="member-dashboard-compliance__history-row">
+          <div class="member-dashboard-compliance__history-label text-bold"><%= t("dashboard.member_compliance.exemption_history.exemption_type") %></div>
+          <div class="member-dashboard-compliance__history-value"><%= entry.exemption_type_label %></div>
+        </div>
+        <div class="member-dashboard-compliance__history-row">
+          <div class="member-dashboard-compliance__history-label text-bold"><%= t("dashboard.member_compliance.exemption_history.date_submitted") %></div>
+          <div class="member-dashboard-compliance__history-value"><%= entry.occurred_at && I18n.l(entry.occurred_at.to_date, format: :long) %></div>
+        </div>
+        <div class="member-dashboard-compliance__history-row member-dashboard-compliance__history-row--status">
+          <div class="member-dashboard-compliance__history-label text-bold"><%= t("dashboard.member_compliance.exemption_history.status") %></div>
+          <div class="member-dashboard-compliance__history-value">
+            <% badge_variant = member_compliance_exemption_badge_variant(entry.status_token) %>
+            <span class="member-dashboard-compliance__badge member-dashboard-compliance__badge--<%= badge_variant %>">
+              <%= t("dashboard.member_compliance.exemption_badges.#{badge_variant.tr('-', '_')}") %>
+            </span>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>

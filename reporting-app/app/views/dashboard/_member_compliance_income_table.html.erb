@@ -1,0 +1,40 @@
+<% compliance = local_assigns.fetch(:compliance) %>
+<% rows = compliance.member_income_rows %>
+<% due_date = member_compliance_due_date(compliance) %>
+
+<h3 class="font-heading-md margin-bottom-2"><%= member_compliance_activity_report_title(compliance) %></h3>
+
+<table class="usa-table width-full member-dashboard-compliance__table certification-case-compliance-table">
+  <thead>
+    <tr>
+      <th scope="col"><%= t("dashboard.member_compliance.income_table.organization_name") %></th>
+      <th scope="col"><%= t("dashboard.member_compliance.income_table.source") %></th>
+      <th scope="col"><%= t("dashboard.member_compliance.income_table.activity_type") %></th>
+      <th scope="col"><%= t("dashboard.member_compliance.income_table.income_reported") %></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% rows.each do |row| %>
+      <tr>
+        <td><%= row.organization_name %></td>
+        <td><%= member_compliance_source_label(row.source_token) %></td>
+        <td><%= row.activity_type_label %></td>
+        <td><%= number_to_currency(row.amount, precision: 2) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="3"><%= t("dashboard.member_compliance.income_table.total_reported") %></td>
+      <td><%= number_to_currency(compliance.total_income, precision: 2) %></td>
+    </tr>
+    <tr>
+      <td colspan="3"><%= t("dashboard.member_compliance.income_table.required") %></td>
+      <td><%= number_to_currency(compliance.target_income, precision: 2) %></td>
+    </tr>
+    <tr>
+      <td colspan="3"><strong><%= t("dashboard.member_compliance.income_table.additional_income_needed") %></strong></td>
+      <td><%= number_to_currency(compliance.income_needed, precision: 2) %></td>
+    </tr>
+  </tfoot>
+</table>

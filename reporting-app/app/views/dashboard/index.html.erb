@@ -1,5 +1,5 @@
 <div class="grid-container">
-  <h1 class="margin-bottom-2"><%= t(".greeting", first_name: (@certification&.member_name&.first || current_user.full_name&.split&.first)&.capitalize) %></h1>
+  <h2 class="member-dashboard-greeting"><%= t(".greeting", first_name: (@certification&.member_name&.first || current_user.full_name&.split&.first)&.capitalize) %></h2>
 </div>
 <% if @information_request %>
   <div class="grid-container">
@@ -7,7 +7,9 @@
   </div>
 <% end %>
 <%= render determine_dashboard_view,
+           compliance: @member_dashboard_compliance,
            activity_report: @activity_report_application_form,
+           activity_report_continue_path: @activity_report_continue_path,
            exemption_application: @exemption_application_form,
            certification_case: @certification_case,
            certification: @certification,

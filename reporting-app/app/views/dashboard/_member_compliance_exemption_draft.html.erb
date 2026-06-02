@@ -1,0 +1,24 @@
+<%# OSCER-337 frame: Exemption draft in progress (Figma 7203:5214) %>
+<% compliance = local_assigns.fetch(:compliance) %>
+<% exemption_application = local_assigns.fetch(:exemption_application) %>
+
+<div class="member-dashboard-compliance__onboarding">
+  <div class="member-dashboard-compliance__alert member-dashboard-compliance__alert--info"
+       role="alert"
+       aria-labelledby="member-compliance-exemption-draft-alert-heading">
+    <h3 id="member-compliance-exemption-draft-alert-heading" class="member-dashboard-compliance__alert-heading">
+      <%= t("dashboard.member_compliance.exemption_alerts.draft.title") %>
+    </h3>
+    <p class="member-dashboard-compliance__alert-text">
+      <%= t("dashboard.member_compliance.exemption_alerts.draft.body") %>
+    </p>
+  </div>
+
+  <div class="member-dashboard-compliance__onboarding-cta">
+    <%= link_to t("dashboard.member_compliance.exemption_alerts.draft.button"),
+          exemption_application_form_path(exemption_application),
+          class: "usa-button" %>
+  </div>
+
+  <%= render "dashboard/member_compliance_about_reporting", compliance: compliance %>
+</div>

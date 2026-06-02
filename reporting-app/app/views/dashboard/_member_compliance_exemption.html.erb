@@ -1,0 +1,54 @@
+<%# Exemption alerts, history, and onboarding CTA (OSCER-337 / #480) %>
+<% compliance = local_assigns.fetch(:compliance) %>
+<% certification_case = local_assigns[:certification_case] %>
+<% exemption_application = local_assigns[:exemption_application] %>
+<% target_income_display = number_to_currency(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY, precision: 0) %>
+
+<% exemption_section_labelledby = if show_member_compliance_exemption_details_heading?(compliance)
+                                    "exemption-details-heading"
+                                  elsif member_compliance_get_started_screen?(compliance, activity_report: local_assigns[:activity_report])
+                                    "member-compliance-get-started-alert-heading"
+                                  elsif member_compliance_exemption_draft_screen?(compliance)
+                                    "member-compliance-exemption-draft-alert-heading"
+                                  elsif member_compliance_exemption_pending_review_screen?(compliance)
+                                    "member-compliance-exemption-pending-review-alert-heading"
+                                  end %>
+<section class="member-dashboard-compliance__exemption margin-bottom-4"
+         <%= tag.attributes("aria-labelledby": exemption_section_labelledby) if exemption_section_labelledby.present? %>>
+  <% if show_member_compliance_exemption_details_heading?(compliance) %>
+    <div class="display-flex flex-wrap flex-align-center margin-bottom-2 gap-2">
+      <h2 id="exemption-details-heading" class="font-heading-lg margin-0"><%= t("dashboard.member_compliance.exemption_details_heading") %></h2>
+      <% if show_member_compliance_retake_screener?(compliance) %>
+        <%= link_to t("dashboard.member_compliance.retake_screener_button"),
+              exemption_screener_path(certification_case_id: certification_case&.id),
+              class: "usa-button usa-button--outline" %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% alert_variant = member_compliance_exemption_alert_variant(compliance) %>
+  <% case compliance.exemption_flow_state %>
+  <% when MemberDashboardCompliance::EXEMPTION_NOT_STARTED %>
+    <% if member_compliance_get_started_screen?(compliance, activity_report: local_assigns[:activity_report]) %>
+      <%= render "dashboard/member_compliance_get_started",
+                 compliance: compliance,
+                 certification_case: certification_case %>
+    <% end %>
+
+  <% when MemberDashboardCompliance::EXEMPTION_DRAFT %>
+    <%= render "dashboard/member_compliance_exemption_draft",
+               compliance: compliance,
+               exemption_application: exemption_application %>
+
+  <% when MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW %>
+    <%= render "dashboard/member_compliance_exemption_pending_review", compliance: compliance %>
+
+  <% when MemberDashboardCompliance::EXEMPTION_APPROVED %>
+    <%= render "dashboard/member_compliance_exemption_approved", compliance: compliance %>
+
+  <% when MemberDashboardCompliance::EXEMPTION_DENIED %>
+    <% unless local_assigns[:suppress_exemption_denied_alert] %>
+      <%= render "dashboard/member_compliance_exemption_denied", compliance: compliance %>
+    <% end %>
+  <% end %>
+</section>

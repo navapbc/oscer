@@ -28,6 +28,7 @@
 #   when income is hidden. Lazy.
 # - +hours_summary+ — +Hash+ matching the +HoursComplianceDeterminationService+ shape.
 # - +member_income_rows+ — +Array<MemberIncomeRow>+ (empty when income is hidden). Lazy.
+#   Each row includes +organization_name+ (employer metadata or activity +name+; plain text for #480 UI).
 # - +exemption_flow_state+ — +String+, one of the +EXEMPTION_*+ constants.
 # - +exemption_history+ — +Array<ExemptionHistoryEntry>+ in reverse-chronological order. Lazy.
 class MemberDashboardCompliance
@@ -37,11 +38,22 @@ class MemberDashboardCompliance
   EXEMPTION_APPROVED = "approved"
   EXEMPTION_DENIED = "denied"
 
+  SOURCE_EXTERNAL_CE = "external_ce"
+  SOURCE_SELF_REPORTED = "self_reported"
+
   MemberIncomeRow = Struct.new(
-    :descriptor,
+    :organization_name,
     :source_token,
     :activity_type_label,
     :amount,
+    keyword_init: true
+  )
+
+  MemberHourRow = Struct.new(
+    :organization_name,
+    :source_token,
+    :activity_type_label,
+    :hours,
     keyword_init: true
   )
 
@@ -128,6 +140,19 @@ class MemberDashboardCompliance
     income_data[:member_income_rows]
   end
 
+  # Hours-path parallels to +income_percent_of_requirement+ / +member_income_rows+. The
+  # hours path is the inverse of the income path (+show_income_summary+ false), so these
+  # power the "Hours reported" progress card and the hours activity table.
+  def hours_percent_of_requirement
+    percent_toward_requirement(total_hours_reported.to_d, target_hours.to_d)
+  end
+
+  def member_hour_rows
+    return [] if show_income_summary
+
+    @member_hour_rows ||= build_member_hour_rows
+  end
+
   # Lazy: queries +Determination+ + builds form-derived row only on first read. Reverse-chronological.
   def exemption_history
     @exemption_history ||= build_exemption_history
@@ -172,6 +197,46 @@ class MemberDashboardCompliance
     }
   end
 
+  # Mirrors +build_member_income_rows+: external (state-provided) rows first, then member
+  # self-reported activity rows. +ExternalHourlyActivity+ has no employer metadata, so the
+  # organization name falls back to "<Category> Activity" (parallel to the staff hours table).
+  def build_member_hour_rows
+    external_rows = if @lookback.present?
+      ExternalHourlyActivity
+        .for_member(@certification.member_id)
+        .within_period(@lookback)
+        .order(:period_start, :created_at).to_a
+    else
+      []
+    end
+    member_hour_activity_rows = HoursComplianceDeterminationService
+                                  .member_hour_activities_for_certification(@certification,
+                                                                            application_form: @activity_report_application_form).to_a
+
+    rows = []
+
+    external_rows.each do |row|
+      cat = row.category.to_s.titleize
+      rows << MemberHourRow.new(
+        organization_name: "#{cat} #{I18n.t('certification_cases.common.activity_label')}",
+        source_token: SOURCE_EXTERNAL_CE,
+        activity_type_label: cat,
+        hours: row.hours
+      )
+    end
+
+    member_hour_activity_rows.each do |activity|
+      rows << MemberHourRow.new(
+        organization_name: activity.name,
+        source_token: SOURCE_SELF_REPORTED,
+        activity_type_label: activity.category.to_s.titleize,
+        hours: activity.read_attribute(:hours)
+      )
+    end
+
+    rows
+  end
+
   def percent_toward_requirement(total, target)
     return 0.0 if target.nil? || target <= 0
 
@@ -185,8 +250,8 @@ class MemberDashboardCompliance
     Array(external_rows).each do |row|
       cat = row.category.to_s.titleize
       rows << MemberIncomeRow.new(
-        descriptor: I18n.t("dashboard.member_compliance.external_income_descriptor", category: cat),
-        source_token: "external_ce",
+        organization_name: organization_name_for_external_income(row, cat),
+        source_token: SOURCE_EXTERNAL_CE,
         activity_type_label: cat,
         amount: BigDecimal(row.gross_income.to_s)
       )
@@ -197,8 +262,8 @@ class MemberDashboardCompliance
       amt = activity.income.nil? ? BigDecimal("0") : BigDecimal(activity.income.dollar_amount.to_s)
 
       rows << MemberIncomeRow.new(
-        descriptor: I18n.t("dashboard.member_compliance.self_reported_income_descriptor", category: cat),
-        source_token: "self_reported",
+        organization_name: activity.name,
+        source_token: SOURCE_SELF_REPORTED,
         activity_type_label: cat,
         amount: amt
       )
@@ -235,7 +300,7 @@ class MemberDashboardCompliance
     # +determined_at+ when the two writes don't line up to the second.
     if @exemption_application_form.present? && @certification_case&.exemption_request_approval_status != "approved"
       hist_status = exemption_form_history_status(@certification_case, @exemption_application_form)
-      if @exemption_application_form.exemption_type.present? && hist_status
+      if @exemption_application_form.exemption_type.present? && hist_status && hist_status != EXEMPTION_DRAFT
         entries << ExemptionHistoryEntry.new(
           exemption_type_key: @exemption_application_form.exemption_type.to_s,
           exemption_type_label: exemption_type_label(@exemption_application_form.exemption_type),
@@ -263,8 +328,7 @@ class MemberDashboardCompliance
   def exemption_type_label(key)
     return I18n.t("dashboard.member_compliance.exemption_type_unknown") if key.blank?
 
-    # +exemption_types.<key>+ stores a nested hash (+title+, +description+, ...); reach the leaf.
-    I18n.t("exemption_types.#{key}.title", default: key.to_s.humanize)
+    Exemption.title_for(key) || I18n.t("dashboard.member_compliance.exemption_type_unknown")
   end
 
   def exemption_history_type_for_determination(det)
@@ -288,5 +352,11 @@ class MemberDashboardCompliance
     return nil if data.blank?
 
     data.stringify_keys["exemption_type"].presence
+  end
+
+  # Mirrors staff +certification_cases/_income_reported_table+ organization column.
+  def organization_name_for_external_income(row, category_name)
+    row.metadata&.dig("employer").presence ||
+      "#{category_name} #{I18n.t('certification_cases.common.activity_label')}"
   end
 end

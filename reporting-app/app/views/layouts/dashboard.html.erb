@@ -1,1 +1,19 @@
-<%= render template: 'layouts/application_base' %>
+<%# Member dashboard: full-width welcome hero; flash lives here (OSCER-337) %>
+<%= content_for :suppress_base_flash_section, true %>
+<%= content_for :main_content do %>
+  <div class="member-dashboard-flash grid-container">
+    <%= render partial: "application/flash" %>
+  </div>
+  <%= render "dashboard/member_dashboard_welcome_hero" %>
+  <div class="grid-container">
+    <div class="grid-row grid-gap">
+      <%= yield :before_content_col %>
+      <div class="grid-col-12 <%= yield :content_col_class %>" id="content">
+        <%= yield %>
+      </div>
+      <%= yield :after_content_col %>
+    </div>
+  </div>
+<% end %>
+
+<%= render template: "layouts/application_base" %>

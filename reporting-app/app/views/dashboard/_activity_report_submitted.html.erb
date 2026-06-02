@@ -1,4 +1,13 @@
-<div class="grid-container">
-  <p class="usa-intro"><%= t(".intro") %></p>
-  <%= link_to t(".view_activity_report_button"), activity_report_application_form_path(activity_report), class: "usa-button" %>
-</div>
+<%= render "dashboard/member_compliance_dashboard",
+           compliance: compliance,
+           activity_report: activity_report,
+           activity_report_continue_path: local_assigns[:activity_report_continue_path],
+           exemption_application: exemption_application,
+           certification_case: certification_case,
+           current_period: current_period,
+           target_hours: target_hours,
+           period_end_date: period_end_date,
+           total_hours_reported: total_hours_reported,
+           hours_needed: hours_needed,
+           supplementary_button_label: t(".view_activity_report_button"),
+           supplementary_button_path: activity_report_application_form_path(activity_report) %>

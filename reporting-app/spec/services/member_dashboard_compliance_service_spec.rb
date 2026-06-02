@@ -213,6 +213,15 @@ RSpec.describe MemberDashboardComplianceService do
       end
     end
 
+    context "when an exemption application is still a draft" do
+      let(:exemption_application_form) { create(:exemption_application_form, certification_case_id: certification_case.id) }
+
+      it "does not include draft rows in exemption history" do
+        expect(read_model.exemption_flow_state).to eq(MemberDashboardCompliance::EXEMPTION_DRAFT)
+        expect(read_model.exemption_history).to be_empty
+      end
+    end
+
     context "when an exemption is submitted and awaiting review" do
       let(:exemption_application_form) { create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
 
@@ -293,9 +302,24 @@ RSpec.describe MemberDashboardComplianceService do
         )
       end
 
-      it "does not echo employer metadata in row descriptors" do
-        descriptor = read_model.member_income_rows.first.descriptor
-        expect(descriptor).not_to include("Secret Employer")
+      it "exposes organization_name from employer metadata" do
+        expect(read_model.member_income_rows.first.organization_name).to eq("Secret Employer LLC")
+      end
+    end
+
+    context "with self-reported income activities" do
+      let(:activity_report_application_form) { create(:activity_report_application_form, certification_case_id: certification_case.id) }
+
+      before do
+        lookback_month = certification.certification_requirements.continuous_lookback_period.start.to_date
+        create(:income_activity,
+               activity_report_application_form_id: activity_report_application_form.id,
+               name: "Greater Boston Food Bank",
+               month: lookback_month)
+      end
+
+      it "exposes organization_name from the activity name" do
+        expect(read_model.member_income_rows.first.organization_name).to eq("Greater Boston Food Bank")
       end
     end
 
@@ -312,6 +336,53 @@ RSpec.describe MemberDashboardComplianceService do
       end
     end
 
+    context "when on the hours path with reported activity (income hidden)" do
+      let(:activity_report_application_form) { create(:activity_report_application_form, certification_case_id: certification_case.id) }
+      let(:member_status) do
+        MemberStatus.new(
+          status: MemberStatus::AWAITING_REPORT,
+          determination_method: "automated",
+          reason_codes: [],
+          human_readable_reason_codes: [],
+          latest_determination: create(:determination,
+                                       subject: certification,
+                                       outcome: MemberStatus::COMPLIANT,
+                                       decision_method: "automated",
+                                       reasons: [ "hours_reported_compliant" ],
+                                       determination_data: { "calculation_type" => Determination::CALCULATION_TYPE_HOURS_BASED })
+        )
+      end
+
+      before do
+        lookback_month = certification.certification_requirements.continuous_lookback_period.start.to_date
+        create(:hourly_activity,
+               activity_report_application_form_id: activity_report_application_form.id,
+               name: "Greater Boston Food Bank", hours: 20.0, month: lookback_month)
+        create(:external_hourly_activity, :employment,
+               member_id: certification.member_id, hours: 20,
+               period_start: lookback_month, period_end: lookback_month.end_of_month)
+        activity_report_application_form.reload
+      end
+
+      it "hides income and exposes hours percent toward the requirement" do
+        expect(read_model.show_income_summary).to be false
+        expect(read_model.total_hours_reported).to eq(40)
+        expect(read_model.hours_percent_of_requirement).to eq(50.0)
+      end
+
+      it "builds member_hour_rows from external and self-reported activities (parallel to income rows)" do
+        rows = read_model.member_hour_rows
+        expect(rows.map(&:source_token)).to contain_exactly(
+          MemberDashboardCompliance::SOURCE_EXTERNAL_CE,
+          MemberDashboardCompliance::SOURCE_SELF_REPORTED
+        )
+
+        self_row = rows.find { |r| r.source_token == MemberDashboardCompliance::SOURCE_SELF_REPORTED }
+        expect(self_row.organization_name).to eq("Greater Boston Food Bank")
+        expect(self_row.hours).to eq(20.0)
+      end
+    end
+
     context "when income aggregation runs against the open case" do
       let(:certification_date) { Date.today }
       let(:certification) { create(:certification, certification_requirements: build(:certification_certification_requirements, certification_date:)) }
@@ -322,7 +393,7 @@ RSpec.describe MemberDashboardComplianceService do
         activity_report_application_form.reload
       end
 
-      it "includes member-reported hours in the summary (aligned with staff case lookups)" do
+      it "includes member-reported income in the summary (aligned with staff case lookups)" do
         expect(read_model.total_income).to eq(30)
       end
     end

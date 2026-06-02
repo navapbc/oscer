@@ -1,0 +1,112 @@
+<% compliance = local_assigns.fetch(:compliance) %>
+<% activity_report = local_assigns[:activity_report] %>
+<% due_date = member_compliance_due_date(compliance) %>
+<% period_label = member_compliance_period_label(compliance) %>
+<% report_variant = member_compliance_report_status_variant(compliance, activity_report:) %>
+<% report_status_key = member_compliance_dashboard_report_status_token(compliance, activity_report:).tr("-", "_") %>
+<% income_progress_modifier = member_compliance_income_reported_progress_modifier(compliance, activity_report:) %>
+<% hours_progress_modifier = member_compliance_hours_reported_progress_modifier(compliance, activity_report:) %>
+<% card_column_class = member_compliance_progress_card_column_class %>
+
+<div class="member-dashboard-compliance__cards grid-row grid-gap-2 margin-bottom-3<%= " member-dashboard-compliance__cards--hours-only" if member_compliance_hours_only_screen?(compliance) %><%= " member-dashboard-compliance__cards--income" if compliance.show_income_summary %>">
+  <div class="<%= card_column_class %>">
+    <article class="member-dashboard-compliance__card">
+      <p class="member-dashboard-compliance__card-label"><%= t("dashboard.member_compliance.progress_cards.current_period") %></p>
+      <p class="member-dashboard-compliance__card-value"><%= period_label %></p>
+    </article>
+  </div>
+
+  <% if compliance.show_income_summary %>
+    <div class="<%= card_column_class %>">
+      <article class="member-dashboard-compliance__card">
+        <p id="member-compliance-income-progress-label" class="member-dashboard-compliance__card-label"><%= t("dashboard.member_compliance.progress_cards.income_reported") %></p>
+        <p class="member-dashboard-compliance__card-value">
+          <%= number_to_currency(compliance.total_income, precision: 0) %>
+          /
+          <%= number_to_currency(compliance.target_income, precision: 0) %>
+        </p>
+        <div class="member-dashboard-compliance__progress member-dashboard-compliance__progress--thin<%= " member-dashboard-compliance__progress--income-#{income_progress_modifier}" if income_progress_modifier %>" role="progressbar"
+             aria-labelledby="member-compliance-income-progress-label"
+             aria-valuenow="<%= compliance.income_percent_of_requirement.round %>"
+             aria-valuemin="0" aria-valuemax="100">
+          <div class="member-dashboard-compliance__progress-fill member-dashboard-compliance__progress-fill--income"
+               style="width: <%= compliance.income_percent_of_requirement %>%"></div>
+        </div>
+        <p class="member-dashboard-compliance__card-subtext">
+          <%= t("dashboard.member_compliance.progress_cards.percent_met",
+                percent: compliance.income_percent_of_requirement.round) %>
+        </p>
+      </article>
+    </div>
+
+    <div class="<%= card_column_class %>">
+      <article class="member-dashboard-compliance__card">
+        <p class="member-dashboard-compliance__card-label"><%= t("dashboard.member_compliance.progress_cards.income_needed") %></p>
+        <p class="member-dashboard-compliance__card-value"><%= number_to_currency(compliance.income_needed, precision: 0) %></p>
+        <% if compliance.income_needed.to_d.positive? %>
+          <div class="member-dashboard-compliance__progress member-dashboard-compliance__progress--accent member-dashboard-compliance__progress--accent-red"
+               aria-hidden="true">
+            <div class="member-dashboard-compliance__progress-fill member-dashboard-compliance__progress-fill--accent"></div>
+          </div>
+        <% end %>
+        <p class="member-dashboard-compliance__card-subtext">
+          <%= t("dashboard.member_compliance.progress_cards.before_deadline", due_date: due_date) %>
+        </p>
+      </article>
+    </div>
+  <% else %>
+    <div class="<%= card_column_class %>">
+      <article class="member-dashboard-compliance__card">
+        <p id="member-compliance-hours-progress-label" class="member-dashboard-compliance__card-label"><%= t("dashboard.member_compliance.progress_cards.hours_reported") %></p>
+        <p class="member-dashboard-compliance__card-value">
+          <%= compliance.total_hours_reported %>
+          /
+          <%= compliance.target_hours %>
+        </p>
+        <div class="member-dashboard-compliance__progress member-dashboard-compliance__progress--thin<%= " member-dashboard-compliance__progress--hours-#{hours_progress_modifier}" if hours_progress_modifier %>" role="progressbar"
+             aria-labelledby="member-compliance-hours-progress-label"
+             aria-valuenow="<%= compliance.hours_percent_of_requirement.round %>"
+             aria-valuemin="0" aria-valuemax="100">
+          <div class="member-dashboard-compliance__progress-fill member-dashboard-compliance__progress-fill--hours"
+               style="width: <%= compliance.hours_percent_of_requirement %>%"></div>
+        </div>
+        <p class="member-dashboard-compliance__card-subtext">
+          <%= t("dashboard.member_compliance.progress_cards.percent_met",
+                percent: compliance.hours_percent_of_requirement.round) %>
+        </p>
+      </article>
+    </div>
+
+    <div class="<%= card_column_class %>">
+      <article class="member-dashboard-compliance__card">
+        <p class="member-dashboard-compliance__card-label"><%= t("dashboard.member_compliance.progress_cards.hours_needed") %></p>
+        <p class="member-dashboard-compliance__card-value"><%= compliance.hours_needed %></p>
+        <% if compliance.hours_needed.positive? %>
+          <div class="member-dashboard-compliance__progress member-dashboard-compliance__progress--accent member-dashboard-compliance__progress--accent-red"
+               aria-hidden="true">
+            <div class="member-dashboard-compliance__progress-fill member-dashboard-compliance__progress-fill--accent"></div>
+          </div>
+        <% end %>
+        <p class="member-dashboard-compliance__card-subtext">
+          <%= t("dashboard.member_compliance.progress_cards.before_deadline", due_date: due_date) %>
+        </p>
+      </article>
+    </div>
+  <% end %>
+
+  <div class="<%= card_column_class %>">
+    <article class="member-dashboard-compliance__card">
+      <p class="member-dashboard-compliance__card-label"><%= t("dashboard.member_compliance.progress_cards.report_status") %></p>
+      <p class="member-dashboard-compliance__card-value member-dashboard-compliance__card-value--<%= report_variant %>">
+        <%= t("dashboard.member_compliance.report_status.#{report_status_key}") %>
+      </p>
+      <div class="member-dashboard-compliance__progress member-dashboard-compliance__progress--accent member-dashboard-compliance__progress--accent-<%= report_variant %>"
+           aria-hidden="true">
+        <div class="member-dashboard-compliance__progress-fill member-dashboard-compliance__progress-fill--accent"></div>
+      </div>
+      <p class="member-dashboard-compliance__card-subtext">
+        <%= member_compliance_report_status_subcopy(compliance, activity_report:) %>
+      </p>
+    </article>
+  </div>
+</div>
