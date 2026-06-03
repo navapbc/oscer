@@ -1,6 +1,7 @@
 import { Locator, Page } from '@playwright/test';
 import { BasePage } from '../../BasePage';
 import { ExemptionMayQualifyPage } from './ExemptionMayQualifyPage';
+import { ExemptionScreenerCompletePage } from './ExemptionScreenerCompletePage';
 
 export class ExemptionScreenerQuestionPage extends BasePage {
   get pagePath() {
@@ -31,5 +32,16 @@ export class ExemptionScreenerQuestionPage extends BasePage {
     await this.noRadio.dispatchEvent('click');
     await this.continueButton.click();
     return new ExemptionScreenerQuestionPage(this.page).waitForURLtoMatchPagePath();
+  }
+
+  // Answer "No" to every screener question until the "No exemptions apply" result page.
+  async answerNoUntilComplete() {
+    while (!this.page.url().includes('/exemption-screener/complete')) {
+      await this.noRadio.dispatchEvent('click');
+      await this.continueButton.click();
+      await this.page.waitForURL(/exemption-screener\/(question|complete)/);
+    }
+
+    return new ExemptionScreenerCompletePage(this.page);
   }
 }
