@@ -51,6 +51,12 @@ RSpec.describe ExternalIncomeActivityService do
           expect(result.reported_at).to eq(Time.current)
         end
       end
+
+      it "logs created event" do
+        result = described_class.create_entry(**valid_params)
+        log_count = Strata::AuditLine.where(subject: result, actor_type: described_class.name, action: 'external_income_activity.create', data: result.attributes).count
+        expect(log_count).to eq 1
+      end
     end
 
     context "when the member has an open certification case" do

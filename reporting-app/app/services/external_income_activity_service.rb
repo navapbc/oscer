@@ -8,6 +8,7 @@
 # close the case (same as hours +HoursComplianceDeterminationService#calculate+). Certification intake
 # passes +recalculate_income_compliance: false+ so rows created before the case exists do not run this path.
 class ExternalIncomeActivityService
+  include Strata::VirtualActor
   class << self
     # Create income data entry for a member.
     # @param recalculate_income_compliance [Boolean] when +true+ (default), after save run silent income
@@ -39,11 +40,19 @@ class ExternalIncomeActivityService
         metadata: (metadata || {}).merge(employer.present? ? { "employer" => employer } : {})
       )
 
-      if entry.save
-        maybe_recalculate_income_compliance(entry.member_id) if recalculate_income_compliance
-        entry
-      else
-        { error: entry.errors.full_messages.join(", ") }
+      ActiveRecord::Base.transaction do
+        if entry.save
+          Strata::AuditLog.write!(
+            actor: self,
+            action: "external_income_activity.create",
+            subject: entry,
+            data: entry.attributes
+          )
+          maybe_recalculate_income_compliance(entry.member_id) if recalculate_income_compliance
+          entry
+        else
+          { error: entry.errors.full_messages.join(", ") }
+        end
       end
     end
 
