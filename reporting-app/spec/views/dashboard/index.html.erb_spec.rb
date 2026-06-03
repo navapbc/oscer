@@ -181,6 +181,71 @@ RSpec.describe "dashboard/index", type: :view do
     end
   end
 
+  context "with a denied activity report" do
+    let(:activity_report_application_form) { create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
+
+    before do
+      assign(:activity_report_application_form, activity_report_application_form)
+      assign(:certification_case, certification_case)
+      # Set hours_needed to 0 to show requirements met state
+      assign(:hours_needed, 0)
+      assign(:total_hours_reported, HoursComplianceDeterminationService::TARGET_HOURS)
+
+      certification_case.activity_report_approval_status = "denied"
+    end
+
+    it 'renders a message that the activity report is denied' do
+      render
+      expect(rendered).to have_selector('p', text: I18n.t('dashboard.activity_report_denied.intro'))
+    end
+
+    it 'has a button to view the activity report' do
+      render
+      expect(rendered).to have_selector('a', text: I18n.t('dashboard.activity_report_denied.view_activity_report_button'))
+    end
+  end
+
+  context "with a denied exemption request" do
+    let (:exemption_application_form) { create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
+
+    before do
+      assign(:exemption_application_form, exemption_application_form)
+      assign(:certification_case, certification_case)
+
+      certification_case.exemption_request_approval_status = "denied"
+    end
+
+    it 'renders a message that the exemption request is denied' do
+      render
+      expect(rendered).to have_selector('p', text: I18n.t('dashboard.exemption_denied.intro'))
+    end
+
+    it 'has a button to view the exemption' do
+      render
+      expect(rendered).to have_selector('a', text: I18n.t('dashboard.exemption_denied.view_exemption_button'))
+    end
+
+    it 'renders button to report activities' do
+      render
+      expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.current_period.report_activities_button'))
+    end
+
+    it 'does not render the "get started" callout' do
+      render
+      expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.get_started.button'))
+    end
+    context "with an in-progress activity report" do
+      before do
+        assign(:activity_report_application_form, create(:activity_report_application_form, certification_case_id: certification_case.id))
+      end
+
+      it 'renders a button to continue the activity report' do
+        render
+        expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.activity_report.continue_report_button'))
+      end
+    end
+  end
+
   context "with previous certifications" do
     let(:older_certification) { create(:certification) }
 
