@@ -40,20 +40,18 @@ class ExternalIncomeActivityService
         metadata: (metadata || {}).merge(employer.present? ? { "employer" => employer } : {})
       )
 
-      ActiveRecord::Base.transaction do
-        if entry.save
-          Strata::AuditLog.write!(
-            actor: self,
-            action: "external_income_activity.create",
-            subject: entry,
-            data: entry.attributes
-          )
-          maybe_recalculate_income_compliance(entry.member_id) if recalculate_income_compliance
-          entry
-        else
-          { error: entry.errors.full_messages.join(", ") }
-        end
+      Strata::AuditLog.record do |log|
+        entry.save!
+        log.add_line(
+          actor: self,
+          action: "external_income_activity.create",
+          subject: entry,
+          data: entry.attributes
+        )
       end
+
+      maybe_recalculate_income_compliance(entry.member_id) if recalculate_income_compliance
+      entry
     end
 
     private

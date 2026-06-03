@@ -150,38 +150,23 @@ RSpec.describe ExternalIncomeActivityService do
 
     context "with validation errors" do
       it "returns error for missing member_id" do
-        result = described_class.create_entry(**valid_params.merge(member_id: nil))
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to include("Member")
+        expect { described_class.create_entry(**valid_params.merge(member_id: nil)) }.to raise_error(/Member/)
       end
 
       it "returns error for invalid category" do
-        result = described_class.create_entry(**valid_params.merge(category: "invalid"))
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to include("Category")
+        expect { described_class.create_entry(**valid_params.merge(category: "invalid")) }.to raise_error(/Category/)
       end
 
       it "returns error for zero gross_income" do
-        result = described_class.create_entry(**valid_params.merge(gross_income: 0))
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to include("Gross income")
+        expect { described_class.create_entry(**valid_params.merge(gross_income: 0)) }.to raise_error(/Gross income/)
       end
 
       it "returns error for negative gross_income" do
-        result = described_class.create_entry(**valid_params.merge(gross_income: -10))
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to include("Gross income")
+        expect { described_class.create_entry(**valid_params.merge(gross_income: -10)) }.to raise_error(/Gross income/)
       end
 
       it "returns error for invalid source_type" do
-        result = described_class.create_entry(**valid_params.merge(source_type: "invalid"))
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to include("Source type")
+        expect { described_class.create_entry(**valid_params.merge(source_type: "invalid")) }.to raise_error(/Source type/)
       end
     end
   end
