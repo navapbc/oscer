@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: 35849cd31738911a059937d3c6df76308c44969f
+  revision: 7888939f5bcda2425c318c906cb3a8856a305940
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -432,7 +432,7 @@ GEM
     pry (0.15.2)
       coderay (~> 1.1)
       method_source (~> 1.0)
-    psych (5.3.1)
+    psych (5.4.0)
       date
       stringio
     public_suffix (7.0.5)
