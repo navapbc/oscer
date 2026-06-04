@@ -16,12 +16,14 @@
 <section class="member-dashboard-compliance__exemption margin-bottom-4"
          <%= tag.attributes("aria-labelledby": exemption_section_labelledby) if exemption_section_labelledby.present? %>>
   <% if show_member_compliance_exemption_details_heading?(compliance) %>
-    <div class="display-flex flex-wrap flex-align-center margin-bottom-2 gap-2">
+    <div class="member-dashboard-compliance__section-header">
       <h2 id="exemption-details-heading" class="font-heading-lg margin-0"><%= t("dashboard.member_compliance.exemption_details_heading") %></h2>
       <% if show_member_compliance_retake_screener?(compliance) %>
-        <%= link_to t("dashboard.member_compliance.retake_screener_button"),
-              exemption_screener_path(certification_case_id: certification_case&.id),
-              class: "usa-button usa-button--outline" %>
+        <div class="member-dashboard-compliance__section-header-actions">
+          <%= link_to t("dashboard.member_compliance.retake_screener_button"),
+                exemption_screener_path(certification_case_id: certification_case&.id),
+                class: "usa-button usa-button--outline" %>
+        </div>
       <% end %>
     </div>
   <% end %>
@@ -50,5 +52,13 @@
     <% unless local_assigns[:suppress_exemption_denied_alert] %>
       <%= render "dashboard/member_compliance_exemption_denied", compliance: compliance %>
     <% end %>
+  <% end %>
+
+  <% if local_assigns[:exemption_supplementary_button_label].present? && local_assigns[:exemption_supplementary_button_path].present? %>
+    <div class="member-dashboard-compliance__exemption-action">
+      <%= link_to local_assigns[:exemption_supplementary_button_label],
+            local_assigns[:exemption_supplementary_button_path],
+            class: "usa-button" %>
+    </div>
   <% end %>
 </section>

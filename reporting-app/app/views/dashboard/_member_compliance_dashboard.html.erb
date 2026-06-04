@@ -12,6 +12,8 @@
                certification_case: certification_case,
                exemption_application: exemption_application,
                activity_report: activity_report,
+               exemption_supplementary_button_label: local_assigns[:exemption_supplementary_button_label],
+               exemption_supplementary_button_path: local_assigns[:exemption_supplementary_button_path],
                suppress_exemption_denied_alert: local_assigns[:state_alert].present? &&
                  compliance.exemption_flow_state == MemberDashboardCompliance::EXEMPTION_DENIED %>
 

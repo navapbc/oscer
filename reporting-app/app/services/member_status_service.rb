@@ -75,6 +75,38 @@ class MemberStatusService
       results
     end
 
+    # @param certification [Certification]
+    # @return [Boolean] true when the certification period has a terminal outcome or closed case
+    def certification_period_completed?(certification)
+      member_status = determine(certification)
+      return true if member_status.certification_period_completed?
+
+      MemberDashboardComplianceService.case_for_certification(certification)&.closed?
+    end
+
+    # Prior certification periods (excluding +current_certification+) that reached a terminal outcome.
+    #
+    # @param all_certifications [Array<Certification>] member certs, typically newest-first
+    # @param current_certification [Certification, nil] active period shown on the dashboard
+    # @return [Array<Certification>]
+    def previous_completed_certifications(all_certifications, current_certification:)
+      return [] if current_certification.blank?
+
+      previous = Array(all_certifications).reject { |cert| cert.id == current_certification.id }
+      return [] if previous.empty?
+
+      statuses_by_key = determine_many(previous)
+      closed_certification_ids = CertificationCase.closed
+        .where(certification_id: previous.map(&:id))
+        .pluck(:certification_id)
+        .to_set
+
+      previous.select do |cert|
+        member_status = statuses_by_key[[ cert.class.name, cert.id ]]
+        member_status.certification_period_completed? || closed_certification_ids.include?(cert.id)
+      end
+    end
+
     private
 
     # Bulk loads all related data needed for status determination in a single operation

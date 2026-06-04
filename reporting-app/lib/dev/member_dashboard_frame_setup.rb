@@ -15,6 +15,11 @@ module Dev
       "partial_income" => "Frame 8 — Partial income ($136 / $580)"
     }.freeze
 
+    # Backward-compatible aliases (docs/specs sometimes use longer names).
+    FRAME_ALIASES = {
+      "exemption_denied_start_reporting" => "exemption_denied"
+    }.freeze
+
     class << self
       def list_frames
         FRAMES.each { |key, label| puts "  #{key.ljust(24)} #{label}" }
@@ -30,7 +35,7 @@ module Dev
     end
 
     def apply!(frame)
-      frame = frame.to_s
+      frame = normalize_frame(frame.to_s)
       raise ArgumentError, "Unknown frame #{frame.inspect}. Run rake dev:member_dashboard:frames" unless FRAMES.key?(frame)
 
       ensure_development!
@@ -83,6 +88,10 @@ module Dev
       return if Rails.env.development?
 
       raise "MemberDashboardFrameSetup is only available in development"
+    end
+
+    def normalize_frame(frame)
+      FRAME_ALIASES.fetch(frame, frame)
     end
 
     def find_or_create_member_certification!

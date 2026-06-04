@@ -26,6 +26,7 @@ RSpec.describe "dashboard/index", type: :view do
 
     assign(:all_certifications, [ certification ])
     assign(:certification, certification)
+    assign(:previous_completed_certifications, [])
     assign(:certification_case, certification_case)
     assign(:exemption_application_form, exemption_application_form)
     assign(:activity_report_application_form, activity_report_application_form)
@@ -77,6 +78,14 @@ RSpec.describe "dashboard/index", type: :view do
     it 'does not render the legacy report activities buttons' do
       render
       expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.current_period.report_activities_button'))
+    end
+
+    it 'does not render previous certifications when the member has only one certification' do
+      render
+      expect(rendered).not_to have_selector(
+        'h2',
+        text: I18n.t('dashboard.index.previous_certifications.title')
+      )
     end
   end
 
@@ -143,10 +152,10 @@ RSpec.describe "dashboard/index", type: :view do
              activity_report_application_form_path(activity_report_application_form))
     end
 
-    it "renders the Figma hours-only layout (yellow alert, income-parity cards + table, continue + submit)" do
+    it "renders the Figma hours-only layout (red alert, income-parity cards + table, continue + submit)" do
       render
 
-      expect(rendered).to have_css(".member-dashboard-compliance__alert--warning[role='alert']")
+      expect(rendered).to have_css(".member-dashboard-compliance__alert--error[role='alert']")
       expect(rendered).to have_css(".member-dashboard-compliance__cards--hours-only")
       expect(rendered).not_to have_text(I18n.t("dashboard.member_compliance.progress_cards.income_reported"))
       expect(rendered).to have_selector(
@@ -157,7 +166,7 @@ RSpec.describe "dashboard/index", type: :view do
         "a.usa-button",
         text: I18n.t("dashboard.member_compliance.reporting.submit_button")
       )
-      expect(rendered).to have_css(".member-dashboard-compliance__reporting-header")
+      expect(rendered).to have_css(".member-dashboard-compliance__section-header--reporting")
     end
 
     it "renders the income-parity hours cards and hours activity table" do
@@ -258,7 +267,7 @@ RSpec.describe "dashboard/index", type: :view do
         text: I18n.t("dashboard.member_compliance.reporting.submit_button")
       )
       expect(rendered).to have_text(I18n.t("dashboard.member_compliance.income_table.additional_income_needed"))
-      expect(rendered).to have_css(".member-dashboard-compliance__reporting-header")
+      expect(rendered).to have_css(".member-dashboard-compliance__section-header--reporting")
     end
   end
 
@@ -454,9 +463,12 @@ RSpec.describe "dashboard/index", type: :view do
       expect(rendered).not_to have_text(I18n.t('dashboard.member_compliance.reporting.heading'))
     end
 
-    it 'has a button to view the submitted exemption request' do
+    it 'has a button to view the submitted exemption request above the reporting section' do
       render
-      expect(rendered).to have_selector('a', text: I18n.t('dashboard.exemption_submitted.view_exemption_button'))
+      view_button = I18n.t('dashboard.exemption_submitted.view_exemption_button')
+      reporting_heading = I18n.t('dashboard.member_compliance.reporting.heading')
+      expect(rendered).to have_selector('a', text: view_button)
+      expect(rendered.index(view_button)).to be < rendered.index(reporting_heading) if rendered.include?(reporting_heading)
     end
   end
 
@@ -572,9 +584,12 @@ RSpec.describe "dashboard/index", type: :view do
       )
     end
 
-    it "has a button to view the exemption request" do
+    it "has a button to view the exemption request above the reporting section" do
       render
-      expect(rendered).to have_selector("a", text: I18n.t("dashboard.exemption_denied.view_exemption_button"))
+      view_button = I18n.t("dashboard.exemption_denied.view_exemption_button")
+      reporting_heading = I18n.t("dashboard.member_compliance.reporting.heading")
+      expect(rendered).to have_selector("a", text: view_button)
+      expect(rendered.index(view_button)).to be < rendered.index(reporting_heading)
     end
   end
 
@@ -628,15 +643,58 @@ RSpec.describe "dashboard/index", type: :view do
   end
 
   context "with previous certifications" do
-    let(:older_certification) { create(:certification) }
+    let(:older_certification) { create(:certification, member_data: member_data) }
+    let!(:older_certification_case) { create(:certification_case, certification: older_certification) }
 
     before do
+      create(:determination,
+             subject: older_certification,
+             outcome: "compliant",
+             decision_method: "manual",
+             reasons: [ "hours_reported_compliant" ])
+      older_certification.update!(created_at: 2.months.ago)
+      certification.update!(created_at: 1.day.ago)
       assign(:all_certifications, [ certification, older_certification ])
+      assign(:previous_completed_certifications,
+             MemberStatusService.previous_completed_certifications(
+               [ certification, older_certification ],
+               current_certification: certification
+             ))
     end
 
     it 'renders a section for previous certifications' do
       render
       expect(rendered).to have_selector('h2', text: I18n.t('dashboard.index.previous_certifications.title'))
+    end
+
+    it 'renders previous certifications only once' do
+      render
+      title = I18n.t('dashboard.index.previous_certifications.title')
+      expect(rendered.scan(title).length).to eq(1)
+    end
+  end
+
+  context "with an older certification still in progress" do
+    let(:older_certification) { create(:certification, member_data: member_data) }
+    let!(:older_certification_case) { create(:certification_case, certification: older_certification) }
+
+    before do
+      older_certification.update!(created_at: 2.months.ago)
+      certification.update!(created_at: 1.day.ago)
+      assign(:all_certifications, [ certification, older_certification ])
+      assign(:previous_completed_certifications,
+             MemberStatusService.previous_completed_certifications(
+               [ certification, older_certification ],
+               current_certification: certification
+             ))
+    end
+
+    it "does not render previous certifications" do
+      render
+      expect(rendered).not_to have_selector(
+        'h2',
+        text: I18n.t('dashboard.index.previous_certifications.title')
+      )
     end
   end
 end

@@ -5,6 +5,7 @@ class DashboardController < ApplicationController
 
   before_action :authenticate_user!
   before_action :set_certifications
+  before_action :set_previous_completed_certifications
   before_action :set_certification_case, if: -> { @certification.present? }
   before_action :set_exemption_application_form, if: -> { @certification_case.present? }
   before_action :set_activity_report_application_form, if: -> { @certification_case.present? }
@@ -23,6 +24,13 @@ class DashboardController < ApplicationController
   def set_certifications
     @all_certifications = Certification.find_by_member_email(current_user.email).order(created_at: :desc).all
     @certification = @all_certifications.first
+  end
+
+  def set_previous_completed_certifications
+    @previous_completed_certifications = MemberStatusService.previous_completed_certifications(
+      @all_certifications,
+      current_certification: @certification
+    )
   end
 
   def set_certification_case

@@ -211,14 +211,14 @@ RSpec.describe MemberComplianceHelper, type: :helper do
   end
 
   describe "#member_compliance_exemption_denied_alert_variant" do
-    it "uses error on the income path" do
+    it "uses the red error variant on the income path" do
       allow(compliance).to receive(:show_income_summary).and_return(true)
       expect(helper.member_compliance_exemption_denied_alert_variant(compliance)).to eq("error")
     end
 
-    it "uses warning on the hours-only path" do
+    it "uses the red error variant on the hours-only path" do
       allow(compliance).to receive(:show_income_summary).and_return(false)
-      expect(helper.member_compliance_exemption_denied_alert_variant(compliance)).to eq("warning")
+      expect(helper.member_compliance_exemption_denied_alert_variant(compliance)).to eq("error")
     end
   end
 

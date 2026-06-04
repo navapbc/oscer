@@ -186,9 +186,8 @@ module MemberComplianceHelper
     compliance.exemption_flow_state == MemberDashboardCompliance::EXEMPTION_DENIED
   end
 
-  # Figma: red alert on income path; yellow on hours-only (frame 7203:4806).
-  def member_compliance_exemption_denied_alert_variant(compliance)
-    compliance.show_income_summary ? "error" : "warning"
+  def member_compliance_exemption_denied_alert_variant(_compliance)
+    "error"
   end
 
   # Not exempt, no activity report yet — intro + Start reporting activities (7203:5090).

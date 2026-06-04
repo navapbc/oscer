@@ -7,9 +7,9 @@
 
 <section class="member-dashboard-compliance__reporting margin-bottom-4" aria-labelledby="report-activities-heading">
   <% if show_member_compliance_progress_cards?(compliance, activity_report:) && show_member_compliance_activity_report_actions?(compliance, activity_report:) %>
-    <div class="member-dashboard-compliance__reporting-header display-flex flex-wrap flex-justify flex-align-center gap-2 margin-bottom-3">
+    <div class="member-dashboard-compliance__section-header member-dashboard-compliance__section-header--reporting">
       <h2 id="report-activities-heading" class="font-heading-lg margin-0"><%= t("dashboard.member_compliance.reporting.heading") %></h2>
-      <div class="display-flex flex-wrap gap-2">
+      <div class="member-dashboard-compliance__section-header-actions">
         <%= link_to member_compliance_reporting_continue_button_label(compliance),
               continue_path,
               class: "usa-button usa-button--outline" %>

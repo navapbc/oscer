@@ -452,4 +452,60 @@ RSpec.describe MemberStatusService do
       end
     end
   end
+
+  describe ".certification_period_completed?" do
+    let(:certification) { create(:certification) }
+    let!(:certification_case) { create(:certification_case, certification: certification) }
+
+    it "is true when the latest determination has a terminal outcome" do
+      create(:determination,
+             subject: certification,
+             outcome: "compliant",
+             decision_method: "manual",
+             reasons: [ "hours_reported_compliant" ])
+
+      expect(described_class.certification_period_completed?(certification)).to be(true)
+    end
+
+    it "is false while the member is still awaiting report" do
+      expect(described_class.certification_period_completed?(certification)).to be(false)
+    end
+
+    it "is true when the case is closed even without checking determination first" do
+      certification_case.close
+
+      expect(described_class.certification_period_completed?(certification)).to be(true)
+    end
+  end
+
+  describe ".previous_completed_certifications" do
+    let(:current_certification) { create(:certification) }
+    let(:completed_certification) { create(:certification) }
+    let(:in_progress_certification) { create(:certification) }
+    let!(:completed_case) { create(:certification_case, certification: completed_certification) }
+    let!(:in_progress_case) { create(:certification_case, certification: in_progress_certification) }
+
+    before do
+      create(:determination,
+             subject: completed_certification,
+             outcome: "exempt",
+             decision_method: "automated",
+             reasons: [ "age_under_19_exempt" ])
+    end
+
+    it "returns only prior certifications with terminal outcomes" do
+      all_certifications = [ current_certification, completed_certification, in_progress_certification ]
+
+      result = described_class.previous_completed_certifications(
+        all_certifications,
+        current_certification: current_certification
+      )
+
+      expect(result).to eq([ completed_certification ])
+    end
+
+    it "returns an empty array when the current certification is blank" do
+      expect(described_class.previous_completed_certifications([], current_certification: nil)).to eq([])
+    end
+  end
 end

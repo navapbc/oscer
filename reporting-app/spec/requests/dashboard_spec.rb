@@ -14,6 +14,12 @@ RSpec.describe "Dashboard", type: :request do
     allow(Strata::EventManager).to receive(:publish).and_call_original
     allow(ExemptionDeterminationService).to receive(:determine)
     allow(IncomeComplianceDeterminationService).to receive(:calculate)
+    allow(CommunityEngagementCheckService).to receive(:determine) do |kase|
+      Strata::EventManager.publish("DeterminedCommunityEngagementActionRequired", {
+        case_id: kase.id,
+        certification_id: kase.certification_id
+      })
+    end
     allow(NotificationService).to receive(:send_email_notification)
 
     login_as user
@@ -187,6 +193,45 @@ RSpec.describe "Dashboard", type: :request do
           I18n.t("dashboard.activity_report_submitted.view_activity_report_button")
         )
         expect(response.body).not_to include(I18n.t("dashboard.member_compliance.reporting.continue_button"))
+      end
+    end
+
+    context "with a completed prior certification" do
+      let!(:older_certification) { create(:certification, member_data: member_data) }
+      let!(:older_certification_case) { create(:certification_case, certification: older_certification) }
+
+      before do
+        create(:determination,
+               subject: older_certification,
+               outcome: "compliant",
+               decision_method: "manual",
+               reasons: [ "hours_reported_compliant" ])
+        older_certification.update!(created_at: 2.months.ago)
+        certification.update!(created_at: 1.day.ago)
+      end
+
+      it "renders the previous completed requirements section" do
+        get dashboard_path
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include(I18n.t("dashboard.index.previous_certifications.title"))
+      end
+    end
+
+    context "with a prior certification still in progress" do
+      let!(:older_certification) { create(:certification, member_data: member_data) }
+      let!(:older_certification_case) { create(:certification_case, certification: older_certification) }
+
+      before do
+        older_certification.update!(created_at: 2.months.ago)
+        certification.update!(created_at: 1.day.ago)
+      end
+
+      it "does not render the previous completed requirements section" do
+        get dashboard_path
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).not_to include(I18n.t("dashboard.index.previous_certifications.title"))
       end
     end
   end
