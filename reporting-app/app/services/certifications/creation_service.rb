@@ -84,12 +84,6 @@ class Certifications::CreationService
         employer: activity_data.employer,
         recalculate_income_compliance: false
       )
-
-      if result.is_a?(Hash) && result[:error]
-        row = ExternalIncomeActivity.new
-        row.errors.add(:base, result[:error])
-        raise ActiveRecord::RecordInvalid.new(row)
-      end
     end
   end
 end
