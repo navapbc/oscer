@@ -132,6 +132,71 @@ RSpec.describe MemberMailer, type: :mailer do
         expect(mail.body.encoded).to include("29 hours")
       end
     end
+
+    describe "#insufficient_hours_email after_deliver callback" do
+      let(:delivery_date) { Date.new(2026, 1, 15) }
+      let(:window_end_date) do
+        delivery_date + CertificationCase::VERIFICATION_WINDOW_DURATION_DAYS
+      end
+      let(:certification_case) { create(:certification_case, certification: certification) }
+      let(:open_verification_window) { true }
+      let(:mail) do
+        described_class.with(
+          certification: certification,
+          hours_data: hours_data,
+          target_hours: target_hours,
+          case_id: certification_case.id,
+          open_verification_window: open_verification_window
+        ).insufficient_hours_email
+      end
+
+      context "when certification case has no verification window set" do
+        it "sets verification_window_start_date to delivery date" do
+          travel_to(delivery_date) do
+            mail.deliver_now
+          end
+
+          certification_case.reload
+          expect(certification_case.verification_window_start_date).to eq(delivery_date)
+        end
+
+        it "sets verification_window_end_date expected days after start date" do
+          travel_to(delivery_date) do
+            mail.deliver_now
+          end
+
+          certification_case.reload
+          expect(certification_case.verification_window_end_date).to eq(window_end_date)
+        end
+      end
+
+      context "when open_verification_window is false" do
+        let(:open_verification_window) { false }
+
+        it "does not set the verification window on the certification case" do
+          mail.deliver_now
+          certification_case.reload
+
+          expect(certification_case.verification_window_start_date).to be_blank
+        end
+      end
+
+      context "when the certification case already has a verification window set" do
+        before do
+          certification_case.verification_window_start_date = delivery_date
+          certification_case.verification_window_end_date = window_end_date
+          certification_case.save!
+        end
+
+        it "does not overwrite the existing verification window" do
+          mail.deliver_now
+          certification_case.reload
+
+          expect(certification_case.verification_window_start_date).to eq(delivery_date)
+          expect(certification_case.verification_window_end_date).to eq(window_end_date)
+        end
+      end
+    end
   end
 
   describe "#insufficient_community_engagement_email" do
@@ -298,6 +363,28 @@ RSpec.describe MemberMailer, type: :mailer do
             show_income_insufficient: false
           ).insufficient_community_engagement_email.deliver_now
         end.to raise_error(ArgumentError, /at least one visible section/)
+      end
+    end
+
+    describe "#insufficient_community_engagement_email after_deliver callback" do
+      let(:mail) do
+        described_class.with(
+          certification: certification,
+          hours_data: hours_data,
+          show_hours_insufficient: true,
+          show_income_insufficient: false,
+          target_hours: target_hours,
+          target_income: target_income
+        ).insufficient_community_engagement_email
+      end
+      let(:certification_case) { create(:certification_case, certification: certification) }
+
+      it "does not set verification window" do
+        mail.deliver_now
+        certification_case.reload
+
+        expect(certification_case.verification_window_start_date).to be_nil
+        expect(certification_case.verification_window_end_date).to be_nil
       end
     end
   end

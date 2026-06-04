@@ -27,6 +27,11 @@ class CertificationCase < Strata::Case
     ).merge(Certification.by_region(region))
   }
 
+  # verification window duration in days
+  # the verification window is the amount of time a member is given to resolve a negative
+  # determination on their CE certification
+  VERIFICATION_WINDOW_DURATION_DAYS = 30
+
   # Latest open case for a member (by certification created_at). Used when persisting new
   # ExternalIncomeActivity rows to run income compliance recalculation for the active certification.
   # @param member_id [String]
@@ -220,6 +225,17 @@ class CertificationCase < Strata::Case
 
   def member_status
     MemberStatusService.determine(self).status
+  end
+
+  def open_verification_window
+    return if verification_window_start_date.present?
+
+    start_date = Date.current
+
+    update!(
+      verification_window_start_date: start_date,
+      verification_window_end_date: start_date + VERIFICATION_WINDOW_DURATION_DAYS
+    )
   end
 
   private
