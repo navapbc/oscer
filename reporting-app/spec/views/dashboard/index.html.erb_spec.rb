@@ -234,6 +234,7 @@ RSpec.describe "dashboard/index", type: :view do
       render
       expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.get_started.button'))
     end
+
     context "with an in-progress activity report" do
       before do
         assign(:activity_report_application_form, create(:activity_report_application_form, certification_case_id: certification_case.id))
