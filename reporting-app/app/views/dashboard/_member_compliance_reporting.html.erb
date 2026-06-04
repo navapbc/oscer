@@ -4,9 +4,11 @@
 <% due_date = member_compliance_due_date(compliance) %>
 <% target_income_display = number_to_currency(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY, precision: 0) %>
 <% continue_path = local_assigns[:activity_report_continue_path] || (activity_report && activity_report_application_form_path(activity_report)) %>
+<% show_progress_cards = show_member_compliance_progress_cards?(compliance, activity_report:) %>
+<% show_report_actions = show_member_compliance_activity_report_actions?(compliance, activity_report:) %>
 
 <section class="member-dashboard-compliance__reporting margin-bottom-4" aria-labelledby="report-activities-heading">
-  <% if show_member_compliance_progress_cards?(compliance, activity_report:) && show_member_compliance_activity_report_actions?(compliance, activity_report:) %>
+  <% if show_progress_cards && show_report_actions %>
     <div class="member-dashboard-compliance__section-header member-dashboard-compliance__section-header--reporting">
       <h2 id="report-activities-heading" class="font-heading-lg margin-0"><%= t("dashboard.member_compliance.reporting.heading") %></h2>
       <div class="member-dashboard-compliance__section-header-actions">
@@ -19,7 +21,11 @@
               class: "usa-button" %>
       </div>
     </div>
+  <% else %>
+    <h2 id="report-activities-heading" class="font-heading-lg margin-bottom-2"><%= t("dashboard.member_compliance.reporting.heading") %></h2>
+  <% end %>
 
+  <% if show_progress_cards %>
     <%= render "dashboard/member_compliance_progress_cards", compliance: compliance, activity_report: activity_report %>
 
     <% if show_member_compliance_income_table?(compliance, activity_report:) %>
@@ -28,27 +34,15 @@
       <%= render "dashboard/member_compliance_hours_table", compliance: compliance %>
     <% end %>
   <% else %>
-    <h2 id="report-activities-heading" class="font-heading-lg margin-bottom-2"><%= t("dashboard.member_compliance.reporting.heading") %></h2>
-
-    <% if show_member_compliance_progress_cards?(compliance, activity_report:) %>
-      <%= render "dashboard/member_compliance_progress_cards", compliance: compliance, activity_report: activity_report %>
-
-      <% if show_member_compliance_income_table?(compliance, activity_report:) %>
-        <%= render "dashboard/member_compliance_income_table", compliance: compliance %>
-      <% elsif show_member_compliance_hours_table?(compliance, activity_report:) %>
-        <%= render "dashboard/member_compliance_hours_table", compliance: compliance %>
-      <% end %>
-    <% else %>
-      <p class="member-dashboard-compliance__reporting-intro">
-        <%= t("dashboard.member_compliance.reporting.intro",
-              target_hours: compliance.target_hours,
-              target_income: target_income_display,
-              due_date: due_date,
-              coverage_month: member_compliance_coverage_month(compliance)) %>
-      </p>
-      <%= link_to t("dashboard.member_compliance.reporting.start_button"),
-            new_activity_report_application_form_path(certification_case_id: certification_case&.id),
-            class: "usa-button" %>
-    <% end %>
+    <p class="member-dashboard-compliance__reporting-intro">
+      <%= t("dashboard.member_compliance.reporting.intro",
+            target_hours: compliance.target_hours,
+            target_income: target_income_display,
+            due_date: due_date,
+            coverage_month: member_compliance_coverage_month(compliance)) %>
+    </p>
+    <%= link_to t("dashboard.member_compliance.reporting.start_button"),
+          new_activity_report_application_form_path(certification_case_id: certification_case&.id),
+          class: "usa-button" %>
   <% end %>
 </section>

@@ -210,32 +210,6 @@ RSpec.describe MemberComplianceHelper, type: :helper do
     end
   end
 
-  describe "#member_compliance_exemption_denied_alert_variant" do
-    it "uses the red error variant on the income path" do
-      allow(compliance).to receive(:show_income_summary).and_return(true)
-      expect(helper.member_compliance_exemption_denied_alert_variant(compliance)).to eq("error")
-    end
-
-    it "uses the red error variant on the hours-only path" do
-      allow(compliance).to receive(:show_income_summary).and_return(false)
-      expect(helper.member_compliance_exemption_denied_alert_variant(compliance)).to eq("error")
-    end
-  end
-
-  describe "#member_compliance_start_reporting_screen?" do
-    it "is true when exemption is denied and there is no activity report" do
-      allow(compliance).to receive(:exemption_flow_state).and_return(MemberDashboardCompliance::EXEMPTION_DENIED)
-      expect(helper.member_compliance_start_reporting_screen?(compliance, activity_report: nil)).to be true
-    end
-  end
-
-  describe "#member_compliance_exemption_approved_screen?" do
-    it "is true when exemption is approved" do
-      allow(compliance).to receive(:exemption_flow_state).and_return(MemberDashboardCompliance::EXEMPTION_APPROVED)
-      expect(helper.member_compliance_exemption_approved_screen?(compliance)).to be true
-    end
-  end
-
   describe "#member_compliance_exemption_pending_review_screen?" do
     it "is true when exemption is pending review" do
       allow(compliance).to receive(:exemption_flow_state).and_return(MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW)
@@ -282,24 +256,6 @@ RSpec.describe MemberComplianceHelper, type: :helper do
       allow(compliance).to receive(:exemption_flow_state).and_return(MemberDashboardCompliance::EXEMPTION_DENIED)
 
       expect(helper.show_member_compliance_reporting_section?(compliance, activity_report: nil)).to be true
-    end
-  end
-
-  describe "#member_compliance_income_reporting_in_progress_screen?" do
-    it "is true on the income path with an in-progress activity report" do
-      allow(compliance).to receive_messages(show_income_summary: true, report_status_token: MemberStatus::DASHBOARD_REPORT_IN_PROGRESS)
-      form = build_stubbed(:activity_report_application_form)
-      allow(form).to receive(:submitted?).and_return(false)
-
-      expect(helper.member_compliance_income_reporting_in_progress_screen?(compliance, activity_report: form)).to be true
-    end
-
-    it "is true when report status is not compliant but the form is still editable" do
-      allow(compliance).to receive_messages(show_income_summary: true, report_status_token: MemberStatus::DASHBOARD_REPORT_NOT_COMPLIANT)
-      form = build_stubbed(:activity_report_application_form)
-      allow(form).to receive(:submitted?).and_return(false)
-
-      expect(helper.member_compliance_income_reporting_in_progress_screen?(compliance, activity_report: form)).to be true
     end
   end
 

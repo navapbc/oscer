@@ -2,7 +2,6 @@
 <% compliance = local_assigns.fetch(:compliance) %>
 <% certification_case = local_assigns[:certification_case] %>
 <% exemption_application = local_assigns[:exemption_application] %>
-<% target_income_display = number_to_currency(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY, precision: 0) %>
 
 <% exemption_section_labelledby = if show_member_compliance_exemption_details_heading?(compliance)
                                     "exemption-details-heading"

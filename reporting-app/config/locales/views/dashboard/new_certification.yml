@@ -1,11 +1,6 @@
 en:
   dashboard:
     new_certification:
-      get_started:
-        header: "Report this month's activities by"
-        prompt: "Begin reporting your Community Engagement activities, or find out if you qualify for an exemption."
-        button: "Get started"
-        info: "Medicaid beneficiaries need to regularly report activities like volunteering, education, and hours worked in order to keep their coverage. Certain life situations may allow you to apply for an exemption so that you don't have to report."
       current_period:
         header: "Current period: %{period}"
         requirement_info: "For this period, you will need to report at least %{target_hours} hours of Community Engagement activities by %{period_end_date} in order to keep your Medicaid coverage."
@@ -14,25 +9,3 @@ en:
         hours_value: "%{hours} hours"
         requirements_met: "None. You have met the requirement for %{period}."
         report_activities_button: "Report activities for the current period"
-        request_exemption_button: "Request exemption"
-        view_activity_report_button: "View activity report"
-      previous_requirements:
-        header: "Previously completed requirements"
-        intro: "Review previously-completed certifications."
-        button: "Review previous certifications"
-      activities:
-        header: "Activities & Exemptions"
-      activity_report:
-        title: "Report activities"
-        intro: "Report your activities for the current reporting period."
-        in_progress_status: "Report status"
-        in_progress_message: "You have an activity report in progress."
-        continue_report_button: "Continue report"
-        report_activities_button: "Report activities"
-      exemption_request:
-        title: "Apply for an exemption"
-        intro: "If you have certain conditions, you may not need to report activities."
-        in_progress_status: "Exemption status"
-        in_progress_message: "You have an exemption request in progress."
-        continue_request_button: "Continue request"
-        request_exemption_button: "Request exemption"

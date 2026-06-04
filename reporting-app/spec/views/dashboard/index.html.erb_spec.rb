@@ -644,9 +644,9 @@ RSpec.describe "dashboard/index", type: :view do
 
   context "with previous certifications" do
     let(:older_certification) { create(:certification, member_data: member_data) }
-    let!(:older_certification_case) { create(:certification_case, certification: older_certification) }
 
     before do
+      create(:certification_case, certification: older_certification)
       create(:determination,
              subject: older_certification,
              outcome: "compliant",
@@ -676,9 +676,9 @@ RSpec.describe "dashboard/index", type: :view do
 
   context "with an older certification still in progress" do
     let(:older_certification) { create(:certification, member_data: member_data) }
-    let!(:older_certification_case) { create(:certification_case, certification: older_certification) }
 
     before do
+      create(:certification_case, certification: older_certification)
       older_certification.update!(created_at: 2.months.ago)
       certification.update!(created_at: 1.day.ago)
       assign(:all_certifications, [ certification, older_certification ])

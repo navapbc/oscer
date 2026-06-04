@@ -142,13 +142,6 @@ module MemberComplianceHelper
     end
   end
 
-  # Figma income path with activity report in progress (7203:4779 — four cards + table).
-  def member_compliance_income_reporting_in_progress_screen?(compliance, activity_report:)
-    compliance.show_income_summary &&
-      activity_report.present? &&
-      show_member_compliance_activity_report_actions?(compliance, activity_report:)
-  end
-
   # Four progress cards on both the income and hours paths (the hours path now mirrors income),
   # so cards span a quarter width on desktop.
   def member_compliance_progress_card_column_class
@@ -176,23 +169,6 @@ module MemberComplianceHelper
 
   def member_compliance_exemption_pending_review_screen?(compliance)
     compliance.exemption_flow_state == MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW
-  end
-
-  def member_compliance_exemption_approved_screen?(compliance)
-    compliance.exemption_flow_state == MemberDashboardCompliance::EXEMPTION_APPROVED
-  end
-
-  def member_compliance_exemption_denied_screen?(compliance)
-    compliance.exemption_flow_state == MemberDashboardCompliance::EXEMPTION_DENIED
-  end
-
-  def member_compliance_exemption_denied_alert_variant(_compliance)
-    "error"
-  end
-
-  # Not exempt, no activity report yet — intro + Start reporting activities (7203:5090).
-  def member_compliance_start_reporting_screen?(compliance, activity_report:)
-    member_compliance_exemption_denied_screen?(compliance) && activity_report.blank?
   end
 
   def show_member_compliance_retake_screener?(compliance)

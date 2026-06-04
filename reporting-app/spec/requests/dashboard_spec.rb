@@ -198,9 +198,9 @@ RSpec.describe "Dashboard", type: :request do
 
     context "with a completed prior certification" do
       let!(:older_certification) { create(:certification, member_data: member_data) }
-      let!(:older_certification_case) { create(:certification_case, certification: older_certification) }
 
       before do
+        create(:certification_case, certification: older_certification)
         create(:determination,
                subject: older_certification,
                outcome: "compliant",
@@ -220,9 +220,9 @@ RSpec.describe "Dashboard", type: :request do
 
     context "with a prior certification still in progress" do
       let!(:older_certification) { create(:certification, member_data: member_data) }
-      let!(:older_certification_case) { create(:certification_case, certification: older_certification) }
 
       before do
+        create(:certification_case, certification: older_certification)
         older_certification.update!(created_at: 2.months.ago)
         certification.update!(created_at: 1.day.ago)
       end

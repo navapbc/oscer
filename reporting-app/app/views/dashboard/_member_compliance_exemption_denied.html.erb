@@ -1,9 +1,8 @@
 <%# OSCER-337 frame: Not exempt — start reporting / denied (Figma 7203:5090) %>
 <% compliance = local_assigns.fetch(:compliance) %>
-<% alert_variant = member_compliance_exemption_denied_alert_variant(compliance) %>
 
 <div class="member-dashboard-compliance__exemption-status">
-  <div class="member-dashboard-compliance__alert member-dashboard-compliance__alert--<%= alert_variant %>"
+  <div class="member-dashboard-compliance__alert member-dashboard-compliance__alert--error"
        role="alert"
        aria-labelledby="member-compliance-exemption-denied-alert-heading">
     <h3 id="member-compliance-exemption-denied-alert-heading" class="member-dashboard-compliance__alert-heading">

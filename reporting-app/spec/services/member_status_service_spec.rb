@@ -482,10 +482,10 @@ RSpec.describe MemberStatusService do
     let(:current_certification) { create(:certification) }
     let(:completed_certification) { create(:certification) }
     let(:in_progress_certification) { create(:certification) }
-    let!(:completed_case) { create(:certification_case, certification: completed_certification) }
-    let!(:in_progress_case) { create(:certification_case, certification: in_progress_certification) }
 
     before do
+      create(:certification_case, certification: completed_certification)
+      create(:certification_case, certification: in_progress_certification)
       create(:determination,
              subject: completed_certification,
              outcome: "exempt",
