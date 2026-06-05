@@ -24,14 +24,17 @@
 
       <main id="main-content" class="grid-col-fill display-flex flex-column">
         <div class="grid-col-fill <%= yield :main_col_class %>">
+          <% flash_visible = flash[:notice].present? || flash[:errors].present? || alert.present? || notice.present? %>
           <% unless @suppress_base_flash_section %>
-            <section class="usa-section padding-y-4">
-              <div class="grid-container">
-                <div id="flash-messages">
-                  <%= render partial: "application/flash" %>
+            <% if flash_visible %>
+              <section class="usa-section padding-y-4">
+                <div class="grid-container">
+                  <div id="flash-messages">
+                    <%= render partial: "application/flash" %>
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
+            <% end %>
           <% end %>
 
           <%= yield :banner if content_for?(:banner) %>
