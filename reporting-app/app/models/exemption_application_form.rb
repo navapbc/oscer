@@ -6,8 +6,8 @@ class ExemptionApplicationForm < Strata::ApplicationForm
 
   enum :exemption_type, Exemption.enum_hash
   validates :exemption_type, inclusion: { in: Exemption.types + LEGACY_EXEMPTION_TYPES }, allow_nil: true
-  # At most one in-progress form per case; any number of submitted forms may accumulate over resubmissions.
-  validates :certification_case_id, uniqueness: { conditions: -> { in_progress } }
+
+  validate :no_pending_forms, on: :create
 
   has_many_attached :supporting_documents
 
@@ -34,5 +34,17 @@ class ExemptionApplicationForm < Strata::ApplicationForm
     return status unless task_complete
 
     CertificationCase.find(certification_case_id).exemption_request_approval_status
+  end
+
+  def self.has_pending_form(certification_case_id)
+    ExemptionApplicationForm.where(certification_case_id:, status: :in_progress).exists? ||
+    ReviewExemptionClaimTask.where(application_form: ExemptionApplicationForm.where(certification_case_id:).all,
+                                   status: :pending).exists?
+  end
+
+  private
+
+  def no_pending_forms
+    errors.add(:certification_case_id, "has already been taken") if ExemptionApplicationForm.has_pending_form(certification_case_id)
   end
 end

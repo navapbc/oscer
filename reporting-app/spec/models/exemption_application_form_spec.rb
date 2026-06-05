@@ -22,40 +22,49 @@ RSpec.describe ExemptionApplicationForm, type: :model do
   end
 
   describe "validations" do
-    describe "certification_case_id" do
-      let(:certification) { create(:certification) }
-      let(:certification_case) { create(:certification_case, certification: certification) }
+    let(:certification) { create(:certification) }
+    let(:certification_case) { create(:certification_case, certification: certification) }
 
-      before { allow(Strata::EventManager).to receive(:publish) }
+    it "allows only one in-progress form per case" do
+      create(:exemption_application_form, certification_case_id: certification_case.id)
+      second_form = build(:exemption_application_form, certification_case_id: certification_case.id)
 
-      it "allows only one in-progress form per case" do
-        create(:exemption_application_form, certification_case_id: certification_case.id)
+      expect(second_form.save).to be(false)
+      expect(second_form.errors[:certification_case_id]).to include("has already been taken")
+    end
+
+    it "allows different certification_case_ids" do
+      certification_case_2 = create(:certification_case)
+      create(:exemption_application_form, certification_case_id: certification_case.id)
+      second_form = build(:exemption_application_form, certification_case_id: certification_case_2.id)
+
+      expect(second_form.save).to be(true)
+    end
+
+    context "with existing submitted form" do
+      let!(:first_form) { create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
+
+      it "does not allows a new form if task is still pending" do
         second_form = build(:exemption_application_form, certification_case_id: certification_case.id)
 
         expect(second_form.save).to be(false)
         expect(second_form.errors[:certification_case_id]).to include("has already been taken")
       end
 
-      it "allows a new in-progress form once the prior form is submitted" do
-        create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
-        second_form = build(:exemption_application_form, certification_case_id: certification_case.id)
+      context "with task completed" do
+        before { ReviewExemptionClaimTask.find_by(application_form: first_form).completed! }
 
-        expect(second_form.save).to be(true)
-      end
+        it "allows a new form" do
+          second_form = build(:exemption_application_form, certification_case_id: certification_case.id)
 
-      it "allows multiple submitted forms for the same case" do
-        create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
-        second_form = create(:exemption_application_form, certification_case_id: certification_case.id)
+          expect(second_form.save).to be(true)
+        end
 
-        expect(second_form.submit_application).to be(true)
-      end
+        it "allows multiple submitted forms for the same case" do
+          second_form = create(:exemption_application_form, certification_case_id: certification_case.id)
 
-      it "allows different certification_case_ids" do
-        certification_case_2 = create(:certification_case)
-        create(:exemption_application_form, certification_case_id: certification_case.id)
-        second_form = build(:exemption_application_form, certification_case_id: certification_case_2.id)
-
-        expect(second_form.save).to be(true)
+          expect(second_form.submit_application).to be(true)
+        end
       end
     end
   end
