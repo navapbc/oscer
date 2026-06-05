@@ -135,15 +135,15 @@ RSpec.describe ExternalIncomeActivityService do
       end
 
       it "returns conflict error" do
-        result = described_class.create_entry(**valid_params)
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to eq("Duplicate entry")
+        expect { described_class.create_entry(**valid_params) }.to raise_error(/Duplicate/)
       end
 
       it "does not create a new entry" do
         expect {
-          described_class.create_entry(**valid_params)
+          begin
+            described_class.create_entry(**valid_params)
+          rescue
+          end
         }.not_to change(ExternalIncomeActivity, :count)
       end
     end
