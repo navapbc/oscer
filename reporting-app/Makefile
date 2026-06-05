@@ -228,3 +228,6 @@ openapi-spec: ## Generate OpenAPI spec
 
 help: ## Prints the help documentation and info about each command
 	@grep -Eh '^[/a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+shell: ## Run bash in the container
+	$(DOCKER_CMD) compose $(DOCKER_COMPOSE_ARGS) $(DOCKER_APPROACH) $(DOCKER_RUN_ARGS) --rm $(APP_NAME) bash

@@ -44,7 +44,7 @@ module DashboardHelper
   end
 
   def is_exemption_request_submitted?
-    @exemption_application_form&.submitted? && @certification_case&.exemption_request_approval_status.nil?
+    @exemption_application_form&.flow_status == "submitted"
   end
 
   def is_activity_report_approved?
@@ -52,7 +52,7 @@ module DashboardHelper
   end
 
   def is_exemption_request_approved?
-    @exemption_application_form&.submitted? && @certification_case&.exemption_request_approval_status == "approved"
+    @exemption_application_form&.flow_status == "approved"
   end
 
   def is_activity_report_denied?
@@ -60,6 +60,6 @@ module DashboardHelper
   end
 
   def is_exemption_request_denied?
-    @exemption_application_form&.submitted? && @certification_case&.exemption_request_approval_status == "denied"
+    @exemption_application_form&.flow_status == "denied"
   end
 end

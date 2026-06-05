@@ -162,7 +162,8 @@ RSpec.describe "dashboard/index", type: :view do
       assign(:exemption_application_form, exemption_application_form)
       assign(:certification_case, certification_case)
 
-      certification_case.exemption_request_approval_status = "approved"
+      ReviewExemptionClaimTask.find_by(application_form: exemption_application_form).completed!
+      certification_case.accept_exemption_request(nil)
     end
 
     it 'renders a message that the exemption request is approved' do
@@ -212,7 +213,8 @@ RSpec.describe "dashboard/index", type: :view do
       assign(:exemption_application_form, exemption_application_form)
       assign(:certification_case, certification_case)
 
-      certification_case.exemption_request_approval_status = "denied"
+      ReviewExemptionClaimTask.find_by(application_form: exemption_application_form).completed!
+      certification_case.deny_exemption_request(nil)
     end
 
     it 'renders a message that the exemption request is denied' do
