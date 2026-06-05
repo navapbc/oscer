@@ -9,7 +9,7 @@ class ExternalHourlyActivityService
   class << self
     # Create hours data entry for a member
     # @return [ExternalHourlyActivity] on success
-    # @return [Hash] with :error, :status keys on failure
+    # @raise [ActiveRecord::RecordInvalid] on duplicate entry or validation failure
     def create_entry(member_id:, category:, hours:, period_start:, period_end:,
                      source_type:, source_id: nil)
       entry = ExternalHourlyActivity.new
