@@ -15,7 +15,7 @@ class ExternalIncomeActivityService
     #   compliance for the open case (may +close!+ when compliant); +Certifications::CreationService+ passes +false+.
     # @return [ExternalIncomeActivity] on success
     # @return [Hash] with +:error+ key when a duplicate entry is detected (before save)
-    # @raise [ActiveRecord::RecordInvalid] when validations fail
+# @raise [ActiveRecord::RecordInvalid] on duplicate entry or validation failure
     def create_entry(member_id:, category:, gross_income:, period_start:, period_end:,
                      source_type:, source_id: nil, reported_at: Time.current, metadata: {}, employer: nil,
                      recalculate_income_compliance: true)
