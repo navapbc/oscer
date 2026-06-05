@@ -67,6 +67,33 @@ RSpec.describe ExemptionApplicationForm, type: :model do
         end
       end
     end
+
+    context "when certification closed" do
+      before { certification_case.close! }
+
+      it "does not allow creation" do
+        form = build(:exemption_application_form, certification_case_id: certification_case.id)
+        expect(form.save).to be(false)
+      end
+    end
+
+    context "when verification window closed" do
+      before { certification_case.update_attribute(:verification_window_end_date, 1.day.ago) }
+
+      it "does not allow creation" do
+        form = build(:exemption_application_form, certification_case_id: certification_case.id)
+        expect(form.save).to be(false)
+      end
+    end
+
+    context "when verification window open" do
+      before { certification_case.update_attribute(:verification_window_end_date, 1.day.from_now) }
+
+      it "allows creation" do
+        form = build(:exemption_application_form, certification_case_id: certification_case.id)
+        expect(form.save).to be(true)
+      end
+    end
   end
 
   describe "flow status" do

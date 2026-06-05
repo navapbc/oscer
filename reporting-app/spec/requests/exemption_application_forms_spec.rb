@@ -19,7 +19,8 @@ RSpec.describe "/exemption_application_forms", type: :request do
 
   let(:invalid_attributes) {
     {
-      exemption_type: "Super Rare Exemption Type"
+      exemption_type: "Super Rare Exemption Type",
+      certification_case_id: certification_case.id
     }
   }
 

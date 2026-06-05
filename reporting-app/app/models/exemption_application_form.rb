@@ -7,6 +7,7 @@ class ExemptionApplicationForm < Strata::ApplicationForm
   enum :exemption_type, Exemption.enum_hash
   validates :exemption_type, inclusion: { in: Exemption.types + LEGACY_EXEMPTION_TYPES }, allow_nil: true
 
+  validate :case_not_closed, on: :create
   validate :no_pending_forms, on: :create
 
   has_many_attached :supporting_documents
@@ -43,6 +44,15 @@ class ExemptionApplicationForm < Strata::ApplicationForm
   end
 
   private
+
+  def case_not_closed
+    certification_case = CertificationCase.find_by(id: certification_case_id)
+    if certification_case.closed?
+      errors.add(:certification_case_id, "has closed")
+    elsif certification_case.verification_window_end_date && certification_case.verification_window_end_date < Time.now
+      errors.add(:certification_case_id, "verification window has ended")
+    end
+  end
 
   def no_pending_forms
     errors.add(:certification_case_id, "has already been taken") if ExemptionApplicationForm.has_pending_form(certification_case_id)
