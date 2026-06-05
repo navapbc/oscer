@@ -55,14 +55,6 @@ class Certifications::CreationService
         source_type: ExternalHourlyActivity::SOURCE_TYPES[:api],
         source_id: nil
       )
-
-      # Handle service error response
-      if result.is_a?(Hash) && result[:error]
-        # Create a dummy record to use RecordInvalid pattern
-        activity = ExternalHourlyActivity.new
-        activity.errors.add(:base, result[:error])
-        raise ActiveRecord::RecordInvalid.new(activity)
-      end
     end
   end
 
