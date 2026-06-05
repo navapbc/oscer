@@ -59,4 +59,84 @@ RSpec.describe ExemptionApplicationForm, type: :model do
       end
     end
   end
+
+  describe "flow status" do
+    let(:certification) { create(:certification) }
+    let(:certification_case) { create(:certification_case, certification: certification) }
+
+    before { allow(Strata::EventManager).to receive(:publish) }
+
+    context "without previous exemption request" do
+      it "returns 'in progress' when not submitted" do
+        form = create(:exemption_application_form, certification_case_id: certification_case.id)
+        expect(form.flow_status).to eq "in_progress"
+      end
+
+      it "returns 'submitted' when no task" do
+        form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        expect(form.flow_status).to eq "submitted"
+      end
+
+      it "returns 'submitted' when task pending" do
+        form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        task = create(:review_exemption_claim_task, application_form: form, case: certification_case)
+        expect(form.flow_status).to eq "submitted"
+      end
+
+      it "returns 'approved' when approved" do
+        form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        task = create(:review_exemption_claim_task, application_form: form, case: certification_case)
+        task.completed!
+        certification_case.accept_exemption_request(nil)
+        expect(form.flow_status).to eq "approved"
+      end
+
+      it "returns 'denied' when denied" do
+        form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        task = create(:review_exemption_claim_task, application_form: form, case: certification_case)
+        task.completed!
+        certification_case.deny_exemption_request(nil)
+        expect(form.flow_status).to eq "denied"
+      end
+    end
+
+    context "with previous exemption request" do
+      before do
+        create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        certification_case.deny_exemption_request(nil)
+      end
+
+      it "returns 'in progress' when not submitted" do
+        form = create(:exemption_application_form, certification_case_id: certification_case.id)
+        expect(form.flow_status).to eq "in_progress"
+      end
+
+      it "returns 'submitted' when no task" do
+        form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        expect(form.flow_status).to eq "submitted"
+      end
+
+      it "returns 'submitted' when task pending" do
+        form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        task = create(:review_exemption_claim_task, application_form: form, case: certification_case)
+        expect(form.flow_status).to eq "submitted"
+      end
+
+      it "returns 'approved' when approved" do
+        form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        task = create(:review_exemption_claim_task, application_form: form, case: certification_case)
+        task.completed!
+        certification_case.accept_exemption_request(nil)
+        expect(form.flow_status).to eq "approved"
+      end
+
+      it "returns 'denied' when denied" do
+        form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        task = create(:review_exemption_claim_task, application_form: form, case: certification_case)
+        task.completed!
+        certification_case.deny_exemption_request(nil)
+        expect(form.flow_status).to eq "denied"
+      end
+    end
+  end
 end

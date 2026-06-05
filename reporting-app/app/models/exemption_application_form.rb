@@ -26,4 +26,13 @@ class ExemptionApplicationForm < Strata::ApplicationForm
   def self.information_request_class
     ExemptionInformationRequest
   end
+
+  def flow_status
+    task_complete = ReviewExemptionClaimTask.where(case_id: certification_case_id,
+                                                   application_form: self,
+                                                   status: :completed).exists?
+    return status unless task_complete
+
+    CertificationCase.find(certification_case_id).exemption_request_approval_status
+  end
 end
