@@ -452,4 +452,35 @@ RSpec.describe MemberStatusService do
       end
     end
   end
+
+  describe ".previous_completed_certifications" do
+    let(:current_certification) { create(:certification) }
+    let(:completed_certification) { create(:certification) }
+    let(:in_progress_certification) { create(:certification) }
+
+    before do
+      create(:certification_case, certification: completed_certification)
+      create(:certification_case, certification: in_progress_certification)
+      create(:determination,
+             subject: completed_certification,
+             outcome: "exempt",
+             decision_method: "automated",
+             reasons: [ "age_under_19_exempt" ])
+    end
+
+    it "returns only prior certifications with terminal outcomes" do
+      all_certifications = [ current_certification, completed_certification, in_progress_certification ]
+
+      result = described_class.previous_completed_certifications(
+        all_certifications,
+        current_certification: current_certification
+      )
+
+      expect(result).to eq([ completed_certification ])
+    end
+
+    it "returns an empty array when the current certification is blank" do
+      expect(described_class.previous_completed_certifications([], current_certification: nil)).to eq([])
+    end
+  end
 end

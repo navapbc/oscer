@@ -3,6 +3,7 @@
 @forward "sso";
 @forward "uswds-overrides";
 @forward "overrides";
+@forward "member_dashboard";
 
 @use "uswds-core" as *;
 

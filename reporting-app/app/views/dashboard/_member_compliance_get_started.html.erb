@@ -1,0 +1,24 @@
+<%# OSCER-337 frame: Get started (exemption not started, no activity report — Figma 7203:6175) %>
+<% compliance = local_assigns.fetch(:compliance) %>
+<% certification_case = local_assigns[:certification_case] %>
+
+<div class="member-dashboard-compliance__onboarding">
+  <div class="member-dashboard-compliance__alert member-dashboard-compliance__alert--info"
+       role="alert"
+       aria-labelledby="member-compliance-get-started-alert-heading">
+    <h3 id="member-compliance-get-started-alert-heading" class="member-dashboard-compliance__alert-heading">
+      <%= t("dashboard.member_compliance.exemption_alerts.not_started.title") %>
+    </h3>
+    <p class="member-dashboard-compliance__alert-text">
+      <%= t("dashboard.member_compliance.exemption_alerts.not_started.body") %>
+    </p>
+  </div>
+
+  <div class="member-dashboard-compliance__onboarding-cta">
+    <%= link_to t("dashboard.member_compliance.exemption_alerts.not_started.button"),
+          exemption_screener_path(certification_case_id: certification_case&.id),
+          class: "usa-button" %>
+  </div>
+
+  <%= render "dashboard/member_compliance_about_reporting", compliance: compliance %>
+</div>

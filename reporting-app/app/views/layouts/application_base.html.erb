@@ -24,13 +24,17 @@
 
       <main id="main-content" class="grid-col-fill display-flex flex-column">
         <div class="grid-col-fill <%= yield :main_col_class %>">
-          <section class="usa-section padding-y-4">
-            <div class="grid-container">
-              <div id="flash-messages">
-                <%= render partial: 'application/flash' %>
+          <% unless @suppress_base_flash_section %>
+            <section class="usa-section padding-y-4">
+              <div class="grid-container">
+                <div id="flash-messages">
+                  <%= render partial: "application/flash" %>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          <% end %>
+
+          <%= yield :banner if content_for?(:banner) %>
 
           <%= content_for?(:main_content) ? yield(:main_content) : yield %>
         </div>
