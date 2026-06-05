@@ -43,7 +43,7 @@ RSpec.describe "ExemptionScreeners", type: :request do
       end
     end
 
-    context "when exemption application already exists" do
+    context "when exemption application already started" do
       before do
         create(:exemption_application_form,
           certification_case_id: certification_case.id,
@@ -57,6 +57,43 @@ RSpec.describe "ExemptionScreeners", type: :request do
         expect(response).to redirect_to(dashboard_path)
         follow_redirect!
         expect(response.body).to include("already have an exemption application")
+      end
+    end
+
+    context "when exemption application already submitted" do
+      before do
+        create(:exemption_application_form,
+          :with_submitted_status,
+          certification_case_id: certification_case.id,
+          user_id: user.id
+        )
+      end
+
+      it "redirects to dashboard with notice" do
+        get exemption_screener_path(certification_case_id: certification_case.id)
+
+        expect(response).to redirect_to(dashboard_path)
+        follow_redirect!
+        expect(response.body).to include("already have an exemption application")
+      end
+    end
+
+    context "when exemption application already completed" do
+      before do
+        application_form = create(:exemption_application_form,
+          :with_submitted_status,
+          certification_case_id: certification_case.id,
+          user_id: user.id
+        )
+        ReviewExemptionClaimTask.find_by(application_form:).completed!
+      end
+
+      it "renders the intro page" do
+        get exemption_screener_path(certification_case_id: certification_case.id)
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Tell us about your situation")
+        expect(response.body).to include("Start")
       end
     end
   end

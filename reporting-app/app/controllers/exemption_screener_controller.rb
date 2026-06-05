@@ -93,9 +93,11 @@ class ExemptionScreenerController < ApplicationController
   end
 
   def check_existing_application
-    existing_application = ExemptionApplicationForm.find_by(certification_case_id: @certification_case.id)
+    blocker_exists = ExemptionApplicationForm.where(certification_case_id: @certification_case.id, status: :in_progress).exists?
+    blocker_exists ||= ReviewExemptionClaimTask.where(application_form: ExemptionApplicationForm.where(certification_case_id: @certification_case.id).all,
+                                                      status: :pending).exists?
 
-    return unless existing_application.present?
+    return unless blocker_exists
 
     redirect_to dashboard_path,
       notice: t("exemption_screener.errors.application_exists")
