@@ -56,6 +56,8 @@ class MemberDashboardCompliance
   attr_reader :report_status_token,
               :latest_determination,
               :show_income_summary,
+              :activity_report_application_form,
+              :exemption_application_form,
               :total_hours_reported,
               :target_hours,
               :hours_needed,

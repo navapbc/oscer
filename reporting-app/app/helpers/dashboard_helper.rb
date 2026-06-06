@@ -62,4 +62,11 @@ module DashboardHelper
   def is_exemption_request_denied?
     @exemption_application_form&.submitted? && @certification_case&.exemption_request_approval_status == "denied"
   end
+
+  # Figma "Get started" — exemption screener CTA before any application forms exist (7203:6175).
+  def member_dashboard_get_started_screen?(compliance)
+    compliance.exemption_flow_state == MemberDashboardCompliance::EXEMPTION_NOT_STARTED &&
+      compliance.activity_report_application_form.blank? &&
+      compliance.exemption_application_form.blank?
+  end
 end

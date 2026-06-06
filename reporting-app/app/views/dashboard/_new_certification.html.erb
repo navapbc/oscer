@@ -1,4 +1,4 @@
-<% if local_assigns[:compliance].present? && member_compliance_get_started_screen?(compliance, activity_report: activity_report) %>
+<% if local_assigns[:compliance].present? && member_dashboard_get_started_screen?(compliance) %>
   <div class="grid-container member-dashboard-compliance">
     <%= render "dashboard/member_compliance_get_started",
                compliance: compliance,
