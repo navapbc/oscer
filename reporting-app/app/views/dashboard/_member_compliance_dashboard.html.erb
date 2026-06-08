@@ -11,9 +11,7 @@
                compliance: compliance,
                certification_case: certification_case,
                exemption_application: exemption_application,
-               activity_report: local_assigns[:activity_report],
-               exemption_supplementary_button_label: local_assigns[:exemption_supplementary_button_label],
-               exemption_supplementary_button_path: local_assigns[:exemption_supplementary_button_path] %>
+               activity_report: local_assigns[:activity_report] %>
   <% else %>
     <%= render "dashboard/compliance_status",
                current_period: local_assigns[:current_period],
@@ -23,10 +21,10 @@
                hours_needed: local_assigns[:hours_needed] %>
   <% end %>
 
-  <% if local_assigns[:supplementary_button_label].present? && local_assigns[:supplementary_button_path].present? %>
-    <div class="margin-top-3">
-      <%= link_to local_assigns[:supplementary_button_label],
-            local_assigns[:supplementary_button_path],
+  <% if local_assigns[:primary_action_label].present? && local_assigns[:primary_action_path].present? %>
+    <div class="member-dashboard-compliance__exemption-action">
+      <%= link_to local_assigns[:primary_action_label],
+            local_assigns[:primary_action_path],
             class: "usa-button" %>
     </div>
   <% end %>

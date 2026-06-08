@@ -1,6 +1,6 @@
 <%# Exemption outcome states — alerts, history, badges (OSCER-337 / #640).
-    Handles approved (exempt), pending review, and denied (does not qualify).
-    Draft and get-started states are owned by other slices (#641, #639). %>
+    Valid only for pending_review, approved, and denied. Draft and get-started
+    states are owned by other slices (#641, #639). %>
 <% compliance = local_assigns.fetch(:compliance) %>
 
 <% exemption_section_labelledby = if show_member_compliance_exemption_details_heading?(compliance)
@@ -23,13 +23,8 @@
 
   <% when MemberDashboardCompliance::EXEMPTION_DENIED %>
     <%= render "dashboard/member_compliance_exemption_denied", compliance: compliance %>
-  <% end %>
 
-  <% if local_assigns[:exemption_supplementary_button_label].present? && local_assigns[:exemption_supplementary_button_path].present? %>
-    <div class="member-dashboard-compliance__exemption-action">
-      <%= link_to local_assigns[:exemption_supplementary_button_label],
-            local_assigns[:exemption_supplementary_button_path],
-            class: "usa-button" %>
-    </div>
+  <% else %>
+    <% guard_member_compliance_exemption_outcome_state!(compliance.exemption_flow_state) %>
   <% end %>
 </section>

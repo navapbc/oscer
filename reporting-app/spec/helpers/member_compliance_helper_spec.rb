@@ -3,11 +3,25 @@
 require "rails_helper"
 
 RSpec.describe MemberComplianceHelper, type: :helper do
+  let(:certification) { create(:certification) }
+  let(:certification_case) { create(:certification_case, certification_id: certification.id) }
+  let(:member_status) { MemberStatusService.determine(certification) }
+
   def compliance_double(exemption_flow_state: nil, due_date: nil)
     instance_double(
       MemberDashboardCompliance,
       exemption_flow_state: exemption_flow_state,
       due_date: due_date
+    )
+  end
+
+  def build_compliance(activity_report_application_form: nil, exemption_application_form: nil)
+    MemberDashboardComplianceService.build(
+      certification: certification,
+      activity_report_application_form: activity_report_application_form,
+      certification_case: certification_case,
+      exemption_application_form: exemption_application_form,
+      member_status: member_status
     )
   end
 
@@ -70,6 +84,38 @@ RSpec.describe MemberComplianceHelper, type: :helper do
     it "is true only for the pending review state" do
       expect(helper.member_compliance_exemption_pending_review_screen?(compliance_double(exemption_flow_state: MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW))).to be(true)
       expect(helper.member_compliance_exemption_pending_review_screen?(compliance_double(exemption_flow_state: MemberDashboardCompliance::EXEMPTION_APPROVED))).to be(false)
+    end
+  end
+
+  describe "#member_dashboard_get_started_screen?" do
+    it "is true when exemption has not started and no application forms exist" do
+      expect(helper.member_dashboard_get_started_screen?(build_compliance)).to be(true)
+    end
+
+    it "is false when an activity report exists" do
+      activity_report = create(:activity_report_application_form, certification_case_id: certification_case.id)
+
+      expect(helper.member_dashboard_get_started_screen?(build_compliance(activity_report_application_form: activity_report))).to be(false)
+    end
+
+    it "is false when an exemption application exists" do
+      exemption = create(:exemption_application_form, certification_case_id: certification_case.id)
+
+      expect(helper.member_dashboard_get_started_screen?(build_compliance(exemption_application_form: exemption))).to be(false)
+    end
+  end
+
+  describe "#guard_member_compliance_exemption_outcome_state!" do
+    it "does not raise for pending review, approved, or denied" do
+      MemberComplianceHelper::EXEMPTION_OUTCOME_FLOW_STATES.each do |state|
+        expect { helper.guard_member_compliance_exemption_outcome_state!(state) }.not_to raise_error
+      end
+    end
+
+    it "raises in test for unexpected flow states" do
+      expect {
+        helper.guard_member_compliance_exemption_outcome_state!(MemberDashboardCompliance::EXEMPTION_NOT_STARTED)
+      }.to raise_error(/unexpected exemption_flow_state/)
     end
   end
 end
