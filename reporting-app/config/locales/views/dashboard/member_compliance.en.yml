@@ -1,11 +1,33 @@
 en:
   dashboard:
     member_compliance:
+      exemption_type_unknown: "Exemption request"
+      exemption_details_heading: "Exemption details"
+      exemption_request_history_heading: "Exemption request history"
+      exemption_history:
+        exemption_type: "Exemption type"
+        date_submitted: "Date Submitted"
+        status: "Status"
       exemption_alerts:
         not_started:
           title: "Before you can report activities, let's see if you qualify for an exemption."
           body: "Answer a few quick questions to find out if you're excused from the work reporting requirement. If you don't qualify, you'll be taken directly to report your activities."
           button: "Get started"
+        pending_review:
+          title: "Exemption under review"
+          body: "Your request has been submitted and is currently under review. In the meantime, you don't need to take any action."
+          footer: "You'll receive a notification once a decision has been made. If your exemption is approved, you will not need to report work activities for as long as your exemption is active. If it is not approved, you'll be prompted to begin reporting."
+        approved:
+          title: "You are eligible for an exemption"
+          body: "You qualify for an exemption for this reporting period. You do not need to report activities or income while your exemption is active. No further action is needed."
+        denied:
+          title: "You don't qualify for an exemption"
+          body: "You are required to report %{target_hours} hours of qualifying activities or %{target_income} income for this reporting period. You'll need to submit your report by %{due_date} to keep your coverage active."
+          body_hours: "Based on your answers, you are required to report %{target_hours} hours of qualifying activity each month. You'll need to submit your report by %{due_date} to keep your coverage active for %{coverage_month}."
+      exemption_badges:
+        exempt: "Exempt"
+        not_exempt: "Not exempt"
+        under_review: "Under review"
       about_reporting:
         heading: "About the reporting requirement"
         intro: "To maintain your Medicaid eligibility, adults must either:"

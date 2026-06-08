@@ -1,0 +1,27 @@
+<%# OSCER-337 frame: Does not qualify — exemption denied (Figma 7203:5090 / 7203:4779) %>
+<% compliance = local_assigns.fetch(:compliance) %>
+
+<div class="member-dashboard-compliance__exemption-status">
+  <div class="member-dashboard-compliance__alert member-dashboard-compliance__alert--error"
+       role="alert"
+       aria-labelledby="member-compliance-exemption-denied-alert-heading">
+    <h3 id="member-compliance-exemption-denied-alert-heading" class="member-dashboard-compliance__alert-heading">
+      <%= t("dashboard.member_compliance.exemption_alerts.denied.title") %>
+    </h3>
+    <p class="member-dashboard-compliance__alert-text">
+      <% if compliance.show_income_summary %>
+        <%= t("dashboard.member_compliance.exemption_alerts.denied.body",
+              target_hours: compliance.target_hours,
+              target_income: number_to_currency(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY, precision: 0),
+              due_date: member_compliance_due_date(compliance)) %>
+      <% else %>
+        <%= t("dashboard.member_compliance.exemption_alerts.denied.body_hours",
+              target_hours: compliance.target_hours,
+              due_date: member_compliance_due_date(compliance),
+              coverage_month: member_compliance_coverage_month(compliance, with_year: false)) %>
+      <% end %>
+    </p>
+  </div>
+
+  <%= render "dashboard/member_compliance_exemption_history", compliance: compliance %>
+</div>

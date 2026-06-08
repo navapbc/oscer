@@ -1,16 +1,15 @@
-<div class="grid-container">
-  <%= render AlertComponent.new(type: AlertComponent::TYPES::ERROR, heading: t(".heading"), message: t(".intro"), heading_level: 3) %>
-  <div class="margin-top-3">
-    <% if activity_report&.in_progress? %>
-      <% continue_path = feature_enabled?(:doc_ai) && !session[:doc_ai_skip] ?
-            doc_ai_upload_activity_report_application_form_path(activity_report) :
-            activity_report_application_form_path(activity_report) %>
-      <%= link_to t("dashboard.new_certification.activity_report.continue_report_button"), continue_path,
-            class: "usa-button margin-right-2 margin-bottom-1" %>
-    <% else %>
-      <%= link_to t("dashboard.new_certification.current_period.report_activities_button"), new_activity_report_application_form_path(certification_case_id: certification_case&.id),
-            class: "usa-button margin-right-2 margin-bottom-1" %>
-    <% end %>
-    <%= link_to t(".view_exemption_button"), exemption_application_form_path(exemption_application), class: "usa-button usa-button--outline margin-bottom-1" %>
-  </div>
-</div>
+<%# Does not qualify — delegates to the compliance dashboard (OSCER-337 / #640).
+    No retake-screener CTA after a caseworker denial (per AC); reporting CTAs arrive
+    in OSCER-642. The member can still review their submitted exemption request. %>
+<%= render "dashboard/member_compliance_dashboard",
+           compliance: compliance,
+           activity_report: local_assigns[:activity_report],
+           exemption_application: exemption_application,
+           certification_case: certification_case,
+           current_period: current_period,
+           target_hours: target_hours,
+           period_end_date: period_end_date,
+           total_hours_reported: total_hours_reported,
+           hours_needed: hours_needed,
+           exemption_supplementary_button_label: t(".view_exemption_button"),
+           exemption_supplementary_button_path: exemption_application_form_path(exemption_application) %>

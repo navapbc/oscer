@@ -1,0 +1,33 @@
+<%# Shared member compliance shell (OSCER-337 / #640).
+    Exemption-outcome states render the exemption block; the reporting section
+    (progress cards / activity tables) is added in later slices (#642, #643). %>
+<% compliance = local_assigns.fetch(:compliance) %>
+<% certification_case = local_assigns[:certification_case] %>
+<% exemption_application = local_assigns[:exemption_application] %>
+
+<div class="member-dashboard-compliance">
+  <% if compliance.present? %>
+    <%= render "dashboard/member_compliance_exemption",
+               compliance: compliance,
+               certification_case: certification_case,
+               exemption_application: exemption_application,
+               activity_report: local_assigns[:activity_report],
+               exemption_supplementary_button_label: local_assigns[:exemption_supplementary_button_label],
+               exemption_supplementary_button_path: local_assigns[:exemption_supplementary_button_path] %>
+  <% else %>
+    <%= render "dashboard/compliance_status",
+               current_period: local_assigns[:current_period],
+               target_hours: local_assigns[:target_hours],
+               period_end_date: local_assigns[:period_end_date],
+               total_hours_reported: local_assigns[:total_hours_reported],
+               hours_needed: local_assigns[:hours_needed] %>
+  <% end %>
+
+  <% if local_assigns[:supplementary_button_label].present? && local_assigns[:supplementary_button_path].present? %>
+    <div class="margin-top-3">
+      <%= link_to local_assigns[:supplementary_button_label],
+            local_assigns[:supplementary_button_path],
+            class: "usa-button" %>
+    </div>
+  <% end %>
+</div>
