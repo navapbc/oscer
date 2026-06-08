@@ -50,59 +50,38 @@ RSpec.describe ExternalHourlyActivityService do
       end
 
       it "returns conflict error" do
-        result = described_class.create_entry(**valid_params)
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to eq("Duplicate entry")
-        expect(result[:status]).to eq(:conflict)
+        expect { described_class.create_entry(**valid_params) }.to raise_error(/Duplicate entry/)
       end
 
       it "does not create a new entry" do
         expect {
-          described_class.create_entry(**valid_params)
+          begin
+            described_class.create_entry(**valid_params)
+          rescue
+          end
         }.not_to change(ExternalHourlyActivity, :count)
       end
     end
 
     context "with validation errors" do
       it "returns error for missing member_id" do
-        result = described_class.create_entry(**valid_params.merge(member_id: nil))
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to include("Member")
-        expect(result[:status]).to eq(:unprocessable_entity)
+        expect { described_class.create_entry(**valid_params.merge(member_id: nil)) }.to raise_error(/Member/)
       end
 
       it "returns error for invalid category" do
-        result = described_class.create_entry(**valid_params.merge(category: "invalid"))
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to include("Category")
-        expect(result[:status]).to eq(:unprocessable_entity)
+        expect { described_class.create_entry(**valid_params.merge(category: "invalid")) }.to raise_error(/Category/)
       end
 
       it "returns error for zero hours" do
-        result = described_class.create_entry(**valid_params.merge(hours: 0))
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to include("Hours")
-        expect(result[:status]).to eq(:unprocessable_entity)
+        expect { described_class.create_entry(**valid_params.merge(hours: 0)) }.to raise_error(/Hours/)
       end
 
       it "returns error for negative hours" do
-        result = described_class.create_entry(**valid_params.merge(hours: -10))
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to include("Hours")
-        expect(result[:status]).to eq(:unprocessable_entity)
+        expect { described_class.create_entry(**valid_params.merge(hours: -10)) }.to raise_error(/Hours/)
       end
 
       it "returns error for invalid source_type" do
-        result = described_class.create_entry(**valid_params.merge(source_type: "invalid"))
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to include("Source type")
-        expect(result[:status]).to eq(:unprocessable_entity)
+        expect { described_class.create_entry(**valid_params.merge(source_type: "invalid")) }.to raise_error(/Source type/)
       end
     end
 
