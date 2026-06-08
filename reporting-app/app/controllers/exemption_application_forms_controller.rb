@@ -122,6 +122,8 @@ class ExemptionApplicationFormsController < ApplicationController
     rescue ActiveRecord::RecordInvalid => e
       if e.record.errors[:certification_case_id].include?("has already been taken")
         redirect_to dashboard_path, notice: "An exemption application already exists for this certification case"
+      elsif e.record.errors[:certification_case_id].include?("has closed")
+        redirect_to dashboard_path, notice: "Certification case has been closed"
       else
         raise
       end
