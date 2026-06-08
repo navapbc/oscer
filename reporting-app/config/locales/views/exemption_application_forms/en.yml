@@ -40,3 +40,6 @@ en:
         status:
           in_progress: "Complete and submit your exemption"
           submitted: "Your exemption is being reviewed"
+    errors:
+      other_exemption_exists: "An exemption application already exists for this certification case"
+      case_closed: "Certification case has been closed"

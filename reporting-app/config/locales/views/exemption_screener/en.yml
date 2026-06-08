@@ -46,6 +46,7 @@ en:
 
     errors:
       no_certification_case: "Unable to access exemption screener. Please return to your dashboard."
+      case_closed: "Unable to create your exemption application as this certification has closed."
       application_exists: "You already have an exemption application for this certification period."
       invalid_question: "Invalid question. Please start the screener again."
       creation_failed: "Unable to create your exemption application. Please try again."

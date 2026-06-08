@@ -4,6 +4,7 @@ class ExemptionScreenerController < ApplicationController
   before_action :set_certification_case
   before_action :set_certification, if: -> { @certification_case.present? }
   before_action :ensure_certification_case
+  before_action :ensure_certification_case_open
   before_action :authorize_access
   before_action :check_existing_application
   before_action :set_current_exemption_type, only: %i[show answer may_qualify create_application]
@@ -84,6 +85,12 @@ class ExemptionScreenerController < ApplicationController
     return if @certification_case.present?
 
     redirect_to dashboard_path, alert: t("exemption_screener.errors.no_certification_case")
+  end
+
+  def ensure_certification_case_open
+    return if @certification_case.open?
+
+    redirect_to dashboard_path, alert: t("exemption_screener.errors.case_closed")
   end
 
   def authorize_access

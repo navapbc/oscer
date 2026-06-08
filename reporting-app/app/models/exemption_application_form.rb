@@ -29,25 +29,33 @@ class ExemptionApplicationForm < Strata::ApplicationForm
   end
 
   def flow_status
-    task_complete = ReviewExemptionClaimTask.where(case_id: certification_case_id,
-                                                   application_form: self,
-                                                   status: :completed).exists?
-    return status unless task_complete
+    unless @flow_status.present?
+      task_complete = ReviewExemptionClaimTask.where(case_id: certification_case_id,
+                                                     application_form: self,
+                                                     status: :completed).exists?
+      @flow_status = if task_complete
+                       CertificationCase.find(certification_case_id).exemption_request_approval_status
+      else
+                       status
+      end
+    end
 
-    CertificationCase.find(certification_case_id).exemption_request_approval_status
+    @flow_status
   end
 
   def self.has_pending_form(certification_case_id)
     ExemptionApplicationForm.where(certification_case_id:, status: :in_progress).exists? ||
     ReviewExemptionClaimTask.where(application_form: ExemptionApplicationForm.where(certification_case_id:).all,
-                                   status: :pending).exists?
+                                   status: [:on_hold, :pending]).exists?
   end
 
   private
 
   def case_not_closed
     certification_case = CertificationCase.find_by(id: certification_case_id)
-    if certification_case.closed?
+    if certification_case.blank?
+      errors.add(:certification_case_id, "is invalid")
+    elsif certification_case.closed?
       errors.add(:certification_case_id, "has closed")
     elsif certification_case.verification_window_end_date && certification_case.verification_window_end_date < Time.now
       errors.add(:certification_case_id, "verification window has ended")

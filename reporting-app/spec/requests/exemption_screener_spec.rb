@@ -43,6 +43,18 @@ RSpec.describe "ExemptionScreeners", type: :request do
       end
     end
 
+    context "when certification closed" do
+      it "redirects to dashboard with notice" do
+        certification_case.close!
+
+        get exemption_screener_path(certification_case_id: certification_case.id)
+
+        expect(response).to redirect_to(dashboard_path)
+        follow_redirect!
+        expect(response.body).to include("has closed")
+      end
+    end
+
     context "when exemption application already started" do
       before do
         create(:exemption_application_form,

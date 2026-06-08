@@ -51,6 +51,16 @@ RSpec.describe ExemptionApplicationForm, type: :model do
         expect(second_form.errors[:certification_case_id]).to include("has already been taken")
       end
 
+      context "with task on hold" do
+        before { ReviewExemptionClaimTask.find_by(application_form: first_form).on_hold! }
+
+        it "does not allow a new form" do
+          second_form = build(:exemption_application_form, certification_case_id: certification_case.id)
+
+          expect(second_form.save).to be(false)
+        end
+      end
+
       context "with task completed" do
         before { ReviewExemptionClaimTask.find_by(application_form: first_form).completed! }
 
