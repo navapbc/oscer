@@ -77,7 +77,6 @@ RSpec.describe "/exemption_application_forms", type: :request do
         end
 
         it "redirects to dashboard with notice" do
-
           post exemption_application_forms_url, params: { exemption_application_form: valid_attributes }
           expect(response).to redirect_to(dashboard_path)
           follow_redirect!
