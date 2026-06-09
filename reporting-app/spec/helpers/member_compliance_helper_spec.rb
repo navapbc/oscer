@@ -112,7 +112,7 @@ RSpec.describe MemberComplianceHelper, type: :helper do
         certification_case: certification_case
       )
 
-      expect(action[:label]).to eq(I18n.t("dashboard.new_certification.current_period.report_activities_button"))
+      expect(action[:label]).to eq(I18n.t("dashboard.member_compliance.reporting.start_reporting_activities_button"))
       expect(action[:path]).to eq(new_activity_report_application_form_path(certification_case_id: certification_case.id))
     end
 
@@ -123,7 +123,7 @@ RSpec.describe MemberComplianceHelper, type: :helper do
         certification_case: certification_case
       )
 
-      expect(action[:label]).to eq(I18n.t("dashboard.new_certification.activity_report.continue_report_button"))
+      expect(action[:label]).to eq(I18n.t("dashboard.member_compliance.reporting.continue_report_button"))
       expect(action[:path]).to eq(activity_report_application_form_path(activity_report))
     end
   end

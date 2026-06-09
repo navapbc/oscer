@@ -441,7 +441,7 @@ RSpec.describe "dashboard/index", type: :view do
       render
       expect(rendered).to have_selector(
         'a',
-        text: I18n.t('dashboard.new_certification.current_period.report_activities_button')
+        text: I18n.t('dashboard.member_compliance.reporting.start_reporting_activities_button')
       )
     end
 
@@ -459,7 +459,7 @@ RSpec.describe "dashboard/index", type: :view do
         render
         expect(rendered).to have_selector(
           'a',
-          text: I18n.t('dashboard.new_certification.activity_report.continue_report_button')
+          text: I18n.t('dashboard.member_compliance.reporting.continue_report_button')
         )
       end
     end

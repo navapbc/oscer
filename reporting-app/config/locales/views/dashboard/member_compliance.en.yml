@@ -24,6 +24,9 @@ en:
           title: "You don't qualify for an exemption"
           body: "You are required to report %{target_hours} hours of qualifying activities or %{target_income} income for this reporting period. You'll need to submit your report by %{due_date} to keep your coverage active."
           body_hours: "Based on your answers, you are required to report %{target_hours} hours of qualifying activity each month. You'll need to submit your report by %{due_date} to keep your coverage active for %{coverage_month}."
+      reporting:
+        start_reporting_activities_button: "Start reporting activities"
+        continue_report_button: "Continue report"
       exemption_badges:
         exempt: "Exempt"
         not_exempt: "Not exempt"

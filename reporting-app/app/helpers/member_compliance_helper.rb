@@ -64,12 +64,12 @@ module MemberComplianceHelper
                         activity_report_application_form_path(activity_report)
 
       {
-        label: t("dashboard.new_certification.activity_report.continue_report_button"),
+        label: t("dashboard.member_compliance.reporting.continue_report_button"),
         path: continue_path
       }
     else
       {
-        label: t("dashboard.new_certification.current_period.report_activities_button"),
+        label: t("dashboard.member_compliance.reporting.start_reporting_activities_button"),
         path: new_activity_report_application_form_path(certification_case_id: certification_case&.id)
       }
     end
