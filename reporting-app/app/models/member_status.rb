@@ -45,6 +45,9 @@ class MemberStatus < Strata::ValueObject
   NOT_COMPLIANT = "not_compliant"
   PENDING_REVIEW = "pending_review"
 
+  # Outcomes that mean a certification period is finished (used for "previous completed" dashboard UI).
+  TERMINAL_CERTIFICATION_STATUSES = [ COMPLIANT, EXEMPT, NOT_COMPLIANT ].freeze
+
   include Strata::Attributes
 
   strata_attribute :status, :string
@@ -72,5 +75,10 @@ class MemberStatus < Strata::ValueObject
     when EXEMPT then DASHBOARD_REPORT_EXEMPT
     else DASHBOARD_REPORT_IN_PROGRESS
     end
+  end
+
+  # @return [Boolean] true when the member's certification period has a final outcome
+  def certification_period_completed?
+    status.in?(TERMINAL_CERTIFICATION_STATUSES)
   end
 end
