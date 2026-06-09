@@ -21,11 +21,19 @@
                hours_needed: local_assigns[:hours_needed] %>
   <% end %>
 
-  <% if local_assigns[:primary_action_label].present? && local_assigns[:primary_action_path].present? %>
+  <% if local_assigns[:primary_action_label].present? && local_assigns[:primary_action_path].present? ||
+        local_assigns[:secondary_action_label].present? && local_assigns[:secondary_action_path].present? %>
     <div class="member-dashboard-compliance__exemption-action">
-      <%= link_to local_assigns[:primary_action_label],
-            local_assigns[:primary_action_path],
-            class: "usa-button" %>
+      <% if local_assigns[:primary_action_label].present? && local_assigns[:primary_action_path].present? %>
+        <%= link_to local_assigns[:primary_action_label],
+              local_assigns[:primary_action_path],
+              class: "usa-button margin-right-2 margin-bottom-1" %>
+      <% end %>
+      <% if local_assigns[:secondary_action_label].present? && local_assigns[:secondary_action_path].present? %>
+        <%= link_to local_assigns[:secondary_action_label],
+              local_assigns[:secondary_action_path],
+              class: "usa-button usa-button--outline margin-bottom-1" %>
+      <% end %>
     </div>
   <% end %>
 </div>

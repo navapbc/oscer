@@ -74,6 +74,7 @@ RSpec.describe "/dashboard", type: :request do
       certification_case.update!(exemption_request_approval_status: "denied")
       get "/dashboard"
       expect(response.body).to include("member-dashboard-compliance__alert--error")
+      expect(response.body).to include(I18n.t("dashboard.new_certification.current_period.report_activities_button"))
     end
   end
 end

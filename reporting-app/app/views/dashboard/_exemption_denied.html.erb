@@ -1,6 +1,10 @@
 <%# Does not qualify — delegates to the compliance dashboard (OSCER-337 / #640).
-    No retake-screener CTA after a caseworker denial (per AC); reporting CTAs arrive
-    in OSCER-642. The member can still review their submitted exemption request. %>
+    No retake-screener CTA after a caseworker denial (per AC). Reporting uses the
+    existing activity-report flow until the dashboard reporting section (#642). %>
+<% report_action = member_compliance_activity_report_action(
+     activity_report: local_assigns[:activity_report],
+     certification_case: certification_case
+   ) %>
 <%= render "dashboard/member_compliance_dashboard",
            compliance: compliance,
            activity_report: local_assigns[:activity_report],
@@ -11,5 +15,7 @@
            period_end_date: period_end_date,
            total_hours_reported: total_hours_reported,
            hours_needed: hours_needed,
-           primary_action_label: t(".view_exemption_button"),
-           primary_action_path: exemption_application_form_path(exemption_application) %>
+           primary_action_label: report_action[:label],
+           primary_action_path: report_action[:path],
+           secondary_action_label: t(".view_exemption_button"),
+           secondary_action_path: exemption_application_form_path(exemption_application) %>

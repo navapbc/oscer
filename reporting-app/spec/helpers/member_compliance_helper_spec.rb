@@ -105,6 +105,29 @@ RSpec.describe MemberComplianceHelper, type: :helper do
     end
   end
 
+  describe "#member_compliance_activity_report_action" do
+    it "returns new-report label and path when no activity report exists" do
+      action = helper.member_compliance_activity_report_action(
+        activity_report: nil,
+        certification_case: certification_case
+      )
+
+      expect(action[:label]).to eq(I18n.t("dashboard.new_certification.current_period.report_activities_button"))
+      expect(action[:path]).to eq(new_activity_report_application_form_path(certification_case_id: certification_case.id))
+    end
+
+    it "returns continue-report label and path when an activity report is in progress" do
+      activity_report = create(:activity_report_application_form, certification_case_id: certification_case.id)
+      action = helper.member_compliance_activity_report_action(
+        activity_report: activity_report,
+        certification_case: certification_case
+      )
+
+      expect(action[:label]).to eq(I18n.t("dashboard.new_certification.activity_report.continue_report_button"))
+      expect(action[:path]).to eq(activity_report_application_form_path(activity_report))
+    end
+  end
+
   describe "#guard_member_compliance_exemption_outcome_state!" do
     it "does not raise for pending review, approved, or denied" do
       MemberComplianceHelper::EXEMPTION_OUTCOME_FLOW_STATES.each do |state|

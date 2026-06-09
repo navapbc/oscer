@@ -2,7 +2,7 @@
 
 # View helpers for the member dashboard compliance UI (OSCER-337 / OSCER-480).
 # This slice (#640) covers the exemption outcome states: exempt, under review,
-# and does not qualify. Reporting/progress-card helpers arrive in later slices.
+# and does not qualify. Progress cards / activity tables arrive in later slices (#642, #643).
 module MemberComplianceHelper
   # Valid +exemption_flow_state+ values for +_member_compliance_exemption+ (outcome frames only).
   EXEMPTION_OUTCOME_FLOW_STATES = [
@@ -53,6 +53,26 @@ module MemberComplianceHelper
     compliance.exemption_flow_state == MemberDashboardCompliance::EXEMPTION_NOT_STARTED &&
       compliance.activity_report_application_form.blank? &&
       compliance.exemption_application_form.blank?
+  end
+
+  # Label and path for the activity-report CTA on the not-exempt dashboard — mirrors
+  # +_new_certification+ until the reporting section lands in #642.
+  def member_compliance_activity_report_action(activity_report:, certification_case:)
+    if activity_report&.in_progress?
+      continue_path = feature_enabled?(:doc_ai) && !session[:doc_ai_skip] ?
+                        doc_ai_upload_activity_report_application_form_path(activity_report) :
+                        activity_report_application_form_path(activity_report)
+
+      {
+        label: t("dashboard.new_certification.activity_report.continue_report_button"),
+        path: continue_path
+      }
+    else
+      {
+        label: t("dashboard.new_certification.current_period.report_activities_button"),
+        path: new_activity_report_application_form_path(certification_case_id: certification_case&.id)
+      }
+    end
   end
 
   # Raises in test so the misrouting is caught by specs; logs a warning in every other

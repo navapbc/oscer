@@ -437,9 +437,12 @@ RSpec.describe "dashboard/index", type: :view do
       end
     end
 
-    it 'does not render a reporting section (out of scope for this slice)' do
+    it 'renders a button to start reporting activities' do
       render
-      expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.current_period.report_activities_button'))
+      expect(rendered).to have_selector(
+        'a',
+        text: I18n.t('dashboard.new_certification.current_period.report_activities_button')
+      )
     end
 
     it 'does not offer to retake the screener after a caseworker denial' do
@@ -452,11 +455,12 @@ RSpec.describe "dashboard/index", type: :view do
         assign(:activity_report_application_form, create(:activity_report_application_form, certification_case_id: certification_case.id))
       end
 
-      # Reporting CTAs are deferred to a later slice (#642); the denied screen shows the
-      # exemption block only, even when an activity report is already in progress.
-      it 'does not render the activity report continue button' do
+      it 'renders the activity report continue button when a report is in progress' do
         render
-        expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.activity_report.continue_report_button'))
+        expect(rendered).to have_selector(
+          'a',
+          text: I18n.t('dashboard.new_certification.activity_report.continue_report_button')
+        )
       end
     end
   end
