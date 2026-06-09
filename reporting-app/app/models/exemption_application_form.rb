@@ -46,7 +46,7 @@ class ExemptionApplicationForm < Strata::ApplicationForm
   def self.has_pending_form(certification_case_id)
     ExemptionApplicationForm.where(certification_case_id:, status: :in_progress).exists? ||
     ReviewExemptionClaimTask.where(application_form: ExemptionApplicationForm.where(certification_case_id:).all,
-                                   status: [:on_hold, :pending]).exists?
+                                   status: [ :on_hold, :pending ]).exists?
   end
 
   private

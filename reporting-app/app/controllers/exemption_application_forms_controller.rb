@@ -124,6 +124,8 @@ class ExemptionApplicationFormsController < ApplicationController
         redirect_to dashboard_path, notice: t("exemption_application_forms.errors.other_exemption_exists")
       elsif e.record.errors[:certification_case_id].include?("has closed")
         redirect_to dashboard_path, notice: t("exemption_application_forms.errors.case_closed")
+      elsif e.record.errors[:certification_case_id].include?("verification window has ended")
+        redirect_to dashboard_path, notice: t("exemption_application_forms.errors.verification_window_ended")
       else
         raise
       end

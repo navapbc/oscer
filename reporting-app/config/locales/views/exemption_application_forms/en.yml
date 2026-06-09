@@ -43,3 +43,4 @@ en:
     errors:
       other_exemption_exists: "An exemption application already exists for this certification case"
       case_closed: "Certification case has been closed"
+      verification_window_ended: "Verification window has ended"

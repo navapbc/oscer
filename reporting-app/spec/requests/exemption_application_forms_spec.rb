@@ -80,9 +80,26 @@ RSpec.describe "/exemption_application_forms", type: :request do
           post exemption_application_forms_url, params: { exemption_application_form: valid_attributes }
           expect(response).to redirect_to(dashboard_path)
           follow_redirect!
-          expect(response.body).to include("Certification case has been closed")
+          expect(response.body).to include(I18n.t("exemption_application_forms.errors.case_closed"))
         end
       end
+    end
+
+      context "when verification window closed" do
+        before { certification_case.update_attribute(:verification_window_end_date, 1.day.ago) }
+
+        it "does not create a new ExemptionApplicationForm" do
+          expect {
+            post exemption_application_forms_url, params: { exemption_application_form: valid_attributes }
+          }.not_to change(ExemptionApplicationForm, :count)
+        end
+
+        it "redirects to dashboard with notice" do
+          post exemption_application_forms_url, params: { exemption_application_form: valid_attributes }
+          expect(response).to redirect_to(dashboard_path)
+          follow_redirect!
+          expect(response.body).to include(I18n.t("exemption_application_forms.errors.verification_window_ended"))
+        end
     end
 
     context "with invalid parameters" do
