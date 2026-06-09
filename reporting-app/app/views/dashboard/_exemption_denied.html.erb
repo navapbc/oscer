@@ -12,5 +12,8 @@
             class: "usa-button margin-right-2 margin-bottom-1" %>
     <% end %>
     <%= link_to t(".view_exemption_button"), exemption_application_form_path(exemption_application), class: "usa-button usa-button--outline margin-bottom-1" %>
+    <%= link_to(t(".submit_new_exemption_button"),
+	new_exemption_application_form_path(certification_case_id: certification_case&.id),
+	class: "usa-button usa-button--outline margin-bottom-1") if should_show_submit_new_exemption_form?(certification_case) %>
   </div>
 </div>
