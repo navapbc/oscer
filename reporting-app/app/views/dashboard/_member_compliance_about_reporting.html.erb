@@ -1,0 +1,19 @@
+<%# Shared "About the reporting requirement" block (OSCER-337 onboarding frames) %>
+<% compliance = local_assigns.fetch(:compliance) %>
+<% target_income_display = number_to_currency(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY, precision: 0) %>
+
+<div class="member-dashboard-compliance__about-reporting">
+  <h2 class="member-dashboard-compliance__about-reporting-heading">
+    <%= t("dashboard.member_compliance.about_reporting.heading") %>
+  </h2>
+  <p class="member-dashboard-compliance__about-reporting-intro">
+    <%= t("dashboard.member_compliance.about_reporting.intro") %>
+  </p>
+  <ul class="member-dashboard-compliance__about-reporting-list">
+    <li><%= t("dashboard.member_compliance.about_reporting.hours_bullet", target_hours: compliance.target_hours) %></li>
+    <li><%= t("dashboard.member_compliance.about_reporting.income_bullet", target_income: target_income_display) %></li>
+  </ul>
+  <p class="member-dashboard-compliance__about-reporting-footer">
+    <%= t("dashboard.member_compliance.about_reporting.footer") %>
+  </p>
+</div>

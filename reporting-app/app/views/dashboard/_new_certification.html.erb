@@ -1,63 +1,40 @@
-<% if !application_exists? %>
-<section class="usa-section usa-section--light padding-y-3 margin-bottom-4" aria-label="Get started">
+<% if local_assigns[:compliance].present? && member_dashboard_get_started_screen?(compliance) %>
+  <div class="grid-container member-dashboard-compliance">
+    <%= render "dashboard/member_compliance_get_started",
+               compliance: compliance,
+               certification_case: certification_case %>
+  </div>
+<% else %>
   <div class="grid-container">
-    <div class="grid-row flex-column tablet:flex-row gap-4">
-      <div class="usa-hero__callout grid-col">
-        <h2 class="usa-hero__heading font-heading-xl">
-          <%# TODO: handle this formatting stuff in the content so can pass the date %>
-          <%# TODO: also '%b %d, %Y' doesn't correspond to a defined date format for locales, most similar to :short, but that doesn't have the year %>
-          <span class="usa-hero__heading--alt"><%= t(".get_started.header") %></span> <%= certification.certification_requirements.due_date&.strftime('%b %d, %Y') %>
-        </h2>
-        <p class="text-base-lightest">
-         <%= t(".get_started.prompt") %>
-        </p>
-        <%= link_to t(".get_started.button"), exemption_screener_path(certification_case_id: certification_case&.id), class: "usa-button" %>
-      </div>
+    <%= render "dashboard/compliance_status",
+               current_period: current_period,
+               target_hours: target_hours,
+               period_end_date: period_end_date,
+               total_hours_reported: total_hours_reported,
+               hours_needed: hours_needed %>
 
-      <div class="grid-col display-flex flex-align-center">
-        <p class="font-serif-md">
-          <%= t(".get_started.info") %>
-        </p>
-      </div>
+    <%# Action Buttons %>
+    <div class="margin-bottom-4">
+      <% if hours_needed == 0 %>
+        <%# Requirements met - show view activity report button %>
+        <%= link_to t(".current_period.view_activity_report_button"), activity_report_application_form_path(activity_report), class: "usa-button" if activity_report.present? %>
+      <% else %>
+        <%# Requirements not met - show report activities and request exemption buttons %>
+        <% if activity_report&.in_progress? %>
+          <% continue_path = feature_enabled?(:doc_ai) && !session[:doc_ai_skip] ?
+                doc_ai_upload_activity_report_application_form_path(activity_report) :
+                activity_report_application_form_path(activity_report) %>
+          <%= link_to t(".activity_report.continue_report_button"), continue_path,
+                class: "usa-button margin-right-2 margin-bottom-1" %>
+        <% else %>
+          <%= link_to t(".current_period.report_activities_button"), new_activity_report_application_form_path(certification_case_id: certification_case&.id), class: "usa-button margin-right-2 margin-bottom-1" %>
+        <% end %>
+        <% if exemption_application&.in_progress? %>
+          <%= link_to t(".exemption_request.continue_request_button"), exemption_application_form_path(exemption_application), class: "usa-button usa-button--outline margin-bottom-1" %>
+        <% else %>
+          <%= link_to t(".current_period.request_exemption_button"), new_exemption_application_form_path(certification_case_id: certification_case&.id), class: "usa-button usa-button--outline margin-bottom-1" %>
+        <% end %>
+      <% end %>
     </div>
   </div>
-</section>
 <% end %>
-
-<div class="grid-container">
-  <%= render "dashboard/compliance_status",
-             current_period: current_period,
-             target_hours: target_hours,
-             period_end_date: period_end_date,
-             total_hours_reported: total_hours_reported,
-             hours_needed: hours_needed %>
-
-  <%# Action Buttons %>
-  <div class="margin-bottom-4">
-    <% if hours_needed == 0 %>
-      <%# Requirements met - show view activity report button %>
-      <%= link_to t(".current_period.view_activity_report_button"), activity_report_application_form_path(activity_report), class: "usa-button" if activity_report.present? %>
-    <% else %>
-      <%# Requirements not met - show report activities and request exemption buttons %>
-      <% if activity_report&.in_progress? %>
-        <% continue_path = feature_enabled?(:doc_ai) && !session[:doc_ai_skip] ?
-              doc_ai_upload_activity_report_application_form_path(activity_report) :
-              activity_report_application_form_path(activity_report) %>
-        <%= link_to t(".activity_report.continue_report_button"), continue_path,
-              class: "usa-button margin-right-2 margin-bottom-1" %>
-      <% else %>
-        <%= link_to t(".current_period.report_activities_button"), new_activity_report_application_form_path(certification_case_id: certification_case&.id), class: "usa-button margin-right-2 margin-bottom-1" %>
-      <% end %>
-      <% if exemption_application&.in_progress? %>
-        <%= link_to t(".exemption_request.continue_request_button"), exemption_application_form_path(exemption_application), class: "usa-button usa-button--outline margin-bottom-1" %>
-      <% else %>
-        <%= link_to t(".current_period.request_exemption_button"), new_exemption_application_form_path(certification_case_id: certification_case&.id), class: "usa-button usa-button--outline margin-bottom-1" %>
-      <% end %>
-    <% end %>
-  </div>
-
-  <%# Previously Completed Requirements Section %>
-  <h2 class="font-heading-lg margin-top-6 margin-bottom-2"><%= t(".previous_requirements.header") %></h2>
-  <p class="margin-bottom-2"><%= t(".previous_requirements.intro") %></p>
-  <%= link_to t(".previous_requirements.button"), certifications_path, class: "usa-button usa-button--outline" %>
-</div>
