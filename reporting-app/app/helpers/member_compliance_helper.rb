@@ -55,7 +55,8 @@ module MemberComplianceHelper
       compliance.exemption_application_form.blank?
   end
 
-  # Raises in test; logs in development when the exemption outcome partial is wired incorrectly.
+  # Raises in test so the misrouting is caught by specs; logs a warning in every other
+  # environment (development, staging, production) so a bad route is observable in production.
   def guard_member_compliance_exemption_outcome_state!(flow_state)
     return if EXEMPTION_OUTCOME_FLOW_STATES.include?(flow_state)
 
@@ -63,6 +64,6 @@ module MemberComplianceHelper
               "#{flow_state.inspect} (expected pending_review, approved, or denied)"
     raise message if Rails.env.test?
 
-    Rails.logger.warn(message) if Rails.env.development?
+    Rails.logger.warn(message)
   end
 end

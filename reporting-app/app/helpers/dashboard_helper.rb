@@ -1,6 +1,19 @@
 # frozen_string_literal: true
 
 module DashboardHelper
+  # Returns the dashboard partial to render for the member's current state.
+  #
+  # The three exemption-outcome partials delegate into +_member_compliance_dashboard+
+  # and line up with +compliance.exemption_flow_state+ (OSCER-640):
+  #
+  #   "exemption_approved"  -> EXEMPTION_APPROVED       (approved request *and* the
+  #                                                      automated exempt path via
+  #                                                      +member_status_exempt?+)
+  #   "exemption_submitted" -> EXEMPTION_PENDING_REVIEW
+  #   "exemption_denied"    -> EXEMPTION_DENIED
+  #
+  # All other partials (no_certification, new_certification, activity_report_*) are not
+  # exemption-outcome frames and keep their existing behavior.
   def determine_dashboard_view
     if member_status_exempt?
       "exemption_approved"
