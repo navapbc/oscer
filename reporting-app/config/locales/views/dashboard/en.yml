@@ -6,7 +6,7 @@ en:
     no_certification:
       message: "No pending certifications."
     index:
-      greeting: "Hi %{first_name}"
+      greeting: "Hi %{first_name},"
       activity_report:
         title: "Report your community engagement (OSCER)"
         intro: "Certify your community engagement requirements through OSCER."
