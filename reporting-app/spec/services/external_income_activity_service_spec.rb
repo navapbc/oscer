@@ -51,6 +51,12 @@ RSpec.describe ExternalIncomeActivityService do
           expect(result.reported_at).to eq(Time.current)
         end
       end
+
+      it "logs created event" do
+        result = described_class.create_entry(**valid_params)
+        log_count = Strata::AuditLine.where(subject: result, actor_type: described_class.name, action: 'external_income_activity.create', data: result.attributes).count
+        expect(log_count).to eq 1
+      end
     end
 
     context "when the member has an open certification case" do
@@ -129,53 +135,38 @@ RSpec.describe ExternalIncomeActivityService do
       end
 
       it "returns conflict error" do
-        result = described_class.create_entry(**valid_params)
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to eq("Duplicate entry")
+        expect { described_class.create_entry(**valid_params) }.to raise_error(/Duplicate/)
       end
 
       it "does not create a new entry" do
         expect {
-          described_class.create_entry(**valid_params)
+          begin
+            described_class.create_entry(**valid_params)
+          rescue
+          end
         }.not_to change(ExternalIncomeActivity, :count)
       end
     end
 
     context "with validation errors" do
       it "returns error for missing member_id" do
-        result = described_class.create_entry(**valid_params.merge(member_id: nil))
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to include("Member")
+        expect { described_class.create_entry(**valid_params.merge(member_id: nil)) }.to raise_error(/Member/)
       end
 
       it "returns error for invalid category" do
-        result = described_class.create_entry(**valid_params.merge(category: "invalid"))
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to include("Category")
+        expect { described_class.create_entry(**valid_params.merge(category: "invalid")) }.to raise_error(/Category/)
       end
 
       it "returns error for zero gross_income" do
-        result = described_class.create_entry(**valid_params.merge(gross_income: 0))
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to include("Gross income")
+        expect { described_class.create_entry(**valid_params.merge(gross_income: 0)) }.to raise_error(/Gross income/)
       end
 
       it "returns error for negative gross_income" do
-        result = described_class.create_entry(**valid_params.merge(gross_income: -10))
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to include("Gross income")
+        expect { described_class.create_entry(**valid_params.merge(gross_income: -10)) }.to raise_error(/Gross income/)
       end
 
       it "returns error for invalid source_type" do
-        result = described_class.create_entry(**valid_params.merge(source_type: "invalid"))
-
-        expect(result).to be_a(Hash)
-        expect(result[:error]).to include("Source type")
+        expect { described_class.create_entry(**valid_params.merge(source_type: "invalid")) }.to raise_error(/Source type/)
       end
     end
   end

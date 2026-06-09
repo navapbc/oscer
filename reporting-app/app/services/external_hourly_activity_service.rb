@@ -9,14 +9,16 @@ class ExternalHourlyActivityService
   class << self
     # Create hours data entry for a member
     # @return [ExternalHourlyActivity] on success
-    # @return [Hash] with :error, :status keys on failure
+    # @raise [ActiveRecord::RecordInvalid] on duplicate entry or validation failure
     def create_entry(member_id:, category:, hours:, period_start:, period_end:,
                      source_type:, source_id: nil)
+      entry = ExternalHourlyActivity.new
       if duplicate_entry?(member_id:, category:, hours:, period_start:, period_end:)
-        return { error: "Duplicate entry", status: :conflict }
+        entry.errors.add(:base, "Duplicate entry")
+        raise ActiveRecord::RecordInvalid.new(entry)
       end
 
-      entry = ExternalHourlyActivity.new(
+      entry.update!(
         member_id: member_id,
         category: category,
         hours: hours,
@@ -26,11 +28,7 @@ class ExternalHourlyActivityService
         source_id: source_id
       )
 
-      if entry.save
-        entry
-      else
-        { error: entry.errors.full_messages.join(", "), status: :unprocessable_entity }
-      end
+      entry
     end
 
     # Check for exact duplicate entry

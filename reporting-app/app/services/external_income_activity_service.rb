@@ -8,15 +8,19 @@
 # close the case (same as hours +HoursComplianceDeterminationService#calculate+). Certification intake
 # passes +recalculate_income_compliance: false+ so rows created before the case exists do not run this path.
 class ExternalIncomeActivityService
+  include Strata::VirtualActor
   class << self
     # Create income data entry for a member.
     # @param recalculate_income_compliance [Boolean] when +true+ (default), after save run silent income
     #   compliance for the open case (may +close!+ when compliant); +Certifications::CreationService+ passes +false+.
     # @return [ExternalIncomeActivity] on success
-    # @return [Hash] with :error key on failure
+    # @return [Hash] with +:error+ key when a duplicate entry is detected (before save)
+    # @raise [ActiveRecord::RecordInvalid] on duplicate entry or validation failure
     def create_entry(member_id:, category:, gross_income:, period_start:, period_end:,
                      source_type:, source_id: nil, reported_at: Time.current, metadata: {}, employer: nil,
                      recalculate_income_compliance: true)
+      entry = ExternalIncomeActivity.new()
+
       if duplicate_entry?(
         member_id: member_id,
         category: category,
@@ -24,27 +28,33 @@ class ExternalIncomeActivityService
         period_start: period_start,
         period_end: period_end
       )
-        return { error: "Duplicate entry" }
+        entry.errors.add(:base, "Duplicate entry")
+        raise ActiveRecord::RecordInvalid.new(entry)
       end
 
-      entry = ExternalIncomeActivity.new(
-        member_id: member_id,
-        category: category,
-        gross_income: gross_income,
-        period_start: period_start,
-        period_end: period_end,
-        source_type: source_type,
-        source_id: source_id,
-        reported_at: reported_at,
-        metadata: (metadata || {}).merge(employer.present? ? { "employer" => employer } : {})
-      )
+      Strata::AuditLog.record do |log|
+        entry.update!(
+          member_id: member_id,
+          category: category,
+          gross_income: gross_income,
+          period_start: period_start,
+          period_end: period_end,
+          source_type: source_type,
+          source_id: source_id,
+          reported_at: reported_at,
+          metadata: (metadata || {}).merge(employer.present? ? { "employer" => employer } : {})
+        )
 
-      if entry.save
-        maybe_recalculate_income_compliance(entry.member_id) if recalculate_income_compliance
-        entry
-      else
-        { error: entry.errors.full_messages.join(", ") }
+        log.add_line(
+          actor: self,
+          action: "external_income_activity.create",
+          subject: entry,
+          data: entry.attributes
+        )
       end
+
+      maybe_recalculate_income_compliance(entry.member_id) if recalculate_income_compliance
+      entry
     end
 
     private
