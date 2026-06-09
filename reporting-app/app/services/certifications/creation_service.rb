@@ -55,14 +55,6 @@ class Certifications::CreationService
         source_type: ExternalHourlyActivity::SOURCE_TYPES[:api],
         source_id: nil
       )
-
-      # Handle service error response
-      if result.is_a?(Hash) && result[:error]
-        # Create a dummy record to use RecordInvalid pattern
-        activity = ExternalHourlyActivity.new
-        activity.errors.add(:base, result[:error])
-        raise ActiveRecord::RecordInvalid.new(activity)
-      end
     end
   end
 
@@ -84,12 +76,6 @@ class Certifications::CreationService
         employer: activity_data.employer,
         recalculate_income_compliance: false
       )
-
-      if result.is_a?(Hash) && result[:error]
-        row = ExternalIncomeActivity.new
-        row.errors.add(:base, result[:error])
-        raise ActiveRecord::RecordInvalid.new(row)
-      end
     end
   end
 end

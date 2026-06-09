@@ -17,6 +17,7 @@ RSpec.describe Determinable, type: :model do
         determined_at: Time.now
       }
     end
+
     context "when submitted by user" do
       let(:params) { base_params.merge({ decision_method: :manual, actor: user }) }
 
