@@ -93,7 +93,10 @@ class CertificationCase < Strata::Case
       )
     end
 
-    Strata::EventManager.publish("ActivityReportDenied", { case_id: id, certification_id: certification_id, application_form_id: application_form.id })
+    # Split the denial event by verification-window state so the member's notification reflects
+    # whether they can still report.
+    event_name = verification_window_ended? ? "ActivityReportDeniedFinal" : "ActivityReportDenied"
+    Strata::EventManager.publish(event_name, { case_id: id, certification_id: certification_id, application_form_id: application_form.id })
   end
 
   def accept_exemption_request(user)
@@ -236,6 +239,10 @@ class CertificationCase < Strata::Case
       verification_window_start_date: start_date,
       verification_window_end_date: start_date + VERIFICATION_WINDOW_DURATION_DAYS
     )
+  end
+
+  def verification_window_ended?
+    verification_window_end_date.present? && verification_window_end_date < Time.current
   end
 
   private
