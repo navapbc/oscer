@@ -22,8 +22,7 @@
   <% end %>
 
   <% if local_assigns[:primary_action_label].present? && local_assigns[:primary_action_path].present? ||
-        local_assigns[:secondary_action_label].present? && local_assigns[:secondary_action_path].present? ||
-        local_assigns[:tertiary_action_label].present? && local_assigns[:tertiary_action_path].present? %>
+        local_assigns[:secondary_action_label].present? && local_assigns[:secondary_action_path].present? %>
     <div class="member-dashboard-compliance__exemption-action">
       <% if local_assigns[:primary_action_label].present? && local_assigns[:primary_action_path].present? %>
         <%= link_to local_assigns[:primary_action_label],
@@ -34,11 +33,6 @@
         <%= link_to local_assigns[:secondary_action_label],
               local_assigns[:secondary_action_path],
               class: "usa-button usa-button--outline margin-right-2 margin-bottom-1" %>
-      <% end %>
-      <% if local_assigns[:tertiary_action_label].present? && local_assigns[:tertiary_action_path].present? %>
-        <%= link_to local_assigns[:tertiary_action_label],
-              local_assigns[:tertiary_action_path],
-              class: "usa-button usa-button--outline margin-bottom-1" %>
       <% end %>
     </div>
   <% end %>

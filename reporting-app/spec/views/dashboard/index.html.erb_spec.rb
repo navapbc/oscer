@@ -439,9 +439,20 @@ RSpec.describe "dashboard/index", type: :view do
       )
     end
 
-    it 'renders button to resubmit' do
+    it 'renders button to resubmit next to the exemption details heading' do
       render
-      expect(rendered).to have_selector('a', text: I18n.t('dashboard.exemption_denied.submit_new_exemption_button'))
+      button_text = I18n.t('dashboard.exemption_denied.submit_new_exemption_button')
+      expect(rendered).to have_selector(
+        '.member-dashboard-compliance__section-header #exemption-details-heading'
+      )
+      expect(rendered).to have_selector(
+        '.member-dashboard-compliance__section-header-actions a.usa-button--outline',
+        text: button_text
+      )
+      expect(rendered).not_to have_selector(
+        '.member-dashboard-compliance__exemption-action a',
+        text: button_text
+      )
     end
 
     it 'does not offer to retake the screener or render the get started callout after a caseworker denial' do

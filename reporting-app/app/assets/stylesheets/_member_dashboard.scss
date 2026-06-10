@@ -16,25 +16,31 @@
 
   &__heading {
     font-family: font-family("serif");
-    font-size: 1.96rem;
+    font-size: font-size("serif", 12);
     font-weight: 900;
-    line-height: 1.24;
+    letter-spacing: 0;
+    line-height: 1;
     margin: 0 0 units(2);
   }
 
   &__intro {
-    font-size: 1.0625rem;
+    font-family: font-family("body");
+    font-size: font-size("alt", "md");
+    font-weight: font-weight("normal");
+    letter-spacing: 0;
     line-height: 1.5;
     margin: 0 auto;
     max-width: 48rem;
+    text-align: center;
   }
 }
 
 .member-dashboard-greeting {
   font-family: font-family("serif");
-  font-size: 2.5rem;
+  font-size: font-size("serif", 14);
   font-weight: 900;
-  line-height: 1.25;
+  letter-spacing: 0;
+  line-height: 1;
   margin: 0 0 units(2);
 }
 
@@ -66,16 +72,24 @@
   }
 
   &__alert-heading {
-    font-size: 1.375rem;
+    font-family: font-family("ui");
+    font-size: font-size("ui", "lg");
     font-weight: font-weight("bold");
-    line-height: 1.18;
+    letter-spacing: 0;
+    line-height: 1;
     margin: 0 0 units(1);
   }
 
   &__alert-text {
-    font-size: 1rem;
-    line-height: 1.5;
+    font-family: font-family("ui");
+    font-size: font-size("ui", "sm");
+    font-weight: font-weight("normal");
+    letter-spacing: 0;
+    line-height: 24px;
     margin: 0;
+    // Override USWDS global `p { max-width: 68ex }` so alert copy fills the
+    // Summary Box width instead of wrapping to a narrow reading measure.
+    max-width: none;
   }
 
   &__alert--info {
@@ -154,18 +168,86 @@
     margin: 0;
   }
 
+  &__section-header {
+    align-items: center;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: units(2);
+    justify-content: flex-start;
+    margin-bottom: units(2);
+
+    h2 {
+      font-family: font-family("heading");
+      font-size: font-size("heading", "md");
+      font-weight: font-weight("bold");
+      letter-spacing: 0;
+      line-height: 1;
+    }
+
+    > :first-child {
+      align-self: center;
+      flex: 0 1 auto;
+      margin: 0;
+      min-width: 0;
+    }
+
+    // USWDS global `h2 + * { margin-top: 1em }` would drop the action row below the heading.
+    h2 + .member-dashboard-compliance__section-header-actions {
+      margin-top: 0;
+    }
+
+    @media (max-width: 40em) {
+      flex-wrap: wrap;
+    }
+  }
+
+  &__section-header-actions {
+    align-items: center;
+    align-self: center;
+    display: inline-flex;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    gap: units(2);
+    margin: 0;
+
+    .usa-button {
+      align-self: center;
+      margin: 0;
+      white-space: nowrap;
+      width: auto;
+    }
+  }
+
   &__exemption-action {
     margin-top: units(1);
   }
 
   &__history-heading {
-    font-size: 0.875rem;
+    font-family: font-family("heading");
+    font-size: font-size("heading", "sm");
     font-weight: font-weight("bold");
-    line-height: 1.3;
-    margin: units(1) 0 0;
+    letter-spacing: 0;
+    line-height: 1;
+    margin: 0;
+  }
+
+  &__history-section {
+    display: flex;
+    flex-direction: column;
+    gap: units("105");
+  }
+
+  // The flex gap above owns the heading-to-table spacing; zero out USWDS's
+  // `h3 + * { margin-top }` so it doesn't stack on top of the gap.
+  &__history-heading + .member-dashboard-compliance__history {
+    margin-top: 0;
   }
 
   // Figma exemption request history — two-column rows (label | value), not stacked
+  &__history {
+    border-bottom: 1px solid color("base-light");
+  }
+
   &__history-entry {
     &:not(:first-child) {
       border-top: 2px solid color("base-light");
@@ -181,16 +263,21 @@
     flex-direction: row;
     gap: units(2);
     padding: units(1) 0;
+  }
 
-    &--status {
-      padding-bottom: units(1.5);
-    }
+  &__history-label,
+  &__history-value {
+    font-family: font-family("body");
+    font-size: font-size("body", "sm");
+    font-weight: font-weight("bold");
+    letter-spacing: 0;
+    line-height: 1.3;
+    vertical-align: middle;
   }
 
   &__history-label {
     color: color("base-dark");
     flex: 0 0 30%;
-    font-weight: font-weight("bold");
     max-width: 30%;
   }
 

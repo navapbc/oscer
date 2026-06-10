@@ -20,8 +20,4 @@
      secondary_action_label: t(".view_exemption_button"),
      secondary_action_path: exemption_application_form_path(exemption_application)
    } %>
-<% if should_show_submit_new_exemption_form?(certification_case) %>
-  <% dashboard_locals[:tertiary_action_label] = t(".submit_new_exemption_button") %>
-  <% dashboard_locals[:tertiary_action_path] = new_exemption_application_form_path(certification_case_id: certification_case&.id) %>
-<% end %>
 <%= render "dashboard/member_compliance_dashboard", **dashboard_locals %>
