@@ -162,10 +162,13 @@
   }
 
   &__status-footer {
-    font-family: font-family("serif");
-    font-size: 1rem;
-    line-height: 1.8;
+    font-family: font-family("ui");
+    font-size: font-size("ui", "sm");
+    font-weight: font-weight("normal");
+    letter-spacing: 0;
+    line-height: 24px;
     margin: 0;
+    max-width: none;
   }
 
   // Reporting entry section (not-exempt dashboard) — intro above the CTA.
@@ -178,6 +181,15 @@
     max-width: none;
   }
 
+  // Exemption details heading — shared by approved/denied (standalone and section-header row).
+  &__exemption #exemption-details-heading {
+    font-family: font-family("heading");
+    font-size: font-size("heading", "md");
+    font-weight: font-weight("bold");
+    letter-spacing: 0;
+    line-height: 1;
+  }
+
   &__section-header {
     align-items: center;
     display: flex;
@@ -185,14 +197,6 @@
     gap: units(2);
     justify-content: flex-start;
     margin-bottom: units(2);
-
-    h2 {
-      font-family: font-family("heading");
-      font-size: font-size("heading", "md");
-      font-weight: font-weight("bold");
-      letter-spacing: 0;
-      line-height: 1;
-    }
 
     > :first-child {
       align-self: center;
