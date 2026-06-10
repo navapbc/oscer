@@ -25,6 +25,9 @@ en:
           body: "You are required to report %{target_hours} hours of qualifying activities or %{target_income} income for this reporting period. You'll need to submit your report by %{due_date} to keep your coverage active."
           body_hours: "Based on your answers, you are required to report %{target_hours} hours of qualifying activity each month. You'll need to submit your report by %{due_date} to keep your coverage active for %{coverage_month}."
       reporting:
+        heading: "Report your activities"
+        intro: "You need to report %{target_hours} hours or %{target_income} of income by %{due_date} to keep your Medicaid coverage for %{coverage_month}."
+        intro_hours: "You need to report %{target_hours} hours of qualifying activity by %{due_date} to keep your Medicaid coverage for %{coverage_month}."
         start_reporting_activities_button: "Start reporting activities"
         continue_report_button: "Continue report"
       exemption_badges:

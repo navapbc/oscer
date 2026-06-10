@@ -168,6 +168,16 @@
     margin: 0;
   }
 
+  // Reporting entry section (not-exempt dashboard) — intro above the CTA.
+  &__reporting-intro {
+    font-family: font-family("body");
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 0 0 units(3);
+    // Override USWDS global `p { max-width: 68ex }` so the intro fills the page width.
+    max-width: none;
+  }
+
   &__section-header {
     align-items: center;
     display: flex;

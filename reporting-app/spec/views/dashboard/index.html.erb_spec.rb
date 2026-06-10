@@ -439,6 +439,15 @@ RSpec.describe "dashboard/index", type: :view do
       )
     end
 
+    it 'renders the "Report your activities" heading and intro above the CTA' do
+      render
+      expect(rendered).to have_selector(
+        'h2#member-compliance-reporting-heading',
+        text: I18n.t('dashboard.member_compliance.reporting.heading')
+      )
+      expect(rendered).to have_selector('.member-dashboard-compliance__reporting-intro')
+    end
+
     it 'renders button to resubmit next to the exemption details heading' do
       render
       button_text = I18n.t('dashboard.exemption_denied.submit_new_exemption_button')

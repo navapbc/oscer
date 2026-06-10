@@ -18,6 +18,7 @@
      primary_action_label: report_action[:label],
      primary_action_path: report_action[:path],
      secondary_action_label: t(".view_exemption_button"),
-     secondary_action_path: exemption_application_form_path(exemption_application)
+     secondary_action_path: exemption_application_form_path(exemption_application),
+     show_reporting_intro: true
    } %>
 <%= render "dashboard/member_compliance_dashboard", **dashboard_locals %>

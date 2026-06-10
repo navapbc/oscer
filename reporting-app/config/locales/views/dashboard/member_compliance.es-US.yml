@@ -25,6 +25,9 @@ es-US:
           body: "Debe reportar %{target_hours} horas de actividades calificadas o %{target_income} de ingresos para este período de reporte. Debe enviar su reporte antes del %{due_date} para mantener su cobertura activa."
           body_hours: "Según sus respuestas, debe reportar %{target_hours} horas de actividad calificada cada mes. Debe enviar su reporte antes del %{due_date} para mantener su cobertura activa para %{coverage_month}."
       reporting:
+        heading: "Reporte sus actividades"
+        intro: "Debe reportar %{target_hours} horas o %{target_income} de ingresos antes del %{due_date} para mantener su cobertura de Medicaid para %{coverage_month}."
+        intro_hours: "Debe reportar %{target_hours} horas de actividad calificada antes del %{due_date} para mantener su cobertura de Medicaid para %{coverage_month}."
         start_reporting_activities_button: "Comenzar a reportar actividades"
         continue_report_button: "Continuar reporte"
       exemption_badges:
