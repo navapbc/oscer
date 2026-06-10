@@ -1,5 +1,5 @@
 <div class="grid-container">
-  <h1 class="margin-bottom-2"><%= t(".greeting", first_name: (@certification&.member_name&.first || current_user.full_name&.split&.first)&.capitalize) %></h1>
+  <h2 class="member-dashboard-greeting"><%= t(".greeting", first_name: (@certification&.member_name&.first || current_user.full_name&.split&.first)&.capitalize) %></h2>
 </div>
 <% if @information_request %>
   <div class="grid-container">
@@ -7,6 +7,7 @@
   </div>
 <% end %>
 <%= render determine_dashboard_view,
+           compliance: @member_dashboard_compliance,
            activity_report: @activity_report_application_form,
            exemption_application: @exemption_application_form,
            certification_case: @certification_case,
@@ -16,13 +17,6 @@
            period_end_date: @period_end_date,
            total_hours_reported: @total_hours_reported,
            hours_needed: @hours_needed %>
-<!-- Previous Certifications -->
-<% if @all_certifications.length > 1 %>
-  <section class="grid-container usa-section">
-    <h2><%= t(".previous_certifications.title") %></h2>
-    <p class="font-serif-md">
-      <%= t(".previous_certifications.intro") %>
-    </p>
-    <%= link_to t(".previous_certifications.review_previous_certifications_button"), certifications_path, class: "usa-button usa-button--outline" %>
-  </section>
+<% if @previous_completed_certifications.present? %>
+  <%= render "dashboard/previous_certifications" %>
 <% end %>

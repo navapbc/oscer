@@ -1,0 +1,14 @@
+es-US:
+  dashboard:
+    member_compliance:
+      exemption_alerts:
+        not_started:
+          title: "Antes de reportar actividades, veamos si califica para una exención."
+          body: "Responda unas preguntas rápidas para saber si está exento del requisito de reporte de trabajo. Si no califica, podrá reportar sus actividades directamente."
+          button: "Comenzar"
+      about_reporting:
+        heading: "Acerca del requisito de reporte"
+        intro: "Para mantener su elegibilidad de Medicaid, los adultos deben:"
+        hours_bullet: "Completar al menos %{target_hours} horas al mes de actividades calificadas de \"compromiso comunitario\""
+        income_bullet: "Mostrar %{target_income} o más de ingresos."
+        footer: "Si tiene ciertas condiciones, puede considerarse exento y no necesitar reportar actividades."

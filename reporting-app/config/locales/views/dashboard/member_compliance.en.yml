@@ -1,0 +1,14 @@
+en:
+  dashboard:
+    member_compliance:
+      exemption_alerts:
+        not_started:
+          title: "Before you can report activities, let's see if you qualify for an exemption."
+          body: "Answer a few quick questions to find out if you're excused from the work reporting requirement. If you don't qualify, you'll be taken directly to report your activities."
+          button: "Get started"
+      about_reporting:
+        heading: "About the reporting requirement"
+        intro: "To maintain your Medicaid eligibility, adults must either:"
+        hours_bullet: "Complete at least %{target_hours} hours per month of qualifying \"community engagement\" activities"
+        income_bullet: "Show %{target_income} or more of income."
+        footer: "If you have certain conditions, you may be considered exempt and not need to report activities."

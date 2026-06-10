@@ -1,9 +1,12 @@
 en:
   dashboard:
+    welcome_hero:
+      heading: "Welcome to the Medicaid Work Reporting Portal"
+      intro: "Welcome to the H.R. 1 Community Engagement Portal. This portal is designed to help report your work, volunteer, or education activities to keep your Medicaid coverage active."
     no_certification:
       message: "No pending certifications."
     index:
-      greeting: "Hi %{first_name}"
+      greeting: "Hi %{first_name},"
       activity_report:
         title: "Report your community engagement (OSCER)"
         intro: "Certify your community engagement requirements through OSCER."

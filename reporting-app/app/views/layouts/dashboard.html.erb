@@ -1,1 +1,27 @@
-<%= render template: 'layouts/application_base' %>
+<%# Member dashboard: welcome hero via :banner (OSCER-639) %>
+<%= content_for :main_col_class, "member-dashboard-page" %>
+
+<%= content_for :banner do %>
+  <section class="member-dashboard-hero" aria-labelledby="member-dashboard-welcome-heading">
+    <div class="grid-container">
+      <h1 id="member-dashboard-welcome-heading" class="member-dashboard-hero__heading">
+        <%= t("dashboard.welcome_hero.heading") %>
+      </h1>
+      <p class="member-dashboard-hero__intro">
+        <%= t("dashboard.welcome_hero.intro") %>
+      </p>
+    </div>
+  </section>
+<% end %>
+
+<%= content_for :main_content do %>
+  <div class="grid-container">
+    <div class="grid-row grid-gap">
+      <div class="grid-col-12 <%= yield :content_col_class %>" id="content">
+        <%= yield %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<%= render template: "layouts/application_base" %>
