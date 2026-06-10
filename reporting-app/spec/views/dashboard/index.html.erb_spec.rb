@@ -279,15 +279,8 @@ RSpec.describe "dashboard/index", type: :view do
       assign(:exemption_application_form, exemption_application_form)
       assign(:certification_case, certification_case)
 
-      certification_case.exemption_request_approval_status = "approved"
-      # Approving an exemption request records an exempt Determination, which is the canonical
-      # source for the approved entry in the exemption history (see read model).
-      create(:determination,
-             subject: certification,
-             outcome: "exempt",
-             decision_method: "manual",
-             reasons: [ "exemption_request_compliant" ],
-             determination_data: { "exemption_type" => exemption_application_form.exemption_type })
+      ReviewExemptionClaimTask.find_by(application_form: exemption_application_form).completed!
+      certification_case.accept_exemption_request(nil)
       reassign_compliance_read_model
     end
 
@@ -354,7 +347,8 @@ RSpec.describe "dashboard/index", type: :view do
       assign(:exemption_application_form, exemption_application_form)
       assign(:certification_case, certification_case)
 
-      certification_case.exemption_request_approval_status = "denied"
+      ReviewExemptionClaimTask.find_by(application_form: exemption_application_form).completed!
+      certification_case.deny_exemption_request(nil)
       reassign_compliance_read_model
     end
 
@@ -445,9 +439,40 @@ RSpec.describe "dashboard/index", type: :view do
       )
     end
 
+    it 'renders button to resubmit' do
+      render
+      expect(rendered).to have_selector('a', text: I18n.t('dashboard.exemption_denied.submit_new_exemption_button'))
+    end
+
     it 'does not offer to retake the screener after a caseworker denial' do
       render
       expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.member_compliance.exemption_alerts.not_started.button'))
+    end
+
+    it 'does not render the "get started" callout' do
+      render
+      expect(rendered).not_to have_selector(
+        'a',
+        text: I18n.t('dashboard.member_compliance.exemption_alerts.not_started.button')
+      )
+    end
+
+    context "when verification window ended" do
+      before { certification_case.update_attribute!(:verification_window_end_date, 1.day.ago) }
+
+      it 'does not render button to resubmit' do
+        render
+        expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.exemption_denied.submit_new_exemption_button'))
+      end
+    end
+
+    context "when case closed" do
+      before { certification_case.close! }
+
+      it 'does not render button to resubmit' do
+        render
+        expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.exemption_denied.submit_new_exemption_button'))
+      end
     end
 
     context "with an in-progress activity report" do

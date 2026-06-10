@@ -2,3 +2,4 @@ en:
   dashboard:
     exemption_denied:
       view_exemption_button: "View exemption request"
+      submit_new_exemption_button: "Submit new exemption request"

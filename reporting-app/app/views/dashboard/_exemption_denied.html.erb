@@ -5,17 +5,23 @@
      activity_report: local_assigns[:activity_report],
      certification_case: certification_case
    ) %>
-<%= render "dashboard/member_compliance_dashboard",
-           compliance: compliance,
-           activity_report: local_assigns[:activity_report],
-           exemption_application: exemption_application,
-           certification_case: certification_case,
-           current_period: current_period,
-           target_hours: target_hours,
-           period_end_date: period_end_date,
-           total_hours_reported: total_hours_reported,
-           hours_needed: hours_needed,
-           primary_action_label: report_action[:label],
-           primary_action_path: report_action[:path],
-           secondary_action_label: t(".view_exemption_button"),
-           secondary_action_path: exemption_application_form_path(exemption_application) %>
+<% dashboard_locals = {
+     compliance: compliance,
+     activity_report: local_assigns[:activity_report],
+     exemption_application: exemption_application,
+     certification_case: certification_case,
+     current_period: current_period,
+     target_hours: target_hours,
+     period_end_date: period_end_date,
+     total_hours_reported: total_hours_reported,
+     hours_needed: hours_needed,
+     primary_action_label: report_action[:label],
+     primary_action_path: report_action[:path],
+     secondary_action_label: t(".view_exemption_button"),
+     secondary_action_path: exemption_application_form_path(exemption_application)
+   } %>
+<% if should_show_submit_new_exemption_form?(certification_case) %>
+  <% dashboard_locals[:tertiary_action_label] = t(".submit_new_exemption_button") %>
+  <% dashboard_locals[:tertiary_action_path] = new_exemption_application_form_path(certification_case_id: certification_case&.id) %>
+<% end %>
+<%= render "dashboard/member_compliance_dashboard", **dashboard_locals %>

@@ -4,6 +4,7 @@ class ExemptionScreenerController < ApplicationController
   before_action :set_certification_case
   before_action :set_certification, if: -> { @certification_case.present? }
   before_action :ensure_certification_case
+  before_action :ensure_certification_case_open
   before_action :authorize_access
   before_action :check_existing_application
   before_action :set_current_exemption_type, only: %i[show answer may_qualify create_application]
@@ -86,6 +87,12 @@ class ExemptionScreenerController < ApplicationController
     redirect_to dashboard_path, alert: t("exemption_screener.errors.no_certification_case")
   end
 
+  def ensure_certification_case_open
+    return if @certification_case.open?
+
+    redirect_to dashboard_path, alert: t("exemption_screener.errors.case_closed")
+  end
+
   def authorize_access
     # Authorize access to the certification case by checking if user can create an exemption form
     # This uses the ExemptionApplicationFormPolicy which checks user ownership
@@ -93,9 +100,7 @@ class ExemptionScreenerController < ApplicationController
   end
 
   def check_existing_application
-    existing_application = ExemptionApplicationForm.find_by(certification_case_id: @certification_case.id)
-
-    return unless existing_application.present?
+    return unless ExemptionApplicationForm.has_pending_form(@certification_case.id)
 
     redirect_to dashboard_path,
       notice: t("exemption_screener.errors.application_exists")
