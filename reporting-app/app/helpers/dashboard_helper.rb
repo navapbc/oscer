@@ -27,12 +27,8 @@ module DashboardHelper
       "activity_report_approved"
     elsif is_activity_report_denied?
       "activity_report_denied"
-    elsif is_exemption_request_submitted?
-      "exemption_submitted"
-    elsif is_exemption_request_approved?
-      "exemption_approved"
-    elsif is_exemption_request_denied?
-      "exemption_denied"
+    elsif (exemption_outcome_partial = exemption_outcome_dashboard_partial)
+      exemption_outcome_partial
     else
       # Fallback for unexpected states
       "new_certification"
@@ -56,24 +52,27 @@ module DashboardHelper
     @activity_report_application_form&.submitted? && @certification_case&.activity_report_approval_status.nil?
   end
 
-  def is_exemption_request_submitted?
-    @exemption_application_form&.flow_status == "submitted"
-  end
-
   def is_activity_report_approved?
     @activity_report_application_form&.submitted? && @certification_case&.activity_report_approval_status == "approved"
-  end
-
-  def is_exemption_request_approved?
-    @exemption_application_form&.flow_status == "approved"
   end
 
   def is_activity_report_denied?
     @activity_report_application_form&.submitted? && @certification_case&.activity_report_approval_status == "denied"
   end
 
-  def is_exemption_request_denied?
-    @exemption_application_form&.flow_status == "denied"
+  # Maps +compliance.exemption_flow_state+ to the legacy dashboard partial names (OSCER-640).
+  # Uses the read model so routing stays aligned when case status updates before form +flow_status+.
+  def exemption_outcome_dashboard_partial
+    return nil unless @member_dashboard_compliance.present?
+
+    case @member_dashboard_compliance.exemption_flow_state
+    when MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW
+      "exemption_submitted"
+    when MemberDashboardCompliance::EXEMPTION_APPROVED
+      "exemption_approved"
+    when MemberDashboardCompliance::EXEMPTION_DENIED
+      "exemption_denied"
+    end
   end
 
   def should_show_submit_new_exemption_form?(certification_case)

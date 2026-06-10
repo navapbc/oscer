@@ -444,17 +444,9 @@ RSpec.describe "dashboard/index", type: :view do
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.exemption_denied.submit_new_exemption_button'))
     end
 
-    it 'does not offer to retake the screener after a caseworker denial' do
+    it 'does not offer to retake the screener or render the get started callout after a caseworker denial' do
       render
       expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.member_compliance.exemption_alerts.not_started.button'))
-    end
-
-    it 'does not render the "get started" callout' do
-      render
-      expect(rendered).not_to have_selector(
-        'a',
-        text: I18n.t('dashboard.member_compliance.exemption_alerts.not_started.button')
-      )
     end
 
     context "when verification window ended" do
