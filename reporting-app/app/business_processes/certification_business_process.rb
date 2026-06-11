@@ -51,6 +51,7 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   transition(REPORT_ACTIVITIES_STEP, "ActivityReportApplicationFormSubmitted", REVIEW_ACTIVITY_REPORT_STEP)
   transition(REVIEW_ACTIVITY_REPORT_STEP, "ActivityReportApproved", END_STEP)
   transition(REVIEW_ACTIVITY_REPORT_STEP, "ActivityReportDenied", END_STEP)
+  transition(REVIEW_ACTIVITY_REPORT_STEP, "ActivityReportDeniedFinal", END_STEP)
 
   # --- Transitions: Exemption claim workflow ---
   transition(REPORT_ACTIVITIES_STEP, "ExemptionApplicationFormSubmitted", REVIEW_EXEMPTION_CLAIM_STEP)

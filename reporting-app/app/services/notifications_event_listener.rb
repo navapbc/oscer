@@ -10,7 +10,8 @@
 # - DeterminedHoursInsufficient → insufficient_hours_email
 # - DeterminedCommunityEngagementInsufficient → insufficient_community_engagement_email (hours and/or income sections).
 # - ActivityReportApproved → compliant_email (reviewer determined compliance)
-# - ActivityReportDenied → insufficient_hours_email (reviewer determined non-compliance)
+# - ActivityReportDenied → insufficient_hours_email (non-compliance, verification window open)
+# - ActivityReportDeniedFinal → insufficient_hours_email (non-compliance, verification window ended)
 #
 # Payload may carry:
 # - case_id
@@ -38,6 +39,7 @@ class NotificationsEventListener
       Strata::EventManager.subscribe("DeterminedCommunityEngagementInsufficient", method(:handle_insufficient_community_engagement))
       Strata::EventManager.subscribe("ActivityReportApproved", method(:handle_activity_report_approved))
       Strata::EventManager.subscribe("ActivityReportDenied", method(:handle_activity_report_denied))
+      Strata::EventManager.subscribe("ActivityReportDeniedFinal", method(:handle_activity_report_denied_final))
     end
 
     private
@@ -147,11 +149,17 @@ class NotificationsEventListener
     end
 
     def handle_activity_report_denied(event)
-      # Reviewer denied = member is not compliant
+      # Denied while the verification window is open: the member can still report again.
       event_with_source = event.merge(
         payload: event[:payload].merge(source: :activity_report_denied)
       )
       handle_insufficient_hours(event_with_source)
+    end
+
+    def handle_activity_report_denied_final(event)
+      # Denied after the window has ended — final. No source set (unlike the sibling), so the
+      # email reflects the closed window.
+      handle_insufficient_hours(event)
     end
 
     def fetch_certification(event)
