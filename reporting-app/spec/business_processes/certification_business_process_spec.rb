@@ -134,7 +134,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       expect(certification_case).to be_closed
     end
 
-    context 'when activity report is denied' do
+    context 'when activity report is denied while the verification window is open' do
       before do
         # Submit activity report
         activity_report = create(:activity_report_application_form,
@@ -154,6 +154,28 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
 
       it 'sets member status to not_compliant' do
         expect(certification_case.member_status).to eq(MemberStatus::NOT_COMPLIANT)
+      end
+
+      it 'closes the case' do
+        expect(certification_case).to be_closed
+      end
+    end
+
+    context 'when activity report is denied after the verification window has ended' do
+      before do
+        activity_report = create(:activity_report_application_form,
+          certification_case_id: certification_case.id
+        )
+        activity_report.submit_application
+        certification_case.reload
+
+        certification_case.update_attribute(:verification_window_end_date, 1.day.ago)
+        certification_case.deny_activity_report(user, activity_report)
+        certification_case.reload
+      end
+
+      it 'transitions to end step via the final-denial event' do
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
       end
 
       it 'closes the case' do

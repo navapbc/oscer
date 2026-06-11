@@ -57,7 +57,7 @@ class ExemptionApplicationForm < Strata::ApplicationForm
       errors.add(:certification_case_id, "is invalid")
     elsif certification_case.closed?
       errors.add(:certification_case_id, "has closed")
-    elsif certification_case.verification_window_end_date && certification_case.verification_window_end_date < Time.now
+    elsif certification_case.verification_window_ended?
       errors.add(:certification_case_id, "verification window has ended")
     end
   end
