@@ -81,7 +81,7 @@ class CertificationCase < Strata::Case
     transaction do
       self.activity_report_approval_status = "denied"
       self.activity_report_approval_status_updated_at = Time.current
-      close!
+      verification_window_ended? ? close! : save!
 
       certification.record_determination!(
         decision_method: :manual,

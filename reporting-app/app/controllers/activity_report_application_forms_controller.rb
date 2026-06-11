@@ -12,6 +12,7 @@ class ActivityReportApplicationFormsController < ApplicationController
     accept_doc_ai
   ]
   before_action :authenticate_user!
+  before_action :create_activity_report_application_form, only: %i[create]
   before_action :set_certification_case, only: %i[show edit review update]
   before_action :set_certification, only: %i[show review]
   before_action :set_monthly_statistics, only: %i[show review]
@@ -29,15 +30,20 @@ class ActivityReportApplicationFormsController < ApplicationController
       return
     end
     @certification_case = certification_service.find(params[:certification_case_id], hydrate: false)
+
+    if @certification_case.closed?
+      redirect_to dashboard_path, notice: t(".errors.case_closed")
+    elsif @certification_case.verification_window_ended?
+      redirect_to dashboard_path, notice: t(".errors.verification_window_ended")
+    elsif ActivityReportApplicationForm.has_pending_form(@certification_case.id)
+      redirect_to dashboard_path, notice: t(".errors.form_in_progress")
+    end
   end
 
   # POST /activity_report_application_forms
   def create
-    @activity_report_application_form = authorize ActivityReportApplicationForm.new(activity_report_application_form_create_params)
-    @activity_report_application_form.user_id = current_user.id
-
     respond_to do |format|
-      if @activity_report_application_form.save
+      if @activity_report_application_form.valid?
         format.html do
           skip_ai = params.dig(:activity_report_application_form, :skip_ai) == "1"
           session[:doc_ai_skip] = skip_ai
@@ -45,7 +51,6 @@ class ActivityReportApplicationFormsController < ApplicationController
         end
         format.json { render :show, status: :created, location: @activity_report_application_form }
       else
-        flash[:errors] = @activity_report_application_form.errors.full_messages
         format.html { redirect_to dashboard_path }
         format.json { render json: @activity_report_application_form.errors, status: :unprocessable_content }
       end
@@ -160,6 +165,23 @@ class ActivityReportApplicationFormsController < ApplicationController
 
   def activity_report_application_form_create_params
     params.require(:activity_report_application_form).permit(:certification_case_id)
+  end
+
+  def create_activity_report_application_form
+    @activity_report_application_form = ActivityReportApplicationForm.new(activity_report_application_form_create_params)
+    @activity_report_application_form.user_id = current_user.id
+    authorize @activity_report_application_form
+    @activity_report_application_form.save!
+  rescue ActiveRecord::RecordInvalid => e
+    if e.record.errors[:certification_case_id].include?("has already been taken")
+      redirect_to dashboard_path, notice: t("activity_report_application_forms.errors.other_report_exists")
+    elsif e.record.errors[:certification_case_id].include?("has closed")
+      redirect_to dashboard_path, notice: t("activity_report_application_forms.errors.case_closed")
+    elsif e.record.errors[:certification_case_id].include?("verification window has ended")
+      redirect_to dashboard_path, notice: t("activity_report_application_forms.errors.verification_window_ended")
+    else
+      raise
+    end
   end
 
   def set_certification_case
