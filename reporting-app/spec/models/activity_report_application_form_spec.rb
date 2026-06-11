@@ -101,13 +101,6 @@ RSpec.describe ActivityReportApplicationForm, type: :model do
 
     before do
       allow(Strata::EventManager).to receive(:publish)
-      allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
-        total_hours: 40,
-        hours_by_category: { "education" => 40 },
-        hours_by_source: { external: 30, activity: 10 },
-        external_hourly_activity_ids: [ "ex-1" ],
-        activity_ids: [ "act-1" ]
-      })
     end
 
     context "without previous activity report" do
