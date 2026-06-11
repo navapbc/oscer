@@ -28,6 +28,7 @@
 #   when income is hidden. Lazy.
 # - +hours_summary+ — +Hash+ matching the +HoursComplianceDeterminationService+ shape.
 # - +member_income_rows+ — +Array<MemberIncomeRow>+ (empty when income is hidden). Lazy.
+# - +certification+ / +certification_case+ — aggregate refs for dashboard links and lazy income/history.
 # - +exemption_flow_state+ — +String+, one of the +EXEMPTION_*+ constants.
 # - +exemption_history+ — +Array<ExemptionHistoryEntry>+ in reverse-chronological order. Lazy.
 class MemberDashboardCompliance
@@ -53,7 +54,9 @@ class MemberDashboardCompliance
     keyword_init: true
   )
 
-  attr_reader :report_status_token,
+  attr_reader :certification,
+              :certification_case,
+              :report_status_token,
               :latest_determination,
               :show_income_summary,
               :activity_report_application_form,

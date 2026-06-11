@@ -57,7 +57,10 @@ module MemberComplianceHelper
 
   # Label and path for the activity-report CTA on the not-exempt dashboard — mirrors
   # +_new_certification+ until the reporting section lands in #642.
-  def member_compliance_activity_report_action(activity_report:, certification_case:)
+  def member_compliance_activity_report_action(compliance:)
+    activity_report = compliance.activity_report_application_form
+    certification_case = compliance.certification_case
+
     if activity_report&.in_progress?
       continue_path = feature_enabled?(:doc_ai) && !session[:doc_ai_skip] ?
                         doc_ai_upload_activity_report_application_form_path(activity_report) :

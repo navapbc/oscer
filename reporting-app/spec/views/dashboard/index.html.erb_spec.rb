@@ -488,9 +488,11 @@ RSpec.describe "dashboard/index", type: :view do
     end
 
     context "with an in-progress activity report" do
-      before do
-        assign(:activity_report_application_form, create(:activity_report_application_form, certification_case_id: certification_case.id))
+      let(:activity_report_application_form) do
+        create(:activity_report_application_form, certification_case_id: certification_case.id)
       end
+
+      before { reassign_compliance_read_model }
 
       it 'renders the activity report continue button when a report is in progress' do
         render

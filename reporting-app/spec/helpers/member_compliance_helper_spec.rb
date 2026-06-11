@@ -107,10 +107,8 @@ RSpec.describe MemberComplianceHelper, type: :helper do
 
   describe "#member_compliance_activity_report_action" do
     it "returns new-report label and path when no activity report exists" do
-      action = helper.member_compliance_activity_report_action(
-        activity_report: nil,
-        certification_case: certification_case
-      )
+      compliance = build_compliance
+      action = helper.member_compliance_activity_report_action(compliance: compliance)
 
       expect(action[:label]).to eq(I18n.t("dashboard.member_compliance.reporting.start_reporting_activities_button"))
       expect(action[:path]).to eq(new_activity_report_application_form_path(certification_case_id: certification_case.id))
@@ -118,10 +116,8 @@ RSpec.describe MemberComplianceHelper, type: :helper do
 
     it "returns continue-report label and path when an activity report is in progress" do
       activity_report = create(:activity_report_application_form, certification_case_id: certification_case.id)
-      action = helper.member_compliance_activity_report_action(
-        activity_report: activity_report,
-        certification_case: certification_case
-      )
+      compliance = build_compliance(activity_report_application_form: activity_report)
+      action = helper.member_compliance_activity_report_action(compliance: compliance)
 
       expect(action[:label]).to eq(I18n.t("dashboard.member_compliance.reporting.continue_report_button"))
       expect(action[:path]).to eq(activity_report_application_form_path(activity_report))

@@ -4,7 +4,7 @@ module DashboardHelper
   # Returns the dashboard partial to render for the member's current state.
   #
   # The three exemption-outcome partials delegate into +_member_compliance_dashboard+
-  # and line up with +compliance.exemption_flow_state+ (OSCER-640):
+  # (requires +@member_dashboard_compliance+) and line up with +compliance.exemption_flow_state+ (OSCER-640):
   #
   #   "exemption_approved"  -> EXEMPTION_APPROVED       (approved request *and* the
   #                                                      automated exempt path via
