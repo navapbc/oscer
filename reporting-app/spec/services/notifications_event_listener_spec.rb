@@ -32,6 +32,7 @@ RSpec.describe NotificationsEventListener, type: :service do
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedCommunityEngagementInsufficient", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("ActivityReportApproved", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("ActivityReportDenied", anything)
+      expect(Strata::EventManager).to have_received(:subscribe).with("ActivityReportDeniedFinal", anything)
     end
   end
 
@@ -335,6 +336,33 @@ RSpec.describe NotificationsEventListener, type: :service do
             hours_data: { total_hours: 30, hours_by_source: { external: 30, activity: 0 } },
             target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
             open_verification_window: true,
+            case_id: certification_case.id
+          },
+          :insufficient_hours_email,
+          [ certification.member_email ]
+        )
+      end
+    end
+
+    describe "#handle_activity_report_denied_final" do
+      let(:application_form) { create(:activity_report_application_form) }
+
+      it "sends insufficient_hours_email with the verification window closed" do
+        allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
+          .with(certification, application_form: application_form)
+          .and_return({ total_hours: 30, hours_by_source: { external: 30, activity: 0 } })
+
+        event = { payload: { case_id: certification_case.id, certification_id: certification.id, application_form_id: application_form.id } }
+
+        described_class.send(:handle_activity_report_denied_final, event)
+
+        expect(NotificationService).to have_received(:send_email_notification).with(
+          MemberMailer,
+          {
+            certification: certification,
+            hours_data: { total_hours: 30, hours_by_source: { external: 30, activity: 0 } },
+            target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
+            open_verification_window: false,
             case_id: certification_case.id
           },
           :insufficient_hours_email,

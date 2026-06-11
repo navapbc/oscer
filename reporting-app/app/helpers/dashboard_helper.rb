@@ -79,7 +79,7 @@ module DashboardHelper
     return false unless certification_case.present?
 
     certification_case.open? &&
-      (certification_case.verification_window_end_date.blank? ||  certification_case.verification_window_end_date > Time.now) &&
+      !certification_case.verification_window_ended? &&
       !ExemptionApplicationForm.has_pending_form(certification_case.id)
   end
 end
