@@ -43,17 +43,12 @@ class ActivityReportApplicationFormsController < ApplicationController
   # POST /activity_report_application_forms
   def create
     respond_to do |format|
-      if @activity_report_application_form.valid?
-        format.html do
-          skip_ai = params.dig(:activity_report_application_form, :skip_ai) == "1"
-          session[:doc_ai_skip] = skip_ai
-          redirect_to edit_activity_report_application_form_path(@activity_report_application_form)
-        end
-        format.json { render :show, status: :created, location: @activity_report_application_form }
-      else
-        format.html { redirect_to dashboard_path }
-        format.json { render json: @activity_report_application_form.errors, status: :unprocessable_content }
+      format.html do
+        skip_ai = params.dig(:activity_report_application_form, :skip_ai) == "1"
+        session[:doc_ai_skip] = skip_ai
+        redirect_to edit_activity_report_application_form_path(@activity_report_application_form)
       end
+      format.json { render :show, status: :created, location: @activity_report_application_form }
     end
   end
 
