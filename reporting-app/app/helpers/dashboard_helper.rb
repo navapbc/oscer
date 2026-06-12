@@ -40,7 +40,7 @@ module DashboardHelper
   end
 
   def is_activity_report_submitted?
-    @activity_report_application_form&.submitted? && @certification_case&.activity_report_approval_status.nil?
+    @activity_report_application_form&.flow_status == "submitted"
   end
 
   def is_exemption_request_submitted?
@@ -48,7 +48,7 @@ module DashboardHelper
   end
 
   def is_activity_report_approved?
-    @activity_report_application_form&.submitted? && @certification_case&.activity_report_approval_status == "approved"
+    @activity_report_application_form&.flow_status == "approved"
   end
 
   def is_exemption_request_approved?
@@ -56,7 +56,7 @@ module DashboardHelper
   end
 
   def is_activity_report_denied?
-    @activity_report_application_form&.submitted? && @certification_case&.activity_report_approval_status == "denied"
+    @activity_report_application_form&.flow_status == "denied"
   end
 
   def is_exemption_request_denied?
@@ -69,6 +69,14 @@ module DashboardHelper
     certification_case.open? &&
       !certification_case.verification_window_ended? &&
       !ExemptionApplicationForm.has_pending_form(certification_case.id)
+  end
+
+  def should_show_submit_new_activity_report_form?(certification_case)
+    return false unless certification_case.present?
+
+    certification_case.open? &&
+      !certification_case.verification_window_ended? &&
+      !ActivityReportApplicationForm.has_pending_form(certification_case.id)
   end
 
   # Figma "Get started" — exemption screener CTA before any application forms exist (7203:6175).

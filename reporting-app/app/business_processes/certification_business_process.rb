@@ -46,11 +46,12 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   transition(EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementActionRequired", REPORT_ACTIVITIES_STEP)
 
   # --- Transitions: Activity report workflow ---
-  # Reviewer determines compliance: approved = compliant, denied = not compliant
-  # Both outcomes close the case
+  # Reviewer determines compliance: approved = compliant, denied = not compliant.
+  # A denial while the verification window is open returns the member to report_activities so they
+  # can submit again; approval and final denial (window ended) close the case.
   transition(REPORT_ACTIVITIES_STEP, "ActivityReportApplicationFormSubmitted", REVIEW_ACTIVITY_REPORT_STEP)
   transition(REVIEW_ACTIVITY_REPORT_STEP, "ActivityReportApproved", END_STEP)
-  transition(REVIEW_ACTIVITY_REPORT_STEP, "ActivityReportDenied", END_STEP)
+  transition(REVIEW_ACTIVITY_REPORT_STEP, "ActivityReportDenied", REPORT_ACTIVITIES_STEP)
   transition(REVIEW_ACTIVITY_REPORT_STEP, "ActivityReportDeniedFinal", END_STEP)
 
   # --- Transitions: Exemption claim workflow ---
