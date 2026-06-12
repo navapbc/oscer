@@ -19,8 +19,9 @@ class ActivityReportApplicationForm < Strata::ApplicationForm
   strata_attribute :number_of_months_to_certify, :integer
   strata_attribute :months_that_can_be_certified, :year_month, array: true
 
-  # At most one in-progress form per case; any number of submitted forms may accumulate over resubmissions.
-  validates :certification_case_id, presence: true, uniqueness: { conditions: -> { in_progress } }
+  validates :certification_case_id, presence: true
+  validate :case_not_closed, on: :create
+  validate :no_pending_forms, on: :create
   validates :reporting_periods,
     length: {
       is: :number_of_months_to_certify,
@@ -67,7 +68,43 @@ class ActivityReportApplicationForm < Strata::ApplicationForm
       .map { |ym| Date.new(ym.year, ym.month, 1) }
   end
 
+  def flow_status
+    unless @flow_status.present?
+      task_complete = ReviewActivityReportTask.where(case_id: certification_case_id,
+                                                     application_form: self,
+                                                     status: :completed).exists?
+      @flow_status = if task_complete
+                       CertificationCase.find(certification_case_id).activity_report_approval_status
+      else
+                       status
+      end
+    end
+
+    @flow_status
+  end
+
+  def self.has_pending_form(certification_case_id)
+    ActivityReportApplicationForm.where(certification_case_id:, status: :in_progress).exists? ||
+    ReviewActivityReportTask.where(application_form: ActivityReportApplicationForm.where(certification_case_id:).all,
+                                   status: [ :on_hold, :pending ]).exists?
+  end
+
   private
+
+  def case_not_closed
+    certification_case = CertificationCase.find_by(id: certification_case_id)
+    if certification_case.blank?
+      errors.add(:certification_case_id, "is invalid")
+    elsif certification_case.closed?
+      errors.add(:certification_case_id, "has closed")
+    elsif certification_case.verification_window_ended?
+      errors.add(:certification_case_id, "verification window has ended")
+    end
+  end
+
+  def no_pending_forms
+    errors.add(:certification_case_id, "has already been taken") if ActivityReportApplicationForm.has_pending_form(certification_case_id)
+  end
 
   def validate_reporting_periods_in_range
     invalid = reporting_periods - months_that_can_be_certified

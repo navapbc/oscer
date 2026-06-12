@@ -13,6 +13,15 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
   before do
     login_as user
     allow(NotificationService).to receive(:send_email_notification)
+
+    # Keep the bootstrap community-engagement check from closing the factory-created case
+    # (the hours stub below would otherwise mark it compliant during certification setup).
+    allow(CommunityEngagementCheckService).to receive(:determine) do |bootstrap_case|
+      Strata::EventManager.publish("DeterminedCommunityEngagementActionRequired", {
+        case_id: bootstrap_case.id,
+        certification_id: bootstrap_case.certification_id
+      })
+    end
   end
 
   after do
@@ -92,13 +101,26 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
         expect(task).to be_completed
       end
 
-      it "marks case as denied and transitions to end (not compliant)" do
+      it "marks case as denied and returns to report_activities while the verification window is open" do
         patch review_activity_report_task_url(task), params: deny_params
         kase.reload
 
         expect(kase.activity_report_approval_status).to eq("denied")
-        expect(kase.business_process_instance.current_step).to eq("end")
-        expect(kase).to be_closed
+        expect(kase.business_process_instance.current_step).to eq("report_activities")
+        expect(kase).to be_open
+      end
+
+      context "when the verification window has ended" do
+        before { kase.update_attribute(:verification_window_end_date, 1.day.ago) }
+
+        it "marks case as denied and transitions to end (final denial)" do
+          patch review_activity_report_task_url(task), params: deny_params
+          kase.reload
+
+          expect(kase.activity_report_approval_status).to eq("denied")
+          expect(kase.business_process_instance.current_step).to eq("end")
+          expect(kase).to be_closed
+        end
       end
 
       it "records the denied outcome on the task and its application form" do
