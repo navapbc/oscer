@@ -75,8 +75,12 @@ module DashboardHelper
     end
   end
 
-  def should_show_submit_new_exemption_form?(certification_case)
+  # Shows the outline "Submit new exemption request" CTA beside "Exemption details" on the
+  # denied dashboard when the member may file another request.
+  def should_show_submit_new_exemption_form?(compliance)
+    certification_case = compliance.certification_case
     return false unless certification_case.present?
+    return false unless compliance.exemption_flow_state == MemberDashboardCompliance::EXEMPTION_DENIED
 
     certification_case.open? &&
       !certification_case.verification_window_ended? &&

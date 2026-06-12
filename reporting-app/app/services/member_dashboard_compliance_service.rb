@@ -102,6 +102,10 @@ class MemberDashboardComplianceService
         return MemberDashboardCompliance::EXEMPTION_DRAFT
       end
 
+      unless exemption_application_form.staff_exemption_review_complete?
+        return MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW
+      end
+
       if certification_case&.exemption_request_approval_status == "approved"
         return MemberDashboardCompliance::EXEMPTION_APPROVED
       end
@@ -110,7 +114,7 @@ class MemberDashboardComplianceService
         return MemberDashboardCompliance::EXEMPTION_DENIED
       end
 
-      # Submitted, no staff decision yet
+      # Submitted, review complete, but case status not yet set
       MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW
     end
   end

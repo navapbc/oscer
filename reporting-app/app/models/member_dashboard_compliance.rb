@@ -256,12 +256,14 @@ class MemberDashboardCompliance
   def exemption_form_history_status(certification_case, form)
     if !form.submitted?
       EXEMPTION_DRAFT
-    elsif certification_case&.exemption_request_approval_status.nil?
+    elsif !form.staff_exemption_review_complete?
       EXEMPTION_PENDING_REVIEW
     elsif certification_case&.exemption_request_approval_status == "denied"
       EXEMPTION_DENIED
     elsif certification_case&.exemption_request_approval_status == "approved"
       EXEMPTION_APPROVED
+    else
+      EXEMPTION_PENDING_REVIEW
     end
   end
 

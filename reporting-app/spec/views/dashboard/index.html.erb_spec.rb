@@ -504,6 +504,35 @@ RSpec.describe "dashboard/index", type: :view do
     end
   end
 
+  context "with a resubmitted exemption after a prior denial" do
+    let(:exemption_application_form) do
+      prior_form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+      ReviewExemptionClaimTask.find_by(application_form: prior_form).completed!
+      certification_case.deny_exemption_request(nil)
+      create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+    end
+
+    before do
+      assign(:exemption_application_form, exemption_application_form)
+      reassign_compliance_read_model
+    end
+
+    it 'renders the pending review alert instead of the denied alert' do
+      render
+      expect(rendered).to have_css('.member-dashboard-compliance__alert--review')
+      expect(rendered).not_to have_css('.member-dashboard-compliance__alert--error[role="alert"]')
+      expect(rendered).to have_selector('h3', text: I18n.t('dashboard.member_compliance.exemption_alerts.pending_review.title'))
+    end
+
+    it 'does not render the submit new exemption button' do
+      render
+      expect(rendered).not_to have_selector(
+        'a',
+        text: I18n.t('dashboard.exemption_denied.submit_new_exemption_button')
+      )
+    end
+  end
+
   context "when the member is exempt via an automated determination" do
     before do
       create(:determination,

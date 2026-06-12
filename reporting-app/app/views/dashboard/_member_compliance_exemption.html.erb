@@ -11,9 +11,7 @@
 <section class="member-dashboard-compliance__exemption margin-bottom-4"
          <%= tag.attributes("aria-labelledby": exemption_section_labelledby) if exemption_section_labelledby.present? %>>
   <% if show_member_compliance_exemption_details_heading?(compliance) %>
-    <% show_submit_new_exemption = compliance.exemption_flow_state == MemberDashboardCompliance::EXEMPTION_DENIED &&
-                                     should_show_submit_new_exemption_form?(compliance.certification_case) %>
-    <% if show_submit_new_exemption %>
+    <% if should_show_submit_new_exemption_form?(compliance) %>
       <div class="member-dashboard-compliance__section-header">
         <h2 id="exemption-details-heading" class="margin-0"><%= t("dashboard.member_compliance.exemption_details_heading") %></h2>
         <div class="member-dashboard-compliance__section-header-actions">
