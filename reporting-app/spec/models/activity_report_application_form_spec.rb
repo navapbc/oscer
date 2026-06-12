@@ -48,4 +48,38 @@ RSpec.describe ActivityReportApplicationForm, type: :model do
       end
     end
   end
+
+  describe "#approval_status" do
+    it "has no outcome when there is no review task, distinguishable from approved/denied" do
+      form = create(:activity_report_application_form)
+
+      expect(form.approval_status).to be_nil
+      expect(form).not_to be_approved
+      expect(form).not_to be_denied
+    end
+
+    it "has no outcome while its review task is undecided" do
+      task = create(:review_activity_report_task_with_form, case: create(:certification_case))
+
+      expect(task.application_form.approval_status).to be_nil
+    end
+
+    it "reports its review task's approved outcome" do
+      task = create(:review_activity_report_task_with_form, case: create(:certification_case))
+      task.update!(approval_status: :approved)
+
+      form = described_class.find(task.application_form_id)
+      expect(form.approval_status).to eq("approved")
+      expect(form).to be_approved
+    end
+
+    it "reports its review task's denied outcome" do
+      task = create(:review_activity_report_task_with_form, case: create(:certification_case))
+      task.update!(approval_status: :denied)
+
+      form = described_class.find(task.application_form_id)
+      expect(form.approval_status).to eq("denied")
+      expect(form).to be_denied
+    end
+  end
 end

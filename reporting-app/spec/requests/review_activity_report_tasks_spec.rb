@@ -52,6 +52,13 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
         expect(kase).to be_closed
       end
 
+      it "records the approved outcome on the task and its application form" do
+        patch review_activity_report_task_url(task), params: approve_params
+
+        expect(task.reload.approval_status).to eq("approved")
+        expect(task.application_form.approval_status).to eq("approved")
+      end
+
       it "redirects back to the task" do
         patch review_activity_report_task_url(task), params: approve_params
         expect(response).to redirect_to(task_path(task))
@@ -92,6 +99,13 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
         expect(kase.activity_report_approval_status).to eq("denied")
         expect(kase.business_process_instance.current_step).to eq("end")
         expect(kase).to be_closed
+      end
+
+      it "records the denied outcome on the task and its application form" do
+        patch review_activity_report_task_url(task), params: deny_params
+
+        expect(task.reload.approval_status).to eq("denied")
+        expect(task.application_form.approval_status).to eq("denied")
       end
 
       it "redirects back to the task" do

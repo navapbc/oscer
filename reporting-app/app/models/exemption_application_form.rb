@@ -1,11 +1,19 @@
 # frozen_string_literal: true
 
 class ExemptionApplicationForm < Strata::ApplicationForm
+  include FormApprovalStatus
+
   # TODO: Remove when revising the old exemption screener flow
   LEGACY_EXEMPTION_TYPES = %w[short_term_hardship incarceration].freeze
 
   enum :exemption_type, Exemption.enum_hash
   validates :exemption_type, inclusion: { in: Exemption.types + LEGACY_EXEMPTION_TYPES }, allow_nil: true
+
+  has_one :review_task,
+    class_name: "ReviewExemptionClaimTask",
+    foreign_key: :application_form_id,
+    inverse_of: :application_form,
+    strict_loading: false
 
   validate :case_not_closed, on: :create
   validate :no_pending_forms, on: :create
