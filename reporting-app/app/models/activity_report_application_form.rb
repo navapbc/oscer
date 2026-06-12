@@ -2,16 +2,12 @@
 
 class ActivityReportApplicationForm < Strata::ApplicationForm
   include FormApprovalStatus
+  has_review_task "ReviewActivityReportTask"
 
   MINIMUM_MONTHLY_HOURS = 80
   MINIMUM_MONTHLY_INCOME = IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY
 
   has_many :activities, strict_loading: true, autosave: true, dependent: :destroy
-  has_one :review_task,
-    class_name: "ReviewActivityReportTask",
-    foreign_key: :application_form_id,
-    inverse_of: :application_form,
-    strict_loading: false
 
   default_scope { includes(:determinations, :activities) }
 
