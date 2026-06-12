@@ -4,3 +4,4 @@ en:
       heading: "Activity report does not meet requirements"
       intro: "Your activity report does not meet the requirements. You are still required to report activities. If you disagree with this decision, you may appeal this decision."
       view_activity_report_button: "View activity report"
+      submit_new_activity_report_button: "Submit new activity report"

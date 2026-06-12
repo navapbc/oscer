@@ -34,12 +34,11 @@
     </div>
   </div>
 
-<% elsif @certification_case&.activity_report_approval_status %>
-  <p class="usa-intro <%= activity_report_status_class(@certification_case.activity_report_approval_status) %>">
-    <%= t("activity_report_application_forms.shared.status_messages.#{@certification_case.activity_report_approval_status}") %>
-  </p>
 <% else %>
-  <p class="usa-intro"><%= t("activity_report_application_forms.shared.status_messages.submitted") %></p>
+  <% flow_status = @activity_report_application_form.flow_status %>
+  <p class="usa-intro <%= activity_report_status_class(flow_status) %>">
+    <%= t("activity_report_application_forms.shared.status_messages.#{flow_status}") %>
+  </p>
 <% end %>
 <div class="margin-y-6">
   <%= render "activity_report_application_forms/activity_report_application_form",

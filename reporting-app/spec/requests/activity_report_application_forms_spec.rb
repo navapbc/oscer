@@ -146,6 +146,41 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
         expect(response).to be_successful
       end
     end
+
+    context "when the certification case is closed" do
+      before { certification_case.close! }
+
+      it "redirects to the dashboard with a notice" do
+        get new_activity_report_application_form_url(certification_case_id: certification_case.id)
+        expect(response).to redirect_to(dashboard_path)
+        follow_redirect!
+        expect(response.body).to include(I18n.t("activity_report_application_forms.new.errors.case_closed"))
+      end
+    end
+
+    context "when the verification window has ended" do
+      before { certification_case.update_attribute(:verification_window_end_date, 1.day.ago) }
+
+      it "redirects to the dashboard with a notice" do
+        get new_activity_report_application_form_url(certification_case_id: certification_case.id)
+        expect(response).to redirect_to(dashboard_path)
+        follow_redirect!
+        expect(response.body).to include(I18n.t("activity_report_application_forms.new.errors.verification_window_ended"))
+      end
+    end
+
+    context "when a form is already in progress" do
+      before do
+        create(:activity_report_application_form, certification_case_id: certification_case.id, user_id: user.id)
+      end
+
+      it "redirects to the dashboard with a notice" do
+        get new_activity_report_application_form_url(certification_case_id: certification_case.id)
+        expect(response).to redirect_to(dashboard_path)
+        follow_redirect!
+        expect(response.body).to include(I18n.t("activity_report_application_forms.new.errors.form_in_progress"))
+      end
+    end
   end
 
   describe "POST /create" do
@@ -172,7 +207,45 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
         post activity_report_application_forms_url(params: invalid_params)
         expect(response).to redirect_to(dashboard_path)
         follow_redirect!
-        expect(response.body).to include("Certification case has already been taken")
+        expect(response.body).to include(I18n.t("activity_report_application_forms.errors.other_report_exists"))
+      end
+    end
+
+    context "with a closed certification case" do
+      before { certification_case.close! }
+
+      let(:params) { { activity_report_application_form: { certification_case_id: certification_case.id } } }
+
+      it "does not create a new ActivityReportApplicationForm" do
+        expect {
+          post activity_report_application_forms_url, params: params
+        }.not_to change(ActivityReportApplicationForm, :count)
+      end
+
+      it "redirects to dashboard with a notice" do
+        post activity_report_application_forms_url, params: params
+        expect(response).to redirect_to(dashboard_path)
+        follow_redirect!
+        expect(response.body).to include(I18n.t("activity_report_application_forms.errors.case_closed"))
+      end
+    end
+
+    context "when the verification window has ended" do
+      before { certification_case.update_attribute(:verification_window_end_date, 1.day.ago) }
+
+      let(:params) { { activity_report_application_form: { certification_case_id: certification_case.id } } }
+
+      it "does not create a new ActivityReportApplicationForm" do
+        expect {
+          post activity_report_application_forms_url, params: params
+        }.not_to change(ActivityReportApplicationForm, :count)
+      end
+
+      it "redirects to dashboard with a notice" do
+        post activity_report_application_forms_url, params: params
+        expect(response).to redirect_to(dashboard_path)
+        follow_redirect!
+        expect(response.body).to include(I18n.t("activity_report_application_forms.errors.verification_window_ended"))
       end
     end
 

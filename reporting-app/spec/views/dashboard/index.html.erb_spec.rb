@@ -253,7 +253,12 @@ RSpec.describe "dashboard/index", type: :view do
       assign(:hours_needed, 0)
       assign(:total_hours_reported, HoursComplianceDeterminationService::TARGET_HOURS)
 
-      certification_case.activity_report_approval_status = "approved"
+      allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
+        total_hours: 85, hours_by_category: {}, hours_by_source: { external: 85, activity: 0 },
+        external_hourly_activity_ids: [], activity_ids: []
+      })
+      ReviewActivityReportTask.find_by(application_form: activity_report_application_form).completed!
+      certification_case.accept_activity_report(nil, activity_report_application_form)
     end
 
     it 'renders a message that the requirements are met' do
@@ -326,7 +331,12 @@ RSpec.describe "dashboard/index", type: :view do
       assign(:hours_needed, 0)
       assign(:total_hours_reported, HoursComplianceDeterminationService::TARGET_HOURS)
 
-      certification_case.activity_report_approval_status = "denied"
+      allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
+        total_hours: 40, hours_by_category: {}, hours_by_source: { external: 40, activity: 0 },
+        external_hourly_activity_ids: [], activity_ids: []
+      })
+      ReviewActivityReportTask.find_by(application_form: activity_report_application_form).completed!
+      certification_case.deny_activity_report(nil, activity_report_application_form)
     end
 
     it 'renders a message that the activity report is denied' do
@@ -337,6 +347,29 @@ RSpec.describe "dashboard/index", type: :view do
     it 'has a button to view the activity report' do
       render
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.activity_report_denied.view_activity_report_button'))
+    end
+
+    it 'renders button to submit a new activity report' do
+      render
+      expect(rendered).to have_selector('a', text: I18n.t('dashboard.activity_report_denied.submit_new_activity_report_button'))
+    end
+
+    context "when verification window ended" do
+      before { certification_case.update_attribute!(:verification_window_end_date, 1.day.ago) }
+
+      it 'does not render the button to submit a new activity report' do
+        render
+        expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.activity_report_denied.submit_new_activity_report_button'))
+      end
+    end
+
+    context "when case closed" do
+      before { certification_case.close! }
+
+      it 'does not render the button to submit a new activity report' do
+        render
+        expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.activity_report_denied.submit_new_activity_report_button'))
+      end
     end
   end
 
