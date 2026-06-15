@@ -1,6 +1,5 @@
 <%# Does not qualify — delegates to the compliance dashboard (OSCER-337 / #640).
-    No retake-screener CTA after a caseworker denial (per AC). Reporting uses the
-    existing activity-report flow until the dashboard reporting section (#642). %>
+    Resubmit routes through the exemption screener when eligible (OSCER-637). %>
 <% report_action = member_compliance_activity_report_action(compliance: compliance) %>
 
 <%= render "dashboard/member_compliance_dashboard",

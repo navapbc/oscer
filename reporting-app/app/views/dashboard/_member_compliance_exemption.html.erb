@@ -16,7 +16,7 @@
         <h2 id="exemption-details-heading" class="margin-0"><%= t("dashboard.member_compliance.exemption_details_heading") %></h2>
         <div class="member-dashboard-compliance__section-header-actions">
           <%= link_to t("dashboard.exemption_denied.submit_new_exemption_button"),
-                new_exemption_application_form_path(certification_case_id: compliance.certification_case&.id),
+                exemption_screener_path(certification_case_id: compliance.certification_case&.id),
                 class: "usa-button usa-button--outline" %>
         </div>
       </div>

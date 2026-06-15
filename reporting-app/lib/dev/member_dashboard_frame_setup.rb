@@ -45,8 +45,8 @@ module Dev
         form = create_submitted_exemption!(certification_case)
         approve_exemption!(certification, certification_case, form)
       when "exemption_denied"
-        create_submitted_exemption!(certification_case)
-        deny_exemption!(certification_case)
+        form = create_submitted_exemption!(certification_case)
+        deny_exemption!(certification_case, form)
         ensure_income_determination!(certification)
       end
 
@@ -148,11 +148,11 @@ module Dev
       )
     end
 
-    def deny_exemption!(certification_case)
-      certification_case.update!(
-        exemption_request_approval_status: "denied",
-        exemption_request_approval_status_updated_at: Time.current
-      )
+    def deny_exemption!(certification_case, exemption_form)
+      task = ReviewExemptionClaimTask.find_by(application_form: exemption_form) ||
+             FactoryBot.create(:review_exemption_claim_task, application_form: exemption_form, case: certification_case)
+      task.completed!
+      certification_case.deny_exemption_request(nil)
     end
 
     def ensure_income_determination!(certification)

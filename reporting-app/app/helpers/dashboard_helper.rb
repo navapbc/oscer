@@ -75,8 +75,8 @@ module DashboardHelper
     end
   end
 
-  # Shows the outline "Submit new exemption request" CTA beside "Exemption details" on the
-  # denied dashboard when the member may file another request.
+  # Shows the outline resubmit CTA beside "Exemption details" on the denied dashboard when
+  # the member may start another exemption request via the screener.
   def should_show_submit_new_exemption_form?(compliance)
     certification_case = compliance.certification_case
     return false unless certification_case.present?

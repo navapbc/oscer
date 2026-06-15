@@ -484,11 +484,12 @@ RSpec.describe "dashboard/index", type: :view do
     it 'renders button to resubmit next to the exemption details heading' do
       render
       button_text = I18n.t('dashboard.exemption_denied.submit_new_exemption_button')
+      screener_path = exemption_screener_path(certification_case_id: certification_case.id)
       expect(rendered).to have_selector(
         '.member-dashboard-compliance__section-header #exemption-details-heading'
       )
       expect(rendered).to have_selector(
-        '.member-dashboard-compliance__section-header-actions a.usa-button--outline',
+        ".member-dashboard-compliance__section-header-actions a.usa-button--outline[href='#{screener_path}']",
         text: button_text
       )
       expect(rendered).not_to have_selector(
