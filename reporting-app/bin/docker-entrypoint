@@ -1,12 +1,7 @@
 #!/bin/bash -e
 
-# Remove stale server PID that persists in the tmp named volume across container restarts
-rm -f /rails/tmp/pids/server.pid
-
-# If running the rails server (production) or dev server (development) then migrate the database
+# If running the rails server then create or migrate existing database
 if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
-  ./bin/rails db:prepare
-elif [ "${1}" == "./bin/dev" ]; then
   ./bin/rails db:prepare
 fi
 
