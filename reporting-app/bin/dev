@@ -1,8 +1,5 @@
 #!/usr/bin/env sh
 
-# Remove stale server PID that persists in the tmp named volume across container restarts
-rm -f /rails/tmp/pids/server.pid
-
 if gem list --no-installed --exact --silent overman; then
   echo "Installing overman..."
   gem install overman
