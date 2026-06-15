@@ -100,7 +100,7 @@ docker compose up -d
 
 # 2. Start the reporting-app with the overlay that joins that network
 cd path/to/oscer/reporting-app
-docker compose -f docker-compose.yml -f docker-compose.doc-ai.yml up
+make start-with-doc-ai
 ```
 
 In your `.env`, set `DOC_AI_API_HOST` to the container service name so that Docker DNS resolves it:
