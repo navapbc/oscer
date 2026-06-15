@@ -28,12 +28,6 @@ services:
       - DB_HOST=reporting-app-db16
       - RAILS_BINDING=0.0.0.0
       - RAILS_ENV=development
-      # When running the doc-ai service via its own compose stack, use the container
-      # name so Rails can reach it over the Docker network instead of localhost:
-      - DOC_AI_API_HOST=http://strata-service-document-ai-service:8080
-    networks:
-      - default
-      - strata-service-document-ai_default
     ports:
       - 3000:3000
     volumes:
@@ -50,9 +44,3 @@ volumes:
   reporting-app_nodemodules:
   reporting-app_tmp:
   reporting-app_storage:
-
-networks:
-  # Attach to the doc-ai service network so the reporting-app container can
-  # resolve the strata-service-document-ai-service hostname directly.
-  strata-service-document-ai_default:
-    external: true
