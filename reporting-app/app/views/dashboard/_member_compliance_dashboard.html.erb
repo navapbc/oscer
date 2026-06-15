@@ -1,0 +1,29 @@
+<%# Shared member compliance shell (OSCER-337 / #640).
+    Exemption-outcome states render the exemption block; the reporting section
+    (progress cards / activity tables) is added in later slices (#642, #643).
+    Requires +compliance+ — callers without a read model use other dashboard partials. %>
+<% compliance = local_assigns.fetch(:compliance) %>
+
+<div class="member-dashboard-compliance">
+  <%= render "dashboard/member_compliance_exemption", compliance: compliance %>
+
+  <% if local_assigns[:show_reporting_intro] %>
+    <%= render "dashboard/member_compliance_reporting", compliance: compliance %>
+  <% end %>
+
+  <% if local_assigns[:primary_action_label].present? && local_assigns[:primary_action_path].present? ||
+        local_assigns[:secondary_action_label].present? && local_assigns[:secondary_action_path].present? %>
+    <div class="member-dashboard-compliance__exemption-action">
+      <% if local_assigns[:primary_action_label].present? && local_assigns[:primary_action_path].present? %>
+        <%= link_to local_assigns[:primary_action_label],
+              local_assigns[:primary_action_path],
+              class: "usa-button margin-right-2 margin-bottom-1" %>
+      <% end %>
+      <% if local_assigns[:secondary_action_label].present? && local_assigns[:secondary_action_path].present? %>
+        <%= link_to local_assigns[:secondary_action_label],
+              local_assigns[:secondary_action_path],
+              class: "usa-button usa-button--outline margin-right-2 margin-bottom-1" %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

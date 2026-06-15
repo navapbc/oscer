@@ -1,11 +1,39 @@
 es-US:
   dashboard:
     member_compliance:
+      exemption_type_unknown: "Solicitud de exención"
+      exemption_details_heading: "Detalles de la exención"
+      exemption_request_history_heading: "Historial de solicitudes de exención"
+      exemption_history:
+        exemption_type: "Tipo de exención"
+        date_submitted: "Fecha de envío"
+        status: "Estado"
       exemption_alerts:
         not_started:
           title: "Antes de reportar actividades, veamos si califica para una exención."
           body: "Responda unas preguntas rápidas para saber si está exento del requisito de reporte de trabajo. Si no califica, podrá reportar sus actividades directamente."
           button: "Comenzar"
+        pending_review:
+          title: "Exención en revisión"
+          body: "Su solicitud ha sido enviada y está en revisión. Por ahora no necesita realizar ninguna acción."
+          footer: "Recibirá una notificación cuando se tome una decisión. Si se aprueba su exención, no necesitará reportar actividades de trabajo mientras esté activa. Si no se aprueba, se le pedirá que comience a reportar."
+        approved:
+          title: "Es elegible para una exención"
+          body: "Califica para una exención en este período de reporte. No necesita reportar actividades ni ingresos mientras su exención esté activa. No se requiere ninguna acción adicional."
+        denied:
+          title: "No califica para una exención"
+          body: "Debe reportar %{target_hours} horas de actividades calificadas o %{target_income} de ingresos para este período de reporte. Debe enviar su reporte antes del %{due_date} para mantener su cobertura activa."
+          body_hours: "Según sus respuestas, debe reportar %{target_hours} horas de actividad calificada cada mes. Debe enviar su reporte antes del %{due_date} para mantener su cobertura activa para %{coverage_month}."
+      reporting:
+        heading: "Reporte sus actividades"
+        intro: "Debe reportar %{target_hours} horas o %{target_income} de ingresos antes del %{due_date} para mantener su cobertura de Medicaid para %{coverage_month}."
+        intro_hours: "Debe reportar %{target_hours} horas de actividad calificada antes del %{due_date} para mantener su cobertura de Medicaid para %{coverage_month}."
+        start_reporting_activities_button: "Comenzar a reportar actividades"
+        continue_report_button: "Continuar reporte"
+      exemption_badges:
+        exempt: "Exento"
+        not_exempt: "No exento"
+        under_review: "En revisión"
       about_reporting:
         heading: "Acerca del requisito de reporte"
         intro: "Para mantener su elegibilidad de Medicaid, los adultos deben:"

@@ -66,6 +66,8 @@ en:
       default: "%m/%d/%Y"
       short: "%b %d"
       long: "%B %d, %Y"
+      month_name: "%B"
+      month_year: "%B %Y"
   errors:
     attributes:
       spam_trap:
