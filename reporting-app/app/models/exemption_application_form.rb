@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class ExemptionApplicationForm < Strata::ApplicationForm
+  include FormApprovalStatus
+  has_review_task "ReviewExemptionClaimTask"
+
   # TODO: Remove when revising the old exemption screener flow
   LEGACY_EXEMPTION_TYPES = %w[short_term_hardship incarceration].freeze
 

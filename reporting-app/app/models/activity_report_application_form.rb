@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class ActivityReportApplicationForm < Strata::ApplicationForm
+  include FormApprovalStatus
+  has_review_task "ReviewActivityReportTask"
+
   MINIMUM_MONTHLY_HOURS = 80
   MINIMUM_MONTHLY_INCOME = IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY
 

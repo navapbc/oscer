@@ -37,6 +37,13 @@ RSpec.describe "/review_exemption_claim_tasks", type: :request do
         expect(certification_case).to be_closed
       end
 
+      it "records the approved outcome on the task and its application form" do
+        patch review_exemption_claim_task_url(task), params: approve_params
+
+        expect(task.reload.approval_status).to eq("approved")
+        expect(task.application_form.approval_status).to eq("approved")
+      end
+
       it "redirects back to the task" do
         patch review_exemption_claim_task_url(task), params: approve_params
         expect(response).to redirect_to(task_path(task))
@@ -62,6 +69,13 @@ RSpec.describe "/review_exemption_claim_tasks", type: :request do
         patch review_exemption_claim_task_url(task), params: deny_params
         certification_case.reload
         expect(certification_case.exemption_request_approval_status).to eq("denied")
+      end
+
+      it "records the denied outcome on the task and its application form" do
+        patch review_exemption_claim_task_url(task), params: deny_params
+
+        expect(task.reload.approval_status).to eq("denied")
+        expect(task.application_form.approval_status).to eq("denied")
       end
 
       it "sets case step to report activities" do
