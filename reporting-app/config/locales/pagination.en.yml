@@ -1,0 +1,6 @@
+en:
+  pagination:
+    aria_label: "Pagination"
+    previous: "Previous"
+    next: "Next"
+    page: "Page %{number}"

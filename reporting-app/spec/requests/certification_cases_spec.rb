@@ -419,4 +419,96 @@ RSpec.describe "/staff/certification_cases", type: :request do
       expect(response.body).not_to include("open_case")
     end
   end
+
+  describe "GET /index pagination" do
+    let(:per_page) { 25 } # Pagy default configured in config/initializers/pagy.rb
+
+    context "when there are more open cases than fit on one page" do
+      before do
+        # case_01 is newest (1.day.ago) ... case_26 is oldest (26.days.ago)
+        (1..(per_page + 1)).each do |n|
+          create(
+            :certification_case, :actionable,
+            created_at: n.days.ago,
+            certification: create(
+              :certification,
+              case_number: "case_#{format('%02d', n)}",
+              certification_requirements: build(:certification_certification_requirements, region: "north")
+            )
+          )
+        end
+      end
+
+      it "limits page 1 to the 25 newest cases (oldest overflows to page 2)" do
+        get "/staff/certification_cases"
+        expect(response.body).to include("case_01") # newest, page 1
+        expect(response.body).to include("case_25") # 25th newest, still page 1
+        expect(response.body).not_to include("case_26") # oldest, pushed to page 2
+      end
+
+      it "shows the overflow (oldest) case on page 2" do
+        get "/staff/certification_cases", params: { page: 2 }
+        expect(response.body).to include("case_26")
+      end
+
+      it "renders USWDS pagination controls" do
+        get "/staff/certification_cases"
+        expect(Capybara.string(response.body)).to have_css("nav.usa-pagination")
+      end
+
+      it "clamps an out-of-range page to the last page" do
+        get "/staff/certification_cases", params: { page: 9999 }
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("case_26") # last page holds the oldest
+      end
+    end
+
+    context "when all open cases fit on one page" do
+      before do
+        create(
+          :certification_case, :actionable,
+          certification: create(
+            :certification, case_number: "only_case",
+            certification_requirements: build(:certification_certification_requirements, region: "north")
+          )
+        )
+      end
+
+      it "renders the case but omits pagination controls" do
+        get "/staff/certification_cases"
+        expect(response.body).to include("only_case") # page still has content
+        expect(Capybara.string(response.body)).not_to have_css("nav.usa-pagination")
+      end
+    end
+  end
+
+  describe "GET /closed pagination" do
+    let(:per_page) { 25 }
+
+    before do
+      (1..(per_page + 1)).each do |n|
+        create(
+          :certification_case, :with_closed_status,
+          created_at: n.days.ago,
+          certification: create(
+            :certification,
+            case_number: "closed_#{format('%02d', n)}",
+            certification_requirements: build(:certification_certification_requirements, region: "north")
+          )
+        )
+      end
+    end
+
+    it "limits page 1 to the 25 newest closed cases" do
+      get "/staff/certification_cases/closed"
+      expect(response.body).to include("closed_01") # newest, page 1
+      expect(response.body).not_to include("closed_26") # oldest, page 2
+    end
+
+    it "shows the overflow case on page 2 with pagination controls" do
+      get "/staff/certification_cases/closed", params: { page: 2 }
+      expect(response.body).to include("closed_26")
+      expect(Capybara.string(response.body)).to have_css("nav.usa-pagination")
+    end
+  end
 end

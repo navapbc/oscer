@@ -7,12 +7,14 @@ class CertificationCasesController < StaffController
   before_action :set_certification, only: %i[ show tasks documents notes ]
 
   def index
-    @cases = policy_scope(CertificationCase).open
+    # Newest first, with an id tiebreaker so the order is total and OFFSET paging is stable.
+    @pagy, @cases = pagy(policy_scope(CertificationCase).open.order(created_at: :desc, id: :desc))
     certification_service.hydrate_cases_with_certifications!(@cases)
   end
 
   def closed
-    @cases = policy_scope(CertificationCase).closed
+    # The closed scope already orders by created_at :desc; add the id tiebreaker for stable paging.
+    @pagy, @cases = pagy(policy_scope(CertificationCase).closed.order(id: :desc))
     certification_service.hydrate_cases_with_certifications!(@cases)
     render :index
   end
