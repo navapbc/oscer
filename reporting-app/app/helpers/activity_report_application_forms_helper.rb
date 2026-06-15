@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 module ActivityReportApplicationFormsHelper
-  def activity_report_status_class(status)
+  def activity_report_status_class(status, change="text")
     case status
-    when "approved" then "text-green"
-    when "denied" then "text-red"
+    when "approved" then "#{change}-green"
+    when "denied" then "#{change}-red"
     else ""
     end
   end

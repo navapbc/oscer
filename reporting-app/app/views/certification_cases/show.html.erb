@@ -130,7 +130,7 @@
           <% form_status = activity_report_display_status(form) %>
           <h4 class="margin-top-3">
             <%= t(".form_submitted_on", date: l(form.submitted_at || form.updated_at)) %>
-            <span class="usa-tag <%= activity_report_status_class(form_status) %>"><%= t(".form_status.#{form_status}") %></span>
+            <span class="usa-tag <%= activity_report_status_class(form_status, "bg") %>"><%= t(".form_status.#{form_status}") %></span>
           </h4>
         <% end %>
         <%= render partial: "activity_report_application_forms/staff_activity_report", locals: { activity_report: form } %>
