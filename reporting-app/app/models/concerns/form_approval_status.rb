@@ -22,6 +22,6 @@ module FormApprovalStatus
   end
 
   def approval_status = review_task&.approval_status
-  def approved? = approval_status == "approved"
-  def denied? = approval_status == "denied"
+  def approved? = review_task&.approved?
+  def denied? = review_task&.denied?
 end
