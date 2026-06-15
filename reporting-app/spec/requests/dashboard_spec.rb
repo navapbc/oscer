@@ -47,18 +47,28 @@ RSpec.describe "/dashboard", type: :request do
       expect(response.body).to include(activity_report_application_form_path(younger_submitted_form))
     end
 
-    it "sets the exemption application form" do
+    it "renders the screener continue link for an in-progress exemption request" do
       form = create(:exemption_application_form, user_id: user.id, certification_case_id: certification_case.id)
       get "/dashboard"
-      expect(response.body).to include(exemption_application_form_path(form))
+      expect(response.body).to include(
+        exemption_screener_may_qualify_path(
+          exemption_type: form.exemption_type,
+          certification_case_id: certification_case.id
+        )
+      )
     end
 
-    it "sets the in-progress exemption application form if more than one form" do
+    it "renders the in-progress exemption screener link when multiple forms exist" do
       submitted_form = create(:exemption_application_form, :with_submitted_status, user_id: user.id, certification_case_id: certification_case.id)
       form = create(:exemption_application_form, user_id: user.id, certification_case_id: certification_case.id)
       get "/dashboard"
       expect(response.body).not_to include(exemption_application_form_path(submitted_form))
-      expect(response.body).to include(exemption_application_form_path(form))
+      expect(response.body).to include(
+        exemption_screener_may_qualify_path(
+          exemption_type: form.exemption_type,
+          certification_case_id: certification_case.id
+        )
+      )
     end
 
     it "sets the most recent exemption application form if only submitted exist" do
