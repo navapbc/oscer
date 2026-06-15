@@ -274,7 +274,7 @@ RSpec.describe "/staff/certification_cases", type: :request do
         older_form = create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
         older_form.activities.create!(hours: 40, name: "Older Employer Inc", type: "WorkActivity", month: month)
         task = create(:review_activity_report_task, application_form: older_form, case: certification_case)
-        task.update!(approval_status: :denied)
+        task.approval_status = :denied
         task.completed!
 
         newer_form = create(:activity_report_application_form, certification_case_id: certification_case.id)
