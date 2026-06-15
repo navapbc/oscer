@@ -82,6 +82,24 @@ RSpec.describe FetchDocAiResultsJob, type: :job do
         }.to have_enqueued_job(described_class).with([ staged_doc.id ], attempt: 2)
       end
 
+      it "uses exponential backoff for the wait (attempt 1: 10s)" do
+        expect {
+          described_class.perform_now([ staged_doc.id ], attempt: 1)
+        }.to have_enqueued_job(described_class).at(be_within(1.second).of(10.seconds.from_now))
+      end
+
+      it "uses exponential backoff for the wait (attempt 2: 20s)" do
+        expect {
+          described_class.perform_now([ staged_doc.id ], attempt: 2)
+        }.to have_enqueued_job(described_class).at(be_within(1.second).of(20.seconds.from_now))
+      end
+
+      it "uses exponential backoff for the wait (attempt 3: 40s)" do
+        expect {
+          described_class.perform_now([ staged_doc.id ], attempt: 3)
+        }.to have_enqueued_job(described_class).at(be_within(1.second).of(40.seconds.from_now))
+      end
+
       it "does not broadcast" do
         described_class.perform_now([ staged_doc.id ], attempt: 1)
         expect(Turbo::StreamsChannel).not_to have_received(:broadcast_replace_to)
