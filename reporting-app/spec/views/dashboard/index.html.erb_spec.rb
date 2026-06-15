@@ -44,6 +44,22 @@ RSpec.describe "dashboard/index", type: :view do
     assign(:hours_needed, HoursComplianceDeterminationService::TARGET_HOURS)
   end
 
+  # Rebuild the compliance read model after a context mutates case/determination state.
+  # +exemption_flow_state+ is computed eagerly at build time, so the shared outer `before`
+  # would otherwise capture the pre-mutation state.
+  def reassign_compliance_read_model
+    member_status = MemberStatusService.determine(certification)
+    assign(:member_status, member_status)
+    assign(:member_dashboard_compliance,
+           MemberDashboardComplianceService.build(
+             certification: certification,
+             certification_case: certification_case,
+             exemption_application_form: exemption_application_form,
+             activity_report_application_form: activity_report_application_form,
+             member_status: member_status
+           ))
+  end
+
   context 'with no current exemption or activity report' do
     it 'renders the Figma welcome hero copy via the dashboard layout banner' do
       render inline: <<~ERB.squish, type: :erb
@@ -84,7 +100,7 @@ RSpec.describe "dashboard/index", type: :view do
       render
 
       expect(rendered).to have_css('.member-dashboard-compliance__onboarding')
-      expect(rendered).to have_css('.member-dashboard-compliance__alert--info[role="alert"]')
+      expect(rendered).to have_css('.member-dashboard-compliance__alert--info[role="region"]')
       expect(rendered).to have_css('.member-dashboard-compliance__about-reporting')
     end
 
@@ -189,14 +205,33 @@ RSpec.describe "dashboard/index", type: :view do
       assign(:certification_case, certification_case)
     end
 
-    it 'renders a message that the exemption request is under review' do
+    it 'renders the blue "under review" alert' do
       render
-      expect(rendered).to have_selector('p', text: I18n.t('dashboard.exemption_submitted.intro'))
+      expect(rendered).to have_css('.member-dashboard-compliance__alert--review[role="region"]')
+      expect(rendered).to have_selector('h3', text: I18n.t('dashboard.member_compliance.exemption_alerts.pending_review.title'))
+      expect(rendered).to have_text(I18n.t('dashboard.member_compliance.exemption_alerts.pending_review.footer'))
+    end
+
+    it 'renders the exemption history with an UNDER REVIEW badge' do
+      render
+      expect(rendered).to have_selector('h3', text: I18n.t('dashboard.member_compliance.exemption_request_history_heading'))
+      expect(rendered).to have_selector('.member-dashboard-compliance__badge--under-review',
+                                        text: I18n.t('dashboard.member_compliance.exemption_badges.under_review'))
+    end
+
+    it 'does not render the "Exemption details" heading' do
+      render
+      expect(rendered).not_to have_selector('h2', text: I18n.t('dashboard.member_compliance.exemption_details_heading'))
     end
 
     it 'has a button to view the submitted exemption request' do
       render
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.exemption_submitted.view_exemption_button'))
+    end
+
+    it 'does not render a reporting section' do
+      render
+      expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.current_period.report_activities_button'))
     end
 
     it 'does not render the "get started" callout' do
@@ -251,16 +286,30 @@ RSpec.describe "dashboard/index", type: :view do
 
       ReviewExemptionClaimTask.find_by(application_form: exemption_application_form).completed!
       certification_case.accept_exemption_request(nil)
+      reassign_compliance_read_model
     end
 
-    it 'renders a message that the exemption request is approved' do
+    it 'renders the green "eligible for an exemption" alert' do
       render
-      expect(rendered).to have_selector('p', text: I18n.t('dashboard.exemption_approved.intro'))
+      expect(rendered).to have_css('.member-dashboard-compliance__alert--success[role="region"]')
+      expect(rendered).to have_selector('h3', text: I18n.t('dashboard.member_compliance.exemption_alerts.approved.title'))
     end
 
-    it 'has a button to view the certification' do
+    it 'renders the "Exemption details" heading and history with an EXEMPT badge' do
+      render
+      expect(rendered).to have_selector('h2', text: I18n.t('dashboard.member_compliance.exemption_details_heading'))
+      expect(rendered).to have_selector('.member-dashboard-compliance__badge--exempt',
+                                        text: I18n.t('dashboard.member_compliance.exemption_badges.exempt'))
+    end
+
+    it 'has a button to view the completed certification' do
       render
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.exemption_approved.view_certification_button'))
+    end
+
+    it 'does not render a reporting section' do
+      render
+      expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.current_period.report_activities_button'))
     end
 
     it 'does not render the "get started" callout' do
@@ -333,11 +382,20 @@ RSpec.describe "dashboard/index", type: :view do
 
       ReviewExemptionClaimTask.find_by(application_form: exemption_application_form).completed!
       certification_case.deny_exemption_request(nil)
+      reassign_compliance_read_model
     end
 
-    it 'renders a message that the exemption request is denied' do
+    it 'renders the red "you don\'t qualify" alert' do
       render
-      expect(rendered).to have_selector('p', text: I18n.t('dashboard.exemption_denied.intro'))
+      expect(rendered).to have_css('.member-dashboard-compliance__alert--error[role="alert"]')
+      expect(rendered).to have_selector('h3', text: I18n.t('dashboard.member_compliance.exemption_alerts.denied.title'))
+    end
+
+    it 'renders the "Exemption details" heading and history with a NOT EXEMPT badge' do
+      render
+      expect(rendered).to have_selector('h2', text: I18n.t('dashboard.member_compliance.exemption_details_heading'))
+      expect(rendered).to have_selector('.member-dashboard-compliance__badge--not-exempt',
+                                        text: I18n.t('dashboard.member_compliance.exemption_badges.not_exempt'))
     end
 
     it 'has a button to view the exemption' do
@@ -345,28 +403,110 @@ RSpec.describe "dashboard/index", type: :view do
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.exemption_denied.view_exemption_button'))
     end
 
-    it 'renders button to report activities' do
-      render
-      expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.current_period.report_activities_button'))
+    context "when income summary is visible" do
+      before do
+        create(:determination,
+               subject: certification,
+               outcome: MemberStatus::NOT_COMPLIANT,
+               decision_method: "automated",
+               reasons: [ "income_reported_compliant" ],
+               determination_data: {
+                 "calculation_type" => Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED,
+                 "satisfied_by" => Determination::SATISFIED_BY_BOTH
+               })
+        reassign_compliance_read_model
+      end
+
+      it 'renders the income-inclusive denied alert body' do
+        render
+        due_date = I18n.l(certification.certification_requirements.due_date, format: :long)
+        target_income = ActiveSupport::NumberHelper.number_to_currency(
+          IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY,
+          precision: 0
+        )
+        expected = I18n.t(
+          "dashboard.member_compliance.exemption_alerts.denied.body",
+          target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
+          target_income: target_income,
+          due_date: due_date
+        )
+
+        expect(rendered).to have_text(expected)
+      end
     end
 
-    it 'renders button to resubmit' do
-      render
-      expect(rendered).to have_selector('a', text: I18n.t('dashboard.exemption_denied.submit_new_exemption_button'))
+    context "when income summary is hidden (hours-only path)" do
+      before do
+        create(:determination,
+               subject: certification,
+               outcome: "compliant",
+               decision_method: "automated",
+               reasons: [ "hours_reported_compliant" ],
+               determination_data: { "calculation_type" => Determination::CALCULATION_TYPE_HOURS_BASED })
+        reassign_compliance_read_model
+      end
+
+      it 'renders the hours-only denied alert body with coverage month' do
+        render
+        due_date = I18n.l(certification.certification_requirements.due_date, format: :long)
+        coverage_month = I18n.l(
+          certification.certification_requirements.due_date.next_month.beginning_of_month,
+          format: :month_name
+        )
+        expected = I18n.t(
+          "dashboard.member_compliance.exemption_alerts.denied.body_hours",
+          target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
+          due_date: due_date,
+          coverage_month: coverage_month
+        )
+
+        expect(rendered).to have_text(expected)
+      end
     end
 
-    it 'does not render the "get started" callout' do
+    it 'renders a button to start reporting activities' do
       render
-      expect(rendered).not_to have_selector(
+      expect(rendered).to have_selector(
         'a',
-        text: I18n.t('dashboard.member_compliance.exemption_alerts.not_started.button')
+        text: I18n.t('dashboard.member_compliance.reporting.start_reporting_activities_button')
       )
+    end
+
+    it 'renders the "Report your activities" heading and intro above the CTA' do
+      render
+      expect(rendered).to have_selector(
+        'h2#member-compliance-reporting-heading',
+        text: I18n.t('dashboard.member_compliance.reporting.heading')
+      )
+      expect(rendered).to have_selector('.member-dashboard-compliance__reporting-intro')
+    end
+
+    it 'renders button to resubmit next to the exemption details heading' do
+      render
+      button_text = I18n.t('dashboard.exemption_denied.submit_new_exemption_button')
+      screener_path = exemption_screener_path(certification_case_id: certification_case.id)
+      expect(rendered).to have_selector(
+        '.member-dashboard-compliance__section-header #exemption-details-heading'
+      )
+      expect(rendered).to have_selector(
+        ".member-dashboard-compliance__section-header-actions a.usa-button--outline[href='#{screener_path}']",
+        text: button_text
+      )
+      expect(rendered).not_to have_selector(
+        '.member-dashboard-compliance__exemption-action a',
+        text: button_text
+      )
+    end
+
+    it 'does not offer to retake the screener or render the get started callout after a caseworker denial' do
+      render
+      expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.member_compliance.exemption_alerts.not_started.button'))
     end
 
     context "when verification window ended" do
       before { certification_case.update_attribute!(:verification_window_end_date, 1.day.ago) }
 
-      it 'does notrender button to resubmit' do
+      it 'does not render button to resubmit' do
         render
         expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.exemption_denied.submit_new_exemption_button'))
       end
@@ -375,21 +515,80 @@ RSpec.describe "dashboard/index", type: :view do
     context "when case closed" do
       before { certification_case.close! }
 
-      it 'does notrender button to resubmit' do
+      it 'does not render button to resubmit' do
         render
         expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.exemption_denied.submit_new_exemption_button'))
       end
     end
 
     context "with an in-progress activity report" do
-      before do
-        assign(:activity_report_application_form, create(:activity_report_application_form, certification_case_id: certification_case.id))
+      let(:activity_report_application_form) do
+        create(:activity_report_application_form, certification_case_id: certification_case.id)
       end
 
-      it 'renders a button to continue the activity report' do
+      before { reassign_compliance_read_model }
+
+      it 'renders the activity report continue button when a report is in progress' do
         render
-        expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.activity_report.continue_report_button'))
+        expect(rendered).to have_selector(
+          'a',
+          text: I18n.t('dashboard.member_compliance.reporting.continue_report_button')
+        )
       end
+    end
+  end
+
+  context "with a resubmitted exemption after a prior denial" do
+    let(:exemption_application_form) do
+      prior_form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+      ReviewExemptionClaimTask.find_by(application_form: prior_form).completed!
+      certification_case.deny_exemption_request(nil)
+      create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+    end
+
+    before do
+      assign(:exemption_application_form, exemption_application_form)
+      reassign_compliance_read_model
+    end
+
+    it 'renders the pending review alert instead of the denied alert' do
+      render
+      expect(rendered).to have_css('.member-dashboard-compliance__alert--review')
+      expect(rendered).not_to have_css('.member-dashboard-compliance__alert--error[role="alert"]')
+      expect(rendered).to have_selector('h3', text: I18n.t('dashboard.member_compliance.exemption_alerts.pending_review.title'))
+    end
+
+    it 'does not render the submit new exemption button' do
+      render
+      expect(rendered).not_to have_selector(
+        'a',
+        text: I18n.t('dashboard.exemption_denied.submit_new_exemption_button')
+      )
+    end
+  end
+
+  context "when the member is exempt via an automated determination" do
+    before do
+      create(:determination,
+             subject: certification,
+             outcome: "exempt",
+             decision_method: "automated",
+             reasons: [ "age_under_19_exempt" ])
+      reassign_compliance_read_model
+    end
+
+    it 'renders the green "eligible for an exemption" alert and EXEMPT badge' do
+      render
+      expect(rendered).to have_css('.member-dashboard-compliance__alert--success[role="region"]')
+      expect(rendered).to have_selector('h3', text: I18n.t('dashboard.member_compliance.exemption_alerts.approved.title'))
+      expect(rendered).to have_selector('.member-dashboard-compliance__badge--exempt',
+                                        text: I18n.t('dashboard.member_compliance.exemption_badges.exempt'))
+    end
+
+    it 'does not render a reporting section or get-started callout' do
+      render
+      expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.current_period.report_activities_button'))
+      expect(rendered).not_to have_css('.member-dashboard-compliance__onboarding')
     end
   end
 
