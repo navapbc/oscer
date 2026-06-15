@@ -1,0 +1,41 @@
+<%# Exemption outcome states — alerts, history, badges (OSCER-337 / #640).
+    Valid only for pending_review, approved, and denied. Draft and get-started
+    states are owned by other slices (#641, #639). %>
+<% compliance = local_assigns.fetch(:compliance) %>
+
+<% exemption_section_labelledby = if show_member_compliance_exemption_details_heading?(compliance)
+                                    "exemption-details-heading"
+                                  elsif member_compliance_exemption_pending_review_screen?(compliance)
+                                    "member-compliance-exemption-pending-review-alert-heading"
+                                  end %>
+<section class="member-dashboard-compliance__exemption margin-bottom-4"
+         <%= tag.attributes("aria-labelledby": exemption_section_labelledby) if exemption_section_labelledby.present? %>>
+  <% if show_member_compliance_exemption_details_heading?(compliance) %>
+    <% if should_show_submit_new_exemption_form?(compliance) %>
+      <div class="member-dashboard-compliance__section-header">
+        <h2 id="exemption-details-heading" class="margin-0"><%= t("dashboard.member_compliance.exemption_details_heading") %></h2>
+        <div class="member-dashboard-compliance__section-header-actions">
+          <%= link_to t("dashboard.exemption_denied.submit_new_exemption_button"),
+                exemption_screener_path(certification_case_id: compliance.certification_case&.id),
+                class: "usa-button usa-button--outline" %>
+        </div>
+      </div>
+    <% else %>
+      <h2 id="exemption-details-heading" class="margin-bottom-2"><%= t("dashboard.member_compliance.exemption_details_heading") %></h2>
+    <% end %>
+  <% end %>
+
+  <% case compliance.exemption_flow_state %>
+  <% when MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW %>
+    <%= render "dashboard/member_compliance_exemption_pending_review", compliance: compliance %>
+
+  <% when MemberDashboardCompliance::EXEMPTION_APPROVED %>
+    <%= render "dashboard/member_compliance_exemption_approved", compliance: compliance %>
+
+  <% when MemberDashboardCompliance::EXEMPTION_DENIED %>
+    <%= render "dashboard/member_compliance_exemption_denied", compliance: compliance %>
+
+  <% else %>
+    <% guard_member_compliance_exemption_outcome_state!(compliance.exemption_flow_state) %>
+  <% end %>
+</section>

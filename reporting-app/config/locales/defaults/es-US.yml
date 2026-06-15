@@ -4,6 +4,8 @@ es-US:
       default: "%m/%d/%Y"
       short: "%b %d"
       long: "%B %d, %Y"
+      month_name: "%B"
+      month_year: "%B %Y"
   helpers:
     submit:
       create: "Submit"

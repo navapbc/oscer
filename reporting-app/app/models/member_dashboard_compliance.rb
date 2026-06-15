@@ -28,6 +28,7 @@
 #   when income is hidden. Lazy.
 # - +hours_summary+ — +Hash+ matching the +HoursComplianceDeterminationService+ shape.
 # - +member_income_rows+ — +Array<MemberIncomeRow>+ (empty when income is hidden). Lazy.
+# - +certification+ / +certification_case+ — aggregate refs for dashboard links and lazy income/history.
 # - +exemption_flow_state+ — +String+, one of the +EXEMPTION_*+ constants.
 # - +exemption_history+ — +Array<ExemptionHistoryEntry>+ in reverse-chronological order. Lazy.
 class MemberDashboardCompliance
@@ -53,7 +54,9 @@ class MemberDashboardCompliance
     keyword_init: true
   )
 
-  attr_reader :report_status_token,
+  attr_reader :certification,
+              :certification_case,
+              :report_status_token,
               :latest_determination,
               :show_income_summary,
               :activity_report_application_form,
@@ -253,12 +256,14 @@ class MemberDashboardCompliance
   def exemption_form_history_status(certification_case, form)
     if !form.submitted?
       EXEMPTION_DRAFT
-    elsif certification_case&.exemption_request_approval_status.nil?
+    elsif !form.staff_exemption_review_complete?
       EXEMPTION_PENDING_REVIEW
     elsif certification_case&.exemption_request_approval_status == "denied"
       EXEMPTION_DENIED
     elsif certification_case&.exemption_request_approval_status == "approved"
       EXEMPTION_APPROVED
+    else
+      EXEMPTION_PENDING_REVIEW
     end
   end
 

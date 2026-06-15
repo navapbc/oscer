@@ -1,4 +1,6 @@
-<div class="grid-container">
-  <p class="usa-intro"><%= t(".intro") %></p>
-  <%= link_to t(".view_certification_button"), certification_path(certification), class: "usa-button" %>
-</div>
+<%# Exempt outcome — delegates to the compliance dashboard (OSCER-337 / #640).
+    Reached for an approved exemption request and for automated exempt determinations. %>
+<%= render "dashboard/member_compliance_dashboard",
+           compliance: compliance,
+           primary_action_label: t(".view_certification_button"),
+           primary_action_path: certification_path(compliance.certification) %>
