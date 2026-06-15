@@ -7,6 +7,16 @@ ActionMailer::Base.delivery_method = :test
 # Create sample batch uploads for testing
 user = User.first || FactoryBot.create(:user, :as_admin, region: "Southeast", email: "staff@example.com")
 
+# Guard: skip if the database has already been seeded so that running
+# db:seed a second time (e.g. after a restart without a volume wipe)
+# doesn't blow up on uniqueness constraints.
+if Certification.exists?
+  puts "⏭️  Skipping development seeds — database already contains certification data."
+  ActionMailer::Base.delivery_method = original_delivery_method
+  return
+end
+
+created_certifications = []
 5.times do |index|
   certification = FactoryBot.create(
     :certification,
@@ -146,9 +156,10 @@ user = User.first || FactoryBot.create(:user, :as_admin, region: "Southeast", em
   )
 
   app_form.submit_application
+  created_certifications << certification
 end
 
-certifications = Certification.limit(4).to_a
+certifications = created_certifications.first(4)
 
 # Pending batch
 pending_batch = CertificationBatchUpload.new(
