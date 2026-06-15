@@ -266,15 +266,16 @@ RSpec.describe "/staff/certification_cases", type: :request do
 
       # A denied form followed by a re-submission. Events are stubbed to a no-op (the shared
       # before calls original) so submitting a form does not spin up a pending review task that
-      # would block a second form on the same case. A completed review task + denial gives the
-      # older form a "denied" flow_status; the newer form stays "in_progress".
+      # would block a second form on the same case. The older form's review task records a
+      # per-form "denied" decision; the newer form stays "in_progress".
       before do
         allow(Strata::EventManager).to receive(:publish)
 
         older_form = create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
         older_form.activities.create!(hours: 40, name: "Older Employer Inc", type: "WorkActivity", month: month)
-        create(:review_activity_report_task, application_form: older_form, case: certification_case).completed!
-        certification_case.deny_activity_report(nil, older_form)
+        task = create(:review_activity_report_task, application_form: older_form, case: certification_case)
+        task.update!(approval_status: :denied)
+        task.completed!
 
         newer_form = create(:activity_report_application_form, certification_case_id: certification_case.id)
         newer_form.activities.create!(hours: 30, name: "Newer Employer Inc", type: "WorkActivity", month: month)

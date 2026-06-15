@@ -127,9 +127,10 @@
       <h3 class="margin-top-4"><%= t(".activity_line_items") %></h3>
       <% @activity_reports.each do |form| %>
         <% if @activity_reports.size > 1 %>
+          <% form_status = activity_report_display_status(form) %>
           <h4 class="margin-top-3">
             <%= t(".form_submitted_on", date: (form.submitted_at || form.updated_at).strftime("%m/%d/%Y")) %>
-            <span class="usa-tag <%= activity_report_status_class(form.flow_status) %>"><%= t(".form_status.#{form.flow_status}") %></span>
+            <span class="usa-tag <%= activity_report_status_class(form_status) %>"><%= t(".form_status.#{form_status}") %></span>
           </h4>
         <% end %>
         <%= render partial: "activity_report_application_forms/staff_activity_report", locals: { activity_report: form } %>
