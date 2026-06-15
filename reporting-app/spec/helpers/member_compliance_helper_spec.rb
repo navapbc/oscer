@@ -80,6 +80,44 @@ RSpec.describe MemberComplianceHelper, type: :helper do
     end
   end
 
+  describe "#member_compliance_exemption_draft_screen?" do
+    it "is true only for the draft state" do
+      expect(helper.member_compliance_exemption_draft_screen?(compliance_double(exemption_flow_state: MemberDashboardCompliance::EXEMPTION_DRAFT))).to be(true)
+      expect(helper.member_compliance_exemption_draft_screen?(compliance_double(exemption_flow_state: MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW))).to be(false)
+    end
+  end
+
+  describe "#member_compliance_exemption_draft_continue_path" do
+    it "returns the may-qualify screener path when the draft has an exemption type" do
+      form = instance_double(ExemptionApplicationForm, exemption_type: "caregiver_child")
+      compliance = instance_double(
+        MemberDashboardCompliance,
+        certification_case: certification_case,
+        exemption_application_form: form
+      )
+
+      expect(helper.member_compliance_exemption_draft_continue_path(compliance)).to eq(
+        exemption_screener_may_qualify_path(
+          exemption_type: "caregiver_child",
+          certification_case_id: certification_case.id
+        )
+      )
+    end
+
+    it "returns the screener intro when the draft has no exemption type" do
+      form = instance_double(ExemptionApplicationForm, exemption_type: nil)
+      compliance = instance_double(
+        MemberDashboardCompliance,
+        certification_case: certification_case,
+        exemption_application_form: form
+      )
+
+      expect(helper.member_compliance_exemption_draft_continue_path(compliance)).to eq(
+        exemption_screener_path(certification_case_id: certification_case.id)
+      )
+    end
+  end
+
   describe "#member_compliance_exemption_pending_review_screen?" do
     it "is true only for the pending review state" do
       expect(helper.member_compliance_exemption_pending_review_screen?(compliance_double(exemption_flow_state: MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW))).to be(true)

@@ -107,6 +107,17 @@
     margin-top: units(1);
   }
 
+  &__about-reporting {
+    width: 100%;
+
+    p,
+    ul {
+      // Belt-and-suspenders with class rules below — USWDS sets `p { max-width: 68ex }`
+      // in the compiled bundle before member-dashboard rules.
+      max-width: none;
+    }
+  }
+
   &__about-reporting-heading {
     font-family: font-family("sans");
     font-size: font-size("sans", "md");
@@ -121,6 +132,9 @@
     font-size: 1rem;
     line-height: 1.8;
     margin: 0 0 units(2);
+    // Override USWDS global `p { max-width: 68ex }` so onboarding copy spans the
+    // same width as the alert above (Figma 7203:5214 / get-started frame).
+    max-width: none;
   }
 
   &__about-reporting-list {
@@ -128,10 +142,12 @@
     font-size: 1rem;
     line-height: 1.8;
     margin: 0 0 units(2);
+    max-width: none;
     padding-left: units(3);
 
     li {
       margin-bottom: units(1);
+      max-width: none;
     }
   }
 

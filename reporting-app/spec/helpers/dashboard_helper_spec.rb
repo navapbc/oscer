@@ -12,6 +12,78 @@ RSpec.describe DashboardHelper, type: :helper do
     allow(NotificationService).to receive(:send_email_notification)
   end
 
+  def assign_dashboard_ivars(
+    member_dashboard_compliance: nil,
+    certification: self.certification,
+    exemption_application_form: nil,
+    activity_report_application_form: nil,
+    member_status: MemberStatusService.determine(certification)
+  )
+    helper.instance_variable_set(:@member_dashboard_compliance, member_dashboard_compliance)
+    helper.instance_variable_set(:@certification, certification)
+    helper.instance_variable_set(:@certification_case, certification_case)
+    helper.instance_variable_set(:@exemption_application_form, exemption_application_form)
+    helper.instance_variable_set(:@activity_report_application_form, activity_report_application_form)
+    helper.instance_variable_set(:@member_status, member_status)
+  end
+
+  describe "#exemption_draft_dashboard_partial" do
+    it "returns exemption_draft when the read model is draft" do
+      compliance = instance_double(MemberDashboardCompliance, exemption_flow_state: MemberDashboardCompliance::EXEMPTION_DRAFT)
+      assign_dashboard_ivars(member_dashboard_compliance: compliance)
+
+      expect(helper.exemption_draft_dashboard_partial).to eq("exemption_draft")
+    end
+
+    it "returns nil when the read model is absent" do
+      assign_dashboard_ivars(member_dashboard_compliance: nil)
+
+      expect(helper.exemption_draft_dashboard_partial).to be_nil
+    end
+
+    it "returns nil for non-draft exemption flow states" do
+      compliance = instance_double(MemberDashboardCompliance, exemption_flow_state: MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW)
+      assign_dashboard_ivars(member_dashboard_compliance: compliance)
+
+      expect(helper.exemption_draft_dashboard_partial).to be_nil
+    end
+  end
+
+  describe "#determine_dashboard_view" do
+    it "returns exemption_draft before the new_certification incomplete path" do
+      exemption_application_form = create(:exemption_application_form, certification_case_id: certification_case.id)
+      activity_report_application_form = create(:activity_report_application_form, certification_case_id: certification_case.id)
+      member_status = MemberStatusService.determine(certification)
+      compliance = MemberDashboardComplianceService.build(
+        certification: certification,
+        certification_case: certification_case,
+        exemption_application_form: exemption_application_form,
+        activity_report_application_form: activity_report_application_form,
+        member_status: member_status
+      )
+
+      assign_dashboard_ivars(
+        member_dashboard_compliance: compliance,
+        exemption_application_form: exemption_application_form,
+        activity_report_application_form: activity_report_application_form,
+        member_status: member_status
+      )
+
+      expect(helper.determine_dashboard_view).to eq("exemption_draft")
+    end
+
+    it "returns new_certification when no read model is present and applications are incomplete" do
+      exemption_application_form = create(:exemption_application_form, certification_case_id: certification_case.id)
+
+      assign_dashboard_ivars(
+        member_dashboard_compliance: nil,
+        exemption_application_form: exemption_application_form
+      )
+
+      expect(helper.determine_dashboard_view).to eq("new_certification")
+    end
+  end
+
   describe "#should_show_submit_new_exemption_form?" do
     let(:exemption_application_form) do
       form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
