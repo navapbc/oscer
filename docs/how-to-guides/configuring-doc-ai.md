@@ -89,6 +89,26 @@ OSCER includes an interactive paystub builder for testing. This generates realis
 - DocAI extracts month from `payperiodstartdate`
 - Activity creation uses this extracted month to determine which reporting period it belongs to
 
+## Running locally with Docker
+
+The doc-ai service has its own Docker Compose stack. To connect the reporting-app container to it, use the provided override file instead of the default compose file:
+
+```bash
+# 1. Start the strata-service-document-ai stack first (creates its Docker network)
+cd path/to/strata-service-document-ai
+docker compose up -d
+
+# 2. Start the reporting-app with the overlay that joins that network
+cd path/to/oscer/reporting-app
+docker compose -f docker-compose.yml -f docker-compose.doc-ai.yml up
+```
+
+In your `.env`, set `DOC_AI_API_HOST` to the container service name so that Docker DNS resolves it:
+
+```bash
+DOC_AI_API_HOST=http://strata-service-document-ai-service:8080
+```
+
 ## Verifying the Connection
 
 After uploading a document, you can check the extraction result:
