@@ -223,6 +223,37 @@ RSpec.describe MemberDashboardComplianceService do
       end
     end
 
+    context "when staff have denied the current exemption request" do
+      let(:exemption_application_form) { create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
+
+      before do
+        ReviewExemptionClaimTask.find_by(application_form: exemption_application_form).completed!
+        certification_case.deny_exemption_request(nil)
+      end
+
+      it "exposes denied flow and a not-exempt history entry" do
+        expect(read_model.exemption_flow_state).to eq(MemberDashboardCompliance::EXEMPTION_DENIED)
+        expect(read_model.exemption_history.first.status_token).to eq(MemberDashboardCompliance::EXEMPTION_DENIED)
+      end
+    end
+
+    context "when a new exemption is submitted after a prior denial" do
+      let(:exemption_application_form) do
+        prior_form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        ReviewExemptionClaimTask.find_by(application_form: prior_form).completed!
+        certification_case.deny_exemption_request(nil)
+        create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+      end
+
+      it "exposes pending_review flow despite the case still showing denied" do
+        expect(read_model.exemption_flow_state).to eq(MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW)
+      end
+
+      it "shows under review in history for the new submission" do
+        expect(read_model.exemption_history.first.status_token).to eq(MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW)
+      end
+    end
+
     context "when an approved exemption has both a determination and a submitted form" do
       let(:exemption_application_form) { create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
 

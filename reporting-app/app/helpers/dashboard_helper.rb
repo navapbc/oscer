@@ -1,6 +1,19 @@
 # frozen_string_literal: true
 
 module DashboardHelper
+  # Returns the dashboard partial to render for the member's current state.
+  #
+  # The three exemption-outcome partials delegate into +_member_compliance_dashboard+
+  # (requires +@member_dashboard_compliance+) and line up with +compliance.exemption_flow_state+ (OSCER-640):
+  #
+  #   "exemption_approved"  -> EXEMPTION_APPROVED       (approved request *and* the
+  #                                                      automated exempt path via
+  #                                                      +member_status_exempt?+)
+  #   "exemption_submitted" -> EXEMPTION_PENDING_REVIEW
+  #   "exemption_denied"    -> EXEMPTION_DENIED
+  #
+  # All other partials (no_certification, new_certification, activity_report_*) are not
+  # exemption-outcome frames and keep their existing behavior.
   def determine_dashboard_view
     if member_status_exempt?
       "exemption_approved"
@@ -14,12 +27,8 @@ module DashboardHelper
       "activity_report_approved"
     elsif is_activity_report_denied?
       "activity_report_denied"
-    elsif is_exemption_request_submitted?
-      "exemption_submitted"
-    elsif is_exemption_request_approved?
-      "exemption_approved"
-    elsif is_exemption_request_denied?
-      "exemption_denied"
+    elsif (exemption_outcome_partial = exemption_outcome_dashboard_partial)
+      exemption_outcome_partial
     else
       # Fallback for unexpected states
       "new_certification"
@@ -43,28 +52,35 @@ module DashboardHelper
     @activity_report_application_form&.flow_status == "submitted"
   end
 
-  def is_exemption_request_submitted?
-    @exemption_application_form&.flow_status == "submitted"
-  end
-
   def is_activity_report_approved?
     @activity_report_application_form&.flow_status == "approved"
-  end
-
-  def is_exemption_request_approved?
-    @exemption_application_form&.flow_status == "approved"
   end
 
   def is_activity_report_denied?
     @activity_report_application_form&.flow_status == "denied"
   end
 
-  def is_exemption_request_denied?
-    @exemption_application_form&.flow_status == "denied"
+  # Maps +compliance.exemption_flow_state+ to the legacy dashboard partial names (OSCER-640).
+  # Uses the read model so routing stays aligned when case status updates before form +flow_status+.
+  def exemption_outcome_dashboard_partial
+    return nil unless @member_dashboard_compliance.present?
+
+    case @member_dashboard_compliance.exemption_flow_state
+    when MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW
+      "exemption_submitted"
+    when MemberDashboardCompliance::EXEMPTION_APPROVED
+      "exemption_approved"
+    when MemberDashboardCompliance::EXEMPTION_DENIED
+      "exemption_denied"
+    end
   end
 
-  def should_show_submit_new_exemption_form?(certification_case)
+  # Shows the outline resubmit CTA beside "Exemption details" on the denied dashboard when
+  # the member may start another exemption request via the screener.
+  def should_show_submit_new_exemption_form?(compliance)
+    certification_case = compliance.certification_case
     return false unless certification_case.present?
+    return false unless compliance.exemption_flow_state == MemberDashboardCompliance::EXEMPTION_DENIED
 
     certification_case.open? &&
       !certification_case.verification_window_ended? &&
@@ -77,12 +93,5 @@ module DashboardHelper
     certification_case.open? &&
       !certification_case.verification_window_ended? &&
       !ActivityReportApplicationForm.has_pending_form(certification_case.id)
-  end
-
-  # Figma "Get started" — exemption screener CTA before any application forms exist (7203:6175).
-  def member_dashboard_get_started_screen?(compliance)
-    compliance.exemption_flow_state == MemberDashboardCompliance::EXEMPTION_NOT_STARTED &&
-      compliance.activity_report_application_form.blank? &&
-      compliance.exemption_application_form.blank?
   end
 end

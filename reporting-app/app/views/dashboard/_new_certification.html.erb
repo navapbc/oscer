@@ -1,11 +1,11 @@
 <% if local_assigns[:compliance].present? && member_dashboard_get_started_screen?(compliance) %>
-  <div class="grid-container member-dashboard-compliance">
+  <div class="member-dashboard-compliance">
     <%= render "dashboard/member_compliance_get_started",
                compliance: compliance,
                certification_case: certification_case %>
   </div>
 <% else %>
-  <div class="grid-container">
+  <div>
     <%= render "dashboard/compliance_status",
                current_period: current_period,
                target_hours: target_hours,

@@ -1,0 +1,21 @@
+<%# Reporting entry section on the not-exempt dashboard — heading + intro above the
+    "Start reporting activities" CTA (OSCER-640). Progress cards / activity tables land in #642. %>
+<% compliance = local_assigns.fetch(:compliance) %>
+
+<section class="member-dashboard-compliance__reporting margin-top-4" aria-labelledby="member-compliance-reporting-heading">
+  <h2 id="member-compliance-reporting-heading" class="font-heading-lg margin-bottom-2"><%= t("dashboard.member_compliance.reporting.heading") %></h2>
+  <p class="member-dashboard-compliance__reporting-intro">
+    <% if compliance.show_income_summary %>
+      <%= t("dashboard.member_compliance.reporting.intro",
+            target_hours: compliance.target_hours,
+            target_income: number_to_currency(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY, precision: 0),
+            due_date: member_compliance_due_date(compliance),
+            coverage_month: member_compliance_coverage_month(compliance)) %>
+    <% else %>
+      <%= t("dashboard.member_compliance.reporting.intro_hours",
+            target_hours: compliance.target_hours,
+            due_date: member_compliance_due_date(compliance),
+            coverage_month: member_compliance_coverage_month(compliance)) %>
+    <% end %>
+  </p>
+</section>

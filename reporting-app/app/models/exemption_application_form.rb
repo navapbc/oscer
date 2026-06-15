@@ -33,9 +33,7 @@ class ExemptionApplicationForm < Strata::ApplicationForm
 
   def flow_status
     unless @flow_status.present?
-      task_complete = ReviewExemptionClaimTask.where(case_id: certification_case_id,
-                                                     application_form: self,
-                                                     status: :completed).exists?
+      task_complete = staff_exemption_review_complete?
       @flow_status = if task_complete
                        CertificationCase.find(certification_case_id).exemption_request_approval_status
       else
@@ -44,6 +42,15 @@ class ExemptionApplicationForm < Strata::ApplicationForm
     end
 
     @flow_status
+  end
+
+  # True when caseworker review for this form has finished (+ReviewExemptionClaimTask+ completed).
+  # Case-level +exemption_request_approval_status+ applies only after this; a new submission
+  # after a prior denial stays pending until staff review the new request.
+  def staff_exemption_review_complete?
+    ReviewExemptionClaimTask.where(case_id: certification_case_id,
+                                   application_form: self,
+                                   status: :completed).exists?
   end
 
   def self.has_pending_form(certification_case_id)

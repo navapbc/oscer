@@ -68,5 +68,16 @@ RSpec.describe "/dashboard", type: :request do
       expect(response.body).not_to include(exemption_application_form_path(older_submitted_form))
       expect(response.body).to include(exemption_application_form_path(younger_submitted_form))
     end
+
+    it "renders the error alert for a denied exemption request" do
+      form = create(:exemption_application_form, :with_submitted_status, user_id: user.id, certification_case_id: certification_case.id)
+      task = ReviewExemptionClaimTask.find_by(application_form: form) ||
+             create(:review_exemption_claim_task, application_form: form, case: certification_case)
+      task.completed!
+      certification_case.deny_exemption_request(nil)
+      get "/dashboard"
+      expect(response.body).to include("member-dashboard-compliance__alert--error")
+      expect(response.body).to include(I18n.t("dashboard.member_compliance.reporting.start_reporting_activities_button"))
+    end
   end
 end

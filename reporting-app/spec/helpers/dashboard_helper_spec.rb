@@ -5,46 +5,60 @@ require "rails_helper"
 RSpec.describe DashboardHelper, type: :helper do
   let(:certification) { create(:certification) }
   let(:certification_case) { create(:certification_case, certification_id: certification.id) }
-  let(:member_status) { MemberStatusService.determine(certification) }
-  let(:compliance) do
-    MemberDashboardComplianceService.build(
-      certification: certification,
-      activity_report_application_form: nil,
-      certification_case: certification_case,
-      exemption_application_form: nil,
-      member_status: member_status
-    )
+
+  before do
+    allow(Strata::EventManager).to receive(:publish).and_call_original
+    allow(ExemptionDeterminationService).to receive(:determine)
+    allow(NotificationService).to receive(:send_email_notification)
   end
 
-  describe "#member_dashboard_get_started_screen?" do
-    it "is true when exemption has not started and no application forms exist" do
-      expect(helper.member_dashboard_get_started_screen?(compliance)).to be(true)
+  describe "#should_show_submit_new_exemption_form?" do
+    let(:exemption_application_form) do
+      form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+      ReviewExemptionClaimTask.find_by(application_form: form).completed!
+      certification_case.deny_exemption_request(nil)
+      form
     end
-
-    it "is false when an activity report exists" do
-      activity_report = create(:activity_report_application_form, certification_case_id: certification_case.id)
-      compliance_with_activity_report = MemberDashboardComplianceService.build(
+    let(:compliance) do
+      MemberDashboardComplianceService.build(
         certification: certification,
-        activity_report_application_form: activity_report,
         certification_case: certification_case,
-        exemption_application_form: nil,
-        member_status: member_status
-      )
-
-      expect(helper.member_dashboard_get_started_screen?(compliance_with_activity_report)).to be(false)
-    end
-
-    it "is false when an exemption application exists" do
-      exemption = create(:exemption_application_form, certification_case_id: certification_case.id)
-      compliance_with_exemption = MemberDashboardComplianceService.build(
-        certification: certification,
         activity_report_application_form: nil,
+        exemption_application_form: exemption_application_form,
+        member_status: MemberStatusService.determine(certification)
+      )
+    end
+
+    it "returns true on the denied dashboard when the member may submit again" do
+      expect(helper.should_show_submit_new_exemption_form?(compliance)).to be(true)
+    end
+
+    it "returns false when flow state is not denied" do
+      pending_form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+      pending_compliance = MemberDashboardComplianceService.build(
+        certification: certification,
         certification_case: certification_case,
-        exemption_application_form: exemption,
-        member_status: member_status
+        activity_report_application_form: nil,
+        exemption_application_form: pending_form,
+        member_status: MemberStatusService.determine(certification)
       )
 
-      expect(helper.member_dashboard_get_started_screen?(compliance_with_exemption)).to be(false)
+      expect(helper.should_show_submit_new_exemption_form?(pending_compliance)).to be(false)
+    end
+
+    it "returns false when the verification window has ended" do
+      expect(helper.should_show_submit_new_exemption_form?(compliance)).to be(true)
+
+      certification_case.update_attribute!(:verification_window_end_date, 1.day.ago)
+      compliance_after_window = MemberDashboardComplianceService.build(
+        certification: certification,
+        certification_case: certification_case.reload,
+        activity_report_application_form: nil,
+        exemption_application_form: exemption_application_form,
+        member_status: MemberStatusService.determine(certification)
+      )
+
+      expect(helper.should_show_submit_new_exemption_form?(compliance_after_window)).to be(false)
     end
   end
 
