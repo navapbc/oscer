@@ -15,6 +15,10 @@
         </li>
       <% end %>
 
+      <%# pagy.series(size: 7) returns one entry per slot, signaled by type:
+          Integer -> a page to link to; String -> the current page; :gap -> an elision ("…").
+          size >= 7 is what enables the first/last anchoring and :gap markers; 7 is also
+          Pagy's default, passed explicitly here to keep that behavior legible at the call site. %>
       <% pagy.series(size: 7).each do |item| %>
         <% if item == :gap %>
           <li class="usa-pagination__item usa-pagination__overflow" role="presentation">
