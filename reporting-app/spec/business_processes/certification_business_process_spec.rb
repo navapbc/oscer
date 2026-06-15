@@ -148,16 +148,16 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         certification_case.reload
       end
 
-      it 'transitions to end step' do
-        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
+      it 'returns to report_activities step so the member can report again' do
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::REPORT_ACTIVITIES_STEP)
       end
 
       it 'sets member status to not_compliant' do
         expect(certification_case.member_status).to eq(MemberStatus::NOT_COMPLIANT)
       end
 
-      it 'closes the case' do
-        expect(certification_case).to be_closed
+      it 'keeps the case open' do
+        expect(certification_case).to be_open
       end
     end
 

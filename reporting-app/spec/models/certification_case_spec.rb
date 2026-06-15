@@ -90,13 +90,33 @@ RSpec.describe CertificationCase, type: :model do
       })
     end
 
-    it 'sets denial status and closes case' do
+    it 'sets denial status' do
       certification_case.deny_activity_report(user, application_form)
       certification_case.reload
 
       expect(certification_case.activity_report_approval_status).to eq("denied")
       expect(certification_case.activity_report_approval_status_updated_at).to be_present
-      expect(certification_case).to be_closed
+    end
+
+    context 'when the verification window has not been opened (end date nil)' do
+      before { certification_case.update_attribute(:verification_window_end_date, nil) }
+
+      it 'keeps the case open so the member can report again' do
+        certification_case.deny_activity_report(user, application_form)
+        certification_case.reload
+
+        expect(certification_case.activity_report_approval_status).to eq("denied")
+        expect(certification_case).to be_open
+      end
+
+      it 'publishes ActivityReportDenied event' do
+        certification_case.deny_activity_report(user, application_form)
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "ActivityReportDenied",
+          { case_id: certification_case.id, certification_id: certification_case.certification_id, application_form_id: application_form.id }
+        )
+      end
     end
 
     it 'records not_compliant determination' do
@@ -118,19 +138,31 @@ RSpec.describe CertificationCase, type: :model do
         .with(anything, application_form: application_form)
     end
 
-    it 'publishes ActivityReportDenied event while the verification window is open' do
-      certification_case.deny_activity_report(user, application_form)
+    context 'when the verification window is open' do
+      before { certification_case.update_attribute(:verification_window_end_date, 1.day.from_now) }
 
-      expect(Strata::EventManager).to have_received(:publish).with(
-        "ActivityReportDenied",
-        { case_id: certification_case.id, certification_id: certification_case.certification_id, application_form_id: application_form.id }
-      )
+      it 'keeps the case open so the member can report again' do
+        certification_case.deny_activity_report(user, application_form)
+        certification_case.reload
+
+        expect(certification_case.activity_report_approval_status).to eq("denied")
+        expect(certification_case).to be_open
+      end
+
+      it 'publishes ActivityReportDenied event' do
+        certification_case.deny_activity_report(user, application_form)
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "ActivityReportDenied",
+          { case_id: certification_case.id, certification_id: certification_case.certification_id, application_form_id: application_form.id }
+        )
+      end
     end
 
     context 'when the verification window has ended' do
       before { certification_case.update_attribute(:verification_window_end_date, 1.day.ago) }
 
-      it 'still closes the case' do
+      it 'closes the case' do
         certification_case.deny_activity_report(user, application_form)
         certification_case.reload
 

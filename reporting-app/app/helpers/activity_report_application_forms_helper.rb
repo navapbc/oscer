@@ -2,7 +2,11 @@
 
 module ActivityReportApplicationFormsHelper
   def activity_report_status_class(status)
-    status == "approved" ? "text-green" : "text-red"
+    case status
+    when "approved" then "text-green"
+    when "denied" then "text-red"
+    else ""
+    end
   end
 
   def activity_report_current_step(form, flash_notice_present:)
