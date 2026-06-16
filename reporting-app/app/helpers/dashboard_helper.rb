@@ -18,8 +18,8 @@ module DashboardHelper
       "exemption_approved"
     elsif @certification.nil?
       "no_certification"
-    elsif (exemption_draft_partial = exemption_draft_dashboard_partial)
-      exemption_draft_partial
+    elsif @member_dashboard_compliance&.exemption_flow_state == MemberDashboardCompliance::EXEMPTION_DRAFT
+      "exemption_draft"
     elsif are_activity_report_or_exemption_incomplete?
       "new_certification"
     elsif is_activity_report_submitted?
@@ -45,8 +45,16 @@ module DashboardHelper
     @activity_report_application_form.present? || @exemption_application_form.present?
   end
 
+  def activity_report_incomplete?
+    !@activity_report_application_form&.submitted?
+  end
+
+  def exemption_incomplete?
+    !@exemption_application_form&.submitted?
+  end
+
   def are_activity_report_or_exemption_incomplete?
-    !(@activity_report_application_form&.submitted? || @exemption_application_form&.submitted?)
+    activity_report_incomplete? && exemption_incomplete?
   end
 
   def is_activity_report_submitted?
@@ -59,16 +67,6 @@ module DashboardHelper
 
   def is_activity_report_denied?
     @activity_report_application_form&.flow_status == "denied"
-  end
-
-  # Draft exemption frame (#641) — in-progress form, not yet submitted.
-  # Takes precedence over +new_certification+ when an activity report is also in progress
-  # (Figma 7203:5214 is draft-only; reporting CTAs land in #642).
-  def exemption_draft_dashboard_partial
-    return nil unless @member_dashboard_compliance.present?
-    return unless @member_dashboard_compliance.exemption_flow_state == MemberDashboardCompliance::EXEMPTION_DRAFT
-
-    "exemption_draft"
   end
 
   # Maps +compliance.exemption_flow_state+ to the legacy dashboard partial names (OSCER-640).

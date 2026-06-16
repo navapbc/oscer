@@ -27,28 +27,6 @@ RSpec.describe DashboardHelper, type: :helper do
     helper.instance_variable_set(:@member_status, member_status)
   end
 
-  describe "#exemption_draft_dashboard_partial" do
-    it "returns exemption_draft when the read model is draft" do
-      compliance = instance_double(MemberDashboardCompliance, exemption_flow_state: MemberDashboardCompliance::EXEMPTION_DRAFT)
-      assign_dashboard_ivars(member_dashboard_compliance: compliance)
-
-      expect(helper.exemption_draft_dashboard_partial).to eq("exemption_draft")
-    end
-
-    it "returns nil when the read model is absent" do
-      assign_dashboard_ivars(member_dashboard_compliance: nil)
-
-      expect(helper.exemption_draft_dashboard_partial).to be_nil
-    end
-
-    it "returns nil for non-draft exemption flow states" do
-      compliance = instance_double(MemberDashboardCompliance, exemption_flow_state: MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW)
-      assign_dashboard_ivars(member_dashboard_compliance: compliance)
-
-      expect(helper.exemption_draft_dashboard_partial).to be_nil
-    end
-  end
-
   describe "#determine_dashboard_view" do
     it "returns exemption_draft before the new_certification incomplete path" do
       exemption_application_form = create(:exemption_application_form, certification_case_id: certification_case.id)
@@ -81,6 +59,51 @@ RSpec.describe DashboardHelper, type: :helper do
       )
 
       expect(helper.determine_dashboard_view).to eq("new_certification")
+    end
+
+    it "returns new_certification for a non-draft exemption flow state with incomplete forms" do
+      exemption_application_form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+      compliance = instance_double(
+        MemberDashboardCompliance,
+        exemption_flow_state: MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW
+      )
+
+      assign_dashboard_ivars(
+        member_dashboard_compliance: compliance,
+        exemption_application_form: exemption_application_form
+      )
+
+      expect(helper.determine_dashboard_view).not_to eq("exemption_draft")
+    end
+  end
+
+  describe "#are_activity_report_or_exemption_incomplete?" do
+    it "is true when neither application form is submitted" do
+      assign_dashboard_ivars(
+        activity_report_application_form: create(:activity_report_application_form, certification_case_id: certification_case.id)
+      )
+
+      expect(helper.are_activity_report_or_exemption_incomplete?).to be(true)
+    end
+
+    it "is false when only the exemption form is submitted" do
+      exemption_application_form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+
+      assign_dashboard_ivars(exemption_application_form: exemption_application_form)
+
+      expect(helper.are_activity_report_or_exemption_incomplete?).to be(false)
+    end
+
+    it "is false when both forms are submitted" do
+      exemption_application_form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+      activity_report_application_form = create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+
+      assign_dashboard_ivars(
+        exemption_application_form: exemption_application_form,
+        activity_report_application_form: activity_report_application_form
+      )
+
+      expect(helper.are_activity_report_or_exemption_incomplete?).to be(false)
     end
   end
 
