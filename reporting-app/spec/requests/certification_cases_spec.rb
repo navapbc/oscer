@@ -260,6 +260,85 @@ RSpec.describe "/staff/certification_cases", type: :request do
       end
     end
 
+    context "with multiple activity report forms on the case" do
+      let(:lookback_period) { certification.certification_requirements.continuous_lookback_period }
+      let(:month) { lookback_period.start.to_date }
+
+      # A denied form followed by a re-submission. Events are stubbed to a no-op (the shared
+      # before calls original) so submitting a form does not spin up a pending review task that
+      # would block a second form on the same case. The older form's review task records a
+      # per-form "denied" decision; the newer form stays "in_progress".
+      before do
+        allow(Strata::EventManager).to receive(:publish)
+
+        older_form = create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        older_form.activities.create!(hours: 40, name: "Older Employer Inc", type: "WorkActivity", month: month)
+        task = create(:review_activity_report_task, application_form: older_form, case: certification_case)
+        task.approval_status = :denied
+        task.completed!
+
+        newer_form = create(:activity_report_application_form, certification_case_id: certification_case.id)
+        newer_form.activities.create!(hours: 30, name: "Newer Employer Inc", type: "WorkActivity", month: month)
+      end
+
+      it "renders line items for every activity report form, not just one" do
+        get "/staff/certification_cases/#{certification_case.id}"
+
+        expect(response.body).to include("Older Employer Inc")
+        expect(response.body).to include("Newer Employer Inc")
+      end
+
+      it "labels each form with its status so re-submissions are distinguishable" do
+        get "/staff/certification_cases/#{certification_case.id}"
+
+        expect(response.body).to include(I18n.t("certification_cases.show.form_status.denied"))
+        expect(response.body).to include(I18n.t("certification_cases.show.form_status.in_progress"))
+      end
+
+      it "renders the line items even when Doc AI is disabled" do
+        with_doc_ai_disabled do
+          get "/staff/certification_cases/#{certification_case.id}"
+
+          expect(response.body).to include("Older Employer Inc")
+          expect(response.body).to include("Newer Employer Inc")
+        end
+      end
+
+      it "still renders the case-level compliance summary" do
+        get "/staff/certification_cases/#{certification_case.id}"
+
+        expect(response.body).to include("Hours reported")
+        expect(response.body).to include("Total reported")
+      end
+    end
+
+    context "with information requests tied to more than one form" do
+      # Info requests tied to a non-most-recent activity report form and to an exemption form
+      # must both load. Events stubbed to a no-op so the submitted form does not block the
+      # second form on the case.
+      before do
+        allow(Strata::EventManager).to receive(:publish)
+
+        older_activity_report = create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        create(:activity_report_application_form, certification_case_id: certification_case.id)
+        exemption_form = create(:exemption_application_form, certification_case_id: certification_case.id)
+
+        create(:activity_report_information_request,
+               application_form_id: older_activity_report.id,
+               staff_comment: "Please clarify your earlier submission.")
+        create(:exemption_information_request,
+               application_form_id: exemption_form.id,
+               staff_comment: "Please provide exemption documentation.")
+      end
+
+      it "loads information requests for every form on the case" do
+        get "/staff/certification_cases/#{certification_case.id}"
+
+        expect(response.body).to include("Activity Report Information Request")
+        expect(response.body).to include("Exemption Information Request")
+      end
+    end
+
     context "with doc_ai feature flag" do
       let(:ai_user) { create(:user) }
       let(:form) do

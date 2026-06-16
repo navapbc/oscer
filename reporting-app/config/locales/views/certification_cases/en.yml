@@ -32,6 +32,12 @@ en:
       no_hours_or_income_reported: "No hours or income reported"
       no_activity_report: "No activity report submitted"
       external_data: "External Data"
+      form_submitted_on: "Submitted %{date}"
+      form_status:
+        in_progress: "In progress"
+        submitted: "Submitted"
+        approved: "Approved"
+        denied: "Denied"
       information_request_info: "Tasks will be updated once the member provides updated documents."
       information_request_sent: "We sent a Request for Information to this member"
       information_requests: "Requests for Information"
