@@ -7,12 +7,15 @@ class CertificationCasesController < StaffController
   before_action :set_certification, only: %i[ show tasks documents notes ]
 
   def index
-    @cases = policy_scope(CertificationCase).open
+    # Newest first, with an id tiebreaker so the order is total and OFFSET paging is stable.
+    @pagy, @cases = pagy(policy_scope(CertificationCase).open.order(created_at: :desc, id: :desc))
     certification_service.hydrate_cases_with_certifications!(@cases)
   end
 
   def closed
-    @cases = policy_scope(CertificationCase).closed
+    # `closed` is defined in the Strata SDK (Strata::Case) and already orders by
+    # created_at :desc; we only add the id tiebreaker here for stable OFFSET paging.
+    @pagy, @cases = pagy(policy_scope(CertificationCase).closed.order(id: :desc))
     certification_service.hydrate_cases_with_certifications!(@cases)
     render :index
   end
