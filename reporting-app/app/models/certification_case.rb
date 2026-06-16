@@ -14,7 +14,8 @@ class CertificationCase < Strata::Case
   attr_accessor :certification
 
   store_accessor :facts, :activity_report_approval_status, :activity_report_approval_status_updated_at,
-    :exemption_request_approval_status, :exemption_request_approval_status_updated_at
+    :exemption_request_approval_status, :exemption_request_approval_status_updated_at,
+    :denial_response_approval_status, :denial_response_approval_status_updated_at
 
   scope :by_region, ->(region) {
     cases = arel_table
@@ -135,6 +136,51 @@ class CertificationCase < Strata::Case
       )
     end
     Strata::EventManager.publish("DeterminedNotExempt", { case_id: id, certification_id: certification_id })
+  end
+
+  def accept_denial_response(user, application_form)
+    certification = Certification.find(certification_id)
+
+    transaction do
+      self.denial_response_approval_status = "approved"
+      self.denial_response_approval_status_updated_at = Time.current
+      close!
+
+      certification.record_determination!(
+        decision_method: :manual,
+        reasons: [ Determination::REASON_CODE_MAPPING[:denial_response_convincing] ],
+        outcome: :compliant,
+        determination_data: { denial_response_application_form_id: application_form.id },
+        determined_at: certification.certification_requirements.certification_date,
+        actor: user
+      )
+    end
+
+    Strata::EventManager.publish("DenialResponseApproved", { case_id: id, certification_id: certification_id })
+  end
+
+  def deny_denial_response(user, application_form)
+    certification = Certification.find(certification_id)
+
+    transaction do
+      self.denial_response_approval_status = "denied"
+      self.denial_response_approval_status_updated_at = Time.current
+      verification_window_ended? ? close! : save!
+
+      certification.record_determination!(
+        decision_method: :manual,
+        reasons: [ Determination::REASON_CODE_MAPPING[:denial_response_not_convincing] ],
+        outcome: :not_compliant,
+        determination_data: { denial_response_application_form_id: application_form.id },
+        determined_at: certification.certification_requirements.certification_date,
+        actor: user
+      )
+    end
+
+    # Split the denial event by verification-window state so the member's notification reflects
+    # whether they can still respond.
+    event_name = verification_window_ended? ? "DenialResponseDeniedFinal" : "DenialResponseDenied"
+    Strata::EventManager.publish(event_name, { case_id: id, certification_id: certification_id, application_form_id: application_form.id })
   end
 
   # Called by ExemptionDeterminationService to record exemption determination
