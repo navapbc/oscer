@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_12_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_16_170507) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -143,6 +143,17 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_12_120000) do
     t.datetime "updated_at", null: false
     t.index ["case_number"], name: "index_certifications_on_case_number"
     t.index ["member_id"], name: "index_certifications_on_member_id"
+  end
+
+  create_table "denial_response_application_forms", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "user_id"
+    t.integer "status"
+    t.datetime "submitted_at"
+    t.uuid "certification_case_id"
+    t.text "comment"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["certification_case_id"], name: "idx_on_certification_case_id_689075d6b3"
   end
 
   create_table "exemption_application_forms", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
