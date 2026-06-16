@@ -5,6 +5,9 @@ module ApplicationHelper
   # ViewComponent tests use ApplicationHelper as the view context; include here so render_inline works.
   include Strata::DateHelper
 
+  # Provides pagy_url_for and related helpers to the view layer for USWDS pagination controls.
+  include Pagy::Frontend
+
   # Display name for the state in staff certification copy (e.g. "From %{state_name}").
   def state_name
     ENV.fetch("STATE_NAME", "the State")
