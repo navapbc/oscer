@@ -13,9 +13,8 @@ class CertificationCasesController < StaffController
   end
 
   def closed
-    # `closed` is defined in the Strata SDK (Strata::Case) and already orders by
-    # created_at :desc; we only add the id tiebreaker here for stable OFFSET paging.
-    @pagy, @cases = pagy(policy_scope(CertificationCase).closed.order(id: :desc))
+    # Newest first, with an id tiebreaker so the order is total and OFFSET paging is stable.
+    @pagy, @cases = pagy(policy_scope(CertificationCase).closed.order(created_at: :desc, id: :desc))
     certification_service.hydrate_cases_with_certifications!(@cases)
     render :index
   end
