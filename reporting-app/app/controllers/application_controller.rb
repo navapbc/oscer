@@ -5,6 +5,7 @@
 class ApplicationController < ActionController::Base
   include Pundit::Authorization
   include FeatureFlagHelper
+  include Pagy::Backend
 
   helper_method :feature_enabled?
 

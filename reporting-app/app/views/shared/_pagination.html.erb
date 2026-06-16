@@ -1,0 +1,49 @@
+<%# Reusable USWDS pagination controls driven by a Pagy object.
+    Renders nothing unless there is more than one page.
+    See https://designsystem.digital.gov/components/pagination/ %>
+<% if pagy && pagy.pages > 1 %>
+  <nav aria-label="<%= t("pagination.aria_label") %>" class="usa-pagination">
+    <ul class="usa-pagination__list">
+      <% if pagy.prev %>
+        <li class="usa-pagination__item usa-pagination__arrow">
+          <%= link_to pagy_url_for(pagy, pagy.prev),
+                class: "usa-pagination__link usa-pagination__previous-page",
+                aria: { label: t("pagination.previous") } do %>
+            <%= uswds_icon("navigate_before") %>
+            <span class="usa-pagination__link-text"><%= t("pagination.previous") %></span>
+          <% end %>
+        </li>
+      <% end %>
+
+      <%# pagy.series(size: 7) returns one entry per slot, signaled by type:
+          Integer -> a page to link to; String -> the current page; :gap -> an elision ("…").
+          size >= 7 is what enables the first/last anchoring and :gap markers; 7 is also
+          Pagy's default, passed explicitly here to keep that behavior legible at the call site. %>
+      <% pagy.series(size: 7).each do |item| %>
+        <% if item == :gap %>
+          <li class="usa-pagination__item usa-pagination__overflow" role="presentation">
+            <span>&hellip;</span>
+          </li>
+        <% else %>
+          <% current = item.is_a?(String) %>
+          <li class="usa-pagination__item usa-pagination__page-no">
+            <%= link_to item, pagy_url_for(pagy, item),
+                  class: class_names("usa-pagination__button", "usa-current" => current),
+                  aria: { label: t("pagination.page", number: item), current: (current ? "page" : nil) } %>
+          </li>
+        <% end %>
+      <% end %>
+
+      <% if pagy.next %>
+        <li class="usa-pagination__item usa-pagination__arrow">
+          <%= link_to pagy_url_for(pagy, pagy.next),
+                class: "usa-pagination__link usa-pagination__next-page",
+                aria: { label: t("pagination.next") } do %>
+            <span class="usa-pagination__link-text"><%= t("pagination.next") %></span>
+            <%= uswds_icon("navigate_next") %>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  </nav>
+<% end %>
