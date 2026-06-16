@@ -456,10 +456,15 @@ RSpec.describe "/staff/certification_cases", type: :request do
         expect(Capybara.string(response.body)).to have_css("nav.usa-pagination")
       end
 
-      it "clamps an out-of-range page to the last page" do
+      it "renders an empty page whose pager links back into range when out of range" do
         get "/staff/certification_cases", params: { page: 9999 }
         expect(response).to have_http_status(:success)
-        expect(response.body).to include("case_26") # last page holds the oldest
+        # Pagy v43 serves an empty page for out-of-range requests (the v9 :last_page
+        # clamp was removed) while still rendering the pager with a Previous link to
+        # the last real page, so the user can navigate back into range.
+        # The Previous link targets page 2 (the last real page of 26 cases at 25/page).
+        expect(Capybara.string(response.body))
+          .to have_css("nav.usa-pagination a.usa-pagination__previous-page[href*='page=2']")
       end
     end
 

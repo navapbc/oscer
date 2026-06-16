@@ -411,7 +411,10 @@ GEM
       webfinger (~> 2.0)
     orm_adapter (0.5.0)
     ostruct (0.6.3)
-    pagy (9.4.0)
+    pagy (43.5.6)
+      json
+      uri
+      yaml
     parallel (2.1.0)
     parser (3.3.11.1)
       ast (~> 2.4.1)
@@ -676,6 +679,7 @@ GEM
     websocket-extensions (0.1.5)
     xpath (3.2.0)
       nokogiri (~> 1.8)
+    yaml (0.4.0)
     yard (0.9.43)
     zeitwerk (2.8.2)
 
@@ -724,7 +728,7 @@ DEPENDENCIES
   omniauth-rails_csrf_protection
   omniauth_openid_connect
   openapi_contracts
-  pagy (~> 9.3)
+  pagy (~> 43.5)
   pg (~> 1.6)
   pg-aws_rds_iam (~> 0.8.0)
   puma (>= 5.0)
