@@ -122,9 +122,19 @@
     <% else %>
       <p><%= t(".no_activity_report") %></p>
     <% end %>
-    <% if @activity_report && Features.doc_ai_enabled? %>
+    <% show_line_items = @activity_reports.size > 1 || (@activity_reports.any? && Features.doc_ai_enabled?) %>
+    <% if show_line_items %>
       <h3 class="margin-top-4"><%= t(".activity_line_items") %></h3>
-      <%= render partial: "activity_report_application_forms/staff_activity_report", locals: { activity_report: @activity_report } %>
+      <% @activity_reports.each do |form| %>
+        <% if @activity_reports.size > 1 %>
+          <% form_status = activity_report_display_status(form) %>
+          <h4 class="margin-top-3">
+            <%= t(".form_submitted_on", date: l(form.submitted_at || form.updated_at)) %>
+            <span class="usa-tag <%= activity_report_status_class(form_status, "bg") %>"><%= t(".form_status.#{form_status}") %></span>
+          </h4>
+        <% end %>
+        <%= render partial: "activity_report_application_forms/staff_activity_report", locals: { activity_report: form } %>
+      <% end %>
     <% end %>
   <% end %>
 <% end %>
