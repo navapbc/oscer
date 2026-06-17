@@ -28,4 +28,13 @@ FactoryBot.define do
     type { "ReviewActivityReportTask" }
     association :application_form, factory: :activity_report_application_form
   end
+
+  factory :review_denial_response_task, parent: :oscer_task, class: ReviewDenialResponseTask do
+    type { "ReviewDenialResponseTask" }
+  end
+
+  factory :review_denial_response_task_with_form, parent: :oscer_task, class: ReviewDenialResponseTask do
+    type { "ReviewDenialResponseTask" }
+    association :application_form, factory: :denial_response_application_form
+  end
 end
