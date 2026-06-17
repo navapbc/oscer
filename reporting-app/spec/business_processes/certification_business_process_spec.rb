@@ -240,6 +240,27 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     end
   end
 
+  describe 'denial response workflow' do
+    it 'moves the case into review and creates the review task on submit' do
+      # Step 1: Case starts on report_activities
+      expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::REPORT_ACTIVITIES_STEP)
+      expect(certification_case.member_status).to eq(MemberStatus::AWAITING_REPORT)
+      expect(certification_case).to be_open
+
+      # Step 2: Member submits a denial response
+      denial_response = create(:denial_response_application_form,
+        certification_case_id: certification_case.id
+      )
+      denial_response.submit_application
+      certification_case.reload
+
+      expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::REVIEW_DENIAL_RESPONSE_STEP)
+      expect(certification_case.member_status).to eq(MemberStatus::PENDING_REVIEW)
+      expect(certification_case).to be_open
+      expect(ReviewDenialResponseTask.find_by(application_form: denial_response)).to be_present
+    end
+  end
+
   describe 'business process events' do
     it 'publishes correct events throughout the workflow' do
       # Create and submit activity report
