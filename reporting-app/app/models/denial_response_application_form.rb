@@ -2,8 +2,7 @@
 
 # A denial response is a lightweight way for a member to resolve a denied certification case while
 # their verification window is still open: a short written comment plus optional supporting
-# documents that a staff reviewer approves or denies. Mirrors the activity-report and exemption
-# application-form flows.
+# documents that a staff reviewer approves or denies.
 class DenialResponseApplicationForm < Strata::ApplicationForm
   include FormApprovalStatus
   has_review_task "ReviewDenialResponseTask"

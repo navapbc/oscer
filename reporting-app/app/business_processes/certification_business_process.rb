@@ -62,9 +62,6 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   transition(REVIEW_EXEMPTION_CLAIM_STEP, "DeterminedNotExempt", REPORT_ACTIVITIES_STEP)
 
   # --- Transitions: Denial response workflow ---
-  # A member responds to a denial with a comment + documents. Approval resolves the case as
-  # compliant (close); a denial while the verification window is open returns the member to
-  # report_activities so they can respond again; a final denial (window ended) closes the case.
   transition(REPORT_ACTIVITIES_STEP, "DenialResponseApplicationFormSubmitted", REVIEW_DENIAL_RESPONSE_STEP)
   transition(REVIEW_DENIAL_RESPONSE_STEP, "DenialResponseApproved", END_STEP)
   transition(REVIEW_DENIAL_RESPONSE_STEP, "DenialResponseDenied", REPORT_ACTIVITIES_STEP)
