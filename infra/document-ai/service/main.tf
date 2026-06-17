@@ -82,9 +82,7 @@ data "aws_route53_zone" "zone" {
 }
 
 # Canonical ALB hosted zone ID for Route53 alias records (us-east-1 ALBs)
-data "aws_elb_hosted_zone_id" "main" {
-  load_balancer_type = "application"
-}
+data "aws_elb_hosted_zone_id" "main" {}
 
 # ---------------------------------------------------------------------------
 # Document AI service
