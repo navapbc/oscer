@@ -162,7 +162,7 @@ The cert for `document-ai.dev.medicaid.navateam.com` is defined in `infra/projec
 ```sh
 cd infra/networks
 terraform init -backend-config=dev.s3.tfbackend
-terraform apply
+terraform apply -var network_name=dev
 ```
 
 **2. Create the ECR repository**
