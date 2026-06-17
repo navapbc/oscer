@@ -33,11 +33,11 @@ en:
         intro: "You need to report %{target_hours} hours or %{target_income} of income by %{due_date} to keep your Medicaid coverage for %{coverage_month}."
         intro_hours: "You need to report %{target_hours} hours of qualifying activity by %{due_date} to keep your Medicaid coverage for %{coverage_month}."
         start_reporting_activities_button: "Start reporting activities"
-        continue_report_button: "Continue report"
-        submit_button: "Submit report"
+        continue_report_button: "Continue activity report"
+        submit_button: "Submit activity report"
         no_activity_reported: "No hours or income reported yet."
+      activity_report_title: "%{period} Activity Report"
       hours_table:
-        title: "Hours reported"
         organization_name: "Organization name"
         source: "Source"
         activity_type: "Activity type"
@@ -46,7 +46,6 @@ en:
         required: "Required"
         additional_hours_needed: "Additional hours needed"
       income_table:
-        title: "Income reported"
         organization_name: "Organization name"
         source: "Source"
         activity_type: "Activity type"

@@ -42,6 +42,13 @@ module MemberComplianceHelper
     true
   end
 
+  # Heading above the activity tables, e.g. "January 2026 Activity Report" (Figma 7203:4878),
+  # sourced from the certification month. Parity with the staff case-view tables.
+  def member_compliance_activity_report_title(compliance)
+    period = compliance.certification_date && I18n.l(compliance.certification_date, format: :month_year)
+    t("dashboard.member_compliance.activity_report_title", period: period)
+  end
+
   # Continue/Submit are offered while the report is unsubmitted and the period is still open.
   def member_compliance_reporting_period_open?(compliance)
     compliance.due_date.blank? || Date.current <= compliance.due_date

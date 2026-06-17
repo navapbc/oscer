@@ -135,7 +135,7 @@ RSpec.describe "dashboard/index", type: :view do
 
     it 'renders a button to continue the activity report' do
       render
-      expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.activity_report.continue_report_button'))
+      expect(rendered).to have_selector('a', text: I18n.t('dashboard.member_compliance.reporting.continue_report_button'))
     end
 
     it 'does not render the Figma get started callout' do
@@ -432,18 +432,19 @@ RSpec.describe "dashboard/index", type: :view do
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.activity_report_denied.submit_new_activity_report_button'))
     end
 
-    context "with reported activities (OSCER-642 post-submit tables)" do
+    context "with reported activities (OSCER-642: denied activities must not render a table)" do
       let(:lookback) { certification.certification_requirements.continuous_lookback_period }
 
       before do
-        create(:external_hourly_activity, member_id: certification.member_id, category: "employment",
-               hours: 30, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
+        create(:hourly_activity, activity_report_application_form_id: activity_report_application_form.id,
+               name: "Denied job", category: "employment", hours: 30, month: lookback.start.to_date)
         reassign_compliance_read_model
       end
 
-      it "renders the reported activity table alongside the view-report button" do
+      it "does not render an activity table for the denied report, but keeps the view-report button" do
         render
-        expect(rendered).to have_selector("h3", text: I18n.t("dashboard.member_compliance.hours_table.title"))
+        expect(rendered).not_to have_css(".member-dashboard-compliance__table--hours")
+        expect(rendered).not_to have_css(".member-dashboard-compliance__table--income")
         expect(rendered).to have_selector("a", text: I18n.t("dashboard.activity_report_denied.view_activity_report_button"))
       end
     end
@@ -691,8 +692,8 @@ RSpec.describe "dashboard/index", type: :view do
       create(:activity_report_application_form, certification_case_id: certification_case.id)
     end
     let(:lookback) { certification.certification_requirements.continuous_lookback_period }
-    let(:hours_title) { I18n.t("dashboard.member_compliance.hours_table.title") }
-    let(:income_title) { I18n.t("dashboard.member_compliance.income_table.title") }
+    let(:hours_table) { ".member-dashboard-compliance__table--hours" }
+    let(:income_table) { ".member-dashboard-compliance__table--income" }
 
     def create_external_hourly(hours: 30)
       create(:external_hourly_activity, member_id: certification.member_id, category: "employment",
@@ -715,10 +716,12 @@ RSpec.describe "dashboard/index", type: :view do
         reassign_compliance_read_model
       end
 
-      it "renders the hours table only" do
+      it "renders the hours table only, under the month-based activity report heading" do
         render
-        expect(rendered).to have_selector("h3", text: hours_title)
-        expect(rendered).not_to have_selector("h3", text: income_title)
+        month = I18n.l(certification.certification_requirements.certification_date, format: :month_year)
+        expect(rendered).to have_selector("h3", text: "#{month} Activity Report")
+        expect(rendered).to have_css(hours_table)
+        expect(rendered).not_to have_css(income_table)
       end
     end
 
@@ -730,8 +733,8 @@ RSpec.describe "dashboard/index", type: :view do
 
       it "renders the income table only" do
         render
-        expect(rendered).to have_selector("h3", text: income_title)
-        expect(rendered).not_to have_selector("h3", text: hours_title)
+        expect(rendered).to have_css(income_table)
+        expect(rendered).not_to have_css(hours_table)
       end
     end
 
@@ -744,9 +747,10 @@ RSpec.describe "dashboard/index", type: :view do
 
       it "renders both tables, hours first" do
         render
-        expect(rendered).to have_selector("h3", text: hours_title)
-        expect(rendered).to have_selector("h3", text: income_title)
-        expect(rendered.index(hours_title)).to be < rendered.index(income_title)
+        expect(rendered).to have_css(hours_table)
+        expect(rendered).to have_css(income_table)
+        expect(rendered.index("member-dashboard-compliance__table--hours"))
+          .to be < rendered.index("member-dashboard-compliance__table--income")
       end
     end
 
@@ -754,10 +758,11 @@ RSpec.describe "dashboard/index", type: :view do
       it "renders the empty reporting copy and no tables" do
         render
         expect(rendered).to have_text(I18n.t("dashboard.member_compliance.reporting.no_activity_reported"))
-        expect(rendered).not_to have_selector("h3", text: hours_title)
-        expect(rendered).not_to have_selector("h3", text: income_title)
+        expect(rendered).not_to have_css(hours_table)
+        expect(rendered).not_to have_css(income_table)
       end
     end
+
 
     it "renders continue and submit CTAs while the report is unsubmitted" do
       render

@@ -24,7 +24,8 @@
     <%= render "dashboard/member_compliance_exemption", compliance: compliance %>
   <% end %>
 
-  <% if show_member_compliance_reporting_section?(compliance, activity_report: activity_report) %>
+  <% if !local_assigns[:skip_reporting_section] &&
+        show_member_compliance_reporting_section?(compliance, activity_report: activity_report) %>
     <%= render "dashboard/member_compliance_reporting",
                compliance: compliance,
                activity_report: activity_report,

@@ -1,16 +1,32 @@
 <%# Reporting section on the not-exempt / denied-exemption dashboard (OSCER-642).
     Heading + (intro before reporting, data-driven activity tables once reporting) + CTAs.
-    Progress cards land in #643. %>
+    While the report is unsubmitted the Continue/Submit CTAs sit inline with the heading
+    (Figma 7203:4988); progress cards land in #643. %>
 <% compliance = local_assigns.fetch(:compliance) %>
 <% activity_report = local_assigns[:activity_report] %>
 <% certification_case = local_assigns[:certification_case] %>
+<% editable = member_compliance_activity_report_editable?(compliance, activity_report: activity_report) %>
 
 <section class="member-dashboard-compliance__reporting margin-top-4" aria-labelledby="member-compliance-reporting-heading">
-  <h2 id="member-compliance-reporting-heading" class="font-heading-lg margin-bottom-2"><%= t("dashboard.member_compliance.reporting.heading") %></h2>
+  <% if editable %>
+    <% continue_action = member_compliance_activity_report_action(compliance: compliance) %>
+    <div class="member-dashboard-compliance__section-header">
+      <h2 id="member-compliance-reporting-heading" class="font-heading-lg margin-0"><%= t("dashboard.member_compliance.reporting.heading") %></h2>
+      <div class="member-dashboard-compliance__section-header-actions">
+        <%= link_to continue_action[:label], continue_action[:path], class: "usa-button usa-button--outline" %>
+        <%= link_to t("dashboard.member_compliance.reporting.submit_button"),
+              member_compliance_activity_report_submit_path(activity_report),
+              class: "usa-button" %>
+      </div>
+    </div>
+  <% else %>
+    <h2 id="member-compliance-reporting-heading" class="font-heading-lg margin-bottom-2"><%= t("dashboard.member_compliance.reporting.heading") %></h2>
+  <% end %>
 
   <% if activity_report.present? %>
     <% if compliance.hours_has_data? || compliance.income_has_data? %>
-      <div class="member-dashboard-compliance__tables margin-bottom-3">
+      <div class="certification-case-compliance-tables member-dashboard-compliance__tables margin-bottom-3">
+        <h3><%= member_compliance_activity_report_title(compliance) %></h3>
         <% if compliance.hours_has_data? %>
           <%= render "dashboard/member_compliance_hours_table", compliance: compliance %>
         <% end %>
@@ -36,19 +52,7 @@
               coverage_month: member_compliance_coverage_month(compliance)) %>
       <% end %>
     </p>
-  <% end %>
-
-  <% if member_compliance_activity_report_editable?(compliance, activity_report: activity_report) %>
-    <% action = member_compliance_activity_report_action(compliance: compliance) %>
-    <div class="member-dashboard-compliance__reporting-actions">
-      <%= link_to action[:label], action[:path],
-            class: "usa-button usa-button--outline margin-right-2 margin-bottom-1" %>
-      <%= link_to t("dashboard.member_compliance.reporting.submit_button"),
-            member_compliance_activity_report_submit_path(activity_report),
-            class: "usa-button margin-bottom-1" %>
-    </div>
-  <% elsif activity_report.blank? %>
-    <% action = member_compliance_activity_report_action(compliance: compliance) %>
-    <%= link_to action[:label], action[:path], class: "usa-button" %>
+    <% start_action = member_compliance_activity_report_action(compliance: compliance) %>
+    <%= link_to start_action[:label], start_action[:path], class: "usa-button" %>
   <% end %>
 </section>

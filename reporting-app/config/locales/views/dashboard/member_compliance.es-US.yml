@@ -33,11 +33,11 @@ es-US:
         intro: "Debe reportar %{target_hours} horas o %{target_income} de ingresos antes del %{due_date} para mantener su cobertura de Medicaid para %{coverage_month}."
         intro_hours: "Debe reportar %{target_hours} horas de actividad calificada antes del %{due_date} para mantener su cobertura de Medicaid para %{coverage_month}."
         start_reporting_activities_button: "Comenzar a reportar actividades"
-        continue_report_button: "Continuar reporte"
-        submit_button: "Enviar reporte"
+        continue_report_button: "Continuar reporte de actividades"
+        submit_button: "Enviar reporte de actividades"
         no_activity_reported: "Aún no se han reportado horas ni ingresos."
+      activity_report_title: "Reporte de actividades de %{period}"
       hours_table:
-        title: "Horas reportadas"
         organization_name: "Nombre de la organización"
         source: "Fuente"
         activity_type: "Tipo de actividad"
@@ -46,7 +46,6 @@ es-US:
         required: "Requerido"
         additional_hours_needed: "Horas adicionales necesarias"
       income_table:
-        title: "Ingresos reportados"
         organization_name: "Nombre de la organización"
         source: "Fuente"
         activity_type: "Tipo de actividad"
