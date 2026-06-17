@@ -44,6 +44,13 @@ RSpec.describe "/review_exemption_claim_tasks", type: :request do
         expect(task.application_form.approval_status).to eq("approved")
       end
 
+      it "records the form's exemption type on the determination" do
+        patch review_exemption_claim_task_url(task), params: approve_params
+
+        determination = Determination.find_by(subject: certification, outcome: "exempt")
+        expect(determination.determination_data).to eq({ "exemption_type" => task.application_form.exemption_type })
+      end
+
       it "redirects back to the task" do
         patch review_exemption_claim_task_url(task), params: approve_params
         expect(response).to redirect_to(task_path(task))

@@ -99,7 +99,7 @@ class CertificationCase < Strata::Case
     Strata::EventManager.publish(event_name, { case_id: id, certification_id: certification_id, application_form_id: application_form.id })
   end
 
-  def accept_exemption_request(user)
+  def accept_exemption_request(user, application_form)
     transaction do
       self.exemption_request_approval_status = "approved"
       self.exemption_request_approval_status_updated_at = Time.current
@@ -112,7 +112,7 @@ class CertificationCase < Strata::Case
         outcome: :exempt,
         determined_at: certification.certification_requirements.certification_date,
         determination_data: {
-          exemption_type: "placeholder"
+          exemption_type: application_form.exemption_type
         },
         actor: user
       )
