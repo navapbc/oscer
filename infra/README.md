@@ -194,7 +194,7 @@ aws ecr get-login-password --region us-east-1 \
   | docker login --username AWS \
     --password-stdin <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
 
-docker build -t community-engagement-medicaid-document-ai:latest .
+docker build -t community-engagement-medicaid-document-ai:latest document-ai/
 docker tag  community-engagement-medicaid-document-ai:latest \
   <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/community-engagement-medicaid-document-ai:latest
 docker push <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/community-engagement-medicaid-document-ai:latest
