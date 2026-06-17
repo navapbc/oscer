@@ -123,6 +123,33 @@ module "document_ai" {
   dynamodb_deletion_protection = false
 }
 
+# Look up the ECS security group created by the external module (not exposed as an output)
+data "aws_security_groups" "document_ai_ecs" {
+  depends_on = [module.document_ai]
+
+  filter {
+    name   = "group-name"
+    values = ["${local.doc_ai_project_name}-ecs-*"]
+  }
+
+  filter {
+    name   = "vpc-id"
+    values = [module.network.vpc_id]
+  }
+}
+
+# Grant document-ai ECS tasks access to the shared VPC endpoints (Secrets Manager, ECR, logs, etc.)
+# The VPC endpoint security group only allows inbound HTTPS from explicitly referenced security groups.
+# This mirrors what modules/service/networking.tf does for reporting-app.
+resource "aws_vpc_security_group_ingress_rule" "vpc_endpoints_ingress_from_document_ai" {
+  security_group_id            = module.network.aws_services_security_group_id
+  description                  = "Allow HTTPS to VPC endpoints from document-ai ECS tasks"
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = data.aws_security_groups.document_ai_ecs.ids[0]
+}
+
 # Route53 alias record pointing the domain at the service ALB
 resource "aws_route53_record" "document_ai" {
   zone_id = data.aws_route53_zone.zone.zone_id
