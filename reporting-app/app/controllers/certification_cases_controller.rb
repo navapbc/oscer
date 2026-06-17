@@ -21,7 +21,10 @@ class CertificationCasesController < StaffController
 
   def show
     @information_requests = InformationRequest.for_application_forms(application_form_ids)
-    @activity_report = ActivityReportApplicationForm.find_by(certification_case_id: @case.id)
+    @activity_reports = ActivityReportApplicationForm.where(certification_case_id: @case.id).order(created_at: :desc)
+    # Drives the case-level compliance summary and the external-data section; the most recent
+    # form preserves single-form behavior (where there is exactly one, it is that one).
+    @activity_report = @activity_reports.first
     @member_status = MemberStatusService.determine(@case)
     @tasks = @case.tasks.order(created_at: :desc)
 
@@ -54,8 +57,8 @@ class CertificationCasesController < StaffController
     @target_income = IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY
     @hours_has_data = @external_hourly_activities.any? || @member_hour_activities.any?
     @income_has_data = @external_income_activities.any? || @member_income_activities.any?
-    if Features.doc_ai_enabled? && @activity_report
-      activity_ids = @activity_report.activities.pluck(:id)
+    if Features.doc_ai_enabled? && @activity_reports.any?
+      activity_ids = @activity_reports.flat_map { |form| form.activities.pluck(:id) }
       @confidence_by_activity = DocAiConfidenceService.new.confidence_by_activity_id(activity_ids)
     end
   end
@@ -77,9 +80,9 @@ class CertificationCasesController < StaffController
   end
 
   def application_form_ids
-    [ ActivityReportApplicationForm, ExemptionApplicationForm ].map do |form_class|
-      form_class.find_by_certification_case_id(@case.id)&.id
-    end.compact
+    [ ActivityReportApplicationForm, ExemptionApplicationForm ].flat_map do |form_class|
+      form_class.where(certification_case_id: @case.id).pluck(:id)
+    end
   end
 
   def fetch_external_hourly_activities
