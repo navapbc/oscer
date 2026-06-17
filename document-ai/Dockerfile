@@ -2,7 +2,7 @@
 
 # renovate: datasource=docker depName=ghcr.io/navapbc/strata-service-document-ai
 ARG UPSTREAM_VERSION=v0.4.0
-FROM ghcr.io/navapbc/strata-service-document-ai:${UPSTREAM_VERSION}
+FROM --platform=linux/amd64 ghcr.io/navapbc/strata-service-document-ai:${UPSTREAM_VERSION}
 
 # Copy project-specific schema definitions.
 # SCHEMAS_MODE=replace means only schemas defined here are registered;
