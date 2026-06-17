@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1
 
 # renovate: datasource=docker depName=ghcr.io/navapbc/strata-service-document-ai
-ARG UPSTREAM_VERSION=v0.4.0
+ARG UPSTREAM_VERSION=0.4.0
 FROM --platform=linux/amd64 ghcr.io/navapbc/strata-service-document-ai:${UPSTREAM_VERSION}
 
 # Copy project-specific schema definitions.
