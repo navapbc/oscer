@@ -1,0 +1,4 @@
+bucket       = "community-engagement-medicaid-065727387448-us-east-1-tf"
+key          = "infra/document-ai/service/dev.tfstate"
+region       = "us-east-1"
+use_lockfile = true
