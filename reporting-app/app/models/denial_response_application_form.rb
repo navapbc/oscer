@@ -2,8 +2,7 @@
 
 # A denial response is a lightweight way for a member to resolve a denied certification case while
 # their verification window is still open: a short written comment plus optional supporting
-# documents that a staff reviewer approves or denies. Mirrors the activity-report and exemption
-# application-form flows.
+# documents that a staff reviewer approves or denies.
 class DenialResponseApplicationForm < Strata::ApplicationForm
   include FormApprovalStatus
   has_review_task "ReviewDenialResponseTask"
@@ -23,9 +22,6 @@ class DenialResponseApplicationForm < Strata::ApplicationForm
     super.merge(case_id: certification_case_id)
   end
 
-  # A new denial response is blocked only while a denial-response review is still open for the case
-  # (an in-progress draft or a pending/on_hold review task). The broader "one pending review at a
-  # time" gating across all form types is a later story.
   def self.has_pending_form(certification_case_id)
     DenialResponseApplicationForm.where(certification_case_id:, status: :in_progress).exists? ||
     ReviewDenialResponseTask.where(application_form: DenialResponseApplicationForm.where(certification_case_id:).all,

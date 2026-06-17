@@ -62,7 +62,5 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   transition(REVIEW_EXEMPTION_CLAIM_STEP, "DeterminedNotExempt", REPORT_ACTIVITIES_STEP)
 
   # --- Transitions: Denial response workflow ---
-  # A member responds to a denial with a comment + documents; submitting routes the case to staff
-  # review. The approve/deny transitions out of review land with the case-decision behavior.
   transition(REPORT_ACTIVITIES_STEP, "DenialResponseApplicationFormSubmitted", REVIEW_DENIAL_RESPONSE_STEP)
 end
