@@ -175,7 +175,19 @@ terraform apply
 
 **3. Push a container image**
 
-Build and push an image tagged with the version you want to deploy (e.g. `latest` for dev):
+Build and push an image tagged with the version you want to deploy (e.g. `latest` for dev).
+
+Authenticate with GHCR first (the upstream image is published there):
+
+```sh
+# Grant your local token read:packages scope
+gh auth refresh -s read:packages
+
+# Log Docker into GHCR using your GitHub token
+echo $(gh auth token) | docker login ghcr.io -u $(gh api user -q .login) --password-stdin
+```
+
+Then log into ECR, build, and push:
 
 ```sh
 aws ecr get-login-password --region us-east-1 \
