@@ -37,9 +37,6 @@ class DenialResponseApplicationForm < Strata::ApplicationForm
     @flow_status
   end
 
-  # A new denial response is blocked only while a denial-response review is still open for the case
-  # (an in-progress draft or a pending/on_hold review task). The broader "one pending review at a
-  # time" gating across all form types is a later story.
   def self.has_pending_form(certification_case_id)
     DenialResponseApplicationForm.where(certification_case_id:, status: :in_progress).exists? ||
     ReviewDenialResponseTask.where(application_form: DenialResponseApplicationForm.where(certification_case_id:).all,
