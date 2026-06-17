@@ -1,5 +1,5 @@
 # Use the official Playwright image as a base
-FROM mcr.microsoft.com/playwright:v1.60.0-noble
+FROM mcr.microsoft.com/playwright:v1.61.0-noble
 
 # Skip apt unless you need extra packages; `apt-get update` flakes when Ubuntu mirrors are mid-sync.
 
