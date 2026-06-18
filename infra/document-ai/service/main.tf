@@ -108,7 +108,8 @@ module "document_ai" {
   s3_bucket_name = local.s3_bucket_name
 
   # AI backend
-  aws_model = "textract"
+  aws_model        = "textract"
+  bedrock_model_id = "us.anthropic.claude-3-5-haiku-20241022-v1:0"
 
   # TLS — uses the cert provisioned in infra/networks
   acm_certificate_arn = data.aws_acm_certificate.document_ai.arn
