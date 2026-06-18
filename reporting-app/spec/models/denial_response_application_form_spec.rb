@@ -140,7 +140,7 @@ RSpec.describe DenialResponseApplicationForm, type: :model do
     # test creates exactly the review task it needs.
     before { allow(Strata::EventManager).to receive(:publish) }
 
-    context "without previous activity report" do
+    context "without previous denial response" do
       it "returns 'in_progress' when not submitted" do
         form = create(:denial_response_application_form, certification_case_id: certification_case.id)
         expect(form.flow_status).to eq "in_progress"
