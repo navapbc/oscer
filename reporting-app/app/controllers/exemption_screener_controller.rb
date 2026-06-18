@@ -6,9 +6,9 @@ class ExemptionScreenerController < ApplicationController
   before_action :ensure_certification_case
   before_action :ensure_certification_case_open
   before_action :authorize_access
-  before_action :redirect_in_progress_exemption_from_intro, only: [ :index ]
-  before_action :block_when_exemption_already_pending, except: [ :may_qualify ]
-  before_action :block_when_exemption_already_pending_for_may_qualify, only: [ :may_qualify ]
+  before_action :resume_in_progress_exemption, only: [ :index ]
+  before_action :block_exemption_pending, except: [ :may_qualify ]
+  before_action :block_mismatch_exemption_pending, only: [ :may_qualify ]
   before_action :set_current_exemption_type, only: %i[show answer may_qualify create_application]
   before_action :setup_navigator, only: %i[show answer]
   before_action :validate_exemption_type, only: %i[show answer]
@@ -102,7 +102,7 @@ class ExemptionScreenerController < ApplicationController
     authorize ExemptionApplicationForm.new(certification_case_id: @certification_case.id), :new?
   end
 
-  def redirect_in_progress_exemption_from_intro
+  def resume_in_progress_exemption
     form = in_progress_exemption_form
     return unless form&.exemption_type.present?
 
@@ -112,13 +112,13 @@ class ExemptionScreenerController < ApplicationController
     )
   end
 
-  def block_when_exemption_already_pending_for_may_qualify
+  def block_mismatch_exemption_pending
     return if resuming_in_progress_exemption?
 
-    block_when_exemption_already_pending
+    block_exemption_pending
   end
 
-  def block_when_exemption_already_pending
+  def block_exemption_pending
     return unless ExemptionApplicationForm.has_pending_form(@certification_case.id)
 
     redirect_to dashboard_path,
