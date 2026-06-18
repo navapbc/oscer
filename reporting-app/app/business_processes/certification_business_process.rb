@@ -63,4 +63,7 @@ class CertificationBusinessProcess < Strata::BusinessProcess
 
   # --- Transitions: Denial response workflow ---
   transition(REPORT_ACTIVITIES_STEP, "DenialResponseApplicationFormSubmitted", REVIEW_DENIAL_RESPONSE_STEP)
+  transition(REVIEW_DENIAL_RESPONSE_STEP, "DenialResponseApproved", END_STEP)
+  transition(REVIEW_DENIAL_RESPONSE_STEP, "DenialResponseDenied", REPORT_ACTIVITIES_STEP)
+  transition(REVIEW_DENIAL_RESPONSE_STEP, "DenialResponseDeniedFinal", END_STEP)
 end

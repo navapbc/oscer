@@ -71,8 +71,16 @@ class Determination < Strata::Determination
     hours_reported_compliant: "hours_reported_compliant",
     hours_reported_insufficient: "hours_reported_insufficient",
     exemption_request_compliant: "exemption_request_compliant",
-    is_veteran_with_disability: "veteran_disability_exempt"
+    is_veteran_with_disability: "veteran_disability_exempt",
+    denial_response_convincing: "denial_response_convincing",
+    denial_response_not_convincing: "denial_response_not_convincing"
   }.freeze
+
+  # Reasons recorded when a staff reviewer approves or denies a member's denial response.
+  DENIAL_RESPONSE_REASONS = REASON_CODE_MAPPING.values_at(
+    :denial_response_convincing,
+    :denial_response_not_convincing
+  ).freeze
 
   EXEMPTION_REASONS = REASON_CODE_MAPPING.values_at(
     :age_under_19,
