@@ -109,7 +109,7 @@ module "document_ai" {
 
   # AI backend
   aws_model        = "textract"
-  bedrock_model_id = "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+  bedrock_model_id = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 
   # TLS — uses the cert provisioned in infra/networks
   acm_certificate_arn = data.aws_acm_certificate.document_ai.arn
@@ -167,7 +167,7 @@ resource "aws_iam_role_policy" "docai_bedrock_foundation_models" {
       Effect = "Allow"
       Action = ["bedrock:InvokeModel"]
       # Wildcard region covers all regions the us. cross-region profile may route to
-      Resource = "arn:aws:bedrock:*::foundation-model/anthropic.claude-3-5-haiku-20241022-v1:0"
+      Resource = "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0"
     }]
   })
 }
