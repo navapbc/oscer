@@ -6,6 +6,7 @@ en:
         age_over_65_exempt: "Age over 65"
         pregnancy_exempt: "Pregnant"
         american_indian_alaska_native_exempt: "American Indian or Alaska Native"
+        veteran_disability_exempt: "Veteran with a disability"
         income_reported_compliant: "Income reported compliant"
         income_reported_insufficient: "Insufficient community engagement income"
         hours_reported_compliant: "Hours reported compliant"
