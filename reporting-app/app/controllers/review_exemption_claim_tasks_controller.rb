@@ -5,7 +5,7 @@ class ReviewExemptionClaimTasksController < TasksController
     kase = @task.case
 
     if approving?
-      kase.accept_exemption_request(current_user)
+      kase.accept_exemption_request(current_user, @task.application_form)
       @task.approval_status = :approved
       notice = t("tasks.details.approved_message")
     elsif denying?

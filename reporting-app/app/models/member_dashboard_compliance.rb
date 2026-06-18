@@ -274,26 +274,41 @@ class MemberDashboardCompliance
     I18n.t("exemption_types.#{key}.title", default: key.to_s.humanize)
   end
 
+  # The exemption type lives in different places depending on how the exemption was decided.
+  # Automated (eligibility-derived) exemptions encode the type in their reason codes, while
+  # manual (staff-reviewed) exemptions record the member's claimed type in
+  # +determination_data["exemption_type"]+. Branch on +decision_method+ so each reads its
+  # authoritative source — this also keeps a legacy/malformed +determination_data+ on an
+  # automated row from ever reaching the Hash read (see #680).
   def exemption_history_type_for_determination(det)
-    type_key = exemption_type_key_from_determination_data(det.determination_data)
-    return [ type_key, exemption_type_label(type_key) ] if type_key.present?
-
-    exempt_reason = Array(det.reasons).find { |r| r.to_s.end_with?("_exempt") }
-    if exempt_reason
-      label = I18n.t(
-        "services.member_status_service.reason_codes.#{exempt_reason}",
-        default: exempt_reason.to_s.humanize
-      )
-      return [ exempt_reason, label ]
+    if det.decision_method == "automated"
+      # The row is already +outcome: :exempt+, so its reasons are exemption reasons; the
+      # reason code is the type. No need to inspect determination_data.
+      reason = Array(det.reasons).first
+      reason ? [ reason, exemption_reason_label(reason) ] : unknown_exemption_type
+    else
+      label_from_determination_data(det.determination_data) || unknown_exemption_type
     end
-
-    [ "exemption", I18n.t("dashboard.member_compliance.exemption_type_unknown") ]
   end
 
-  # +Determination#determination_data+ is +jsonb+, so AR returns a +Hash+ (or nil).
-  def exemption_type_key_from_determination_data(data)
-    return nil if data.blank?
+  # Manual (staff-reviewed) exemptions record the member's claimed type on the determination.
+  # Returns +nil+ (so the caller falls back) when no usable type is present. Guards the shape:
+  # +determination_data+ is +jsonb+ and should be a Hash, but a malformed row must not raise.
+  def label_from_determination_data(data)
+    return nil unless data.is_a?(Hash)
 
-    data.stringify_keys["exemption_type"].presence
+    key = data.stringify_keys["exemption_type"].presence
+    key && [ key, exemption_type_label(key) ]
+  end
+
+  def exemption_reason_label(reason)
+    I18n.t(
+      "services.member_status_service.reason_codes.#{reason}",
+      default: reason.to_s.humanize
+    )
+  end
+
+  def unknown_exemption_type
+    [ "exemption", I18n.t("dashboard.member_compliance.exemption_type_unknown") ]
   end
 end
