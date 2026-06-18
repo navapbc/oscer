@@ -278,14 +278,14 @@ RSpec.describe "dashboard/index", type: :view do
   end
 
   context "with an approved exemption request" do
-    let (:exemption_application_form) { create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
+    let (:exemption_application_form) { create(:exemption_application_form, :with_submitted_status, :incarceration, certification_case_id: certification_case.id) }
 
     before do
       assign(:exemption_application_form, exemption_application_form)
       assign(:certification_case, certification_case)
 
       ReviewExemptionClaimTask.find_by(application_form: exemption_application_form).completed!
-      certification_case.accept_exemption_request(nil)
+      certification_case.accept_exemption_request(nil, exemption_application_form)
       reassign_compliance_read_model
     end
 
@@ -300,6 +300,11 @@ RSpec.describe "dashboard/index", type: :view do
       expect(rendered).to have_selector('h2', text: I18n.t('dashboard.member_compliance.exemption_details_heading'))
       expect(rendered).to have_selector('.member-dashboard-compliance__badge--exempt',
                                         text: I18n.t('dashboard.member_compliance.exemption_badges.exempt'))
+    end
+
+    it 'renders the approved exemption type label from the form' do
+      render
+      expect(rendered).to have_text(I18n.t("exemption_types.incarceration.title"))
     end
 
     it 'has a button to view the completed certification' do

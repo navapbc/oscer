@@ -203,7 +203,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       expect(certification_case).to be_open
 
       # Step 3: Staff approves exemption
-      certification_case.accept_exemption_request(user)
+      certification_case.accept_exemption_request(user, exemption)
       certification_case.reload
 
       expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
@@ -299,7 +299,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
 
       # Approve exemption
       expect {
-        certification_case.accept_exemption_request(user)
+        certification_case.accept_exemption_request(user, exemption)
       }.to have_published_event("DeterminedExempt")
     end
   end
