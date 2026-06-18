@@ -18,6 +18,18 @@ RSpec.describe MemberDashboardComplianceService do
            period_start: period_start, period_end: period_end, gross_income: gross_income, **attrs)
   end
 
+  # Persists a JSON *string scalar* into the +determination_data+ jsonb column so
+  # ActiveRecord reads it back as a String, reproducing the double-encoded production rows
+  # (e.g. a historical +reasons.to_json+ write). Bypasses AR casting via raw SQL.
+  def force_string_determination_data(determination, value = "[]")
+    conn = ActiveRecord::Base.connection
+    conn.execute(
+      "UPDATE strata_determinations " \
+      "SET determination_data = #{conn.quote(value.to_json)}::jsonb " \
+      "WHERE id = #{conn.quote(determination.id)}"
+    )
+  end
+
   describe ".build" do
     subject(:read_model) do
       described_class.build(
@@ -312,6 +324,58 @@ RSpec.describe MemberDashboardComplianceService do
         expect(entry).to be_present
         expect(entry.exemption_type_label).to eq(I18n.t("exemption_types.medical_condition.title"))
         expect(entry.exemption_type_label).to be_a(String)
+      end
+    end
+
+    context "when an automated exempt determination has a legacy String determination_data" do
+      # Reproduces the production shape that 500'd the dashboard: the automated exemption
+      # path historically wrote reasons.to_json (a String) into the jsonb column, so AR
+      # reads it back as a String instead of a Hash.
+      before do
+        det = create(:determination,
+                     subject: certification,
+                     outcome: "exempt",
+                     decision_method: "automated",
+                     reasons: [ "age_under_19_exempt" ])
+        force_string_determination_data(det)
+      end
+
+      it "builds exemption history without raising and labels from the reason code" do
+        expect { read_model.exemption_history }.not_to raise_error
+        entry = read_model.exemption_history.first
+        expect(entry.exemption_type_key).to eq("age_under_19_exempt")
+        expect(entry.exemption_type_label).to eq("Age under 19")
+      end
+    end
+
+    context "when a manual exempt determination has a malformed (non-Hash) determination_data" do
+      before do
+        det = create(:determination,
+                     subject: certification,
+                     outcome: "exempt",
+                     decision_method: "manual",
+                     reasons: [ "exemption_request_compliant" ])
+        force_string_determination_data(det, "oops")
+      end
+
+      it "does not raise and falls back to the unknown exemption type" do
+        expect { read_model.exemption_history }.not_to raise_error
+        expect(read_model.exemption_history.first.exemption_type_key).to eq("exemption")
+      end
+    end
+
+    context "when an automated exemption is for veteran disability" do
+      before do
+        create(:determination,
+               subject: certification,
+               outcome: "exempt",
+               decision_method: "automated",
+               reasons: [ "veteran_disability_exempt" ])
+      end
+
+      it "labels it with the curated reason-code translation" do
+        entry = read_model.exemption_history.find { |e| e.exemption_type_key == "veteran_disability_exempt" }
+        expect(entry.exemption_type_label).to eq("Veteran with a disability")
       end
     end
 

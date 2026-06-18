@@ -312,7 +312,11 @@ RSpec.describe CertificationCase, type: :model do
       expect(determination.reasons).to include("age_under_19_exempt")
       expect(determination.outcome).to eq("exempt")
       expect(determination.determined_at).to be_present
-      expect(determination.determination_data).to eq(eligibility_fact.reasons.to_json)
+      # determination_data is a jsonb column and must be stored as a Hash, never a JSON
+      # String (writing reasons.to_json double-encodes it into a String — see #680). For
+      # automated exemptions it records the granting reason codes.
+      expect(determination.determination_data).to be_a(Hash)
+      expect(determination.determination_data).to eq({ "exemption_reasons" => [ "age_under_19_exempt" ] })
     end
 
     it 'records multiple reasons (age and pregnancy)' do

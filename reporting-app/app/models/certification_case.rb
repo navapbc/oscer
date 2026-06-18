@@ -149,11 +149,18 @@ class CertificationCase < Strata::Case
       self.exemption_request_approval_status_updated_at = Time.current
       close!
 
+      reason_codes = Determination.to_reason_codes(eligibility_fact)
       certification.record_determination!(
         decision_method: :automated,
-        reasons: Determination.to_reason_codes(eligibility_fact),
+        reasons: reason_codes,
         outcome: :exempt,
-        determination_data: eligibility_fact.reasons.to_json,
+        # determination_data is a jsonb column holding a structured Hash (OSCER convention; see
+        # the Determination docs). For automated exemptions the type is carried by the reason
+        # codes, which the dashboard reads via decision_method branching, so we record those
+        # codes here. It must stay a Hash: writing a JSON String (e.g. reasons.to_json)
+        # double-encodes into the jsonb column and reads back as a String, which 500'd the
+        # member dashboard. See https://github.com/navapbc/oscer/issues/680.
+        determination_data: { "exemption_reasons" => reason_codes },
         determined_at: certification.certification_requirements.certification_date,
         actor:
       )
