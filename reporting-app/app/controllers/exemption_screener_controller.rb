@@ -6,7 +6,9 @@ class ExemptionScreenerController < ApplicationController
   before_action :ensure_certification_case
   before_action :ensure_certification_case_open
   before_action :authorize_access
-  before_action :check_existing_application
+  before_action :resume_in_progress_exemption, only: [ :index ]
+  before_action :block_exemption_pending, except: [ :may_qualify ]
+  before_action :block_mismatch_exemption_pending, only: [ :may_qualify ]
   before_action :set_current_exemption_type, only: %i[show answer may_qualify create_application]
   before_action :setup_navigator, only: %i[show answer]
   before_action :validate_exemption_type, only: %i[show answer]
@@ -56,6 +58,7 @@ class ExemptionScreenerController < ApplicationController
     @exemption_description = Exemption.description_for(@current_exemption_type)
     @required_documents = Exemption.supporting_documents_for(@current_exemption_type)
     @current_step = :result
+    @in_progress_exemption_form = in_progress_exemption_form_for(@current_exemption_type)
   end
 
   # POST /exemption-screener/may-qualify/:exemption_type
@@ -99,11 +102,48 @@ class ExemptionScreenerController < ApplicationController
     authorize ExemptionApplicationForm.new(certification_case_id: @certification_case.id), :new?
   end
 
-  def check_existing_application
+  def resume_in_progress_exemption
+    form = in_progress_exemption_form
+    return unless form&.exemption_type.present?
+
+    redirect_to exemption_screener_may_qualify_path(
+      exemption_type: form.exemption_type,
+      **screener_path_params
+    )
+  end
+
+  def block_mismatch_exemption_pending
+    return if resuming_in_progress_exemption?
+
+    block_exemption_pending
+  end
+
+  def block_exemption_pending
     return unless ExemptionApplicationForm.has_pending_form(@certification_case.id)
 
     redirect_to dashboard_path,
       notice: t("exemption_screener.errors.application_exists")
+  end
+
+  def resuming_in_progress_exemption?
+    form = in_progress_exemption_form
+    form&.exemption_type.present? &&
+      params[:exemption_type].to_s == form.exemption_type.to_s
+  end
+
+  def in_progress_exemption_form
+    ExemptionApplicationForm.find_by(
+      certification_case_id: @certification_case.id,
+      status: :in_progress
+    )
+  end
+
+  def in_progress_exemption_form_for(exemption_type)
+    ExemptionApplicationForm.find_by(
+      certification_case_id: @certification_case.id,
+      status: :in_progress,
+      exemption_type: exemption_type
+    )
   end
 
   def set_current_exemption_type

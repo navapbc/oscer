@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 # View helpers for the member dashboard compliance UI (OSCER-337 / OSCER-480).
-# This slice (#640) covers the exemption outcome states: exempt, under review,
-# and does not qualify. Progress cards / activity tables arrive in later slices (#642, #643).
+# Exemption dashboard UI (#640 outcome states, #641 draft). Progress cards /
+# activity tables arrive in later slices (#642, #643).
 module MemberComplianceHelper
-  # Valid +exemption_flow_state+ values for +_member_compliance_exemption+ (outcome frames only).
+  # Outcome states guarded by +guard_member_compliance_exemption_outcome_state!+.
+  # +_member_compliance_exemption+ also renders +EXEMPTION_DRAFT+ (#641), which is not listed here.
   EXEMPTION_OUTCOME_FLOW_STATES = [
     MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW,
     MemberDashboardCompliance::EXEMPTION_APPROVED,
@@ -42,6 +43,26 @@ module MemberComplianceHelper
       MemberDashboardCompliance::EXEMPTION_DRAFT,
       MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW
     ].exclude?(compliance.exemption_flow_state)
+  end
+
+  def member_compliance_exemption_draft_screen?(compliance)
+    compliance.exemption_flow_state == MemberDashboardCompliance::EXEMPTION_DRAFT
+  end
+
+  # Draft continue returns to the exemption screener (may-qualify step when the draft
+  # has an exemption type; otherwise the screener intro).
+  def member_compliance_exemption_draft_continue_path(compliance)
+    certification_case = compliance.certification_case
+    form = compliance.exemption_application_form
+
+    if form&.exemption_type.present?
+      exemption_screener_may_qualify_path(
+        exemption_type: form.exemption_type,
+        certification_case_id: certification_case.id
+      )
+    else
+      exemption_screener_path(certification_case_id: certification_case.id)
+    end
   end
 
   def member_compliance_exemption_pending_review_screen?(compliance)

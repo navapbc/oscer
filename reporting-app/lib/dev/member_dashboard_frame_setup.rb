@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
 module Dev
-  # Local-only helper to put a member account into one of the OSCER-337 / #640
-  # exemption-outcome dashboard frames for manual QA at /dashboard.
+  # Local-only helper to put a member account into OSCER-337 exemption dashboard frames
+  # (#640 outcomes, #641 draft) for manual QA at /dashboard.
   #
-  # Scoped to this slice's exemption outcome states. Other frames (get started,
-  # exemption draft, and the reporting/progress frames) are added by their own slices.
+  # Scoped to exemption dashboard frames (#640 outcomes, #641 draft). Reporting/progress
+  # frames are added by their own slices (#642, #643).
   class MemberDashboardFrameSetup
     FRAMES = {
+      "exemption_draft" => "Frame 2 — Exemption draft in progress",
       "exemption_pending_review" => "Frame 3 — Exemption under review",
       "exemption_approved" => "Frame 4 — Exempt",
       "exemption_denied" => "Frame 5 — Not exempt"
@@ -38,6 +39,9 @@ module Dev
       reset_determinations!(certification)
 
       case frame
+      when "exemption_draft"
+        ensure_income_determination!(certification)
+        create_draft_exemption!(certification_case)
       when "exemption_pending_review"
         ensure_income_determination!(certification)
         create_submitted_exemption!(certification_case)
@@ -121,6 +125,14 @@ module Dev
       OscerTask.where(application_form_id: form.id).delete_all
       form.strict_loading!(false)
       form.destroy!
+    end
+
+    def create_draft_exemption!(certification_case)
+      ExemptionApplicationForm.create!(
+        certification_case_id: certification_case.id,
+        exemption_type: "caregiver_child",
+        user_id: @member_user.id
+      )
     end
 
     def create_submitted_exemption!(certification_case)

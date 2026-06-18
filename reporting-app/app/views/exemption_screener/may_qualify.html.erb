@@ -43,8 +43,14 @@
         exemption_screener_path(certification_case_id: @certification_case.id),
         class: "usa-button usa-button--outline" %>
 
-      <%= f.submit t(".buttons.request_exemption"),
-        class: "usa-button" %>
+      <% if @in_progress_exemption_form %>
+        <%= link_to t("dashboard.member_compliance.exemption_alerts.draft.button"),
+              documents_exemption_application_form_path(@in_progress_exemption_form),
+              class: "usa-button" %>
+      <% else %>
+        <%= f.submit t(".buttons.request_exemption"),
+              class: "usa-button" %>
+      <% end %>
     </div>
   <% end %>
 </div>

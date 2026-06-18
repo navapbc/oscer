@@ -1,10 +1,12 @@
-<%# Exemption outcome states — alerts, history, badges (OSCER-337 / #640).
-    Valid only for pending_review, approved, and denied. Draft and get-started
-    states are owned by other slices (#641, #639). %>
+<%# Exemption states — alerts, history, badges (OSCER-337 / #640, #641).
+    Outcome frames: pending_review, approved, denied (#640). Draft (#641).
+    Get-started (#639) stays on +_new_certification+. %>
 <% compliance = local_assigns.fetch(:compliance) %>
 
 <% exemption_section_labelledby = if show_member_compliance_exemption_details_heading?(compliance)
                                     "exemption-details-heading"
+                                  elsif member_compliance_exemption_draft_screen?(compliance)
+                                    "member-compliance-exemption-draft-alert-heading"
                                   elsif member_compliance_exemption_pending_review_screen?(compliance)
                                     "member-compliance-exemption-pending-review-alert-heading"
                                   end %>
@@ -26,6 +28,9 @@
   <% end %>
 
   <% case compliance.exemption_flow_state %>
+  <% when MemberDashboardCompliance::EXEMPTION_DRAFT %>
+    <%= render "dashboard/member_compliance_exemption_draft", compliance: compliance %>
+
   <% when MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW %>
     <%= render "dashboard/member_compliance_exemption_pending_review", compliance: compliance %>
 

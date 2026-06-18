@@ -13,6 +13,10 @@ es-US:
           title: "Antes de reportar actividades, veamos si califica para una exención."
           body: "Responda unas preguntas rápidas para saber si está exento del requisito de reporte de trabajo. Si no califica, podrá reportar sus actividades directamente."
           button: "Comenzar"
+        draft:
+          title: "Actualmente tiene una solicitud de exención en curso."
+          body: "Complete su solicitud para saber si está exento de reportar actividades."
+          button: "Continuar solicitud de exención"
         pending_review:
           title: "Exención en revisión"
           body: "Su solicitud ha sido enviada y está en revisión. Por ahora no necesita realizar ninguna acción."

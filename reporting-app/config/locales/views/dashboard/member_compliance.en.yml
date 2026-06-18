@@ -13,6 +13,10 @@ en:
           title: "Before you can report activities, let's see if you qualify for an exemption."
           body: "Answer a few quick questions to find out if you're excused from the work reporting requirement. If you don't qualify, you'll be taken directly to report your activities."
           button: "Get started"
+        draft:
+          title: "You currently have an exemption request in progress."
+          body: "Finish your request to see if you are excused from reporting activities."
+          button: "Continue exemption request"
         pending_review:
           title: "Exemption under review"
           body: "Your request has been submitted and is currently under review. In the meantime, you don't need to take any action."

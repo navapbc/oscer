@@ -3,14 +3,13 @@
 module DashboardHelper
   # Returns the dashboard partial to render for the member's current state.
   #
-  # The three exemption-outcome partials delegate into +_member_compliance_dashboard+
-  # (requires +@member_dashboard_compliance+) and line up with +compliance.exemption_flow_state+ (OSCER-640):
+  # Exemption dashboard partials delegate into +_member_compliance_dashboard+
+  # (requires +@member_dashboard_compliance+) and line up with +compliance.exemption_flow_state+:
   #
-  #   "exemption_approved"  -> EXEMPTION_APPROVED       (approved request *and* the
-  #                                                      automated exempt path via
-  #                                                      +member_status_exempt?+)
-  #   "exemption_submitted" -> EXEMPTION_PENDING_REVIEW
-  #   "exemption_denied"    -> EXEMPTION_DENIED
+  #   "exemption_draft"     -> EXEMPTION_DRAFT           (#641)
+  #   "exemption_approved"  -> EXEMPTION_APPROVED        (#640; also +member_status_exempt?+)
+  #   "exemption_submitted" -> EXEMPTION_PENDING_REVIEW  (#640)
+  #   "exemption_denied"    -> EXEMPTION_DENIED          (#640)
   #
   # All other partials (no_certification, new_certification, activity_report_*) are not
   # exemption-outcome frames and keep their existing behavior.
@@ -19,6 +18,8 @@ module DashboardHelper
       "exemption_approved"
     elsif @certification.nil?
       "no_certification"
+    elsif @member_dashboard_compliance&.exemption_flow_state == MemberDashboardCompliance::EXEMPTION_DRAFT
+      "exemption_draft"
     elsif are_activity_report_or_exemption_incomplete?
       "new_certification"
     elsif is_activity_report_submitted?
@@ -44,8 +45,16 @@ module DashboardHelper
     @activity_report_application_form.present? || @exemption_application_form.present?
   end
 
+  def activity_report_incomplete?
+    !@activity_report_application_form&.submitted?
+  end
+
+  def exemption_incomplete?
+    !@exemption_application_form&.submitted?
+  end
+
   def are_activity_report_or_exemption_incomplete?
-    !(@activity_report_application_form&.submitted? || @exemption_application_form&.submitted?)
+    activity_report_incomplete? && exemption_incomplete?
   end
 
   def is_activity_report_submitted?
