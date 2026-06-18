@@ -176,7 +176,7 @@ RSpec.describe DenialResponseApplicationForm, type: :model do
       end
     end
 
-    context "with previous activity report" do
+    context "with previous denial response" do
       before do
         previous_form = create(:denial_response_application_form, :with_submitted_status, certification_case_id: certification_case.id)
         certification_case.deny_denial_response(nil, previous_form)
