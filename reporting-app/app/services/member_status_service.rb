@@ -175,7 +175,8 @@ class MemberStatusService
       case certification_case.business_process_current_step
       when CertificationBusinessProcess::REPORT_ACTIVITIES_STEP
         awaiting_report_status
-      when CertificationBusinessProcess::REVIEW_ACTIVITY_REPORT_STEP, CertificationBusinessProcess::REVIEW_EXEMPTION_CLAIM_STEP
+      when CertificationBusinessProcess::REVIEW_ACTIVITY_REPORT_STEP, CertificationBusinessProcess::REVIEW_EXEMPTION_CLAIM_STEP,
+           CertificationBusinessProcess::REVIEW_DENIAL_RESPONSE_STEP
         pending_review_status
       when CertificationBusinessProcess::END_STEP
         not_compliant_status

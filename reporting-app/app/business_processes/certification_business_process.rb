@@ -9,6 +9,7 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   REPORT_ACTIVITIES_STEP = "report_activities"
   REVIEW_ACTIVITY_REPORT_STEP = "review_activity_report"
   REVIEW_EXEMPTION_CLAIM_STEP = "review_exemption_claim"
+  REVIEW_DENIAL_RESPONSE_STEP = "review_denial_response"
 
   END_STEP = "end"
 
@@ -27,6 +28,7 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   applicant_task(REPORT_ACTIVITIES_STEP)
   staff_task(REVIEW_ACTIVITY_REPORT_STEP, ReviewActivityReportTask)
   staff_task(REVIEW_EXEMPTION_CLAIM_STEP, ReviewExemptionClaimTask)
+  staff_task(REVIEW_DENIAL_RESPONSE_STEP, ReviewDenialResponseTask)
 
   # --- Start ---
   start(EXTERNAL_EXEMPTION_CHECK_STEP, on: "CertificationCreated") do |event|
@@ -58,4 +60,7 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   transition(REPORT_ACTIVITIES_STEP, "ExemptionApplicationFormSubmitted", REVIEW_EXEMPTION_CLAIM_STEP)
   transition(REVIEW_EXEMPTION_CLAIM_STEP, "DeterminedExempt", END_STEP)
   transition(REVIEW_EXEMPTION_CLAIM_STEP, "DeterminedNotExempt", REPORT_ACTIVITIES_STEP)
+
+  # --- Transitions: Denial response workflow ---
+  transition(REPORT_ACTIVITIES_STEP, "DenialResponseApplicationFormSubmitted", REVIEW_DENIAL_RESPONSE_STEP)
 end
