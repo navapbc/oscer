@@ -151,6 +151,27 @@ resource "aws_vpc_security_group_ingress_rule" "vpc_endpoints_ingress_from_docum
   referenced_security_group_id = data.aws_security_groups.document_ai_ecs.ids[0]
 }
 
+# The strata module's task_bedrock policy scopes the foundation-model ARN to
+# var.aws_region only, but cross-region inference profiles (us.anthropic.*)
+# can route to us-east-1, us-east-2, or us-west-2. AWS checks IAM against the
+# underlying foundation model in whichever region it routes to, so we need to
+# cover all three. We also use the bare model ID (strip "us." prefix) since
+# foundation model ARNs don't use regional prefixes.
+resource "aws_iam_role_policy" "docai_bedrock_foundation_models" {
+  name = "${local.doc_ai_project_name}-bedrock-foundation-models"
+  role = "${local.doc_ai_project_name}-ecs-task"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = ["bedrock:InvokeModel"]
+      # Wildcard region covers all regions the us. cross-region profile may route to
+      Resource = "arn:aws:bedrock:*::foundation-model/anthropic.claude-3-5-haiku-20241022-v1:0"
+    }]
+  })
+}
+
 # Route53 alias record pointing the domain at the service ALB
 resource "aws_route53_record" "document_ai" {
   zone_id = data.aws_route53_zone.zone.zone_id
