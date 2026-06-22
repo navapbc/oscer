@@ -244,7 +244,22 @@ RSpec.describe "dashboard/index", type: :view do
   end
 
   context "with a submitted activity report" do
-    let (:activity_report_application_form) { create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
+    let(:activity_report_application_form) do
+      create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+    end
+    let(:lookback) { certification.certification_requirements.continuous_lookback_period }
+    let(:hours_table) { ".member-dashboard-compliance__table--hours" }
+    let(:income_table) { ".member-dashboard-compliance__table--income" }
+
+    def create_external_hourly(hours: 30)
+      create(:external_hourly_activity, member_id: certification.member_id, category: "employment",
+             hours: hours, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
+    end
+
+    def create_external_income(gross_income: 300)
+      create(:external_income_activity, member_id: certification.member_id, category: "employment",
+             gross_income: gross_income, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
+    end
 
     before do
       assign(:activity_report_application_form, activity_report_application_form)
@@ -267,6 +282,27 @@ RSpec.describe "dashboard/index", type: :view do
         'a',
         text: I18n.t('dashboard.member_compliance.exemption_alerts.not_started.button')
       )
+    end
+
+    context "with reported activities" do
+      before do
+        create_external_hourly
+        create_external_income
+        reassign_compliance_read_model
+      end
+
+      it "renders activity tables under the month-based heading" do
+        render
+        month = I18n.l(certification.certification_requirements.certification_date, format: :month_year)
+        expect(rendered).to have_selector(
+          "h3",
+          text: I18n.t("dashboard.member_compliance.activity_report_title", period: month)
+        )
+        expect(rendered).to have_css(hours_table)
+        expect(rendered).to have_css(income_table)
+        expect(rendered.index("member-dashboard-compliance__table--hours"))
+          .to be < rendered.index("member-dashboard-compliance__table--income")
+      end
     end
   end
 

@@ -334,7 +334,7 @@ class MemberDashboardCompliance
       cat = row.category.to_s.titleize
       rows << MemberIncomeRow.new(
         descriptor: I18n.t("dashboard.member_compliance.external_income_descriptor", category: cat),
-        source_token: "external_ce",
+        source_token: SOURCE_EXTERNAL_CE,
         activity_type_label: cat,
         amount: BigDecimal(row.gross_income.to_s)
       )
@@ -346,7 +346,7 @@ class MemberDashboardCompliance
 
       rows << MemberIncomeRow.new(
         descriptor: I18n.t("dashboard.member_compliance.self_reported_income_descriptor", category: cat),
-        source_token: "self_reported",
+        source_token: SOURCE_SELF_REPORTED,
         activity_type_label: cat,
         amount: amt
       )
