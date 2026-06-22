@@ -450,6 +450,33 @@
           }
         ]
       },
+      "CertificationOutcome": {
+	"type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["compliant", "exempt", "indeterminate", "not_compliant"],
+            "description": "Decision based on available on status of certification vis-a-vis community engagement requirements"
+          },
+          "reason": {
+            "type": "string",
+            "description": "What exemptions or community engagement requirement led to the decision"
+          },
+          "source": {
+            "type": "string",
+            "description": "Which source provided the reason"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the determination was made"
+          }
+	},
+        "required": [
+          "status",
+          "timestamp"
+        ]
+      },
       "CertificationResponseBody": {
         "type": "object",
         "properties": {
@@ -491,6 +518,12 @@
               { "type": "null" }
             ]
           },
+	  "outcome": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/CertificationOutcome" },
+              { "type": "null" }
+            ]
+	  },
           "created_at": {
             "type": "string",
             "format": "date-time"

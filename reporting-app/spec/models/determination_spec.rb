@@ -291,4 +291,76 @@ RSpec.describe Determination, type: :model do
       expect(described_class::CALCULATION_TYPE_EXTERNAL_CE_COMBINED_LEGACY).to eq('ex_parte_ce_combined')
     end
   end
+
+  describe 'certification outcome' do
+    let(:activity_outcome) do
+      create(:determination,
+             outcome: 'compliant',
+             decision_method: 'automated',
+             reasons: [ 'hours_reported_compliant' ],
+             created_at: 3.days.ago)
+    end
+    let(:exempt_outcome) do
+      create(:determination,
+             outcome: 'exempt',
+             decision_method: 'automated',
+             reasons: [ 'age_under_19_exempt' ],
+             created_at: 2.days.ago)
+    end
+    let (:indeterminate_outcome) do
+      create(:determination,
+             outcome: 'not_compliant',
+             decision_method: 'automated',
+             reasons: [ 'hours_reported_compliant' ],
+             created_at: 1.day.ago)
+    end
+
+    let (:not_compliant_outcome) do
+      create(:determination,
+             outcome: 'not_compliant',
+             decision_method: 'manual',
+             reasons: [ 'hours_reported_compliant' ],
+             created_at: 1.day.ago)
+    end
+
+    it 'has an appropriate exemption outcome' do
+      expected_outcome = {
+        status: 'exempt',
+        reason: 'age_under_19_exempt',
+        source: 'api',
+        timestamp: exempt_outcome.created_at
+      }
+      expect(exempt_outcome.certification_outcome).to eq expected_outcome
+    end
+
+    it 'has an appropriate compliant outcome' do
+      expected_outcome = {
+        status: 'compliant',
+        reason: 'hours_reported_compliant',
+        source: 'api',
+        timestamp: activity_outcome.created_at
+      }
+      expect(activity_outcome.certification_outcome).to eq expected_outcome
+    end
+
+    it 'has an appropriate indeterminate outcome' do
+      expected_outcome = {
+        status: :indeterminate,
+        reason: '',
+        source: '',
+        timestamp: indeterminate_outcome.created_at
+      }
+      expect(indeterminate_outcome.certification_outcome).to eq expected_outcome
+    end
+
+    it 'has an appropriate not_compliant outcome' do
+      expected_outcome = {
+        status: :not_compliant,
+        reason: '',
+        source: '',
+        timestamp: not_compliant_outcome.created_at
+      }
+      expect(not_compliant_outcome.certification_outcome).to eq expected_outcome
+    end
+  end
 end

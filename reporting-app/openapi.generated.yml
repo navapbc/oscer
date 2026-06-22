@@ -404,6 +404,32 @@ components:
       oneOf:
       - "$ref": "#/components/schemas/CertificationMemberDataHourlyActivity"
       - "$ref": "#/components/schemas/CertificationMemberDataIncomeActivity"
+    CertificationOutcome:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - compliant
+          - exempt
+          - indeterminate
+          - not_compliant
+          description: Decision based on available on status of certification vis-a-vis
+            community engagement requirements
+        reason:
+          type: string
+          description: What exemptions or community engagement requirement led to
+            the decision
+        source:
+          type: string
+          description: Which source provided the reason
+        timestamp:
+          type: string
+          format: date-time
+          description: When the determination was made
+      required:
+      - status
+      - timestamp
     CertificationResponseBody:
       type: object
       properties:
@@ -434,6 +460,10 @@ components:
         member_data:
           anyOf:
           - "$ref": "#/components/schemas/CertificationMemberData"
+          - type: 'null'
+        outcome:
+          anyOf:
+          - "$ref": "#/components/schemas/CertificationOutcome"
           - type: 'null'
         created_at:
           type: string
@@ -505,43 +535,43 @@ components:
       required:
       - status
   responses:
-    b6fb0dc600c724cbb98ccb3ed39e4c92:
+    81868831bde4935ffbb09f798305ff52:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    4f5ee61101e46f868752c5cbb0f9b68a:
+    79e0f49188b7be475560ab8e1fe869e4:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    1367d8d1c3c952fdfa05598d96a776c3:
+    a1f57f78df4b93d2e5cf041f743fcb45:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    21fe6ae572cfd4f88699d7ea9065867a:
+    e51a74bf49194a56805de7d427255077:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    59fd9e7ad939bbb121880fb019a3a316:
+    ef4eb2c67a08851aeccd60b7c2bb8ce6:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    40d9b75ae67de0b77cf25883f557d0d6:
+    fb30e2f1b1a2767f11a94aaefd7068d5:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    f27444a9c7b748596d9512daf45d041c:
+    140b2ac45a2bc8bb06ec1a4d2bb85aad:
       description: Response
       content:
         application/json:
@@ -565,7 +595,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    93e37fa17742e9d41fc9cfa4f8aa8828:
+    0bfccef5b076f4e66c1b87c5b4136a3e:
       description: The Certification data.
       content:
         application/json:
@@ -655,14 +685,14 @@ paths:
       description: ''
       operationId: POST_api_certifications
       requestBody:
-        "$ref": "#/components/requestBodies/93e37fa17742e9d41fc9cfa4f8aa8828"
+        "$ref": "#/components/requestBodies/0bfccef5b076f4e66c1b87c5b4136a3e"
       responses:
         '201':
-          "$ref": "#/components/responses/b6fb0dc600c724cbb98ccb3ed39e4c92"
+          "$ref": "#/components/responses/81868831bde4935ffbb09f798305ff52"
         '400':
-          "$ref": "#/components/responses/4f5ee61101e46f868752c5cbb0f9b68a"
+          "$ref": "#/components/responses/79e0f49188b7be475560ab8e1fe869e4"
         '422':
-          "$ref": "#/components/responses/1367d8d1c3c952fdfa05598d96a776c3"
+          "$ref": "#/components/responses/a1f57f78df4b93d2e5cf041f743fcb45"
       security:
       - hmac: []
       deprecated: false
@@ -677,9 +707,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/21fe6ae572cfd4f88699d7ea9065867a"
+          "$ref": "#/components/responses/e51a74bf49194a56805de7d427255077"
         '404':
-          "$ref": "#/components/responses/59fd9e7ad939bbb121880fb019a3a316"
+          "$ref": "#/components/responses/ef4eb2c67a08851aeccd60b7c2bb8ce6"
       security:
       - hmac: []
       deprecated: false
@@ -714,9 +744,9 @@ paths:
       operationId: GET_api_health
       responses:
         '200':
-          "$ref": "#/components/responses/40d9b75ae67de0b77cf25883f557d0d6"
+          "$ref": "#/components/responses/fb30e2f1b1a2767f11a94aaefd7068d5"
         '503':
-          "$ref": "#/components/responses/f27444a9c7b748596d9512daf45d041c"
+          "$ref": "#/components/responses/140b2ac45a2bc8bb06ec1a4d2bb85aad"
       security:
       - hmac: []
       deprecated: false

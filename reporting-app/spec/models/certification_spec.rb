@@ -149,4 +149,34 @@ RSpec.describe Certification, type: :model do
       expect(certification.origin).to eq(origin)
     end
   end
+
+  describe 'outcome' do
+    let(:certification) { create(:certification) }
+
+    before { allow(Strata::EventManager).to receive(:publish) }
+
+    it 'returns nil if no determination' do
+      expect(certification.outcome).to be_nil
+    end
+
+    context 'with multiple determinations' do
+      before do
+        create(:determination,
+               subject: certification,
+               outcome: 'not_compliant',
+               reasons: [ 'hours_reported_compliant' ],
+               created_at: 2.days.ago)
+        create(:determination,
+               subject: certification,
+               outcome: 'compliant',
+               reasons: [ 'hours_reported_compliant' ],
+               created_at: 1.day.ago)
+      end
+
+      it 'returns most recent determination outcome' do
+        expect(certification.outcome).not_to be_nil
+        expect(certification.outcome[:status]).to eq 'compliant'
+      end
+    end
+  end
 end

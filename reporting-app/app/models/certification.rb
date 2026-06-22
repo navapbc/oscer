@@ -43,6 +43,10 @@ class Certification < ApplicationRecord
     member_account_email || member_contact_email
   end
 
+  def outcome
+    Determination.where(subject: self).first&.certification_outcome
+  end
+
   def self.find_by_member_email(email)
     find_by_member_account_email(email).or(find_by_member_contact_email(email))
   end
