@@ -53,6 +53,20 @@ es-US:
         total_reported: "Total reportado"
         required: "Requerido"
         additional_income_needed: "Ingresos adicionales necesarios"
+      activity_line_items:
+        heading: "Detalle de actividades"
+        submitted_on: "Enviado el %{date}"
+        activity_type: "Tipo de actividad"
+        organization_name: "Nombre de la organización"
+        month: "Mes"
+        hours_income: "Horas / Ingresos"
+        supporting_documents: "Documentos de respaldo"
+        no_documents: "Sin documentos"
+        form_status:
+          in_progress: "En curso"
+          submitted: "Enviado"
+          approved: "Aprobado"
+          denied: "Denegado"
       exemption_badges:
         exempt: "Exento"
         not_exempt: "No exento"

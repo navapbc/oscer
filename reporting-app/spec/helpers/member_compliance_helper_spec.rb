@@ -240,6 +240,56 @@ RSpec.describe MemberComplianceHelper, type: :helper do
     end
   end
 
+  describe "#show_member_compliance_activity_line_items? (OSCER-690)" do
+    def line_items_compliance_double(exemption_flow_state:, activity_line_items: true)
+      instance_double(
+        MemberDashboardCompliance,
+        exemption_flow_state: exemption_flow_state,
+        activity_line_items?: activity_line_items
+      )
+    end
+
+    it "shows on a reporting frame when the case has line items" do
+      compliance = line_items_compliance_double(exemption_flow_state: MemberDashboardCompliance::EXEMPTION_NOT_STARTED)
+      expect(helper.show_member_compliance_activity_line_items?(compliance, activity_report: double)).to be true
+    end
+
+    it "shows on the denied-exemption frame when line items exist" do
+      compliance = line_items_compliance_double(exemption_flow_state: MemberDashboardCompliance::EXEMPTION_DENIED)
+      expect(helper.show_member_compliance_activity_line_items?(compliance, activity_report: nil)).to be true
+    end
+
+    it "is hidden when the case has no line items even though the reporting section shows" do
+      compliance = line_items_compliance_double(exemption_flow_state: MemberDashboardCompliance::EXEMPTION_NOT_STARTED, activity_line_items: false)
+      expect(helper.show_member_compliance_activity_line_items?(compliance, activity_report: double)).to be false
+    end
+
+    it "is hidden for active/in-flight exemption states regardless of line items" do
+      [
+        MemberDashboardCompliance::EXEMPTION_APPROVED,
+        MemberDashboardCompliance::EXEMPTION_DRAFT,
+        MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW
+      ].each do |state|
+        compliance = line_items_compliance_double(exemption_flow_state: state)
+        expect(helper.show_member_compliance_activity_line_items?(compliance, activity_report: double)).to be false
+      end
+    end
+
+    it "is hidden on the get-started screen (not started, no activity report)" do
+      compliance = line_items_compliance_double(exemption_flow_state: MemberDashboardCompliance::EXEMPTION_NOT_STARTED)
+      expect(helper.show_member_compliance_activity_line_items?(compliance, activity_report: nil)).to be false
+    end
+  end
+
+  describe "#member_compliance_activity_report_status_label (OSCER-690)" do
+    it "maps each form status to its member-facing badge label" do
+      %w[in_progress submitted approved denied].each do |status|
+        expect(helper.member_compliance_activity_report_status_label(status))
+          .to eq(I18n.t("dashboard.member_compliance.activity_line_items.form_status.#{status}"))
+      end
+    end
+  end
+
   describe "#guard_member_compliance_exemption_outcome_state!" do
     it "does not raise for pending review, approved, or denied" do
       MemberComplianceHelper::EXEMPTION_OUTCOME_FLOW_STATES.each do |state|

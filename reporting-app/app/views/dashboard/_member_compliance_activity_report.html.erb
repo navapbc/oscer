@@ -1,0 +1,43 @@
+<%# Per-form member activity line-item table (OSCER-690). Member-safe parity with the staff
+    activity_report_application_forms/_staff_activity_report: omits Doc AI confidence, the
+    document-preview button, and evidence-source icons. Supporting documents link to download
+    via the existing member blob convention (application/_supporting_documents). %>
+<% activity_report = local_assigns.fetch(:activity_report) %>
+<table class="usa-table usa-table--borderless width-full">
+  <thead>
+    <tr>
+      <th scope="col"><%= t("dashboard.member_compliance.activity_line_items.activity_type") %></th>
+      <th scope="col"><%= t("dashboard.member_compliance.activity_line_items.organization_name") %></th>
+      <th scope="col"><%= t("dashboard.member_compliance.activity_line_items.month") %></th>
+      <th scope="col" style="width: 90px"><%= t("dashboard.member_compliance.activity_line_items.hours_income") %></th>
+      <th scope="col"><%= t("dashboard.member_compliance.activity_line_items.supporting_documents") %></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% activity_report.activities.each do |activity| %>
+      <tr>
+        <td><%= activity.category.titleize %></td>
+        <td><%= activity.name %></td>
+        <td><%= activity.month&.strftime("%b, %Y") %></td>
+        <td class="text-right">
+          <% if activity.is_a?(IncomeActivity) %>
+            <%= number_to_currency(activity.income&.dollar_amount, precision: 0) %>
+          <% else %>
+            <%= activity.hours %>
+          <% end %>
+        </td>
+        <td>
+          <% if activity.supporting_documents.any? %>
+            <ul class="usa-list usa-list--unstyled margin-0">
+              <% activity.supporting_documents.each do |document| %>
+                <li><%= link_to document.filename, rails_blob_path(document, disposition: "attachment") %></li>
+              <% end %>
+            </ul>
+          <% else %>
+            <p class="margin-0"><%= t("dashboard.member_compliance.activity_line_items.no_documents") %></p>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
