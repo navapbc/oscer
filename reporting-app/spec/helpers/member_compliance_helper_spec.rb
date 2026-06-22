@@ -152,13 +152,30 @@ RSpec.describe MemberComplianceHelper, type: :helper do
       expect(action[:path]).to eq(new_activity_report_application_form_path(certification_case_id: certification_case.id))
     end
 
-    it "returns continue-report label and path when an activity report is in progress" do
-      activity_report = create(:activity_report_application_form, certification_case_id: certification_case.id)
-      compliance = build_compliance(activity_report_application_form: activity_report)
-      action = helper.member_compliance_activity_report_action(compliance: compliance)
+    context "when doc_ai feature flag is enabled" do
+      it "returns continue-report label and path when an activity report is in progress" do
+        with_doc_ai_enabled do
+          activity_report = create(:activity_report_application_form, certification_case_id: certification_case.id)
+          compliance = build_compliance(activity_report_application_form: activity_report)
+          action = helper.member_compliance_activity_report_action(compliance: compliance)
 
-      expect(action[:label]).to eq(I18n.t("dashboard.member_compliance.reporting.continue_report_button"))
-      expect(action[:path]).to eq(activity_report_application_form_path(activity_report))
+          expect(action[:label]).to eq(I18n.t("dashboard.member_compliance.reporting.continue_report_button"))
+          expect(action[:path]).to eq(doc_ai_upload_activity_report_application_form_path(activity_report))
+        end
+      end
+    end
+
+    context "when doc_ai feature flag is disabled" do
+      it "returns continue-report label and path when an activity report is in progress" do
+        with_doc_ai_disabled do
+          activity_report = create(:activity_report_application_form, certification_case_id: certification_case.id)
+          compliance = build_compliance(activity_report_application_form: activity_report)
+          action = helper.member_compliance_activity_report_action(compliance: compliance)
+
+          expect(action[:label]).to eq(I18n.t("dashboard.member_compliance.reporting.continue_report_button"))
+          expect(action[:path]).to eq(activity_report_application_form_path(activity_report))
+        end
+      end
     end
   end
 
