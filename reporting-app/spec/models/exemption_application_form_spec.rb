@@ -167,7 +167,7 @@ RSpec.describe ExemptionApplicationForm, type: :model do
         form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
         task = create(:review_exemption_claim_task, application_form: form, case: certification_case)
         task.completed!
-        certification_case.accept_exemption_request(nil)
+        certification_case.accept_exemption_request(nil, form)
         expect(form.flow_status).to eq "approved"
       end
 
@@ -206,7 +206,7 @@ RSpec.describe ExemptionApplicationForm, type: :model do
         form = create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id)
         task = create(:review_exemption_claim_task, application_form: form, case: certification_case)
         task.completed!
-        certification_case.accept_exemption_request(nil)
+        certification_case.accept_exemption_request(nil, form)
         expect(form.flow_status).to eq "approved"
       end
 

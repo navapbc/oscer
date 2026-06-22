@@ -58,7 +58,14 @@ module Determinable
       determined_by_id:
     )
 
-    determination_method = (reasons & Determination::EXEMPTION_REASONS).any? ? :exemption : :activity_report
+    determination_method =
+      if (reasons & Determination::EXEMPTION_REASONS).any?
+        :exemption
+      elsif (reasons & Determination::DENIAL_RESPONSE_REASONS).any?
+        :denial_response
+      else
+        :activity_report
+      end
     determination_status = outcome.to_sym == :not_compliant ? :denied : :approved
     Strata::AuditLog.write!(
       action: "case.#{determination_method}.#{determination_status}",

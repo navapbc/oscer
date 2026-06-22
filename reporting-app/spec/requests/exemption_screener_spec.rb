@@ -56,19 +56,32 @@ RSpec.describe "ExemptionScreeners", type: :request do
     end
 
     context "when exemption application already started" do
-      before do
+      let!(:draft_form) do
         create(:exemption_application_form,
           certification_case_id: certification_case.id,
-          user_id: user.id
+          user_id: user.id,
+          exemption_type: first_exemption_type)
+      end
+
+      it "redirects the screener intro to may-qualify so the member can continue" do
+        get exemption_screener_path(certification_case_id: certification_case.id)
+
+        expect(response).to redirect_to(
+          exemption_screener_may_qualify_path(
+            exemption_type: draft_form.exemption_type,
+            certification_case_id: certification_case.id
+          )
         )
       end
 
-      it "redirects to dashboard with notice" do
-        get exemption_screener_path(certification_case_id: certification_case.id)
+      it "allows may-qualify for the in-progress exemption type" do
+        get exemption_screener_may_qualify_path(
+          exemption_type: draft_form.exemption_type,
+          certification_case_id: certification_case.id
+        )
 
-        expect(response).to redirect_to(dashboard_path)
-        follow_redirect!
-        expect(response.body).to include("already have an exemption application")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include(I18n.t("dashboard.member_compliance.exemption_alerts.draft.button"))
       end
     end
 

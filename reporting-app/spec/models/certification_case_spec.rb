@@ -189,10 +189,12 @@ RSpec.describe CertificationCase, type: :model do
   end
 
   describe '#accept_exemption_request' do
+    let(:application_form) { create(:exemption_application_form, certification_case_id: certification_case.id) }
+
     before { allow(Strata::EventManager).to receive(:publish) }
 
     it 'sets approval status and closes case' do
-      certification_case.accept_exemption_request(user)
+      certification_case.accept_exemption_request(user, application_form)
       certification_case.reload
 
       expect(certification_case.exemption_request_approval_status).to eq("approved")
@@ -205,11 +207,19 @@ RSpec.describe CertificationCase, type: :model do
       expect(determination.reasons).to include("exemption_request_compliant")
       expect(determination.outcome).to eq("exempt")
       expect(determination.determined_at).to be_present
-      expect(determination.determination_data).to eq({ "exemption_type" => "placeholder" })
+      expect(determination.determination_data).to eq({ "exemption_type" => "short_term_hardship" })
+    end
+
+    it 'records the approved exemption type from the application form' do
+      incarceration_form = create(:exemption_application_form, :incarceration, certification_case_id: certification_case.id)
+
+      certification_case.accept_exemption_request(user, incarceration_form)
+
+      expect(Determination.first.determination_data).to eq({ "exemption_type" => "incarceration" })
     end
 
     it 'publishes DeterminedExempt event' do
-      certification_case.accept_exemption_request(user)
+      certification_case.accept_exemption_request(user, application_form)
 
       expect(Strata::EventManager).to have_received(:publish).with(
         "DeterminedExempt",
@@ -220,7 +230,7 @@ RSpec.describe CertificationCase, type: :model do
     it 'logs decision to audit log' do
       certification = Certification.find(certification_case.certification_id)
       expect do
-        certification_case.accept_exemption_request(user)
+        certification_case.accept_exemption_request(user, application_form)
       end.to change { Strata::AuditLine.where(actor: user, subject: certification, action: "case.exemption.approved").count }.by(1)
     end
   end
@@ -250,6 +260,124 @@ RSpec.describe CertificationCase, type: :model do
       expect do
         certification_case.deny_exemption_request(user)
       end.to change { Strata::AuditLine.where(actor: user, subject: certification, action: "case.exemption.denied").count }.by(1)
+    end
+  end
+
+  describe '#accept_denial_response' do
+    let(:application_form) { create(:denial_response_application_form) }
+
+    before { allow(Strata::EventManager).to receive(:publish) }
+
+    it 'sets approval status and closes case' do
+      certification_case.accept_denial_response(user, application_form)
+      certification_case.reload
+
+      expect(certification_case.denial_response_approval_status).to eq("approved")
+      expect(certification_case.denial_response_approval_status_updated_at).to be_present
+      expect(certification_case).to be_closed
+    end
+
+    it 'records a compliant determination' do
+      certification_case.accept_denial_response(user, application_form)
+
+      determination = Determination.first
+
+      expect(determination.decision_method).to eq("manual")
+      expect(determination.reasons).to include("denial_response_convincing")
+      expect(determination.outcome).to eq("compliant")
+      expect(determination.determined_at).to be_present
+      expect(determination.determination_data).to eq({ "denial_response_application_form_id" => application_form.id })
+    end
+
+    it 'publishes DenialResponseApproved event' do
+      certification_case.accept_denial_response(user, application_form)
+
+      expect(Strata::EventManager).to have_received(:publish).with(
+        "DenialResponseApproved",
+        { case_id: certification_case.id, certification_id: certification_case.certification_id }
+      )
+    end
+
+    it 'logs decision to audit log' do
+      certification = Certification.find(certification_case.certification_id)
+      expect do
+        certification_case.accept_denial_response(user, application_form)
+      end.to change { Strata::AuditLine.where(actor: user, subject: certification, action: "case.denial_response.approved").count }.by(1)
+    end
+  end
+
+  describe '#deny_denial_response' do
+    let(:application_form) { create(:denial_response_application_form) }
+
+    before { allow(Strata::EventManager).to receive(:publish) }
+
+    it 'sets denial status' do
+      certification_case.deny_denial_response(user, application_form)
+      certification_case.reload
+
+      expect(certification_case.denial_response_approval_status).to eq("denied")
+      expect(certification_case.denial_response_approval_status_updated_at).to be_present
+    end
+
+    it 'records a not_compliant determination' do
+      certification_case.deny_denial_response(user, application_form)
+
+      determination = Determination.first
+
+      expect(determination.decision_method).to eq("manual")
+      expect(determination.reasons).to include("denial_response_not_convincing")
+      expect(determination.outcome).to eq("not_compliant")
+      expect(determination.determined_at).to be_present
+      expect(determination.determination_data).to eq({ "denial_response_application_form_id" => application_form.id })
+    end
+
+    it 'logs decision to audit log' do
+      certification = Certification.find(certification_case.certification_id)
+      expect do
+        certification_case.deny_denial_response(user, application_form)
+      end.to change { Strata::AuditLine.where(actor: user, subject: certification, action: "case.denial_response.denied").count }.by(1)
+    end
+
+    context 'when the verification window is open' do
+      before { certification_case.update_attribute(:verification_window_end_date, 1.day.from_now) }
+
+      it 'keeps the case open so the member can respond again' do
+        certification_case.deny_denial_response(user, application_form)
+        certification_case.reload
+
+        expect(certification_case.denial_response_approval_status).to eq("denied")
+        expect(certification_case).to be_open
+      end
+
+      it 'publishes DenialResponseDenied event' do
+        certification_case.deny_denial_response(user, application_form)
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DenialResponseDenied",
+          { case_id: certification_case.id, certification_id: certification_case.certification_id, application_form_id: application_form.id }
+        )
+      end
+    end
+
+    context 'when the verification window has ended' do
+      before { certification_case.update_attribute(:verification_window_end_date, 1.day.ago) }
+
+      it 'closes the case' do
+        certification_case.deny_denial_response(user, application_form)
+        certification_case.reload
+
+        expect(certification_case.denial_response_approval_status).to eq("denied")
+        expect(certification_case).to be_closed
+      end
+
+      it 'publishes DenialResponseDeniedFinal event' do
+        certification_case.deny_denial_response(user, application_form)
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DenialResponseDeniedFinal",
+          { case_id: certification_case.id, certification_id: certification_case.certification_id, application_form_id: application_form.id }
+        )
+      end
     end
   end
 
@@ -302,7 +430,11 @@ RSpec.describe CertificationCase, type: :model do
       expect(determination.reasons).to include("age_under_19_exempt")
       expect(determination.outcome).to eq("exempt")
       expect(determination.determined_at).to be_present
-      expect(determination.determination_data).to eq(eligibility_fact.reasons.to_json)
+      # determination_data is a jsonb column and must be stored as a Hash, never a JSON
+      # String (writing reasons.to_json double-encodes it into a String — see #680). For
+      # automated exemptions it records the granting reason codes.
+      expect(determination.determination_data).to be_a(Hash)
+      expect(determination.determination_data).to eq({ "exemption_reasons" => [ "age_under_19_exempt" ] })
     end
 
     it 'records multiple reasons (age and pregnancy)' do

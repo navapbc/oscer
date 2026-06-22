@@ -154,11 +154,54 @@ RSpec.describe "dashboard/index", type: :view do
 
     before do
       assign(:exemption_application_form, exemption_application_form)
+      reassign_compliance_read_model
+    end
+
+    it 'renders the blue "draft in progress" alert' do
+      render
+      expect(rendered).to have_css('.member-dashboard-compliance__alert--info[role="region"]')
+      expect(rendered).to have_selector('h3', text: I18n.t('dashboard.member_compliance.exemption_alerts.draft.title'))
+      expect(rendered).to have_text(I18n.t('dashboard.member_compliance.exemption_alerts.draft.body'))
+    end
+
+    it 'renders the Figma draft layout (onboarding alert, CTA, about reporting)' do
+      render
+
+      expect(rendered).to have_css('.member-dashboard-compliance__onboarding')
+      expect(rendered).to have_css('.member-dashboard-compliance__about-reporting')
     end
 
     it 'renders a button to continue the exemption request' do
       render
-      expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.exemption_request.continue_request_button'))
+      expect(rendered).to have_link(
+        I18n.t('dashboard.member_compliance.exemption_alerts.draft.button'),
+        href: exemption_screener_may_qualify_path(
+          exemption_type: exemption_application_form.exemption_type,
+          certification_case_id: certification_case.id
+        )
+      )
+      expect(rendered).to have_selector('.member-dashboard-compliance__onboarding-cta a.usa-button')
+    end
+
+    it 'does not render the "Exemption details" heading' do
+      render
+      expect(rendered).not_to have_selector('h2', text: I18n.t('dashboard.member_compliance.exemption_details_heading'))
+    end
+
+    it 'does not render exemption history' do
+      render
+      expect(rendered).not_to have_selector('h3', text: I18n.t('dashboard.member_compliance.exemption_request_history_heading'))
+    end
+
+    it 'does not render a reporting section' do
+      render
+      expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.current_period.report_activities_button'))
+      expect(rendered).not_to have_selector('h2', text: I18n.t('dashboard.member_compliance.reporting.heading'))
+    end
+
+    it 'does not render the legacy compliance status block' do
+      render
+      expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.exemption_request.continue_request_button'))
     end
 
     it 'does not render the Figma get started callout' do
@@ -167,6 +210,36 @@ RSpec.describe "dashboard/index", type: :view do
         'a',
         text: I18n.t('dashboard.member_compliance.exemption_alerts.not_started.button')
       )
+    end
+
+    context "with an in-progress activity report also present" do
+      let(:activity_report_application_form) do
+        create(:activity_report_application_form, certification_case_id: certification_case.id)
+      end
+
+      before do
+        assign(:activity_report_application_form, activity_report_application_form)
+        reassign_compliance_read_model
+      end
+
+      it 'renders the exemption draft frame only (no activity-report continue CTA)' do
+        render
+        expect(rendered).to have_link(
+          I18n.t('dashboard.member_compliance.exemption_alerts.draft.button'),
+          href: exemption_screener_may_qualify_path(
+            exemption_type: exemption_application_form.exemption_type,
+            certification_case_id: certification_case.id
+          )
+        )
+        expect(rendered).not_to have_selector(
+          'a',
+          text: I18n.t('dashboard.member_compliance.reporting.continue_report_button')
+        )
+        expect(rendered).not_to have_selector(
+          'a',
+          text: I18n.t('dashboard.new_certification.activity_report.continue_report_button')
+        )
+      end
     end
   end
 
@@ -278,14 +351,14 @@ RSpec.describe "dashboard/index", type: :view do
   end
 
   context "with an approved exemption request" do
-    let (:exemption_application_form) { create(:exemption_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
+    let (:exemption_application_form) { create(:exemption_application_form, :with_submitted_status, :incarceration, certification_case_id: certification_case.id) }
 
     before do
       assign(:exemption_application_form, exemption_application_form)
       assign(:certification_case, certification_case)
 
       ReviewExemptionClaimTask.find_by(application_form: exemption_application_form).completed!
-      certification_case.accept_exemption_request(nil)
+      certification_case.accept_exemption_request(nil, exemption_application_form)
       reassign_compliance_read_model
     end
 
@@ -300,6 +373,11 @@ RSpec.describe "dashboard/index", type: :view do
       expect(rendered).to have_selector('h2', text: I18n.t('dashboard.member_compliance.exemption_details_heading'))
       expect(rendered).to have_selector('.member-dashboard-compliance__badge--exempt',
                                         text: I18n.t('dashboard.member_compliance.exemption_badges.exempt'))
+    end
+
+    it 'renders the approved exemption type label from the form' do
+      render
+      expect(rendered).to have_text(I18n.t("exemption_types.incarceration.title"))
     end
 
     it 'has a button to view the completed certification' do

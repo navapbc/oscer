@@ -203,7 +203,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       expect(certification_case).to be_open
 
       # Step 3: Staff approves exemption
-      certification_case.accept_exemption_request(user)
+      certification_case.accept_exemption_request(user, exemption)
       certification_case.reload
 
       expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
@@ -259,6 +259,68 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       expect(certification_case).to be_open
       expect(ReviewDenialResponseTask.find_by(application_form: denial_response)).to be_present
     end
+
+    context 'when the denial response is approved' do
+      before do
+        denial_response = create(:denial_response_application_form,
+          certification_case_id: certification_case.id
+        )
+        denial_response.submit_application
+        certification_case.reload
+
+        certification_case.accept_denial_response(user, denial_response)
+        certification_case.reload
+      end
+
+      it 'transitions to end step and closes the case' do
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
+        expect(certification_case).to be_closed
+      end
+    end
+
+    context 'when the denial response is denied while the verification window is open' do
+      before do
+        denial_response = create(:denial_response_application_form,
+          certification_case_id: certification_case.id
+        )
+        denial_response.submit_application
+        certification_case.reload
+
+        certification_case.update_attribute(:verification_window_end_date, 1.day.from_now)
+        certification_case.deny_denial_response(user, denial_response)
+        certification_case.reload
+      end
+
+      it 'returns to report_activities step so the member can respond again' do
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::REPORT_ACTIVITIES_STEP)
+      end
+
+      it 'keeps the case open' do
+        expect(certification_case).to be_open
+      end
+    end
+
+    context 'when the denial response is denied after the verification window has ended' do
+      before do
+        denial_response = create(:denial_response_application_form,
+          certification_case_id: certification_case.id
+        )
+        denial_response.submit_application
+        certification_case.reload
+
+        certification_case.update_attribute(:verification_window_end_date, 1.day.ago)
+        certification_case.deny_denial_response(user, denial_response)
+        certification_case.reload
+      end
+
+      it 'transitions to end step via the final-denial event' do
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
+      end
+
+      it 'closes the case' do
+        expect(certification_case).to be_closed
+      end
+    end
   end
 
   describe 'business process events' do
@@ -299,7 +361,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
 
       # Approve exemption
       expect {
-        certification_case.accept_exemption_request(user)
+        certification_case.accept_exemption_request(user, exemption)
       }.to have_published_event("DeterminedExempt")
     end
   end

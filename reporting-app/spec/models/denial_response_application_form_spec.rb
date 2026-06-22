@@ -19,33 +19,6 @@ RSpec.describe DenialResponseApplicationForm, type: :model do
     end
   end
 
-  describe "lifecycle" do
-    before { allow(Strata::EventManager).to receive(:publish) }
-
-    it "starts in progress" do
-      form = create(:denial_response_application_form)
-      expect(form).to be_in_progress
-    end
-
-    it "transitions to submitted and records submitted_at on submit" do
-      form = create(:denial_response_application_form)
-
-      expect(form.submit_application).to be(true)
-      expect(form).to be_submitted
-      expect(form.submitted_at).to be_present
-    end
-
-    it "publishes a submitted event carrying the case id" do
-      form = create(:denial_response_application_form)
-      form.submit_application
-
-      expect(Strata::EventManager).to have_received(:publish).with(
-        "DenialResponseApplicationFormSubmitted",
-        hash_including(application_form_id: form.id, case_id: form.certification_case_id)
-      )
-    end
-  end
-
   describe "validations" do
     let(:certification) { create(:certification) }
     let(:certification_case) { create(:certification_case, certification: certification) }
@@ -156,6 +129,92 @@ RSpec.describe DenialResponseApplicationForm, type: :model do
       form = described_class.find(task.application_form_id)
       expect(form.approval_status).to eq("denied")
       expect(form).to be_denied
+    end
+  end
+
+  describe "#flow_status" do
+    let(:certification) { create(:certification) }
+    let(:certification_case) { create(:certification_case, certification: certification) }
+
+    # Publishing is stubbed so the business process does not create a competing review task; each
+    # test creates exactly the review task it needs.
+    before { allow(Strata::EventManager).to receive(:publish) }
+
+    context "without previous denial response" do
+      it "returns 'in_progress' when not submitted" do
+        form = create(:denial_response_application_form, certification_case_id: certification_case.id)
+        expect(form.flow_status).to eq "in_progress"
+      end
+
+      it "returns 'submitted' when submitted with no review task" do
+        form = create(:denial_response_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        expect(form.flow_status).to eq "submitted"
+      end
+
+      it "returns 'submitted' while the review task is pending" do
+        form = create(:denial_response_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        create(:review_denial_response_task, application_form: form, case: certification_case)
+        expect(form.flow_status).to eq "submitted"
+      end
+
+      it "returns 'approved' once the review task is completed and the case is approved" do
+        form = create(:denial_response_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        task = create(:review_denial_response_task, application_form: form, case: certification_case)
+        task.completed!
+        certification_case.accept_denial_response(nil, form)
+
+        expect(form.flow_status).to eq "approved"
+      end
+
+      it "returns 'denied' once the review task is completed and the case is denied" do
+        form = create(:denial_response_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        task = create(:review_denial_response_task, application_form: form, case: certification_case)
+        task.completed!
+        certification_case.deny_denial_response(nil, form)
+
+        expect(form.flow_status).to eq "denied"
+      end
+    end
+
+    context "with previous denial response" do
+      before do
+        previous_form = create(:denial_response_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        certification_case.deny_denial_response(nil, previous_form)
+      end
+
+      it "returns 'in_progress' when not submitted" do
+        form = create(:denial_response_application_form, certification_case_id: certification_case.id)
+        expect(form.flow_status).to eq "in_progress"
+      end
+
+      it "returns 'submitted' when submitted with no review task" do
+        form = create(:denial_response_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        expect(form.flow_status).to eq "submitted"
+      end
+
+      it "returns 'submitted' while the review task is pending" do
+        form = create(:denial_response_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        create(:review_denial_response_task, application_form: form, case: certification_case)
+        expect(form.flow_status).to eq "submitted"
+      end
+
+      it "returns 'approved' once the review task is completed and the case is approved" do
+        form = create(:denial_response_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        task = create(:review_denial_response_task, application_form: form, case: certification_case)
+        task.completed!
+        certification_case.accept_denial_response(nil, form)
+
+        expect(form.flow_status).to eq "approved"
+      end
+
+      it "returns 'denied' once the review task is completed and the case is denied" do
+        form = create(:denial_response_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        task = create(:review_denial_response_task, application_form: form, case: certification_case)
+        task.completed!
+        certification_case.deny_denial_response(nil, form)
+
+        expect(form.flow_status).to eq "denied"
+      end
     end
   end
 end

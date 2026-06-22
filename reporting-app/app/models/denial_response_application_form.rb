@@ -22,6 +22,21 @@ class DenialResponseApplicationForm < Strata::ApplicationForm
     super.merge(case_id: certification_case_id)
   end
 
+  def flow_status
+    unless @flow_status.present?
+      task_complete = ReviewDenialResponseTask.where(case_id: certification_case_id,
+                                                     application_form: self,
+                                                     status: :completed).exists?
+      @flow_status = if task_complete
+                       CertificationCase.find(certification_case_id).denial_response_approval_status
+      else
+                       status
+      end
+    end
+
+    @flow_status
+  end
+
   def self.has_pending_form(certification_case_id)
     DenialResponseApplicationForm.where(certification_case_id:, status: :in_progress).exists? ||
     ReviewDenialResponseTask.where(application_form: DenialResponseApplicationForm.where(certification_case_id:).all,
