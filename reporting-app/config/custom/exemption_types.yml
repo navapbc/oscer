@@ -1,15 +1,15 @@
 # Deployment-owned override surface for exemption type composition.
 #
-# This file is preserved across `nava-platform app update` via Copier's
-# `_skip_if_exists` directive, so customizations survive template upgrades.
-# The template ships this file with no active overrides (the empty hash
-# below); fill it in to tailor exemption-type composition to your program.
+# OSCER ships this file with no active overrides (the empty hash below); fill
+# it in to tailor exemption-type composition to your program. Because OSCER
+# rarely edits this file, your overrides stay conflict-free when you sync
+# upstream changes.
 #
 # Loader: app/services/exemption_types_loader.rb deep-merges this file
 # over the federal-floor defaults declared in
 # ExemptionTypesLoader::DEFAULTS. Keys present here win; keys absent
-# here inherit from the defaults. See docs/fork-and-customize-spec.md
-# Layer 1 for the design.
+# here inherit from the defaults. See CUSTOMIZATION.md (Config) for the
+# customization model.
 #
 # ## Shape
 #

@@ -21,10 +21,10 @@ the exemptions federal Medicaid law requires (disability, pregnancy, Native
 American / Alaska Native, age). The base rulesets encode that minimum.
 
 To wire a custom ruleset into evaluation, see CUSTOMIZATION.md
-"Layer 4: Service and Ruleset Customization" (in progress:
-[#539](https://github.com/navapbc/oscer/issues/539)).
+(Extension points — Service and ruleset subclassing).
 
 ## Ownership
 
-`.rb` files here are deployment-owned and untouched by `nava-platform app
-update`. `README.md` is template-owned and refreshes on update.
+The `.rb` files you add here are deployment-owned. This `README.md` is
+maintained upstream by OSCER; leave it unedited so syncing upstream changes
+stays conflict-free.

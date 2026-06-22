@@ -1,14 +1,12 @@
 # frozen_string_literal: true
 
 # Loads exemption-type configuration by deep-merging an optional deployment
-# override (config/custom/exemption_types.yml — preserved across
-# `nava-platform app update` via Copier's _skip_if_exists directive for
-# zero-conflict updates) over the federal-floor defaults declared in
-# DEFAULTS below.
+# override (config/custom/exemption_types.yml, the deployment-owned override
+# surface) over the federal-floor defaults declared in DEFAULTS below.
 #
-# Defaults represent OSCER's federal floor and are template-owned (updated
-# by Nava as CMS regulations evolve). Deployments customize via the
-# override file, not by editing this constant.
+# Defaults represent OSCER's federal floor and are OSCER-owned (updated by
+# Nava as CMS regulations evolve). Deployments customize via the override
+# file, not by editing this constant.
 module ExemptionTypesLoader
   class ConfigurationError < StandardError; end
 
