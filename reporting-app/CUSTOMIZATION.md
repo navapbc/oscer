@@ -109,6 +109,15 @@ Subclass the base service/ruleset under your namespace, then rewire the one line
 that instantiates it.
 
 ```ruby
+# app/models/rules/custom/exemption_ruleset.rb
+module Rules
+  module Custom
+    class ExemptionRuleset < Rules::ExemptionRuleset
+      # deployment-specific rule methods
+    end
+  end
+end
+
 # app/services/custom/exemption_determination_service.rb
 module Custom
   class ExemptionDeterminationService < ::ExemptionDeterminationService
@@ -118,10 +127,9 @@ end
 ```
 
 Note OSCER's services are flat (no `Services::` namespace), so the parent is
-`::ExemptionDeterminationService`. Rulesets go in `app/models/rules/custom/`
-under `Rules::Custom::`. Deployments may **add** exemptions but must not narrow
-the federally-required ones (disability, pregnancy, Native American / Alaska
-Native, age). Details:
+`::ExemptionDeterminationService`. Deployments may **add** exemptions but must
+not narrow the federally-required ones (disability, pregnancy, Native American /
+Alaska Native, age). Details:
 [`app/services/custom/README.md`](app/services/custom/README.md),
 [`app/models/rules/custom/README.md`](app/models/rules/custom/README.md).
 
