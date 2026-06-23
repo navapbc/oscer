@@ -159,6 +159,62 @@ RSpec.describe Certification, type: :model do
       expect(certification.outcome).to be_nil
     end
 
+    it 'returns appropriate exemption outcome' do
+      determination = create(:determination,
+                              subject: certification,
+                              outcome: 'exempt',
+                              decision_method: 'automated',
+                              reasons: [ 'age_under_19_exempt' ],
+                              created_at: 2.days.ago)
+      outcome = certification.outcome
+      expect(outcome.status).to eq 'exempt'
+      expect(outcome.reason).to eq 'age_under_19_exempt'
+      expect(outcome.source).to eq 'api'
+      expect(outcome.timestamp).to eq determination.created_at
+    end
+
+    it 'returns appropriate compliant outcome' do
+      determination = create(:determination,
+                              subject: certification,
+                              outcome: 'compliant',
+                              decision_method: 'automated',
+                              reasons: [ 'hours_reported_compliant' ],
+                              created_at: 2.days.ago)
+      outcome = certification.outcome
+      expect(outcome.status).to eq 'compliant'
+      expect(outcome.reason).to eq 'hours_reported_compliant'
+      expect(outcome.source).to eq 'api'
+      expect(outcome.timestamp).to eq determination.created_at
+    end
+
+    it 'returns appropriate indeterminate outcome' do
+      determination = create(:determination,
+                              subject: certification,
+                              outcome: 'not_compliant',
+                              decision_method: 'automated',
+                              reasons: [ 'hours_reported_insufficient', 'income_reported_insufficient' ],
+                              created_at: 2.days.ago)
+      outcome = certification.outcome
+      expect(outcome.status).to eq 'indeterminate'
+      expect(outcome.reason).to eq ''
+      expect(outcome.source).to eq ''
+      expect(outcome.timestamp).to eq determination.created_at
+    end
+
+    it 'returns appropriate not compliant outcome' do
+      determination = create(:determination,
+                              subject: certification,
+                              outcome: 'not_compliant',
+                              decision_method: 'manual',
+                              reasons: [ 'hours_reported_insufficient', 'income_reported_insufficient' ],
+                              created_at: 2.days.ago)
+      outcome = certification.outcome
+      expect(outcome.status).to eq 'not_compliant'
+      expect(outcome.reason).to eq ''
+      expect(outcome.source).to eq ''
+      expect(outcome.timestamp).to eq determination.created_at
+    end
+
     context 'with multiple determinations' do
       before do
         create(:determination,
@@ -175,7 +231,7 @@ RSpec.describe Certification, type: :model do
 
       it 'returns most recent determination outcome' do
         expect(certification.outcome).not_to be_nil
-        expect(certification.outcome[:status]).to eq 'compliant'
+        expect(certification.outcome.status).to eq 'compliant'
       end
     end
   end

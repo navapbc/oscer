@@ -44,7 +44,8 @@ class Certification < ApplicationRecord
   end
 
   def outcome
-    Determination.where(subject: self).first&.certification_outcome
+    @outcome ||= Api::Certifications::Outcome.from_certification(self)
+    @outcome
   end
 
   def self.find_by_member_email(email)

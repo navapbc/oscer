@@ -124,29 +124,4 @@ class Determination < Strata::Determination
 
     determination_data.stringify_keys["calculation_type"].presence
   end
-
-  def certification_outcome
-    if not_compliant? && automated?
-      {
-        status: :indeterminate,
-        reason: "",
-        source: "",
-        timestamp: created_at
-      }
-    elsif not_compliant?
-      {
-        status: :not_compliant,
-        reason: "",
-        source: "",
-        timestamp: created_at
-      }
-    else
-      {
-        status: outcome,
-        reason: reasons.first,
-        source: automated? ? "api" : "member",
-        timestamp: created_at
-      }
-    end
-  end
 end
