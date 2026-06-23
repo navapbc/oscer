@@ -39,4 +39,4 @@ locale files in `I18n.load_path`, so override keys always win on conflict.
 The ordering is explicit — adding new locale subdirectories to OSCER core
 will not affect override precedence.
 
-See `CUSTOMIZATION.md` (Tier 2) for the customization-ladder context.
+See `CUSTOMIZATION.md` (Locales and branding) for the broader customization context.
