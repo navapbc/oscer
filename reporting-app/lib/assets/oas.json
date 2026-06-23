@@ -456,11 +456,11 @@
           "status": {
             "type": "string",
             "enum": ["compliant", "exempt", "indeterminate", "not_compliant"],
-            "description": "Decision based on available on status of certification vis-a-vis community engagement requirements"
+            "description": "Current status of community engagement requirement checks"
           },
           "reason": {
             "type": "string",
-            "description": "What exemptions or community engagement requirement led to the decision"
+            "description": "Which exemption or community engagement requirement led to the decision"
           },
           "source": {
             "type": "string",
@@ -469,7 +469,7 @@
           "timestamp": {
             "type": "string",
             "format": "date-time",
-            "description": "When the determination was made"
+            "description": "When the status was set"
           }
 	},
         "required": [

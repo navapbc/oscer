@@ -414,11 +414,10 @@ components:
           - exempt
           - indeterminate
           - not_compliant
-          description: Decision based on available on status of certification vis-a-vis
-            community engagement requirements
+          description: Current status of community engagement requirement checks
         reason:
           type: string
-          description: What exemptions or community engagement requirement led to
+          description: Which exemption or community engagement requirement led to
             the decision
         source:
           type: string
@@ -426,7 +425,7 @@ components:
         timestamp:
           type: string
           format: date-time
-          description: When the determination was made
+          description: When the status was set
       required:
       - status
       - timestamp
@@ -535,43 +534,43 @@ components:
       required:
       - status
   responses:
-    81868831bde4935ffbb09f798305ff52:
+    8742641eb3e1e46185bb92b9188e1c4f:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    79e0f49188b7be475560ab8e1fe869e4:
+    2adf9826af60ceace40a51ea081a5b3c:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    a1f57f78df4b93d2e5cf041f743fcb45:
+    10952cf21e8735a2a05cb66dc44d2726:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    e51a74bf49194a56805de7d427255077:
+    fc364e17a9f3a2b26466164d43ca62f4:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    ef4eb2c67a08851aeccd60b7c2bb8ce6:
+    be9dfd3f2ddfebaf9cdfa89eaf4c8a69:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    fb30e2f1b1a2767f11a94aaefd7068d5:
+    16a85b581878de9907c755a71550c065:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    140b2ac45a2bc8bb06ec1a4d2bb85aad:
+    cb6ccf067f9f71523740c9258a2b7eb4:
       description: Response
       content:
         application/json:
@@ -595,7 +594,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    0bfccef5b076f4e66c1b87c5b4136a3e:
+    5475b9280913c9de13d8a2e709340b92:
       description: The Certification data.
       content:
         application/json:
@@ -685,14 +684,14 @@ paths:
       description: ''
       operationId: POST_api_certifications
       requestBody:
-        "$ref": "#/components/requestBodies/0bfccef5b076f4e66c1b87c5b4136a3e"
+        "$ref": "#/components/requestBodies/5475b9280913c9de13d8a2e709340b92"
       responses:
         '201':
-          "$ref": "#/components/responses/81868831bde4935ffbb09f798305ff52"
+          "$ref": "#/components/responses/8742641eb3e1e46185bb92b9188e1c4f"
         '400':
-          "$ref": "#/components/responses/79e0f49188b7be475560ab8e1fe869e4"
+          "$ref": "#/components/responses/2adf9826af60ceace40a51ea081a5b3c"
         '422':
-          "$ref": "#/components/responses/a1f57f78df4b93d2e5cf041f743fcb45"
+          "$ref": "#/components/responses/10952cf21e8735a2a05cb66dc44d2726"
       security:
       - hmac: []
       deprecated: false
@@ -707,9 +706,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/e51a74bf49194a56805de7d427255077"
+          "$ref": "#/components/responses/fc364e17a9f3a2b26466164d43ca62f4"
         '404':
-          "$ref": "#/components/responses/ef4eb2c67a08851aeccd60b7c2bb8ce6"
+          "$ref": "#/components/responses/be9dfd3f2ddfebaf9cdfa89eaf4c8a69"
       security:
       - hmac: []
       deprecated: false
@@ -744,9 +743,9 @@ paths:
       operationId: GET_api_health
       responses:
         '200':
-          "$ref": "#/components/responses/fb30e2f1b1a2767f11a94aaefd7068d5"
+          "$ref": "#/components/responses/16a85b581878de9907c755a71550c065"
         '503':
-          "$ref": "#/components/responses/140b2ac45a2bc8bb06ec1a4d2bb85aad"
+          "$ref": "#/components/responses/cb6ccf067f9f71523740c9258a2b7eb4"
       security:
       - hmac: []
       deprecated: false
