@@ -17,10 +17,10 @@ Pundit policy (`make new-authz-policy MODEL=...`) — `ApplicationController`
 raises if `authorize`/`policy_scope` are skipped.
 
 To wire a custom model into existing flows, see CUSTOMIZATION.md
-"Layer 5: Model Customization" (in progress:
-[#539](https://github.com/navapbc/oscer/issues/539)).
+(Extension points — Model extension).
 
 ## Ownership
 
-`.rb` files here are deployment-owned and untouched by `nava-platform app
-update`. `README.md` is template-owned and refreshes on update.
+The `.rb` files you add here are deployment-owned. This `README.md` is
+maintained upstream by OSCER; leave it unedited so syncing upstream changes
+stays conflict-free.
