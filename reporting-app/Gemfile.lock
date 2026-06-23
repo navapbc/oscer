@@ -98,8 +98,8 @@ GEM
       aws-sdk-ses (~> 1, >= 1.50.0)
       aws-sdk-sesv2 (~> 1, >= 1.34.0)
     aws-eventstream (1.4.0)
-    aws-partitions (1.1260.0)
-    aws-sdk-cognitoidentityprovider (1.144.0)
+    aws-partitions (1.1262.0)
+    aws-sdk-cognitoidentityprovider (1.145.0)
       aws-sdk-core (~> 3, >= 3.248.0)
       aws-sigv4 (~> 1.5)
     aws-sdk-core (3.252.0)
@@ -119,7 +119,7 @@ GEM
     aws-sdk-rds (1.310.0)
       aws-sdk-core (~> 3, >= 3.244.0)
       aws-sigv4 (~> 1.5)
-    aws-sdk-s3 (1.225.1)
+    aws-sdk-s3 (1.226.0)
       aws-sdk-core (~> 3, >= 3.248.0)
       aws-sdk-kms (~> 1)
       aws-sigv4 (~> 1.5)
@@ -699,7 +699,7 @@ PLATFORMS
 DEPENDENCIES
   active_storage_validations
   aws-actionmailer-ses
-  aws-sdk-cognitoidentityprovider (~> 1.144)
+  aws-sdk-cognitoidentityprovider (~> 1.145)
   aws-sdk-rails
   aws-sdk-s3
   azure-blob
