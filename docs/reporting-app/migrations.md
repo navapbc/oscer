@@ -153,6 +153,7 @@ points, and the distinction matters for replay safety:
 | Path | Command | Behavior |
 |------|---------|----------|
 | Fresh setup / boot | `db:prepare` (`bin/docker-entrypoint`, `bin/setup`) | On a fresh DB: creates it and loads `db/schema.rb`, then seeds (never replays the full migration history). On an existing DB: applies only pending migrations (equivalent to `db:migrate`). |
+| Local first-time setup | `make init-db` (also run by `make init-native` / `init-container`) | Starts the DB container, runs `db:migrate`, prepares the test DB, and seeds. **Warning:** unlike the `db:prepare` fresh path, this replays the full migration history on a fresh local DB, so a replay-unsafe migration will fail here. Treat a migration failure during local setup as a real replay bug, not a local glitch. |
 | Incremental migrate | `db:migrate` (`make db-migrate`, `bin/db-migrate`) | Applies only pending migrations incrementally. |
 | Full local recreate | `db:reset` (`make db-reset`) | Drops and recreates from `db/schema.rb`, then reseeds. |
 
