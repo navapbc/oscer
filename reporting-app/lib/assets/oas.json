@@ -459,11 +459,11 @@
             "description": "Current status of community engagement requirement checks"
           },
           "reason": {
-            "type": "string",
+            "type": ["string", "null"],
             "description": "Which exemption or community engagement requirement led to the decision"
           },
           "source": {
-            "type": "string",
+            "type": ["string", "null"],
             "description": "Which source provided the reason"
           },
           "timestamp": {

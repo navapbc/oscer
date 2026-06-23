@@ -416,11 +416,15 @@ components:
           - not_compliant
           description: Current status of community engagement requirement checks
         reason:
-          type: string
+          type:
+          - string
+          - 'null'
           description: Which exemption or community engagement requirement led to
             the decision
         source:
-          type: string
+          type:
+          - string
+          - 'null'
           description: Which source provided the reason
         timestamp:
           type: string
@@ -534,43 +538,43 @@ components:
       required:
       - status
   responses:
-    8742641eb3e1e46185bb92b9188e1c4f:
+    e180a94c97b6a58838c99fa55aa9a49a:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    2adf9826af60ceace40a51ea081a5b3c:
+    add0805d0b57d61ba1b884853c394e83:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    10952cf21e8735a2a05cb66dc44d2726:
+    03def52205d1efa25458fac7b394fb3b:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    fc364e17a9f3a2b26466164d43ca62f4:
+    557add6c63e32c16afc21f1e2e9099dc:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    be9dfd3f2ddfebaf9cdfa89eaf4c8a69:
+    0a1e2336da29ab4179bd7b46b25c2654:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    16a85b581878de9907c755a71550c065:
+    1fdd695a6f46861bf2f3636f4fc89343:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    cb6ccf067f9f71523740c9258a2b7eb4:
+    d26b59545a39a7c20ad5ee50342dafbd:
       description: Response
       content:
         application/json:
@@ -594,7 +598,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    5475b9280913c9de13d8a2e709340b92:
+    dbf34602b5e8fc0d517b507c71359f78:
       description: The Certification data.
       content:
         application/json:
@@ -684,14 +688,14 @@ paths:
       description: ''
       operationId: POST_api_certifications
       requestBody:
-        "$ref": "#/components/requestBodies/5475b9280913c9de13d8a2e709340b92"
+        "$ref": "#/components/requestBodies/dbf34602b5e8fc0d517b507c71359f78"
       responses:
         '201':
-          "$ref": "#/components/responses/8742641eb3e1e46185bb92b9188e1c4f"
+          "$ref": "#/components/responses/e180a94c97b6a58838c99fa55aa9a49a"
         '400':
-          "$ref": "#/components/responses/2adf9826af60ceace40a51ea081a5b3c"
+          "$ref": "#/components/responses/add0805d0b57d61ba1b884853c394e83"
         '422':
-          "$ref": "#/components/responses/10952cf21e8735a2a05cb66dc44d2726"
+          "$ref": "#/components/responses/03def52205d1efa25458fac7b394fb3b"
       security:
       - hmac: []
       deprecated: false
@@ -706,9 +710,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/fc364e17a9f3a2b26466164d43ca62f4"
+          "$ref": "#/components/responses/557add6c63e32c16afc21f1e2e9099dc"
         '404':
-          "$ref": "#/components/responses/be9dfd3f2ddfebaf9cdfa89eaf4c8a69"
+          "$ref": "#/components/responses/0a1e2336da29ab4179bd7b46b25c2654"
       security:
       - hmac: []
       deprecated: false
@@ -743,9 +747,9 @@ paths:
       operationId: GET_api_health
       responses:
         '200':
-          "$ref": "#/components/responses/16a85b581878de9907c755a71550c065"
+          "$ref": "#/components/responses/1fdd695a6f46861bf2f3636f4fc89343"
         '503':
-          "$ref": "#/components/responses/cb6ccf067f9f71523740c9258a2b7eb4"
+          "$ref": "#/components/responses/d26b59545a39a7c20ad5ee50342dafbd"
       security:
       - hmac: []
       deprecated: false

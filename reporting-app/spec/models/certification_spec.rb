@@ -196,8 +196,8 @@ RSpec.describe Certification, type: :model do
                               created_at: 2.days.ago)
       outcome = certification.outcome
       expect(outcome.status).to eq 'indeterminate'
-      expect(outcome.reason).to eq ''
-      expect(outcome.source).to eq ''
+      expect(outcome.reason).to be_nil
+      expect(outcome.source).to be_nil
       expect(outcome.timestamp).to eq determination.created_at
     end
 
@@ -210,8 +210,8 @@ RSpec.describe Certification, type: :model do
                               created_at: 2.days.ago)
       outcome = certification.outcome
       expect(outcome.status).to eq 'not_compliant'
-      expect(outcome.reason).to eq ''
-      expect(outcome.source).to eq ''
+      expect(outcome.reason).to be_nil
+      expect(outcome.source).to be_nil
       expect(outcome.timestamp).to eq determination.created_at
     end
 
