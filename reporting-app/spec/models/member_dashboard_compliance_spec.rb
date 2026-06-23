@@ -30,6 +30,16 @@ RSpec.describe MemberDashboardCompliance do
 
   let(:lookback) { certification.certification_requirements.continuous_lookback_period }
 
+  def capture_sql
+    queries = []
+    counter = lambda do |_name, _started, _finished, _unique_id, payload|
+      unless payload[:name] == "SCHEMA" || payload[:sql] =~ /^(BEGIN|COMMIT|SAVEPOINT|RELEASE)/
+        queries << payload[:sql]
+      end
+    end
+    ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { yield }
+    queries
+  end
 
   def create_external_hourly(hours:, category: "employment")
     create(:external_hourly_activity,
@@ -126,6 +136,10 @@ RSpec.describe MemberDashboardCompliance do
       expect(rows.last.organization_name).to eq("Acme Co")
       expect(rows.last.hours).to eq(12)
     end
+
+    it "sums displayed hour rows for the table footer total" do
+      expect(read_model.hour_table_total).to eq(52) # 40 external + 12 self-reported
+    end
   end
 
   describe "#income_table_rows and footer totals" do
@@ -194,6 +208,25 @@ RSpec.describe MemberDashboardCompliance do
 
       it "reports that line items exist" do
         expect(read_model.activity_line_items?).to be true
+      end
+
+      it "checks line-item presence without eager-loading attachments" do
+        fresh_model = MemberDashboardComplianceService.build(
+          certification: certification,
+          certification_case: certification_case,
+          activity_report_application_form: newer_form,
+          exemption_application_form: nil,
+          member_status: member_status
+        )
+
+        gate_result = nil
+        gate_sql = capture_sql { gate_result = fresh_model.activity_line_items? }
+        full_sql = capture_sql { fresh_model.activity_reports_for_line_items }
+
+        expect(gate_result).to be true
+        expect(gate_sql.first).to include("activities")
+        expect(gate_sql.join).not_to include("active_storage")
+        expect(full_sql.join).to include("active_storage")
       end
 
       it "eager-loads activities and supporting documents (no N+1 while rendering rows)" do

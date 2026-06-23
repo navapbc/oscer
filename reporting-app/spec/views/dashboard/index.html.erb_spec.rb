@@ -304,6 +304,37 @@ RSpec.describe "dashboard/index", type: :view do
           .to be < rendered.index("member-dashboard-compliance__table--income")
       end
     end
+
+    context "with reported activities on the submitted report (OSCER-642 + OSCER-690)" do
+      let(:lookback) { certification.certification_requirements.continuous_lookback_period }
+      let(:activity_report_application_form) do
+        form = create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        activity = create(:hourly_activity, activity_report_application_form_id: form.id, name: "Submitted Employer",
+               category: "employment", hours: 25, month: lookback.start.to_date)
+        activity.supporting_documents.attach(
+          fixture_file_upload("spec/fixtures/files/test_document_1.pdf", "application/pdf")
+        )
+        form
+      end
+
+      before do
+        create(:external_hourly_activity, member_id: certification.member_id, category: "employment",
+               hours: 30, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
+        assign(:activity_report_application_form, activity_report_application_form)
+        reassign_compliance_read_model
+      end
+
+      it "renders compliance summary tables, line items, and a supporting-document download link" do
+        render
+        period = I18n.l(certification.certification_requirements.certification_date, format: :month_year)
+        expect(rendered).to have_selector("h3", text: I18n.t("dashboard.member_compliance.activity_report_title", period: period))
+        expect(rendered).to have_css(".member-dashboard-compliance__table--hours")
+        expect(rendered).to have_selector("h2#member-compliance-line-items-heading",
+                                          text: I18n.t("dashboard.member_compliance.activity_line_items.heading"))
+        expect(rendered).to have_selector(".member-dashboard-compliance__line-items td", text: "Submitted Employer")
+        expect(rendered).to have_link("test_document_1.pdf", href: %r{/rails/active_storage/blobs/})
+      end
+    end
   end
 
   context "with a submitted exemption request" do
@@ -839,7 +870,8 @@ RSpec.describe "dashboard/index", type: :view do
         expect(rendered).to have_selector("h2#member-compliance-line-items-heading",
                                           text: I18n.t("dashboard.member_compliance.activity_line_items.heading"))
         expect(rendered).to have_selector("#{line_items_section} td", text: "Helping Hands")
-        expect(rendered).to have_selector("#{line_items_section} td", text: lookback.start.to_date.strftime("%b, %Y"))
+        expect(rendered).to have_selector("#{line_items_section} td",
+                                          text: I18n.l(lookback.start.to_date, format: :month_abbr_year))
       end
 
       it "does not render a per-form submitted-date subheading or status badge for a single form" do

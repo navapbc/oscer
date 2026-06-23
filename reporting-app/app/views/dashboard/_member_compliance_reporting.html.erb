@@ -55,4 +55,9 @@
     <% start_action = member_compliance_activity_report_action(compliance: compliance) %>
     <%= link_to start_action[:label], start_action[:path], class: "usa-button" %>
   <% end %>
+
+  <%# Activity line items (OSCER-690) nested under the reporting section when it renders. %>
+  <% if show_member_compliance_activity_line_items?(compliance, activity_report: activity_report) %>
+    <%= render "dashboard/member_compliance_activity_line_items", compliance: compliance %>
+  <% end %>
 </section>
