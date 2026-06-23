@@ -10,6 +10,7 @@ updates:
     schedule:
       interval: "weekly"
     groups:
+      # Retained for visibility; all members are listed in ignore below.
       rails:
         patterns:
           - "rails"
@@ -28,6 +29,29 @@ updates:
         patterns:
           - "aws-sdk-*"
           - "aws-actionmailer-*"
+    ignore:
+      # Rails framework gems are upgraded intentionally, NOT via Dependabot.
+      # Team decision (Jun 2026): let navapbc/template-application-rails upgrade
+      # Rails first, then port framework changes here through a deliberate,
+      # tracked OSCER upgrade ticket/PR (config, initializers, gem constraints,
+      # and Strata SDK compatibility come from the template upgrade as the source
+      # of truth). Repeatedly triaging the same rejected grouped bump (e.g. PRs
+      # #568, #695) is the problem these ignore rules eliminate.
+      #
+      # Bare ignore (no update-types) suppresses both version-update AND security
+      # PRs for listed gems. Pick up Rails security patches manually via GitHub
+      # security advisories and template-app release notes, then apply through
+      # the tracked upgrade.
+      #
+      # Globs mirror the "rails" group patterns so partial framework bumps cannot
+      # slip through. rspec-rails is intentionally NOT ignored (separate "rspec"
+      # group; test dependency, not framework runtime). rails-dom-testing /
+      # rails-html-sanitizer / rails-erd are not in the "rails" group (exact
+      # "rails" pattern, no wildcard).
+      - dependency-name: "rails"
+      - dependency-name: "railties"
+      - dependency-name: "active*"
+      - dependency-name: "action*"
 
   - package-ecosystem: "npm"
     directory: "/reporting-app"
