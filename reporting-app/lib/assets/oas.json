@@ -451,27 +451,27 @@
         ]
       },
       "CertificationOutcome": {
-	"type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": ["compliant", "exempt", "indeterminate", "not_compliant"],
-            "description": "Current status of community engagement requirement checks"
-          },
-          "reason": {
-            "type": ["string", "null"],
-            "description": "Which exemption or community engagement requirement led to the decision"
-          },
-          "source": {
-            "type": ["string", "null"],
-            "description": "Which source provided the reason"
-          },
-          "timestamp": {
-            "type": "string",
-            "format": "date-time",
-            "description": "When the status was set"
-          }
-	},
+        "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["compliant", "exempt", "indeterminate", "not_compliant"],
+              "description": "Current status of community engagement requirement checks"
+            },
+            "reason": {
+              "type": ["string", "null"],
+              "description": "Which exemption or community engagement requirement led to the decision"
+            },
+            "source": {
+              "type": ["string", "null"],
+              "description": "Which source provided the reason"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the status was set"
+            }
+        },
         "required": [
           "status",
           "timestamp"
@@ -518,12 +518,12 @@
               { "type": "null" }
             ]
           },
-	  "outcome": {
-            "anyOf": [
-              { "$ref": "#/components/schemas/CertificationOutcome" },
-              { "type": "null" }
-            ]
-	  },
+          "outcome": {
+                  "anyOf": [
+                    { "$ref": "#/components/schemas/CertificationOutcome" },
+                    { "type": "null" }
+                  ]
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
