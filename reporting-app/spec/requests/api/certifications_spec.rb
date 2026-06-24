@@ -76,6 +76,35 @@ RSpec.describe "/api/certifications", type: :request do
     end
   end
 
+  describe "GET /{id}/outcome" do
+    let(:certification) { create(:certification) }
+
+    before { allow(Strata::EventManager).to receive(:publish) }
+
+    it "without determination returns a 202" do
+      url = outcome_api_certification_url(certification)
+      get url, headers: auth_headers
+      expect(response).to be_accepted
+      expect(JSON.parse(response.body)).to be_empty
+      expect(response.headers['location']).not_to be_nil
+      expect(response.headers['location']).to eq url
+      expect(response).to match_openapi_doc(OPENAPI_DOC)
+    end
+
+    context 'with determination' do
+      before do
+        create(:determination, subject: certification)
+      end
+
+      it "returns a 200" do
+        get outcome_api_certification_url(certification), headers: auth_headers
+        expect(response).to be_ok
+        expect(response.headers['location']).to be_nil
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+    end
+  end
+
   describe "POST /" do
     context "with valid parameters" do
       it "creates a new Certification and renders response" do
@@ -90,6 +119,24 @@ RSpec.describe "/api/certifications", type: :request do
         expect(response).to have_http_status(:created)
         expect(response.content_type).to match(a_string_including("application/json"))
         expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      context "when async" do
+        it "creates a new Certification and returns location" do
+          params = valid_json_request_attributes
+          expect {
+            post api_certifications_url,
+                 params: params,
+                 headers: auth_headers(params).merge({ 'prefer': 'respond-async' }),
+                 as: :json
+          }.to change(Certification, :count).by(1)
+
+          expect(response).to be_accepted
+          expect(response.headers['location']).not_to be_nil
+          expect(response.headers['location']).to match(/api\/certifications\/.*\/outcome/)
+          expect(JSON.parse(response.body)).to be_empty
+          expect(response).to match_openapi_doc(OPENAPI_DOC)
+        end
       end
     end
 
