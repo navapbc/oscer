@@ -117,7 +117,7 @@ Some effective admin protection strategies include:
 
 ## Dependency Management and CVEs'
 - [x] Use a service to be notified when libraries are outdated
-    - Note: We're using dependabot to notify us if we have outdated gems.
+    - Note: We're using Dependabot to notify us if we have outdated gems. Rails framework gems are excluded from Dependabot (see `.github/dependabot.yml`); upgrade those manually after [template-application-rails](https://github.com/navapbc/template-application-rails).
 
 ## Additional Reading
 * [Securing Rails Applications](https://guides.rubyonrails.org/security.html)
