@@ -603,7 +603,7 @@ RSpec.describe "dashboard/index", type: :view do
       )
     end
 
-    it 'renders the "Report your activities" heading and intro above the CTA' do
+    it 'renders the "Reported activities" heading and intro above the CTA' do
       render
       expect(rendered).to have_selector(
         'h2#member-compliance-reporting-heading',
