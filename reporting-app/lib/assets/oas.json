@@ -450,6 +450,33 @@
           }
         ]
       },
+      "CertificationOutcome": {
+        "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["compliant", "exempt", "indeterminate", "not_compliant"],
+              "description": "Current status of community engagement requirement checks"
+            },
+            "reason": {
+              "type": ["string", "null"],
+              "description": "Which exemption or community engagement requirement led to the decision"
+            },
+            "source": {
+              "type": ["string", "null"],
+              "description": "Which source provided the reason"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the status was set"
+            }
+        },
+        "required": [
+          "status",
+          "timestamp"
+        ]
+      },
       "CertificationResponseBody": {
         "type": "object",
         "properties": {
@@ -490,6 +517,12 @@
               { "$ref": "#/components/schemas/CertificationMemberData" },
               { "type": "null" }
             ]
+          },
+          "outcome": {
+                  "anyOf": [
+                    { "$ref": "#/components/schemas/CertificationOutcome" },
+                    { "type": "null" }
+                  ]
           },
           "created_at": {
             "type": "string",
@@ -541,7 +574,7 @@
               {
                 "type": "hourly",
                 "category": "community_service",
-                "hours": "20",
+                "hours": "80",
                 "period_start": "2025-09-01",
                 "period_end": "2025-09-30",
                 "employer": "Community Center",
@@ -552,8 +585,14 @@
             "race_ethnicity": "Hispanic",
             "pregnancy_status": false
           },
-          "created_at": "1970-01-01T00:00:00.000Z",
-          "updated_at": "1970-01-01T00:00:00.000Z"
+          "outcome": {
+            "status": "compliant",
+            "reason": "hours_reported_compliant",
+            "source": "api",
+            "timestamp": "2025-10-01T00:00:00.040Z"
+          },
+          "created_at": "2025-10-01T00:00:00.000Z",
+          "updated_at": "2025-10-01T00:00:00.000Z"
         }
       },
       "ErrorResponseBody": {
