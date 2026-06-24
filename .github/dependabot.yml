@@ -43,15 +43,24 @@ updates:
       # security advisories and template-app release notes, then apply through
       # the tracked upgrade.
       #
-      # Globs mirror the "rails" group patterns so partial framework bumps cannot
-      # slip through. rspec-rails is intentionally NOT ignored (separate "rspec"
-      # group; test dependency, not framework runtime). rails-dom-testing /
-      # rails-html-sanitizer / rails-erd are not in the "rails" group (exact
-      # "rails" pattern, no wildcard).
+      # Listed explicitly (not globs) so the ignored set is obvious in review.
+      # rspec-rails is intentionally NOT ignored (separate "rspec" group; test
+      # dependency, not framework runtime). rails-dom-testing / rails-html-sanitizer
+      # / rails-erd are not in the "rails" group (exact "rails" pattern, no wildcard).
       - dependency-name: "rails"
       - dependency-name: "railties"
-      - dependency-name: "active*"
-      - dependency-name: "action*"
+      - dependency-name: "activesupport"
+      - dependency-name: "activemodel"
+      - dependency-name: "activerecord"
+      - dependency-name: "activejob"
+      - dependency-name: "activestorage"
+      - dependency-name: "active_storage_validations"
+      - dependency-name: "actioncable"
+      - dependency-name: "actionmailbox"
+      - dependency-name: "actionmailer"
+      - dependency-name: "actionpack"
+      - dependency-name: "actiontext"
+      - dependency-name: "actionview"
 
   - package-ecosystem: "npm"
     directory: "/reporting-app"
