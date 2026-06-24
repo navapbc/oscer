@@ -404,6 +404,35 @@ components:
       oneOf:
       - "$ref": "#/components/schemas/CertificationMemberDataHourlyActivity"
       - "$ref": "#/components/schemas/CertificationMemberDataIncomeActivity"
+    CertificationOutcome:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - compliant
+          - exempt
+          - indeterminate
+          - not_compliant
+          description: Current status of community engagement requirement checks
+        reason:
+          type:
+          - string
+          - 'null'
+          description: Which exemption or community engagement requirement led to
+            the decision
+        source:
+          type:
+          - string
+          - 'null'
+          description: Which source provided the reason
+        timestamp:
+          type: string
+          format: date-time
+          description: When the status was set
+      required:
+      - status
+      - timestamp
     CertificationResponseBody:
       type: object
       properties:
@@ -434,6 +463,10 @@ components:
         member_data:
           anyOf:
           - "$ref": "#/components/schemas/CertificationMemberData"
+          - type: 'null'
+        outcome:
+          anyOf:
+          - "$ref": "#/components/schemas/CertificationOutcome"
           - type: 'null'
         created_at:
           type: string
@@ -475,7 +508,7 @@ components:
           activities:
           - type: hourly
             category: community_service
-            hours: '20'
+            hours: '80'
             period_start: '2025-09-01'
             period_end: '2025-09-30'
             employer: Community Center
@@ -483,8 +516,13 @@ components:
           date_of_birth: '1980-01-01'
           race_ethnicity: Hispanic
           pregnancy_status: false
-        created_at: '1970-01-01T00:00:00.000Z'
-        updated_at: '1970-01-01T00:00:00.000Z'
+        outcome:
+          status: compliant
+          reason: hours_reported_compliant
+          source: api
+          timestamp: '2025-10-01T00:00:00.040Z'
+        created_at: '2025-10-01T00:00:00.000Z'
+        updated_at: '2025-10-01T00:00:00.000Z'
     ErrorResponseBody:
       type: object
       properties:
@@ -505,43 +543,43 @@ components:
       required:
       - status
   responses:
-    b6fb0dc600c724cbb98ccb3ed39e4c92:
+    c5cccf7c524d4a0da759f98545473ea5:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    4f5ee61101e46f868752c5cbb0f9b68a:
+    002d8a9656c803e495e0a1ea528d9d78:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    1367d8d1c3c952fdfa05598d96a776c3:
+    727317a373b7cc09df4f785ce23fe1c4:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    21fe6ae572cfd4f88699d7ea9065867a:
+    0c5097591b0ccb0ae7c91e51f6142804:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    59fd9e7ad939bbb121880fb019a3a316:
+    c0ee70edd15abb2090561c6f74217795:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    40d9b75ae67de0b77cf25883f557d0d6:
+    c6c1b2ec530996c1125747ad30c8a74f:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    f27444a9c7b748596d9512daf45d041c:
+    e051c4200c47f4a7514009e14283c1f1:
       description: Response
       content:
         application/json:
@@ -565,7 +603,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    93e37fa17742e9d41fc9cfa4f8aa8828:
+    b0a6895c2aed42410dac8515655af4c3:
       description: The Certification data.
       content:
         application/json:
@@ -655,14 +693,14 @@ paths:
       description: ''
       operationId: POST_api_certifications
       requestBody:
-        "$ref": "#/components/requestBodies/93e37fa17742e9d41fc9cfa4f8aa8828"
+        "$ref": "#/components/requestBodies/b0a6895c2aed42410dac8515655af4c3"
       responses:
         '201':
-          "$ref": "#/components/responses/b6fb0dc600c724cbb98ccb3ed39e4c92"
+          "$ref": "#/components/responses/c5cccf7c524d4a0da759f98545473ea5"
         '400':
-          "$ref": "#/components/responses/4f5ee61101e46f868752c5cbb0f9b68a"
+          "$ref": "#/components/responses/002d8a9656c803e495e0a1ea528d9d78"
         '422':
-          "$ref": "#/components/responses/1367d8d1c3c952fdfa05598d96a776c3"
+          "$ref": "#/components/responses/727317a373b7cc09df4f785ce23fe1c4"
       security:
       - hmac: []
       deprecated: false
@@ -677,9 +715,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/21fe6ae572cfd4f88699d7ea9065867a"
+          "$ref": "#/components/responses/0c5097591b0ccb0ae7c91e51f6142804"
         '404':
-          "$ref": "#/components/responses/59fd9e7ad939bbb121880fb019a3a316"
+          "$ref": "#/components/responses/c0ee70edd15abb2090561c6f74217795"
       security:
       - hmac: []
       deprecated: false
@@ -714,9 +752,9 @@ paths:
       operationId: GET_api_health
       responses:
         '200':
-          "$ref": "#/components/responses/40d9b75ae67de0b77cf25883f557d0d6"
+          "$ref": "#/components/responses/c6c1b2ec530996c1125747ad30c8a74f"
         '503':
-          "$ref": "#/components/responses/f27444a9c7b748596d9512daf45d041c"
+          "$ref": "#/components/responses/e051c4200c47f4a7514009e14283c1f1"
       security:
       - hmac: []
       deprecated: false
