@@ -1,0 +1,19 @@
+# Grandfathered migration exceptions (OSCER-543)
+#
+# These are NOT a backlog to burn down. They are pre-convention migrations that
+# predate the migration convention documented in docs/reporting-app/migrations.md
+# and are grandfathered as documented exceptions: they have already run on Nava
+# environments without incident, and rewriting historical migrations risks worse
+# problems than it solves. The convention (and the cops below) apply FORWARD to
+# new migrations only.
+#
+# Do not add new entries here to silence the cop on a new migration. If a new
+# migration trips Rails/ReversibleMigration, fix the migration instead.
+
+# drop_table without a block, and remove_column without a type, are not
+# auto-reversible. See docs/reporting-app/migrations.md for the disposition.
+Rails/ReversibleMigration:
+  Exclude:
+    - 'db/migrate/20251009120656_remove_activity_report_case.rb'
+    - 'db/migrate/20251010203944_remove_exemption_case.rb'
+    - 'db/migrate/20251020141545_add_unique_indices_on_application_forms.rb'
