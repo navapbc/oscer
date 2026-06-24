@@ -85,7 +85,7 @@ RSpec.describe "/api/certifications", type: :request do
       url = outcome_api_certification_url(certification)
       get url, headers: auth_headers
       expect(response).to be_accepted
-      expect(JSON.parse(response.body)).to be_empty
+      expect(response.body).to eq '{"status":"pending"}'
       expect(response.headers['location']).not_to be_nil
       expect(response.headers['location']).to eq url
       expect(response).to match_openapi_doc(OPENAPI_DOC)
@@ -134,7 +134,7 @@ RSpec.describe "/api/certifications", type: :request do
           expect(response).to be_accepted
           expect(response.headers['location']).not_to be_nil
           expect(response.headers['location']).to match(/api\/certifications\/.*\/outcome/)
-          expect(JSON.parse(response.body)).to be_empty
+          expect(response.body).to eq '{"status":"pending"}'
           expect(response).to match_openapi_doc(OPENAPI_DOC)
         end
       end
