@@ -574,7 +574,7 @@
               {
                 "type": "hourly",
                 "category": "community_service",
-                "hours": "20",
+                "hours": "80",
                 "period_start": "2025-09-01",
                 "period_end": "2025-09-30",
                 "employer": "Community Center",
@@ -585,8 +585,14 @@
             "race_ethnicity": "Hispanic",
             "pregnancy_status": false
           },
-          "created_at": "1970-01-01T00:00:00.000Z",
-          "updated_at": "1970-01-01T00:00:00.000Z"
+          "outcome": {
+            "status": "compliant",
+            "reason": "hours_reported_compliant",
+            "source": "api",
+            "timestamp": "2025-10-01T00:00:00.040Z"
+          },
+          "created_at": "2025-10-01T00:00:00.000Z",
+          "updated_at": "2025-10-01T00:00:00.000Z"
         }
       },
       "ErrorResponseBody": {

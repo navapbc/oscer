@@ -220,7 +220,7 @@ RSpec.describe Certification, type: :model do
         create(:determination,
                subject: certification,
                outcome: 'not_compliant',
-               reasons: [ 'hours_reported_compliant' ],
+               reasons: [ 'hours_reported_insufficient' ],
                created_at: 2.days.ago)
         create(:determination,
                subject: certification,

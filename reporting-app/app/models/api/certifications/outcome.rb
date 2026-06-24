@@ -7,7 +7,7 @@ class Api::Certifications::Outcome < ValueObject
   attribute :timestamp, :datetime
 
   def self.from_certification(certification)
-    determination = Determination.where(subject: certification).first
+    determination = Determination.where(subject: certification).order(created_at: :desc).first
     return unless determination
 
     obj = new(timestamp: determination.created_at)
