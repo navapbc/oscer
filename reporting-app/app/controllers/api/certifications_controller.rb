@@ -55,7 +55,7 @@ class Api::CertificationsController < ApiController
       @certification = service.call
 
       if request.headers["prefer"] == "respond-async"
-      render json: { status: :pending }, status: :accepted, location: outcome_api_certification_url(@certification)
+        render json: { status: :pending }, status: :accepted, location: outcome_api_certification_url(@certification)
       else
         render_data(
           Api::Certifications::Response.from_certification(@certification),
