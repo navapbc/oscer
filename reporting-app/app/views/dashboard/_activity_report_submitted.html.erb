@@ -1,4 +1,12 @@
-<div class="grid-container">
-  <p class="usa-intro"><%= t(".intro") %></p>
-  <%= link_to t(".view_activity_report_button"), activity_report_application_form_path(activity_report), class: "usa-button" %>
-</div>
+<%# Activity report submitted (OSCER-642): info status + reported activity tables, with a
+    supplementary link to the submitted report. Compliance status cards land in #643. %>
+<%= render "dashboard/member_compliance_dashboard",
+           compliance: compliance,
+           activity_report: activity_report,
+           certification_case: certification_case,
+           state_alert: {
+             type: AlertComponent::TYPES::INFO,
+             message: t(".intro")
+           },
+           primary_action_label: t(".view_activity_report_button"),
+           primary_action_path: activity_report_application_form_path(activity_report) %>

@@ -135,7 +135,7 @@ RSpec.describe "dashboard/index", type: :view do
 
     it 'renders a button to continue the activity report' do
       render
-      expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.activity_report.continue_report_button'))
+      expect(rendered).to have_selector('a', text: I18n.t('dashboard.member_compliance.reporting.continue_report_button'))
     end
 
     it 'does not render the Figma get started callout' do
@@ -244,7 +244,22 @@ RSpec.describe "dashboard/index", type: :view do
   end
 
   context "with a submitted activity report" do
-    let (:activity_report_application_form) { create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
+    let(:activity_report_application_form) do
+      create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+    end
+    let(:lookback) { certification.certification_requirements.continuous_lookback_period }
+    let(:hours_table) { ".member-dashboard-compliance__table--hours" }
+    let(:income_table) { ".member-dashboard-compliance__table--income" }
+
+    def create_external_hourly(hours: 30)
+      create(:external_hourly_activity, member_id: certification.member_id, category: "employment",
+             hours: hours, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
+    end
+
+    def create_external_income(gross_income: 300)
+      create(:external_income_activity, member_id: certification.member_id, category: "employment",
+             gross_income: gross_income, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
+    end
 
     before do
       assign(:activity_report_application_form, activity_report_application_form)
@@ -267,6 +282,27 @@ RSpec.describe "dashboard/index", type: :view do
         'a',
         text: I18n.t('dashboard.member_compliance.exemption_alerts.not_started.button')
       )
+    end
+
+    context "with reported activities" do
+      before do
+        create_external_hourly
+        create_external_income
+        reassign_compliance_read_model
+      end
+
+      it "renders activity tables under the month-based heading" do
+        render
+        month = I18n.l(certification.certification_requirements.certification_date, format: :month_year)
+        expect(rendered).to have_selector(
+          "h3",
+          text: I18n.t("dashboard.member_compliance.activity_report_title", period: month)
+        )
+        expect(rendered).to have_css(hours_table)
+        expect(rendered).to have_css(income_table)
+        expect(rendered.index("member-dashboard-compliance__table--hours"))
+          .to be < rendered.index("member-dashboard-compliance__table--income")
+      end
     end
   end
 
@@ -432,6 +468,23 @@ RSpec.describe "dashboard/index", type: :view do
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.activity_report_denied.submit_new_activity_report_button'))
     end
 
+    context "with reported activities (OSCER-642: denied activities must not render a table)" do
+      let(:lookback) { certification.certification_requirements.continuous_lookback_period }
+
+      before do
+        create(:hourly_activity, activity_report_application_form_id: activity_report_application_form.id,
+               name: "Denied job", category: "employment", hours: 30, month: lookback.start.to_date)
+        reassign_compliance_read_model
+      end
+
+      it "does not render an activity table for the denied report, but keeps the view-report button" do
+        render
+        expect(rendered).not_to have_css(".member-dashboard-compliance__table--hours")
+        expect(rendered).not_to have_css(".member-dashboard-compliance__table--income")
+        expect(rendered).to have_selector("a", text: I18n.t("dashboard.activity_report_denied.view_activity_report_button"))
+      end
+    end
+
     context "when verification window ended" do
       before { certification_case.update_attribute!(:verification_window_end_date, 1.day.ago) }
 
@@ -550,7 +603,7 @@ RSpec.describe "dashboard/index", type: :view do
       )
     end
 
-    it 'renders the "Report your activities" heading and intro above the CTA' do
+    it 'renders the "Reported activities" heading and intro above the CTA' do
       render
       expect(rendered).to have_selector(
         'h2#member-compliance-reporting-heading',
@@ -667,6 +720,93 @@ RSpec.describe "dashboard/index", type: :view do
       render
       expect(rendered).not_to have_selector('a', text: I18n.t('dashboard.new_certification.current_period.report_activities_button'))
       expect(rendered).not_to have_css('.member-dashboard-compliance__onboarding')
+    end
+  end
+
+  context "with an in-progress activity report and reported activities (OSCER-642)" do
+    let(:activity_report_application_form) do
+      create(:activity_report_application_form, certification_case_id: certification_case.id)
+    end
+    let(:lookback) { certification.certification_requirements.continuous_lookback_period }
+    let(:hours_table) { ".member-dashboard-compliance__table--hours" }
+    let(:income_table) { ".member-dashboard-compliance__table--income" }
+
+    def create_external_hourly(hours: 30)
+      create(:external_hourly_activity, member_id: certification.member_id, category: "employment",
+             hours: hours, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
+    end
+
+    def create_external_income(gross_income: 300)
+      create(:external_income_activity, member_id: certification.member_id, category: "employment",
+             gross_income: gross_income, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
+    end
+
+    before do
+      assign(:activity_report_application_form, activity_report_application_form)
+    end
+
+
+    context "when only hours have been reported" do
+      before do
+        create_external_hourly
+        reassign_compliance_read_model
+      end
+
+      it "renders the hours table only, under the month-based activity report heading" do
+        render
+        month = I18n.l(certification.certification_requirements.certification_date, format: :month_year)
+        expect(rendered).to have_selector("h3", text: "#{month} Activity Report")
+        expect(rendered).to have_css(hours_table)
+        expect(rendered).not_to have_css(income_table)
+      end
+    end
+
+    context "when only income has been reported" do
+      before do
+        create_external_income
+        reassign_compliance_read_model
+      end
+
+      it "renders the income table only" do
+        render
+        expect(rendered).to have_css(income_table)
+        expect(rendered).not_to have_css(hours_table)
+      end
+    end
+
+    context "when both hours and income have been reported" do
+      before do
+        create_external_hourly
+        create_external_income
+        reassign_compliance_read_model
+      end
+
+      it "renders both tables, hours first" do
+        render
+        expect(rendered).to have_css(hours_table)
+        expect(rendered).to have_css(income_table)
+        expect(rendered.index("member-dashboard-compliance__table--hours"))
+          .to be < rendered.index("member-dashboard-compliance__table--income")
+      end
+    end
+
+    context "when no activities have been reported yet" do
+      it "renders the empty reporting copy and no tables" do
+        render
+        expect(rendered).to have_text(I18n.t("dashboard.member_compliance.reporting.no_activity_reported"))
+        expect(rendered).not_to have_css(hours_table)
+        expect(rendered).not_to have_css(income_table)
+      end
+    end
+
+
+    it "renders continue and submit CTAs while the report is unsubmitted" do
+      render
+      expect(rendered).to have_selector("a", text: I18n.t("dashboard.member_compliance.reporting.continue_report_button"))
+      expect(rendered).to have_link(
+        I18n.t("dashboard.member_compliance.reporting.submit_button"),
+        href: review_activity_report_application_form_path(activity_report_application_form)
+      )
     end
   end
 
