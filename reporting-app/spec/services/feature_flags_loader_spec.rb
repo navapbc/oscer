@@ -293,5 +293,51 @@ RSpec.describe FeatureFlagsLoader, type: :service do
         }.to raise_error(FeatureFlagsLoader::ConfigurationError, /realtime_progress.*unknown key.*descrption/i)
       end
     end
+
+    context "when a deployment entry name is not snake_case" do
+      it "rejects a kebab-case name (would define an uncallable predicate)" do
+        overrides = {
+          "realtime-progress" => { "env_var" => "FEATURE_REALTIME_PROGRESS", "default" => false }
+        }
+        expect {
+          described_class.build_registry(built_ins, overrides)
+        }.to raise_error(FeatureFlagsLoader::ConfigurationError, /realtime-progress.*snake_case/i)
+      end
+
+      it "rejects a name with a leading digit" do
+        overrides = {
+          "2fa" => { "env_var" => "FEATURE_2FA", "default" => false }
+        }
+        expect {
+          described_class.build_registry(built_ins, overrides)
+        }.to raise_error(FeatureFlagsLoader::ConfigurationError, /2fa.*snake_case/i)
+      end
+
+      it "rejects a CamelCase name" do
+        overrides = {
+          "BetaDashboard" => { "env_var" => "FEATURE_BETA_DASHBOARD", "default" => false }
+        }
+        expect {
+          described_class.build_registry(built_ins, overrides)
+        }.to raise_error(FeatureFlagsLoader::ConfigurationError, /BetaDashboard.*snake_case/i)
+      end
+
+      it "rejects a non-String name (e.g. an unquoted numeric YAML key) with a ConfigurationError, not a crash" do
+        overrides = {
+          42 => { "env_var" => "FEATURE_FORTY_TWO", "default" => false }
+        }
+        expect {
+          described_class.build_registry(built_ins, overrides)
+        }.to raise_error(FeatureFlagsLoader::ConfigurationError, /snake_case/i)
+      end
+
+      it "accepts a snake_case name with digits and underscores" do
+        overrides = {
+          "beta_dashboard_v2" => { "env_var" => "FEATURE_BETA_DASHBOARD_V2", "default" => false }
+        }
+        result = described_class.build_registry(built_ins, overrides)
+        expect(result.keys).to include(:beta_dashboard_v2)
+      end
+    end
   end
 end

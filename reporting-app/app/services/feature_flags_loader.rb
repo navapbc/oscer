@@ -29,6 +29,14 @@ module FeatureFlagsLoader
   # the built-ins follow: "FEATURE_" + uppercase letters/digits/underscores.
   ENV_VAR_PATTERN = /\AFEATURE_[A-Z0-9_]+\z/
 
+  # A deployment flag's name becomes the registry key and seeds the generated
+  # Features.<name>_enabled? predicate (config/initializers/feature_flags.rb,
+  # via define_method). define_method accepts any string, so a non-snake_case
+  # name (e.g. kebab-case "my-flag") would silently define an uncallable
+  # predicate rather than fail. Require snake_case so a bad name fails loudly at
+  # boot, matching the convention the built-ins already follow.
+  NAME_PATTERN = /\A[a-z][a-z0-9_]*\z/
+
   # The only keys a deployment-defined flag entry may declare. An entry with any
   # other key (e.g. a typo'd "descrption") fails loudly at boot rather than
   # silently carrying the stray key into the registry.
@@ -61,6 +69,11 @@ module FeatureFlagsLoader
     claimed_env_vars = built_ins.each_value.map { |config| config[:env_var] }
 
     overrides.each do |name, attrs|
+      # Validate the entry (incl. that the name is a snake_case String) before
+      # name.to_sym, so a non-String YAML key fails with a named ConfigurationError
+      # rather than a NoMethodError from to_sym.
+      validate_entry!(name, attrs)
+
       flag = name.to_sym
 
       if built_ins.key?(flag)
@@ -68,8 +81,6 @@ module FeatureFlagsLoader
               "feature_flags.#{name}: collides with an OSCER-shipped built-in. " \
               "Deployments cannot redefine or disable built-ins; toggle them via their env var instead."
       end
-
-      validate_entry!(name, attrs)
 
       env_var = attrs["env_var"]
       if claimed_env_vars.include?(env_var)
@@ -99,6 +110,12 @@ module FeatureFlagsLoader
   # Validate a single deployment-defined flag entry. Each entry requires an
   # `env_var` matching the FEATURE_<NAME> shape and a Boolean `default`.
   def validate_entry!(name, attrs)
+    unless name.is_a?(String) && NAME_PATTERN.match?(name)
+      raise ConfigurationError,
+            "feature_flags.#{name}: flag name must be snake_case matching #{NAME_PATTERN.source} " \
+            "(lowercase, starting with a letter), got #{name.inspect}"
+    end
+
     unless attrs.is_a?(Hash)
       raise ConfigurationError, "feature_flags.#{name}: expected Hash, got #{attrs.class}"
     end
