@@ -52,7 +52,32 @@ your overrides stay conflict-free across syncs (see [Keeping upstream syncs
 clean](#keeping-upstream-syncs-clean)).
 
 **Runtime toggles.** `FEATURE_*` environment variables turn features on/off per
-environment (see `config/initializers/feature_flags.rb`).
+environment. OSCER-shipped built-in flags are OSCER-owned and declared in code
+(`Features::FEATURE_FLAGS` in `config/initializers/feature_flags.rb`); toggle
+one by setting its env var (e.g. `FEATURE_DOC_AI=true`).
+
+**Deployment-defined flags.** To register a flag specific to your deployment
+without editing the OSCER-owned registry, add it to
+`config/custom/feature_flags.yml`. Entries are unioned with the built-ins at
+boot, so each gets the same `Features.<name>_enabled?` / `Features.enabled?`
+methods (and test helpers):
+
+```yaml
+# config/custom/feature_flags.yml
+realtime_progress:
+  env_var: FEATURE_REALTIME_PROGRESS   # required, must match FEATURE_<NAME>
+  default: false                       # required, Boolean
+  description: Enable real-time progress updates   # optional
+```
+
+The override file is optional: leave it empty or delete it for no flags. This
+surface is **additive only** — it can't redefine or disable a built-in (a
+colliding name fails loudly at boot); to toggle a built-in, use its env var.
+Malformed entries (missing/non-`FEATURE_*` `env_var`, missing/non-Boolean
+`default`) also raise a boot-time error naming the offending flag and field.
+Like other `config/custom/` files, OSCER rarely edits this, so your flags stay
+conflict-free across syncs (see [Keeping upstream syncs
+clean](#keeping-upstream-syncs-clean)).
 
 ## Locales and branding
 
@@ -166,6 +191,7 @@ New models exposed to controllers also need a Pundit policy
 | Override an email template | Branding / extension points | `branding.md` (mailer view) or `app/views/overrides/member_mailer/` |
 | Adjust the exemption list | Config | `config/custom/exemption_types.yml` |
 | Toggle a feature on/off | Config | `FEATURE_*` env var |
+| Add a deployment-specific feature flag | Config | `config/custom/feature_flags.yml` |
 | Override a view partial or layout | Extension points | `app/views/overrides/` |
 | Override determination logic / call an external service | Extension points | `app/services/custom/` |
 | Add a custom eligibility rule | Extension points | `app/models/rules/custom/` |

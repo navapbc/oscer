@@ -1,0 +1,53 @@
+# Deployment-owned override surface for deployment-defined feature flags.
+#
+# OSCER ships this file with no flags (the empty hash below); fill it in to
+# register feature flags specific to your deployment. Because OSCER never edits
+# this file, your flags stay conflict-free when you sync upstream changes.
+#
+# Loader: app/services/feature_flags_loader.rb unions this file's entries with
+# the OSCER-shipped built-ins declared in Features::FEATURE_FLAGS
+# (config/initializers/feature_flags.rb) at boot. See CUSTOMIZATION.md (Config)
+# for the customization model.
+#
+# ## Additive only
+#
+# This file can only ADD deployment-specific flags. It cannot redefine or
+# disable an OSCER-shipped built-in — an entry whose name collides with a
+# built-in raises a boot-time ConfigurationError. To toggle a built-in, set its
+# env var (e.g. FEATURE_DOC_AI). OSCER-shipped built-ins live in
+# Features::FEATURE_FLAGS.
+#
+# ## Shape
+#
+# The top-level hash is keyed by flag name (snake_case). Each entry requires:
+#
+#   - env_var: the controlling environment variable. Must match the
+#     FEATURE_<NAME> shape (uppercase letters, digits, underscores), matching
+#     the built-in convention. Required; the loader raises otherwise.
+#   - default: the value used when the env var is unset. Must be a Boolean
+#     (true or false), not a string. Required; the loader raises otherwise.
+#   - description: optional human-readable note.
+#
+# Each registered flag automatically gets a Features.<name>_enabled? method,
+# Features.enabled?(:<name>), and with_<name>_enabled / with_<name>_disabled
+# test helpers — same as the built-ins.
+#
+# ## Example
+#
+# Register a deployment-specific flag, off by default:
+#
+#     realtime_progress:
+#       env_var: FEATURE_REALTIME_PROGRESS
+#       default: false
+#       description: Enable WebSocket real-time progress updates
+#
+# At runtime, set FEATURE_REALTIME_PROGRESS=true to enable it, or rely on the
+# default when the env var is unset.
+#
+# ## Empty-file note
+#
+# If you want to ship no deployment-defined flags, leave the empty hash below
+# as-is, or delete the file entirely — the loader treats a missing file as no
+# flags.
+
+{}
