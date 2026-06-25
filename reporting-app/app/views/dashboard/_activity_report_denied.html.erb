@@ -1,9 +1,18 @@
-<div class="grid-container">
-  <%= render AlertComponent.new(type: AlertComponent::TYPES::ERROR, heading: t(".heading"), message: t(".intro"), heading_level: 3) %>
-  <div class="margin-top-3">
-    <%= link_to t(".view_activity_report_button"), activity_report_application_form_path(activity_report), class: "usa-button" %>
-    <%= link_to(t(".submit_new_activity_report_button"),
-          new_activity_report_application_form_path(certification_case_id: certification_case&.id),
-          class: "usa-button usa-button--outline") if should_show_submit_new_activity_report_form?(certification_case) %>
-  </div>
-</div>
+<%# Activity report denied (OSCER-642): error alert + supplementary link to the report and a
+    resubmit CTA while the window is open. The denied report's activities are intentionally NOT
+    rendered as a table (skip_reporting_section) — rejected activities shouldn't read as reported. %>
+<% show_resubmit = should_show_submit_new_activity_report_form?(certification_case) %>
+<%= render "dashboard/member_compliance_dashboard",
+           compliance: compliance,
+           activity_report: activity_report,
+           certification_case: certification_case,
+           skip_reporting_section: true,
+           state_alert: {
+             type: AlertComponent::TYPES::ERROR,
+             heading: t(".heading"),
+             message: t(".intro")
+           },
+           primary_action_label: t(".view_activity_report_button"),
+           primary_action_path: activity_report_application_form_path(activity_report),
+           secondary_action_label: (t(".submit_new_activity_report_button") if show_resubmit),
+           secondary_action_path: (new_activity_report_application_form_path(certification_case_id: certification_case&.id) if show_resubmit) %>

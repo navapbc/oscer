@@ -535,6 +535,7 @@ components:
       example:
         errors:
         - Not found
+    d41d8cd98f00b204e9800998ecf8427e: ''
     ece4f2c15f241af4536e1132d15a279a:
       type: object
       properties:
@@ -543,43 +544,67 @@ components:
       required:
       - status
   responses:
-    c5cccf7c524d4a0da759f98545473ea5:
-      description: Created Certification.
-      content:
-        application/json:
-          schema:
-            "$ref": "#/components/schemas/CertificationResponseBody"
-    002d8a9656c803e495e0a1ea528d9d78:
-      description: User error.
-      content:
-        application/json:
-          schema:
-            "$ref": "#/components/schemas/ErrorResponseBody"
-    727317a373b7cc09df4f785ce23fe1c4:
-      description: User error.
-      content:
-        application/json:
-          schema:
-            "$ref": "#/components/schemas/ErrorResponseBody"
-    0c5097591b0ccb0ae7c91e51f6142804:
+    bbc58451e136445e51391950dfc43e52:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    c0ee70edd15abb2090561c6f74217795:
+    413df1346fbd78e0037f734a39d43471:
+      description: Accepted
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
+    a9c14c94489f2b6c680cc7fff0d981b1:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    c6c1b2ec530996c1125747ad30c8a74f:
+    b705e43dde6e758df805ef7d6179338d:
+      description: Created Certification.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/CertificationResponseBody"
+    ae98cd8787744c5b8f9cebfa21ed232f:
+      description: Accepted
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
+    947f8afb8a1d8ec3dc134063f5d248b8:
+      description: User error.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/ErrorResponseBody"
+    2ea54980a924f49960f28c36d53b8b29:
+      description: User error.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/ErrorResponseBody"
+    2f9f0898599a96c58cc458e912534842:
+      description: A Certification
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/CertificationResponseBody"
+    cbcaae5073d0b2840911a702b0f2b7ec:
+      description: Not found.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/ErrorResponseBody"
+    6fd40f52462b56742fc75e6a3a029ce2:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    e051c4200c47f4a7514009e14283c1f1:
+    a9e22e7abc08f3257262c111ae4e414e:
       description: Response
       content:
         application/json:
@@ -594,6 +619,14 @@ components:
       schema:
         type: string
       style: simple
+    4f7cce241e43c9b4680b65e2612ab599:
+      name: prefer
+      in: header
+      description: Header to use when want async response - respond-async
+      required: false
+      schema:
+        type: string
+      style: simple
     8973e06a33e4a0e5595d813ac576e9d9:
       name: id
       in: path
@@ -603,7 +636,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    b0a6895c2aed42410dac8515655af4c3:
+    06d01602213d6565834a7d60cde121c5:
       description: The Certification data.
       content:
         application/json:
@@ -685,6 +718,25 @@ servers:
 - url: http://medicaid.navateam.com
   description: Dev
 paths:
+  "/api/certifications/{id}/outcome":
+    get:
+      tags:
+      - Certifications
+      summary: Retrieve a Certification record with an outcome or a 202 without
+      description: ''
+      operationId: GET_api_certifications_id_outcome
+      parameters:
+      - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
+      responses:
+        '200':
+          "$ref": "#/components/responses/bbc58451e136445e51391950dfc43e52"
+        '202':
+          "$ref": "#/components/responses/413df1346fbd78e0037f734a39d43471"
+        '404':
+          "$ref": "#/components/responses/a9c14c94489f2b6c680cc7fff0d981b1"
+      security:
+      - hmac: []
+      deprecated: false
   "/api/certifications":
     post:
       tags:
@@ -692,15 +744,19 @@ paths:
       summary: Create a Certification record
       description: ''
       operationId: POST_api_certifications
+      parameters:
+      - "$ref": "#/components/parameters/4f7cce241e43c9b4680b65e2612ab599"
       requestBody:
-        "$ref": "#/components/requestBodies/b0a6895c2aed42410dac8515655af4c3"
+        "$ref": "#/components/requestBodies/06d01602213d6565834a7d60cde121c5"
       responses:
         '201':
-          "$ref": "#/components/responses/c5cccf7c524d4a0da759f98545473ea5"
+          "$ref": "#/components/responses/b705e43dde6e758df805ef7d6179338d"
+        '202':
+          "$ref": "#/components/responses/ae98cd8787744c5b8f9cebfa21ed232f"
         '400':
-          "$ref": "#/components/responses/002d8a9656c803e495e0a1ea528d9d78"
+          "$ref": "#/components/responses/947f8afb8a1d8ec3dc134063f5d248b8"
         '422':
-          "$ref": "#/components/responses/727317a373b7cc09df4f785ce23fe1c4"
+          "$ref": "#/components/responses/2ea54980a924f49960f28c36d53b8b29"
       security:
       - hmac: []
       deprecated: false
@@ -715,9 +771,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/0c5097591b0ccb0ae7c91e51f6142804"
+          "$ref": "#/components/responses/2f9f0898599a96c58cc458e912534842"
         '404':
-          "$ref": "#/components/responses/c0ee70edd15abb2090561c6f74217795"
+          "$ref": "#/components/responses/cbcaae5073d0b2840911a702b0f2b7ec"
       security:
       - hmac: []
       deprecated: false
@@ -752,9 +808,9 @@ paths:
       operationId: GET_api_health
       responses:
         '200':
-          "$ref": "#/components/responses/c6c1b2ec530996c1125747ad30c8a74f"
+          "$ref": "#/components/responses/6fd40f52462b56742fc75e6a3a029ce2"
         '503':
-          "$ref": "#/components/responses/e051c4200c47f4a7514009e14283c1f1"
+          "$ref": "#/components/responses/a9e22e7abc08f3257262c111ae4e414e"
       security:
       - hmac: []
       deprecated: false

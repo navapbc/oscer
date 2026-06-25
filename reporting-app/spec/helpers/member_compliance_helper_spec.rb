@@ -179,6 +179,67 @@ RSpec.describe MemberComplianceHelper, type: :helper do
     end
   end
 
+  describe "#show_member_compliance_reporting_section?" do
+    it "is hidden for active/in-flight exemption states" do
+      [
+        MemberDashboardCompliance::EXEMPTION_APPROVED,
+        MemberDashboardCompliance::EXEMPTION_DRAFT,
+        MemberDashboardCompliance::EXEMPTION_PENDING_REVIEW
+      ].each do |state|
+        compliance = compliance_double(exemption_flow_state: state)
+        expect(helper.show_member_compliance_reporting_section?(compliance, activity_report: nil)).to be false
+      end
+    end
+
+    it "is hidden for a not-started member with no activity report (get-started screen)" do
+      compliance = compliance_double(exemption_flow_state: MemberDashboardCompliance::EXEMPTION_NOT_STARTED)
+      expect(helper.show_member_compliance_reporting_section?(compliance, activity_report: nil)).to be false
+    end
+
+    it "shows for a not-started member who has an activity report" do
+      compliance = compliance_double(exemption_flow_state: MemberDashboardCompliance::EXEMPTION_NOT_STARTED)
+      expect(helper.show_member_compliance_reporting_section?(compliance, activity_report: double)).to be true
+    end
+
+    it "shows for the denied-exemption frame" do
+      compliance = compliance_double(exemption_flow_state: MemberDashboardCompliance::EXEMPTION_DENIED)
+      expect(helper.show_member_compliance_reporting_section?(compliance, activity_report: nil)).to be true
+    end
+  end
+
+  describe "#member_compliance_activity_report_editable?" do
+    let(:open_compliance) { compliance_double(due_date: Date.current + 5) }
+    let(:closed_compliance) { compliance_double(due_date: Date.current - 5) }
+
+    it "is true for an unsubmitted report while the period is open" do
+      report = instance_double(ActivityReportApplicationForm, submitted?: false)
+      expect(helper.member_compliance_activity_report_editable?(open_compliance, activity_report: report)).to be true
+    end
+
+    it "is false once the report is submitted" do
+      report = instance_double(ActivityReportApplicationForm, submitted?: true)
+      expect(helper.member_compliance_activity_report_editable?(open_compliance, activity_report: report)).to be false
+    end
+
+    it "is false after the reporting period closes" do
+      report = instance_double(ActivityReportApplicationForm, submitted?: false)
+      expect(helper.member_compliance_activity_report_editable?(closed_compliance, activity_report: report)).to be false
+    end
+
+    it "is false when there is no report" do
+      expect(helper.member_compliance_activity_report_editable?(open_compliance, activity_report: nil)).to be false
+    end
+  end
+
+  describe "#member_compliance_source_label" do
+    it "maps the source tokens to staff-parity labels" do
+      expect(helper.member_compliance_source_label(MemberDashboardCompliance::SOURCE_SELF_REPORTED))
+        .to eq(I18n.t("certification_cases.common.source_self_reported"))
+      expect(helper.member_compliance_source_label(MemberDashboardCompliance::SOURCE_EXTERNAL_CE))
+        .to eq(I18n.t("certification_cases.common.source_external", state_name: helper.state_name))
+    end
+  end
+
   describe "#guard_member_compliance_exemption_outcome_state!" do
     it "does not raise for pending review, approved, or denied" do
       MemberComplianceHelper::EXEMPTION_OUTCOME_FLOW_STATES.each do |state|
