@@ -1,0 +1,23 @@
+# Override file to connect reporting-app to a locally running strata-service-document-ai stack.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.doc-ai.yml up
+#
+# The strata-service-document-ai stack must already be running (and have created its
+# default network) before you bring up this compose project.
+
+services:
+  reporting-app:
+    environment:
+      # Reach the doc-ai service by container name over the shared Docker network
+      # instead of localhost.
+      - DOC_AI_API_HOST=http://strata-service-document-ai-service:8080
+    networks:
+      - default
+      - strata-service-document-ai_default
+
+networks:
+  # Attach to the network created by the doc-ai service's own compose stack so
+  # the reporting-app container can resolve the strata-service-document-ai-service hostname.
+  strata-service-document-ai_default:
+    external: true

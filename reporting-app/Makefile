@@ -1,5 +1,6 @@
 .PHONY: \
 	release-build \
+	start-with-doc-ai \
 	test \
 	test-watch
 
@@ -132,6 +133,9 @@ start-native: db-up
 
 start-container: ## Run within Docker
 	$(DOCKER_CMD) compose $(DOCKER_COMPOSE_ARGS) up $(APP_NAME)
+
+start-with-doc-ai: ## Run within Docker, connected to the local doc-ai service network
+	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.doc-ai.yml up
 
 stop-containers: ## Stop Docker
 	$(DOCKER_CMD) compose $(DOCKER_COMPOSE_ARGS) down
