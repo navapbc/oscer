@@ -42,8 +42,11 @@ RSpec.describe FeatureFlagHelpers do
   end
 
   describe 'dynamic helper generation' do
+    # Iterates the merged REGISTRY (built-ins + deployment-defined flags), the
+    # same source the FeatureFlagHelpers module iterates, so deployment-defined
+    # flags get with_*_enabled/disabled helpers too.
     it 'generates enabled/disabled helpers for each registered flag' do
-      Features::FEATURE_FLAGS.each_key do |flag_name|
+      Features::REGISTRY.each_key do |flag_name|
         expect(test_instance).to respond_to("with_#{flag_name}_enabled")
         expect(test_instance).to respond_to("with_#{flag_name}_disabled")
       end
