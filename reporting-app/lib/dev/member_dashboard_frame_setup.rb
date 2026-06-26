@@ -13,7 +13,8 @@ module Dev
       "reporting_hours" => "Frame 6 — Reporting in progress (hours table)",
       "reporting_income" => "Frame 7 — Reporting in progress (income table)",
       "reporting_both" => "Frame 8 — Reporting in progress (hours + income tables)",
-      "reporting_submitted" => "Frame 9 — Activity report submitted (tables + under review)"
+      "reporting_submitted" => "Frame 9 — Activity report submitted (tables + under review)",
+      "reporting_multiple" => "Frame 10 — Multiple activity reports (older denied + newer submitted line items)"
     }.freeze
 
     class << self
@@ -72,6 +73,12 @@ module Dev
         ensure_income_determination!(certification)
         create_submitted_activity_report!(certification_case)
         create_external_income!(certification)
+      when "reporting_multiple"
+        ensure_income_determination!(certification)
+        denied_form = create_submitted_activity_report_with_activities!(certification_case)
+        deny_activity_report_form!(certification_case, denied_form)
+        create_submitted_activity_report_with_activities!(certification_case)
+        create_external_income!(certification)
       end
 
       summarize!(user, certification, certification_case, frame)
@@ -113,7 +120,7 @@ module Dev
         activity_report_approval_status_updated_at: nil
       )
 
-      destroy_activity_report!(certification_case)
+      destroy_activity_reports!(certification_case)
       destroy_exemption!(certification_case)
     end
 
@@ -126,13 +133,11 @@ module Dev
       ExternalIncomeActivity.for_member(certification.member_id).delete_all
     end
 
-    def destroy_activity_report!(certification_case)
-      form = ActivityReportApplicationForm.unscoped
+    def destroy_activity_reports!(certification_case)
+      ActivityReportApplicationForm.unscoped
         .includes(:determinations, :activities)
-        .find_by(certification_case_id: certification_case.id)
-      return if form.blank?
-
-      destroy_form!(form)
+        .where(certification_case_id: certification_case.id)
+        .find_each { |form| destroy_form!(form) }
     end
 
     def destroy_exemption!(certification_case)
@@ -222,6 +227,31 @@ module Dev
     def create_submitted_activity_report!(certification_case)
       FactoryBot.create(:activity_report_application_form, :with_submitted_status,
                         certification_case_id: certification_case.id)
+    end
+
+    # Creates a submitted activity report with member-entered line items (an hourly + an income
+    # activity) so the OSCER-690 line-item tables have rows to render.
+    def create_submitted_activity_report_with_activities!(certification_case)
+      form = FactoryBot.create(:activity_report_application_form, certification_case_id: certification_case.id)
+      add_line_item_activities!(form)
+      form.submit_application
+      form
+    end
+
+    def add_line_item_activities!(form)
+      FactoryBot.create(:hourly_activity, activity_report_application_form_id: form.id,
+                        name: "Community Service Org", category: "employment", hours: 45)
+      FactoryBot.create(:income_activity, activity_report_application_form_id: form.id,
+                        name: "Acme Employer", category: "employment", income: 120_000)
+    end
+
+    # Marks a submitted activity report as denied via its review task (per-form decision read by
+    # +activity_report_display_status+), mirroring how +deny_exemption!+ completes the exemption task.
+    def deny_activity_report_form!(certification_case, form)
+      task = ReviewActivityReportTask.find_by(application_form: form) ||
+             FactoryBot.create(:review_activity_report_task, application_form: form, case: certification_case)
+      task.update!(approval_status: :denied)
+      task.completed!
     end
 
     def create_external_hourly!(certification)

@@ -53,6 +53,20 @@ en:
         total_reported: "Total reported"
         required: "Required"
         additional_income_needed: "Additional income needed"
+      activity_line_items:
+        heading: "Activity line items"
+        submitted_on: "Submitted %{date}"
+        activity_type: "Activity type"
+        organization_name: "Organization name"
+        month: "Month"
+        hours_income: "Hours / Income"
+        supporting_documents: "Supporting documents"
+        no_documents: "No documents"
+        form_status:
+          in_progress: "In progress"
+          submitted: "Submitted"
+          approved: "Approved"
+          denied: "Denied"
       exemption_badges:
         exempt: "Exempt"
         not_exempt: "Not exempt"
