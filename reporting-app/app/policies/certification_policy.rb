@@ -9,6 +9,10 @@ class CertificationPolicy < ApplicationPolicy
     staff? || state_system?
   end
 
+  def outcome?
+    staff? || state_system?
+  end
+
   def create?
     staff? || state_system?
   end

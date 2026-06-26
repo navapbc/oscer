@@ -1,11 +1,10 @@
 <%# Does not qualify — delegates to the compliance dashboard (OSCER-337 / #640).
-    Resubmit routes through the exemption screener when eligible (OSCER-637). %>
-<% report_action = member_compliance_activity_report_action(compliance: compliance) %>
-
+    The reporting section (#642) renders the report CTAs; this frame only adds the
+    supplementary "View exemption request" action. Resubmit routes through the screener
+    (OSCER-637) inside the exemption block. %>
 <%= render "dashboard/member_compliance_dashboard",
            compliance: compliance,
-           primary_action_label: report_action[:label],
-           primary_action_path: report_action[:path],
+           activity_report: activity_report,
+           certification_case: certification_case,
            secondary_action_label: t(".view_exemption_button"),
-           secondary_action_path: exemption_application_form_path(compliance.exemption_application_form),
-           show_reporting_intro: true %>
+           secondary_action_path: exemption_application_form_path(compliance.exemption_application_form) %>

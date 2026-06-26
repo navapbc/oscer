@@ -3,13 +3,15 @@
 # Test helpers for feature flags
 # These helpers manipulate ENV directly and are ONLY safe in test environment
 #
-# Helpers are automatically generated for each flag in Features::FEATURE_FLAGS
+# Helpers are automatically generated for each flag in the merged
+# Features::REGISTRY (OSCER-shipped built-ins + deployment-defined flags from
+# config/custom/feature_flags.yml).
 # For example, a flag named :my_feature gets:
 #   - with_my_feature_enabled { }
 #   - with_my_feature_disabled { }
 module FeatureFlagHelpers
   # Dynamically generate with_<feature>_enabled/disabled helpers for each flag
-  Features::FEATURE_FLAGS.each do |flag_name, config|
+  Features::REGISTRY.each do |flag_name, config|
     # Generate: with_<flag_name>_enabled { }
     define_method("with_#{flag_name}_enabled") do |&block|
       with_temp_env_var(config[:env_var], "true", &block)

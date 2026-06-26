@@ -38,8 +38,33 @@ class MemberDashboardCompliance
   EXEMPTION_APPROVED = "approved"
   EXEMPTION_DENIED = "denied"
 
+  # Source tokens for the activity tables (mapped to display labels by
+  # +MemberComplianceHelper#member_compliance_source_label+).
+  SOURCE_EXTERNAL_CE = "external_ce"
+  SOURCE_SELF_REPORTED = "self_reported"
+
   MemberIncomeRow = Struct.new(
     :descriptor,
+    :source_token,
+    :activity_type_label,
+    :amount,
+    keyword_init: true
+  )
+
+  # Rows for the data-driven activity tables (OSCER-642). Distinct from +MemberIncomeRow+
+  # (which powers the income progress cards and is gated on +show_income_summary+): these
+  # carry an +organization_name+ column to match the staff case-view tables and are built
+  # ungated so the dashboard mirrors staff "show whatever was reported" behavior.
+  HourTableRow = Struct.new(
+    :organization_name,
+    :source_token,
+    :activity_type_label,
+    :hours,
+    keyword_init: true
+  )
+
+  IncomeTableRow = Struct.new(
+    :organization_name,
     :source_token,
     :activity_type_label,
     :amount,
@@ -138,6 +163,43 @@ class MemberDashboardCompliance
     @exemption_history ||= build_exemption_history
   end
 
+  # --- Data-driven activity tables (OSCER-642) ---
+  # Ungated, lazy mirrors of the staff case view: tables surface whatever activity the
+  # member actually reported (hours, income, or both), regardless of +show_income_summary+
+  # (which stays scoped to the progress cards in #643). Each runs its queries on first read,
+  # so the get-started / exemption / awaiting-report paths never trigger them.
+
+  def hours_has_data?
+    hour_table_rows.any?
+  end
+
+  def income_has_data?
+    income_table_rows.any?
+  end
+
+  # @return [Array<HourTableRow>]
+  def hour_table_rows
+    @hour_table_rows ||= build_hour_table_rows
+  end
+
+  # @return [Array<IncomeTableRow>]
+  def income_table_rows
+    @income_table_rows ||= build_income_table_rows
+  end
+
+  # Footer totals for the income table. Independent of the gated +total_income+ card reader.
+  def income_table_total
+    income_table_rows.sum(BigDecimal("0")) { |row| row.amount || BigDecimal("0") }
+  end
+
+  def income_table_target
+    IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY.to_d
+  end
+
+  def income_table_additional_needed
+    [ income_table_target - income_table_total, BigDecimal("0") ].max
+  end
+
   private
 
   def income_data
@@ -177,6 +239,87 @@ class MemberDashboardCompliance
     }
   end
 
+  # Mirrors the staff hours table: external (state-provided) rows first, then member
+  # self-reported activity rows. +ExternalHourlyActivity+ has no employer metadata, so the
+  # organization name falls back to "<Category> Activity".
+  def build_hour_table_rows
+    external_rows = external_hourly_activities
+    member_rows = HoursComplianceDeterminationService
+      .member_hour_activities_for_certification(@certification, application_form: @activity_report_application_form)
+      .to_a
+
+    rows = external_rows.map do |row|
+      cat = row.category.to_s.titleize
+      HourTableRow.new(
+        organization_name: external_activity_org_name(cat),
+        source_token: SOURCE_EXTERNAL_CE,
+        activity_type_label: cat,
+        hours: row.hours
+      )
+    end
+
+    rows + member_rows.map do |activity|
+      HourTableRow.new(
+        organization_name: activity.name,
+        source_token: SOURCE_SELF_REPORTED,
+        activity_type_label: activity.category.to_s.titleize,
+        hours: activity.read_attribute(:hours)
+      )
+    end
+  end
+
+  # Mirrors the staff income table. Unlike the gated +build_member_income_rows+ (cards), the
+  # organization column shows employer metadata / activity name to match staff column semantics.
+  def build_income_table_rows
+    external_rows = external_income_activities
+    member_rows = IncomeComplianceDeterminationService
+      .member_income_activities_for_certification(@certification, application_form: @activity_report_application_form)
+      .to_a
+
+    rows = external_rows.map do |row|
+      cat = row.category.to_s.titleize
+      IncomeTableRow.new(
+        organization_name: organization_name_for_external_income(row, cat),
+        source_token: SOURCE_EXTERNAL_CE,
+        activity_type_label: cat,
+        amount: BigDecimal(row.gross_income.to_s)
+      )
+    end
+
+    rows + member_rows.map do |activity|
+      IncomeTableRow.new(
+        organization_name: activity.name,
+        source_token: SOURCE_SELF_REPORTED,
+        activity_type_label: activity.category.to_s.titleize,
+        amount: activity.income.nil? ? nil : BigDecimal(activity.income.dollar_amount.to_s)
+      )
+    end
+  end
+
+  def external_hourly_activities
+    return [] if @lookback.blank?
+
+    ExternalHourlyActivity
+      .for_member(@certification.member_id)
+      .within_period(@lookback)
+      .order(:period_start, :created_at)
+      .to_a
+  end
+
+  def external_income_activities
+    return [] if @lookback.blank?
+
+    ExternalIncomeActivity
+      .for_member(@certification.member_id)
+      .within_period(@lookback)
+      .order(:period_start, :reported_at)
+      .to_a
+  end
+
+  def external_activity_org_name(category_name)
+    "#{category_name} #{I18n.t('certification_cases.common.activity_label')}"
+  end
+
   def percent_toward_requirement(total, target)
     return 0.0 if target.nil? || target <= 0
 
@@ -191,7 +334,7 @@ class MemberDashboardCompliance
       cat = row.category.to_s.titleize
       rows << MemberIncomeRow.new(
         descriptor: I18n.t("dashboard.member_compliance.external_income_descriptor", category: cat),
-        source_token: "external_ce",
+        source_token: SOURCE_EXTERNAL_CE,
         activity_type_label: cat,
         amount: BigDecimal(row.gross_income.to_s)
       )
@@ -203,7 +346,7 @@ class MemberDashboardCompliance
 
       rows << MemberIncomeRow.new(
         descriptor: I18n.t("dashboard.member_compliance.self_reported_income_descriptor", category: cat),
-        source_token: "self_reported",
+        source_token: SOURCE_SELF_REPORTED,
         activity_type_label: cat,
         amount: amt
       )
@@ -310,5 +453,11 @@ class MemberDashboardCompliance
 
   def unknown_exemption_type
     [ "exemption", I18n.t("dashboard.member_compliance.exemption_type_unknown") ]
+  end
+
+  # Mirrors the staff +certification_cases/_income_reported_table+ organization column:
+  # employer metadata when present, otherwise "<Category> Activity".
+  def organization_name_for_external_income(row, category_name)
+    row.metadata&.dig("employer").presence || external_activity_org_name(category_name)
   end
 end
