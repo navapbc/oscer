@@ -74,6 +74,57 @@ RSpec.describe CertificationCase, type: :model do
         certification_case.accept_activity_report(user, application_form)
       end.to change { Strata::AuditLine.where(actor: user, subject: certification, action: "case.activity_report.approved").count }.by(1)
     end
+
+    context 'when the member reported income (no hours)' do
+      let(:certification) { Certification.find(certification_case.certification_id) }
+      let(:application_form) { create(:activity_report_application_form, certification_case_id: certification_case.id) }
+      let(:lookback) { certification.certification_requirements.continuous_lookback_period }
+
+      before do
+        create(:income_activity,
+               activity_report_application_form_id: application_form.id,
+               month: lookback.start.to_date.beginning_of_month,
+               income: 70_000)
+      end
+
+      it 'records an income-based compliant determination' do
+        certification_case.accept_activity_report(user, application_form)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.outcome).to eq("compliant")
+        expect(determination.decision_method).to eq("manual")
+        expect(determination.ce_calculation_type).to eq(Determination::CALCULATION_TYPE_INCOME_BASED)
+        expect(determination.reasons).to include("income_reported_compliant")
+        expect(determination.determination_data["total_income"]).to eq(700.0)
+      end
+    end
+
+    context 'when the member reported both income and hours' do
+      let(:certification) { Certification.find(certification_case.certification_id) }
+      let(:application_form) { create(:activity_report_application_form, certification_case_id: certification_case.id) }
+      let(:lookback) { certification.certification_requirements.continuous_lookback_period }
+
+      before do
+        create(:income_activity,
+               activity_report_application_form_id: application_form.id,
+               month: lookback.start.to_date.beginning_of_month,
+               income: 70_000)
+        create(:work_activity,
+               activity_report_application_form_id: application_form.id,
+               month: lookback.start.to_date.beginning_of_month,
+               hours: 90)
+      end
+
+      it 'records a combined compliant determination carrying both tracks' do
+        certification_case.accept_activity_report(user, application_form)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.outcome).to eq("compliant")
+        expect(determination.decision_method).to eq("manual")
+        expect(determination.ce_calculation_type).to eq(Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED)
+        expect(determination.reasons).to include("hours_reported_compliant", "income_reported_compliant")
+      end
+    end
   end
 
   describe '#deny_activity_report' do
