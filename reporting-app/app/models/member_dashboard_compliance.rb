@@ -120,6 +120,24 @@ class MemberDashboardCompliance
     latest_determination&.ce_calculation_type
   end
 
+  # Display mode for the current-period compliance summary partial
+  # (+dashboard/_compliance_status+). Derived from +show_income_summary+ and
+  # +ce_calculation_type+ so the view switches on a single intent-revealing token
+  # instead of re-deriving the determination semantics inline.
+  #
+  # - +:hours_only+ — hours-based CE (or income hidden / pre-build legacy path): hours block only.
+  # - +:income_only+ — income-based CE: income block only (hours omitted, OSCER-716).
+  # - +:combined+ — combined CE, satisfied by hours OR income (also the pre-determination
+  #   default, where +ce_calculation_type+ is +nil+ but income is assumed visible).
+  #
+  # @return [Symbol] one of +:hours_only+, +:income_only+, +:combined+
+  def compliance_summary_mode
+    return :hours_only unless show_income_summary
+    return :income_only if ce_calculation_type == Determination::CALCULATION_TYPE_INCOME_BASED
+
+    :combined
+  end
+
   # --- Lazy income fields ---
   # All six readers return +nil+ when +show_income_summary+ is false; otherwise they share a
   # single memoized aggregation (one external + one member query, computed once).
