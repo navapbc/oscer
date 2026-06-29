@@ -22,6 +22,23 @@ locals {
   service_config          = local.environment_config.service_config
 
   service_name = "${local.prefix}${local.service_config.service_name}"
+
+  # The `source_bucket` config value (generally) contains a raw service-specific
+  # bucket name for the "real"/non-temporary environment. For temporary
+  # environments, these buckets will generally be automatically prefixed with
+  # the temporary environment identifier in this module, so add that to the base
+  # `source_bucket` value unless the config specifies not to (i.e., it is a
+  # shared/fixed bucket that _should_ trigger jobs across different
+  # environments).
+  #
+  # This is a little fragile and relies on naming conventions; if those change,
+  # this will need to change as well.
+  prefixed_file_upload_jobs = {
+    for job_name, job_config in local.service_config.file_upload_jobs :
+    job_name => job_config.source_bucket_apply_workspace_prefix
+    ? merge(job_config, { source_bucket = "${local.prefix}${job_config.source_bucket}" })
+    : job_config
+  }
 }
 
 terraform {
@@ -30,7 +47,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 5.81.0, < 6.47.1"
+      version = "~> 6.50.0"
     }
   }
 
@@ -77,7 +94,7 @@ module "service" {
   desired_instance_count   = local.service_config.desired_instance_count
   enable_command_execution = local.service_config.enable_command_execution
 
-  file_upload_jobs = local.service_config.file_upload_jobs
+  file_upload_jobs = local.prefixed_file_upload_jobs
   scheduled_jobs   = local.environment_config.scheduled_jobs
 
   db_vars = module.app_config.has_database ? {
@@ -98,9 +115,11 @@ module "service" {
       BUCKET_NAME           = local.bucket_name
       GOOD_JOB_QUEUE_PREFIX = local.service_name
     },
+    local.document_data_extraction_environment_variables,
     local.identity_provider_environment_variables,
     local.sso_environment_variables,
     local.notifications_environment_variables,
+    local.sms_environment_variables,
     local.service_config.extra_environment_variables,
     # PR preview workspaces use the ALB URL for E2E (service_endpoint) while APP_HOST
     # stays the stable dev domain for OIDC. Skip canonical host middleware so redirects
@@ -129,11 +148,19 @@ module "service" {
     {
       storage_access = module.storage.access_policy_arn
     },
+    module.app_config.enable_document_data_extraction ? {
+      dde_input_bucket_access  = module.dde_input_bucket[0].access_policy_arn
+      dde_output_bucket_access = module.dde_output_bucket[0].access_policy_arn,
+      dde_bedrock_access       = module.dde[0].access_policy_arn
+    } : {},
     module.app_config.enable_identity_provider ? {
       identity_provider_access = module.identity_provider_client[0].access_policy_arn,
     } : {},
     module.app_config.enable_notifications ? {
       notifications_access = module.notifications[0].access_policy_arn,
+    } : {},
+    local.sms_config != null ? {
+      sms_notifications_access = module.notifications_sms[0].access_policy_arn,
     } : {},
   )
 
