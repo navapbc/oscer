@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "rails_helper"
+require "support/query_count_matchers"
 
 # Focused on the OSCER-642 data-driven activity-table inputs. The gated income/hours
 # *card* readers are covered by spec/services/member_dashboard_compliance_service_spec.rb.
@@ -29,6 +30,16 @@ RSpec.describe MemberDashboardCompliance do
 
   let(:lookback) { certification.certification_requirements.continuous_lookback_period }
 
+  def capture_sql
+    queries = []
+    counter = lambda do |_name, _started, _finished, _unique_id, payload|
+      unless payload[:name] == "SCHEMA" || payload[:sql] =~ /^(BEGIN|COMMIT|SAVEPOINT|RELEASE)/
+        queries << payload[:sql]
+      end
+    end
+    ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { yield }
+    queries
+  end
 
   def create_external_hourly(hours:, category: "employment")
     create(:external_hourly_activity,
@@ -125,6 +136,10 @@ RSpec.describe MemberDashboardCompliance do
       expect(rows.last.organization_name).to eq("Acme Co")
       expect(rows.last.hours).to eq(12)
     end
+
+    it "sums displayed hour rows for the table footer total" do
+      expect(read_model.hour_table_total).to eq(52) # 40 external + 12 self-reported
+    end
   end
 
   describe "#income_table_rows and footer totals" do
@@ -151,6 +166,85 @@ RSpec.describe MemberDashboardCompliance do
       expect(read_model.income_table_target).to eq(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY.to_d)
       expect(read_model.income_table_additional_needed)
         .to eq([ read_model.income_table_target - BigDecimal("350"), BigDecimal("0") ].max)
+    end
+  end
+
+  describe "#activity_reports_for_line_items and #activity_line_items? (OSCER-690)" do
+    # A case only permits one in-progress form at a time, so the older form is submitted before
+    # the newer one is created. Events are stubbed to a no-op so submitting does not spin up a
+    # pending review task that would block the second form (mirrors certification_cases_spec).
+    def create_form_with_activity(name:, submitted: false)
+      traits = submitted ? [ :with_submitted_status ] : []
+      form = create(:activity_report_application_form, *traits, certification_case_id: certification_case.id)
+      create(:hourly_activity, activity_report_application_form_id: form.id, name: name,
+             category: "employment", hours: 12, month: lookback.start.to_date)
+      form
+    end
+
+    context "with no activity report forms on the case" do
+      it "returns no forms and reports no line items" do
+        expect(read_model.activity_reports_for_line_items).to eq([])
+        expect(read_model.activity_line_items?).to be false
+      end
+    end
+
+    context "with multiple forms on the case" do
+      before { allow(Strata::EventManager).to receive(:publish) }
+
+      let!(:older_form) do
+        form = create_form_with_activity(name: "Older Org", submitted: true)
+        form.update_column(:created_at, 2.days.ago)
+        form
+      end
+      let!(:newer_form) do
+        form = create_form_with_activity(name: "Newer Org")
+        form.update_column(:created_at, 1.day.ago)
+        form
+      end
+
+      it "returns every form ordered newest first" do
+        expect(read_model.activity_reports_for_line_items.map(&:id)).to eq([ newer_form.id, older_form.id ])
+      end
+
+      it "reports that line items exist" do
+        expect(read_model.activity_line_items?).to be true
+      end
+
+      it "checks line-item presence without eager-loading attachments" do
+        fresh_model = MemberDashboardComplianceService.build(
+          certification: certification,
+          certification_case: certification_case,
+          activity_report_application_form: newer_form,
+          exemption_application_form: nil,
+          member_status: member_status
+        )
+
+        gate_result = nil
+        gate_sql = capture_sql { gate_result = fresh_model.activity_line_items? }
+        full_sql = capture_sql { fresh_model.activity_reports_for_line_items }
+
+        expect(gate_result).to be true
+        expect(gate_sql.first).to include("activities")
+        expect(gate_sql.join).not_to include("active_storage")
+        expect(full_sql.join).to include("active_storage")
+      end
+
+      it "eager-loads activities and supporting documents (no N+1 while rendering rows)" do
+        forms = read_model.activity_reports_for_line_items
+
+        expect {
+          forms.each { |form| form.activities.each { |activity| activity.supporting_documents.map(&:filename) } }
+        }.not_to exceed_query_limit(0)
+      end
+    end
+
+    context "with a form that has no activities" do
+      let!(:empty_form) { create(:activity_report_application_form, certification_case_id: certification_case.id) }
+
+      it "returns the form but reports no line items" do
+        expect(read_model.activity_reports_for_line_items.map(&:id)).to eq([ empty_form.id ])
+        expect(read_model.activity_line_items?).to be false
+      end
     end
   end
 end
