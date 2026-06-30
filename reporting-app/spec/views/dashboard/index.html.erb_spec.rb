@@ -417,6 +417,62 @@ RSpec.describe "dashboard/index", type: :view do
     end
   end
 
+  context "with an approved activity report — \"Report this month's activities\" gating (OSCER-718)" do
+    let(:activity_report_application_form) do
+      create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+    end
+    let(:get_started_section) { 'section[aria-label="Get started"]' }
+
+    # Drive the form to an "approved" flow_status without closing the case, so case status and
+    # due date can be varied independently (the real accept_activity_report path always closes).
+    def approve_report!
+      ReviewActivityReportTask.find_by(application_form: activity_report_application_form).completed!
+      certification_case.update!(activity_report_approval_status: "approved")
+    end
+
+    before do
+      assign(:activity_report_application_form, activity_report_application_form)
+      assign(:certification_case, certification_case)
+    end
+
+    context "when the case is open and the reporting due date has not passed" do
+      before { approve_report! }
+
+      it "shows the get-started block" do
+        render
+        expect(rendered).to have_css(get_started_section)
+      end
+    end
+
+    context "when the case is open but the reporting due date has passed" do
+      let(:certification) do
+        create(:certification, member_data: member_data,
+               certification_requirements: build(:certification_certification_requirements, due_date: 1.day.ago.to_date))
+      end
+
+      before { approve_report! }
+
+      it "hides the get-started block but keeps the rest of the approved frame" do
+        render
+        expect(rendered).not_to have_css(get_started_section)
+        expect(rendered).to have_selector('a', text: I18n.t('dashboard.activity_report_approved.view_activity_report_button'))
+      end
+    end
+
+    context "when the case is closed" do
+      before do
+        approve_report!
+        certification_case.close!
+      end
+
+      it "hides the get-started block regardless of the due date, keeping the rest of the approved frame" do
+        render
+        expect(rendered).not_to have_css(get_started_section)
+        expect(rendered).to have_selector('a', text: I18n.t('dashboard.activity_report_approved.view_activity_report_button'))
+      end
+    end
+  end
+
   context "with an approved exemption request" do
     let (:exemption_application_form) { create(:exemption_application_form, :with_submitted_status, :incarceration, certification_case_id: certification_case.id) }
 
