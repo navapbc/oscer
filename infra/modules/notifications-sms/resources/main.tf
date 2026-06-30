@@ -5,7 +5,7 @@ data "aws_region" "current" {}
 # CloudWatch Log Group for SMS delivery receipts
 resource "aws_cloudwatch_log_group" "sms_logs" {
   name              = "/aws/sms-voice/${var.name}/sms-notifications/delivery-receipts"
-  retention_in_days = 30
+  retention_in_days = 365
 
   # TODO(https://github.com/navapbc/template-infra/issues/164) Encrypt with customer managed KMS key
   # checkov:skip=CKV_AWS_158:Encrypt service logs with customer key in future work
@@ -42,7 +42,7 @@ resource "aws_iam_role_policy" "cloudformation_sms_permissions" {
           "sms-voice:*"
         ]
         Resource = [
-          "arn:aws:sms-voice:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"
+          "arn:aws:sms-voice:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:*"
         ]
       },
       {

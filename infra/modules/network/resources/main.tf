@@ -13,7 +13,7 @@ module "interface" {
 
 module "aws_vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "5.2.0"
+  version = "6.6.1"
 
   name = var.name
   azs  = local.availability_zones
@@ -41,4 +41,12 @@ module "aws_vpc" {
 
   enable_dns_hostnames = true
   enable_dns_support   = true
+
+  # Automating the version pin updates needs a bit more work, so stick with
+  # version tags for now. The Terraform registry does itself pin the commit
+  # first seen for the version tag and only serves that commit for future
+  # requests, but there are still ways the version could get replaced with
+  # enough time, so some client-side protection is likely still worthwhile.
+  #
+  # checkov:skip=CKV_TF_1:There are multiple approaches to pinning the Terraform module source hash that need evaluated
 }
