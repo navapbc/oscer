@@ -67,6 +67,8 @@ gem "bootsnap", require: false
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 gem "image_processing", "~> 1.14"
+# image_processing 2.0 makes ruby-vips a peer dependency; declare the Vips backend explicitly.
+gem "ruby-vips", "~> 2.0"
 
 # Authentication and Authorization
 gem "aws-sdk-cognitoidentityprovider", "~> 1.145"
