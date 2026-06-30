@@ -1,7 +1,7 @@
 data "aws_region" "current" {}
 
 locals {
-  image_registry = "${aws_ecr_repository.app.registry_id}.dkr.ecr.${data.aws_region.current.name}.amazonaws.com"
+  image_registry = "${aws_ecr_repository.app.registry_id}.dkr.ecr.${data.aws_region.current.region}.amazonaws.com"
 }
 
 resource "aws_ecr_repository" "app" {
@@ -16,6 +16,8 @@ resource "aws_ecr_repository" "app" {
     encryption_type = "KMS"
     kms_key         = aws_kms_key.ecr_kms.arn
   }
+
+  force_delete = false
 }
 
 resource "aws_ecr_repository_policy" "image_access" {
@@ -84,4 +86,6 @@ data "aws_iam_policy_document" "image_access" {
 resource "aws_kms_key" "ecr_kms" {
   enable_key_rotation = true
   description         = "KMS key for ECR repository ${var.name}"
+
+  # checkov:skip=CKV2_AWS_64:The default key policy is acceptable
 }

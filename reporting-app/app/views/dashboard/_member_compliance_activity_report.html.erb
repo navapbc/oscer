@@ -1,0 +1,6 @@
+<%# Per-form member activity line-item table (OSCER-690). Delegates to the shared line-item
+    partial with member-safe options: no Doc AI columns; supporting documents link to download. %>
+<%= render "activity_report_application_forms/activity_report_line_items_table",
+           activity_report: local_assigns.fetch(:activity_report),
+           table_i18n_scope: "dashboard.member_compliance.activity_line_items",
+           link_documents: true %>

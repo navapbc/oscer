@@ -4,6 +4,13 @@
                compliance: compliance,
                certification_case: certification_case %>
   </div>
+<% elsif local_assigns[:compliance].present? %>
+  <%# Not-exempt member with an activity report in progress (OSCER-642): the compliance
+      shell renders the reporting section + data-driven activity tables + continue/submit. %>
+  <%= render "dashboard/member_compliance_dashboard",
+             compliance: compliance,
+             activity_report: activity_report,
+             certification_case: certification_case %>
 <% else %>
   <div>
     <%= render "dashboard/compliance_status",
