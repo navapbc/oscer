@@ -162,5 +162,6 @@ Beyond this README, you should also refer to the [`docs/reporting-app` directory
 - [Technical foundation](../docs/reporting-app/technical-foundation.md)
 - [Software architecture](../docs/reporting-app/software-architecture.md)
 - [Authentication & Authorization](../docs/reporting-app/auth.md)
+- [Configuration & operations](../docs/reporting-app/configuration.md)
 - [Internationalization (i18n)](../docs/reporting-app/internationalization.md)
 - [Container images](../docs/reporting-app/container-images.md)

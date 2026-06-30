@@ -1,17 +1,20 @@
 # frozen_string_literal: true
 
 module Dev
-  # Local-only helper to put a member account into OSCER-337 exemption dashboard frames
-  # (#640 outcomes, #641 draft) for manual QA at /dashboard.
-  #
-  # Scoped to exemption dashboard frames (#640 outcomes, #641 draft). Reporting/progress
-  # frames are added by their own slices (#642, #643).
+  # Local-only helper to put a member account into OSCER-337 member dashboard frames
+  # (#640 exemption outcomes, #641 draft, #642 reporting activity tables) for manual QA
+  # at /dashboard. Progress cards land with #643.
   class MemberDashboardFrameSetup
     FRAMES = {
       "exemption_draft" => "Frame 2 — Exemption draft in progress",
       "exemption_pending_review" => "Frame 3 — Exemption under review",
       "exemption_approved" => "Frame 4 — Exempt",
-      "exemption_denied" => "Frame 5 — Not exempt"
+      "exemption_denied" => "Frame 5 — Not exempt",
+      "reporting_hours" => "Frame 6 — Reporting in progress (hours table)",
+      "reporting_income" => "Frame 7 — Reporting in progress (income table)",
+      "reporting_both" => "Frame 8 — Reporting in progress (hours + income tables)",
+      "reporting_submitted" => "Frame 9 — Activity report submitted (tables + under review)",
+      "reporting_multiple" => "Frame 10 — Multiple activity reports (older denied + newer submitted line items)"
     }.freeze
 
     class << self
@@ -37,6 +40,7 @@ module Dev
       @member_user = user
       reset_dashboard_state!(certification_case)
       reset_determinations!(certification)
+      reset_external_activities!(certification)
 
       case frame
       when "exemption_draft"
@@ -52,6 +56,29 @@ module Dev
         form = create_submitted_exemption!(certification_case)
         deny_exemption!(certification_case, form)
         ensure_income_determination!(certification)
+      when "reporting_hours"
+        ensure_hours_determination!(certification)
+        create_in_progress_activity_report!(certification_case)
+        create_external_hourly!(certification)
+      when "reporting_income"
+        ensure_income_determination!(certification)
+        create_in_progress_activity_report!(certification_case)
+        create_external_income!(certification)
+      when "reporting_both"
+        ensure_income_determination!(certification)
+        create_in_progress_activity_report!(certification_case)
+        create_external_hourly!(certification)
+        create_external_income!(certification)
+      when "reporting_submitted"
+        ensure_income_determination!(certification)
+        create_submitted_activity_report!(certification_case)
+        create_external_income!(certification)
+      when "reporting_multiple"
+        ensure_income_determination!(certification)
+        denied_form = create_submitted_activity_report_with_activities!(certification_case)
+        deny_activity_report_form!(certification_case, denied_form)
+        create_submitted_activity_report_with_activities!(certification_case)
+        create_external_income!(certification)
       end
 
       summarize!(user, certification, certification_case, frame)
@@ -93,7 +120,7 @@ module Dev
         activity_report_approval_status_updated_at: nil
       )
 
-      destroy_activity_report!(certification_case)
+      destroy_activity_reports!(certification_case)
       destroy_exemption!(certification_case)
     end
 
@@ -101,13 +128,16 @@ module Dev
       Determination.where(subject: certification).delete_all
     end
 
-    def destroy_activity_report!(certification_case)
-      form = ActivityReportApplicationForm.unscoped
-        .includes(:determinations, :activities)
-        .find_by(certification_case_id: certification_case.id)
-      return if form.blank?
+    def reset_external_activities!(certification)
+      ExternalHourlyActivity.for_member(certification.member_id).delete_all
+      ExternalIncomeActivity.for_member(certification.member_id).delete_all
+    end
 
-      destroy_form!(form)
+    def destroy_activity_reports!(certification_case)
+      ActivityReportApplicationForm.unscoped
+        .includes(:determinations, :activities)
+        .where(certification_case_id: certification_case.id)
+        .find_each { |form| destroy_form!(form) }
     end
 
     def destroy_exemption!(certification_case)
@@ -178,6 +208,70 @@ module Dev
         },
         determined_at: certification.certification_requirements.certification_date
       )
+    end
+
+    def ensure_hours_determination!(certification)
+      certification.record_determination!(
+        decision_method: :automated,
+        reasons: [ "hours_reported_compliant" ],
+        outcome: MemberStatus::NOT_COMPLIANT,
+        determination_data: { "calculation_type" => Determination::CALCULATION_TYPE_HOURS_BASED },
+        determined_at: certification.certification_requirements.certification_date
+      )
+    end
+
+    def create_in_progress_activity_report!(certification_case)
+      FactoryBot.create(:activity_report_application_form, certification_case_id: certification_case.id)
+    end
+
+    def create_submitted_activity_report!(certification_case)
+      FactoryBot.create(:activity_report_application_form, :with_submitted_status,
+                        certification_case_id: certification_case.id)
+    end
+
+    # Creates a submitted activity report with member-entered line items (an hourly + an income
+    # activity) so the OSCER-690 line-item tables have rows to render.
+    def create_submitted_activity_report_with_activities!(certification_case)
+      form = FactoryBot.create(:activity_report_application_form, certification_case_id: certification_case.id)
+      add_line_item_activities!(form)
+      form.submit_application
+      form
+    end
+
+    def add_line_item_activities!(form)
+      FactoryBot.create(:hourly_activity, activity_report_application_form_id: form.id,
+                        name: "Community Service Org", category: "employment", hours: 45)
+      FactoryBot.create(:income_activity, activity_report_application_form_id: form.id,
+                        name: "Acme Employer", category: "employment", income: 120_000)
+    end
+
+    # Marks a submitted activity report as denied via its review task (per-form decision read by
+    # +activity_report_display_status+), mirroring how +deny_exemption!+ completes the exemption task.
+    def deny_activity_report_form!(certification_case, form)
+      task = ReviewActivityReportTask.find_by(application_form: form) ||
+             FactoryBot.create(:review_activity_report_task, application_form: form, case: certification_case)
+      task.update!(approval_status: :denied)
+      task.completed!
+    end
+
+    def create_external_hourly!(certification)
+      lookback = certification.certification_requirements.continuous_lookback_period
+      FactoryBot.create(:external_hourly_activity,
+                        member_id: certification.member_id,
+                        category: "employment",
+                        hours: 40,
+                        period_start: lookback.start.to_date,
+                        period_end: lookback.start.to_date.end_of_month)
+    end
+
+    def create_external_income!(certification)
+      lookback = certification.certification_requirements.continuous_lookback_period
+      FactoryBot.create(:external_income_activity,
+                        member_id: certification.member_id,
+                        category: "employment",
+                        gross_income: 300,
+                        period_start: lookback.start.to_date,
+                        period_end: lookback.start.to_date.end_of_month)
     end
 
     def summarize!(user, certification, certification_case, frame)

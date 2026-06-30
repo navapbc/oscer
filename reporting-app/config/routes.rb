@@ -51,7 +51,9 @@ Rails.application.routes.draw do
     # can add other mixed API/UI controllers here
   end
   namespace :api do
-    resources :certifications, only: [ :create, :show ]
+    resources :certifications, only: [ :create, :show ] do
+      get "outcome", on: :member
+    end
     resources :certification_batch_uploads, only: [ :create, :show ]
     get "health" => "healthcheck#index"
   end
