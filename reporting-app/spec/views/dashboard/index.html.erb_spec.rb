@@ -60,6 +60,24 @@ RSpec.describe "dashboard/index", type: :view do
            ))
   end
 
+  def assign_previous_completed_certification_period
+    older_certification = create(:certification, member_data: member_data)
+    create(:certification_case, certification: older_certification)
+    create(:determination,
+           subject: older_certification,
+           outcome: "compliant",
+           decision_method: "manual",
+           reasons: [ "hours_reported_compliant" ])
+    older_certification.update!(created_at: 2.months.ago)
+    certification.update!(created_at: 1.day.ago)
+    assign(:all_certifications, [ certification, older_certification ])
+    assign(:previous_completed_certifications,
+           MemberStatusService.previous_completed_certifications(
+             [ certification, older_certification ],
+             current_certification: certification
+           ))
+  end
+
   context 'with no current exemption or activity report' do
     it 'renders the Figma welcome hero copy via the dashboard layout banner' do
       render inline: <<~ERB.squish, type: :erb
@@ -417,30 +435,17 @@ RSpec.describe "dashboard/index", type: :view do
     end
 
     context "with a completed prior certification period (OSCER-717)" do
-      let(:older_certification) { create(:certification, member_data: member_data) }
-
-      before do
-        create(:certification_case, certification: older_certification)
-        create(:determination,
-               subject: older_certification,
-               outcome: "compliant",
-               decision_method: "manual",
-               reasons: [ "hours_reported_compliant" ])
-        older_certification.update!(created_at: 2.months.ago)
-        certification.update!(created_at: 1.day.ago)
-        assign(:all_certifications, [ certification, older_certification ])
-        assign(:previous_completed_certifications,
-               MemberStatusService.previous_completed_certifications(
-                 [ certification, older_certification ],
-                 current_certification: certification
-               ))
-      end
-
-      it 'renders the previously-completed requirements section exactly once' do
+      before { assign_previous_completed_certification_period }
+      it 'renders the previously-completed requirements section exactly once after the approved-frame CTA' do
         render
         title = I18n.t('dashboard.index.previous_certifications.title')
+        view_report_label = I18n.t('dashboard.activity_report_approved.view_activity_report_button')
+
         expect(rendered.scan(title).length).to eq(1)
-        expect(rendered).to have_selector('h2', text: title)
+        expect(rendered).to have_css('section[aria-labelledby="previous-certifications-heading"]')
+        expect(rendered).to have_selector('h2#previous-certifications-heading', text: title)
+        expect(rendered.index(view_report_label)).to be < rendered.index(title)
+        expect(rendered).not_to have_css('.member-dashboard-previous-certifications')
       end
     end
   end
@@ -967,25 +972,7 @@ RSpec.describe "dashboard/index", type: :view do
   end
 
   context "with a completed prior certification period" do
-    let(:older_certification) { create(:certification, member_data: member_data) }
-
-    before do
-      create(:certification_case, certification: older_certification)
-      create(:determination,
-             subject: older_certification,
-             outcome: "compliant",
-             decision_method: "manual",
-             reasons: [ "hours_reported_compliant" ])
-      older_certification.update!(created_at: 2.months.ago)
-      certification.update!(created_at: 1.day.ago)
-      assign(:all_certifications, [ certification, older_certification ])
-      assign(:previous_completed_certifications,
-             MemberStatusService.previous_completed_certifications(
-               [ certification, older_certification ],
-               current_certification: certification
-             ))
-    end
-
+    before { assign_previous_completed_certification_period }
     it 'renders a section for previous certifications' do
       render
       expect(rendered).to have_selector('h2', text: I18n.t('dashboard.index.previous_certifications.title'))
