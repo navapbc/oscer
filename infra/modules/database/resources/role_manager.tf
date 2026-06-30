@@ -15,10 +15,12 @@ resource "aws_lambda_function" "role_manager" {
 
   filename         = local.role_manager_archive_path
   source_code_hash = filebase64sha256(local.role_manager_archive_path)
-  runtime          = "python3.9"
   handler          = "role_manager.lambda_handler"
   role             = aws_iam_role.role_manager.arn
   kms_key_arn      = aws_kms_key.role_manager.arn
+
+  # renovate: aws-lambda-runtime
+  runtime = "python3.14"
 
   reserved_concurrent_executions = 1
 
@@ -61,6 +63,8 @@ data "aws_kms_key" "default_ssm_key" {
 resource "aws_kms_key" "role_manager" {
   description         = "Key for Lambda function ${local.role_manager_name}"
   enable_key_rotation = true
+
+  # checkov:skip=CKV2_AWS_64:The default key policy is acceptable
 }
 
 data "aws_secretsmanager_secret" "db_password" {
@@ -117,7 +121,7 @@ resource "aws_iam_role_policy" "role_manager_access_to_db_password" {
         Effect = "Allow"
         Action = ["ssm:GetParameter"]
         Resource = [
-          "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.id}:parameter${local.db_password_param_name}"
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.id}:parameter${local.db_password_param_name}"
         ]
       }
     ]
