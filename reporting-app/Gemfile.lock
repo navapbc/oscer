@@ -742,6 +742,7 @@ DEPENDENCIES
   rubocop-rspec_rails
   ruby-lsp
   ruby-lsp-rails
+  ruby-vips (~> 2.0)
   selenium-webdriver
   simplecov
   sprockets-rails
