@@ -1,0 +1,22 @@
+<%# Activity line items (OSCER-690): one per-activity table per submission, newest first.
+    Rendered inside _member_compliance_reporting when that section shows, or from
+    _member_compliance_dashboard when skip_reporting_section (denied activity-report frame).
+    Each table is preceded by a "Submitted {date}" subheading and a status badge only when the
+    case has multiple forms with activities (parity with staff certification_cases#show). %>
+<% compliance = local_assigns.fetch(:compliance) %>
+<% forms = compliance.activity_reports_for_line_items.select { |form| form.activities.any? } %>
+<% multiple_forms = forms.size > 1 %>
+
+<section class="member-dashboard-compliance__line-items margin-top-4" aria-labelledby="member-compliance-line-items-heading">
+  <h2 id="member-compliance-line-items-heading" class="font-heading-lg margin-bottom-2"><%= t("dashboard.member_compliance.activity_line_items.heading") %></h2>
+  <% forms.each do |form| %>
+    <% if multiple_forms %>
+      <% status = activity_report_display_status(form) %>
+      <h3 class="margin-top-3">
+        <%= t("dashboard.member_compliance.activity_line_items.submitted_on", date: l(form.submitted_at || form.updated_at)) %>
+        <span class="usa-tag <%= activity_report_status_class(status, "bg") %>"><%= member_compliance_activity_report_status_label(status) %></span>
+      </h3>
+    <% end %>
+    <%= render "dashboard/member_compliance_activity_report", activity_report: form %>
+  <% end %>
+</section>

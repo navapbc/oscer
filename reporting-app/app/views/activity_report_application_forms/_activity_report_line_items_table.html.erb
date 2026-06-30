@@ -1,0 +1,97 @@
+<%# Shared per-form activity line-item table for staff case view and member dashboard (OSCER-690).
+    Locals:
+      activity_report (required)
+      table_i18n_scope (required) — e.g. "activity_report_application_forms.staff_activity_report"
+      link_documents: false — member dashboard links filenames to blob download
+      has_document_preview: false — staff task view preview buttons
+      show_evidence_source_icon: false — Doc AI evidence icon in the type column
+      show_confidence: false — Doc AI confidence column
+      confidence_by_activity: nil %>
+<%
+  activity_report = local_assigns.fetch(:activity_report)
+  table_i18n_scope = local_assigns.fetch(:table_i18n_scope)
+  link_documents = local_assigns.fetch(:link_documents, false)
+  has_document_preview = local_assigns.fetch(:has_document_preview, false)
+  show_evidence_source_icon = local_assigns.fetch(:show_evidence_source_icon, false)
+  show_confidence = local_assigns.fetch(:show_confidence, false)
+  confidence_by_activity = local_assigns[:confidence_by_activity]
+%>
+<table class="usa-table usa-table--borderless width-full">
+  <thead>
+    <tr>
+      <th scope="col"><%= t("#{table_i18n_scope}.activity_type") %></th>
+      <th scope="col"><%= t("#{table_i18n_scope}.organization_name") %></th>
+      <th scope="col"><%= t("#{table_i18n_scope}.month") %></th>
+      <th scope="col" style="width: 90px"><%= t("#{table_i18n_scope}.hours_income") %></th>
+      <th scope="col"><%= t("#{table_i18n_scope}.supporting_documents") %></th>
+      <% if show_confidence %>
+        <th scope="col" class="text-right"><%= t("#{table_i18n_scope}.confidence") %></th>
+      <% end %>
+      <% if has_document_preview %>
+        <th scope="col"><%= t("#{table_i18n_scope}.preview") %></th>
+      <% end %>
+    </tr>
+  </thead>
+  <tbody>
+    <% activity_report.activities.each do |activity| %>
+      <tr>
+        <td>
+          <% if show_evidence_source_icon %>
+            <% icon_info = evidence_source_icon(activity.evidence_source) %>
+            <%= uswds_icon(icon_info[:icon], label: icon_info[:label], css_class: icon_info[:color], style: "vertical-align: middle") %>
+          <% end %>
+          <%= activity.category.titleize %>
+        </td>
+        <td><%= activity.name %></td>
+        <td><%= activity.month && l(activity.month, format: :month_abbr_year) %></td>
+        <td class="text-right">
+          <% if activity.is_a?(IncomeActivity) %>
+            <%= number_to_currency(activity.income&.dollar_amount, precision: 0) %>
+          <% else %>
+            <%= activity.hours %>
+          <% end %>
+        </td>
+        <td>
+          <% if activity.supporting_documents.any? %>
+            <ul class="usa-list usa-list--unstyled margin-0">
+              <% activity.supporting_documents.each do |document| %>
+                <li>
+                  <% if link_documents %>
+                    <%= link_to document.filename, rails_blob_path(document, disposition: "attachment") %>
+                  <% else %>
+                    <%= document.filename %>
+                  <% end %>
+                </li>
+              <% end %>
+            </ul>
+          <% else %>
+            <p class="margin-0"><%= t("#{table_i18n_scope}.no_documents") %></p>
+          <% end %>
+        </td>
+        <% if show_confidence %>
+          <td class="text-right text-no-wrap">
+            <%= confidence_cell_content(activity, confidence_by_activity) %>
+          </td>
+        <% end %>
+        <% if has_document_preview %>
+          <td>
+            <% if activity.supporting_documents.any? %>
+              <% activity.supporting_documents.each do |document| %>
+                <button type="button"
+                        class="usa-button usa-button--unstyled"
+                        aria-label="<%= t("#{table_i18n_scope}.preview_icon_label", filename: document.filename) %>"
+                        data-action="document-preview#select"
+                        data-document-preview-url-param="<%= rails_blob_path(document, disposition: "inline") %>"
+                        data-document-preview-filename-param="<%= document.filename %>"
+                        data-document-preview-content-type-param="<%= document.content_type %>"
+                        data-document-preview-activity-id-param="<%= activity.id %>">
+                  <%= uswds_icon("visibility", size: 3) %>
+                </button>
+              <% end %>
+            <% end %>
+          </td>
+        <% end %>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

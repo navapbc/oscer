@@ -32,6 +32,14 @@
                certification_case: certification_case %>
   <% end %>
 
+  <%# Per-submission line items (OSCER-690) when the reporting section is skipped (denied
+      activity-report frame): summary tables are hidden but line items still surface what was
+      reported (recommendation A). When the reporting section renders, line items live inside it. %>
+  <% if local_assigns[:skip_reporting_section] &&
+        show_member_compliance_activity_line_items?(compliance, activity_report: activity_report) %>
+    <%= render "dashboard/member_compliance_activity_line_items", compliance: compliance %>
+  <% end %>
+
   <% if local_assigns[:primary_action_label].present? && local_assigns[:primary_action_path].present? ||
         local_assigns[:secondary_action_label].present? && local_assigns[:secondary_action_path].present? %>
     <div class="member-dashboard-compliance__exemption-action margin-top-3">

@@ -65,6 +65,28 @@ module MemberComplianceHelper
     review_activity_report_application_form_path(activity_report)
   end
 
+  # --- Activity line items (OSCER-690) ---
+
+  # The per-submission line-item tables render whenever the member has at least one activity
+  # report form with activities on the case and the dashboard is in a reporting state. The
+  # exemption-state gating mirrors +show_member_compliance_reporting_section?+ (hidden while an
+  # exemption is active/in-flight or on the get-started screen), but unlike the reporting
+  # section this is intentionally independent of +skip_reporting_section+: the denied
+  # activity-report frame skips the compliance summary tables yet still shows line items so the
+  # member can review what was rejected (OSCER-690, recommendation A).
+  def show_member_compliance_activity_line_items?(compliance, activity_report:)
+    return false unless show_member_compliance_reporting_section?(compliance, activity_report: activity_report)
+
+    compliance.activity_line_items?
+  end
+
+  # Maps a form's display status to its member-facing badge label (parity with the staff
+  # +certification_cases.show.form_status.*+ copy). +activity_report_display_status+ and
+  # +activity_report_status_class+ are shared with the staff view (ActivityReportApplicationFormsHelper).
+  def member_compliance_activity_report_status_label(status)
+    t("dashboard.member_compliance.activity_line_items.form_status.#{status}", default: status.to_s.humanize)
+  end
+
   # Maps an activity-table row source token to its display label (parity with the staff tables).
   def member_compliance_source_label(source_token)
     case source_token

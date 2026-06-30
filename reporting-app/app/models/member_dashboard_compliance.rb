@@ -187,6 +187,11 @@ class MemberDashboardCompliance
     @income_table_rows ||= build_income_table_rows
   end
 
+  # Footer total for the hours table. Sums displayed rows so the footer matches visible data.
+  def hour_table_total
+    hour_table_rows.sum(0) { |row| row.hours || 0 }
+  end
+
   # Footer totals for the income table. Independent of the gated +total_income+ card reader.
   def income_table_total
     income_table_rows.sum(BigDecimal("0")) { |row| row.amount || BigDecimal("0") }
@@ -200,7 +205,51 @@ class MemberDashboardCompliance
     [ income_table_target - income_table_total, BigDecimal("0") ].max
   end
 
+  # --- Activity line items (OSCER-690) ---
+  # Every activity report form on the case, newest first, for the per-submission line-item
+  # tables. Mirrors the staff case-view ordering (+created_at: :desc+). Lazy: queried on first
+  # read, so dashboard paths that don't render line items never trigger it. Activities and their
+  # supporting-document attachments are eager-loaded via the form's +default_scope+ and
+  # +Activity+'s +with_attached_supporting_documents+ scope, so iterating rows + documents in the
+  # view stays N+1-free.
+  #
+  # @return [Array<ActivityReportApplicationForm>]
+  def activity_reports_for_line_items
+    @activity_reports_for_line_items ||= build_activity_reports_for_line_items
+  end
+
+  # True when at least one form on the case has activities — the line-items render gate. A form
+  # with no activities (e.g. a freshly created in-progress report) contributes no line items.
+  # Uses a lightweight existence check; the full eager-loaded query runs only when rendering.
+  def activity_line_items?
+    return @activity_line_items_present if defined?(@activity_line_items_present)
+
+    @activity_line_items_present = activity_line_items_exist?
+  end
+
   private
+
+  def activity_line_items_exist?
+    return false if @certification_case.blank?
+
+    ActivityReportApplicationForm
+      .where(certification_case_id: @certification_case.id)
+      .joins(:activities)
+      .exists?
+  end
+
+  def build_activity_reports_for_line_items
+    return [] if @certification_case.blank?
+
+    # +ActivityReportApplicationForm+'s default scope already eager-loads +:activities+, but the
+    # per-activity supporting-document attachments are not chained through it. Eager-load the
+    # attachment blobs explicitly so the line-item view renders every form's documents N+1-free.
+    ActivityReportApplicationForm
+      .where(certification_case_id: @certification_case.id)
+      .order(created_at: :desc)
+      .includes(activities: { supporting_documents_attachments: :blob })
+      .to_a
+  end
 
   def income_data
     return nil unless show_income_summary

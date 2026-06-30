@@ -304,6 +304,37 @@ RSpec.describe "dashboard/index", type: :view do
           .to be < rendered.index("member-dashboard-compliance__table--income")
       end
     end
+
+    context "with reported activities on the submitted report (OSCER-642 + OSCER-690)" do
+      let(:lookback) { certification.certification_requirements.continuous_lookback_period }
+      let(:activity_report_application_form) do
+        form = create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        activity = create(:hourly_activity, activity_report_application_form_id: form.id, name: "Submitted Employer",
+               category: "employment", hours: 25, month: lookback.start.to_date)
+        activity.supporting_documents.attach(
+          fixture_file_upload("spec/fixtures/files/test_document_1.pdf", "application/pdf")
+        )
+        form
+      end
+
+      before do
+        create(:external_hourly_activity, member_id: certification.member_id, category: "employment",
+               hours: 30, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
+        assign(:activity_report_application_form, activity_report_application_form)
+        reassign_compliance_read_model
+      end
+
+      it "renders compliance summary tables, line items, and a supporting-document download link" do
+        render
+        period = I18n.l(certification.certification_requirements.certification_date, format: :month_year)
+        expect(rendered).to have_selector("h3", text: I18n.t("dashboard.member_compliance.activity_report_title", period: period))
+        expect(rendered).to have_css(".member-dashboard-compliance__table--hours")
+        expect(rendered).to have_selector("h2#member-compliance-line-items-heading",
+                                          text: I18n.t("dashboard.member_compliance.activity_line_items.heading"))
+        expect(rendered).to have_selector(".member-dashboard-compliance__line-items td", text: "Submitted Employer")
+        expect(rendered).to have_link("test_document_1.pdf", href: %r{/rails/active_storage/blobs/})
+      end
+    end
   end
 
   context "with a submitted exemption request" do
@@ -482,6 +513,13 @@ RSpec.describe "dashboard/index", type: :view do
         expect(rendered).not_to have_css(".member-dashboard-compliance__table--hours")
         expect(rendered).not_to have_css(".member-dashboard-compliance__table--income")
         expect(rendered).to have_selector("a", text: I18n.t("dashboard.activity_report_denied.view_activity_report_button"))
+      end
+
+      it "still renders the Activity line items section (OSCER-690 recommendation A) even though summary tables are skipped" do
+        render
+        expect(rendered).to have_selector("h2#member-compliance-line-items-heading",
+                                          text: I18n.t("dashboard.member_compliance.activity_line_items.heading"))
+        expect(rendered).to have_selector(".member-dashboard-compliance__line-items", text: "Denied job")
       end
     end
 
@@ -807,6 +845,96 @@ RSpec.describe "dashboard/index", type: :view do
         I18n.t("dashboard.member_compliance.reporting.submit_button"),
         href: review_activity_report_application_form_path(activity_report_application_form)
       )
+    end
+  end
+
+  context "with activity line items (OSCER-690)" do
+    let(:lookback) { certification.certification_requirements.continuous_lookback_period }
+    let(:line_items_section) { ".member-dashboard-compliance__line-items" }
+
+    context "with a single in-progress form that has reported activities" do
+      let(:activity_report_application_form) do
+        form = create(:activity_report_application_form, certification_case_id: certification_case.id)
+        create(:hourly_activity, activity_report_application_form_id: form.id, name: "Helping Hands",
+               category: "employment", hours: 20, month: lookback.start.to_date)
+        form
+      end
+
+      before do
+        assign(:activity_report_application_form, activity_report_application_form)
+        reassign_compliance_read_model
+      end
+
+      it "renders the line items heading and a table with the activity's organization and month" do
+        render
+        expect(rendered).to have_selector("h2#member-compliance-line-items-heading",
+                                          text: I18n.t("dashboard.member_compliance.activity_line_items.heading"))
+        expect(rendered).to have_selector("#{line_items_section} td", text: "Helping Hands")
+        expect(rendered).to have_selector("#{line_items_section} td",
+                                          text: I18n.l(lookback.start.to_date, format: :month_abbr_year))
+      end
+
+      it "does not render a per-form submitted-date subheading or status badge for a single form" do
+        render
+        expect(rendered).not_to have_selector("#{line_items_section} h3")
+        expect(rendered).not_to have_selector("#{line_items_section} .usa-tag")
+      end
+    end
+
+    context "with multiple forms on the case (older denied + newer submitted)" do
+      # Built entirely in this before (not via let!) so the no-op event stub is in place before
+      # any form is submitted: submitting must not spin up a pending review task that would block
+      # a second form on the same case (mirrors certification_cases_spec). The older form's review
+      # task records a per-form "denied" decision; the newer form is submitted. The shared outer
+      # before assigns a nil activity report first; this reassigns the newer form afterward.
+      let(:activity_report_application_form) { nil }
+
+      before do
+        allow(Strata::EventManager).to receive(:publish)
+
+        denied_form = create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        create(:hourly_activity, activity_report_application_form_id: denied_form.id, name: "Older Employer Inc",
+               category: "employment", hours: 30, month: lookback.start.to_date)
+        task = create(:review_activity_report_task, application_form: denied_form, case: certification_case)
+        task.approval_status = :denied
+        task.completed!
+
+        submitted_form = create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        create(:income_activity, activity_report_application_form_id: submitted_form.id, name: "Newer Employer Inc",
+               category: "employment", income: 50_000, month: lookback.start.to_date)
+
+        denied_form.update_column(:created_at, 2.days.ago)
+        submitted_form.update_column(:created_at, 1.day.ago)
+
+        assign(:activity_report_application_form, submitted_form)
+        reassign_compliance_read_model
+      end
+
+      it "renders one table per form with both organization names" do
+        render
+        expect(rendered).to have_selector(line_items_section, text: "Older Employer Inc")
+        expect(rendered).to have_selector(line_items_section, text: "Newer Employer Inc")
+      end
+
+      it "labels each form with a status badge (denied + submitted) so re-submissions are distinguishable" do
+        render
+        expect(rendered).to have_selector("#{line_items_section} .usa-tag",
+                                          text: I18n.t("dashboard.member_compliance.activity_line_items.form_status.denied"))
+        expect(rendered).to have_selector("#{line_items_section} .usa-tag",
+                                          text: I18n.t("dashboard.member_compliance.activity_line_items.form_status.submitted"))
+      end
+
+      it "orders forms newest first (submitted above denied)" do
+        render
+        expect(rendered.index("Newer Employer Inc")).to be < rendered.index("Older Employer Inc")
+      end
+
+      it "omits the staff-only Doc AI confidence column even when Doc AI is enabled" do
+        with_doc_ai_enabled do
+          render
+          expect(rendered).not_to have_text(I18n.t("activity_report_application_forms.staff_activity_report.confidence"))
+        end
+      end
     end
   end
 
