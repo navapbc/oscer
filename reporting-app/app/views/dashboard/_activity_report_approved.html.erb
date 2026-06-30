@@ -24,16 +24,14 @@
   </section>
 <% end %>
 
-<div class="grid-container">
-  <%= render "dashboard/compliance_status",
-             current_period: current_period,
-             target_hours: target_hours,
-             period_end_date: period_end_date,
-             total_hours_reported: total_hours_reported,
-             hours_needed: hours_needed || 0 %>
+<%= render "dashboard/compliance_status",
+           current_period: current_period,
+           target_hours: target_hours,
+           period_end_date: period_end_date,
+           total_hours_reported: total_hours_reported,
+           hours_needed: hours_needed || 0 %>
 
-  <%# Action Button %>
-  <div class="margin-bottom-4">
-    <%= link_to t(".view_activity_report_button"), activity_report_application_form_path(activity_report), class: "usa-button" %>
-  </div>
+<%# Action Button %>
+<div class="margin-bottom-4">
+  <%= link_to t(".view_activity_report_button"), activity_report_application_form_path(activity_report), class: "usa-button" %>
 </div>
