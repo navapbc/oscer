@@ -436,6 +436,7 @@ RSpec.describe "dashboard/index", type: :view do
 
     context "with a completed prior certification period (OSCER-717)" do
       before { assign_previous_completed_certification_period }
+
       it 'renders the previously-completed requirements section exactly once after the approved-frame CTA' do
         render
         title = I18n.t('dashboard.index.previous_certifications.title')
@@ -973,6 +974,7 @@ RSpec.describe "dashboard/index", type: :view do
 
   context "with a completed prior certification period" do
     before { assign_previous_completed_certification_period }
+
     it 'renders a section for previous certifications' do
       render
       expect(rendered).to have_selector('h2', text: I18n.t('dashboard.index.previous_certifications.title'))
