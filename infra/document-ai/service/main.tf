@@ -88,7 +88,7 @@ data "aws_elb_hosted_zone_id" "main" {}
 # Document AI service
 # ---------------------------------------------------------------------------
 module "document_ai" {
-  source = "git@github.com:navapbc/strata-service-document-ai//deploy/terraform/aws?ref=main"
+  source = "git@github.com:navapbc/strata-service-document-ai//deploy/terraform/aws?ref=48554af1334cb8450be79d70a153af715529cc20"
 
   project_name = local.doc_ai_project_name
   environment  = local.environment
