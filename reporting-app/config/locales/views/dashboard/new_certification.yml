@@ -16,10 +16,6 @@ en:
         report_activities_button: "Report activities for the current period"
         request_exemption_button: "Request exemption"
         view_activity_report_button: "View activity report"
-      previous_requirements:
-        header: "Previously completed requirements"
-        intro: "Review previously-completed certifications."
-        button: "Review previous certifications"
       activities:
         header: "Activities & Exemptions"
       activity_report:
