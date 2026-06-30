@@ -182,6 +182,36 @@ RSpec.describe DashboardHelper, type: :helper do
     end
   end
 
+  describe "#show_activity_report_approved_get_started?" do
+    it "returns true when the case is open and the due date has not passed" do
+      expect(helper.show_activity_report_approved_get_started?(certification_case, certification)).to be(true)
+    end
+
+    it "returns true when the due date is today" do
+      certification.certification_requirements.due_date = Date.current
+
+      expect(helper.show_activity_report_approved_get_started?(certification_case, certification)).to be(true)
+    end
+
+    it "returns false when the due date has passed" do
+      certification.certification_requirements.due_date = 1.day.ago.to_date
+
+      expect(helper.show_activity_report_approved_get_started?(certification_case, certification)).to be(false)
+    end
+
+    it "returns false when the case is closed" do
+      certification_case.close!
+
+      expect(helper.show_activity_report_approved_get_started?(certification_case, certification)).to be(false)
+    end
+
+    it "returns false when the due date is blank" do
+      certification.certification_requirements.due_date = nil
+
+      expect(helper.show_activity_report_approved_get_started?(certification_case, certification)).to be(false)
+    end
+  end
+
   describe "activity report status helpers" do
     let(:activity_report) { create(:activity_report_application_form, certification_case_id: certification_case.id) }
 

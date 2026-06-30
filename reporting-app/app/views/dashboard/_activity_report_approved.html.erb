@@ -1,7 +1,6 @@
-<%# Blue Banner Section — only while there is an open case and the reporting due date
-    has not passed (inclusive of the due date itself). A closed case has nothing to act on. %>
-<% reporting_due_date = certification.certification_requirements.due_date %>
-<% if certification_case&.open? && reporting_due_date.present? && reporting_due_date >= Date.current %>
+<%# Blue Banner Section — see +show_activity_report_approved_get_started?+ (OSCER-718). %>
+<% if show_activity_report_approved_get_started?(certification_case, certification) %>
+  <% reporting_due_date = certification.certification_requirements.due_date %>
   <section class="usa-section usa-section--light padding-y-3 margin-bottom-4" aria-label="Get started">
     <div class="grid-container">
       <div class="grid-row flex-column tablet:flex-row gap-4">
