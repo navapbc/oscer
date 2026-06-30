@@ -20,7 +20,7 @@ en:
         in_progress_applications:
           heading: "In-progress exemption applications"
       previous_certifications:
-        title: "Previous completed requirements"
+        title: "Previously completed requirements"
         intro: "Review previously-completed certifications."
         review_previous_certifications_button: "Review previous certifications"
     member_compliance:

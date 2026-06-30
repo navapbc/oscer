@@ -415,6 +415,34 @@ RSpec.describe "dashboard/index", type: :view do
       render
       expect(rendered).not_to have_css('.member-dashboard-compliance__onboarding')
     end
+
+    context "with a completed prior certification period (OSCER-717)" do
+      let(:older_certification) { create(:certification, member_data: member_data) }
+
+      before do
+        create(:certification_case, certification: older_certification)
+        create(:determination,
+               subject: older_certification,
+               outcome: "compliant",
+               decision_method: "manual",
+               reasons: [ "hours_reported_compliant" ])
+        older_certification.update!(created_at: 2.months.ago)
+        certification.update!(created_at: 1.day.ago)
+        assign(:all_certifications, [ certification, older_certification ])
+        assign(:previous_completed_certifications,
+               MemberStatusService.previous_completed_certifications(
+                 [ certification, older_certification ],
+                 current_certification: certification
+               ))
+      end
+
+      it 'renders the previously-completed requirements section exactly once' do
+        render
+        title = I18n.t('dashboard.index.previous_certifications.title')
+        expect(rendered.scan(title).length).to eq(1)
+        expect(rendered).to have_selector('h2', text: title)
+      end
+    end
   end
 
   context "with an approved exemption request" do

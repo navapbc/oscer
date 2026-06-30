@@ -1,10 +1,10 @@
-<%# Rendered once from dashboard/index when the member has prior completed certification periods. %>
-<section class="member-dashboard-previous-certifications" aria-labelledby="previous-certifications-heading">
-  <h2 id="previous-certifications-heading" class="font-heading-lg margin-0"><%= t("dashboard.index.previous_certifications.title") %></h2>
-  <p class="member-dashboard-previous-certifications__intro font-serif-md margin-0">
-    <%= t("dashboard.index.previous_certifications.intro") %>
-  </p>
+<%# Rendered once from dashboard/index when the member has prior completed certification
+    periods. In-div placement inside the content column (OSCER-717) — the canonical
+    "previously completed requirements" block for every dashboard frame. %>
+<div class="grid-container">
+  <h2 class="font-heading-lg margin-top-6 margin-bottom-2"><%= t("dashboard.index.previous_certifications.title") %></h2>
+  <p class="margin-bottom-2"><%= t("dashboard.index.previous_certifications.intro") %></p>
   <%= link_to t("dashboard.index.previous_certifications.review_previous_certifications_button"),
         certifications_path,
         class: "usa-button usa-button--outline" %>
-</section>
+</div>
