@@ -403,6 +403,7 @@ RSpec.describe "dashboard/index", type: :view do
 
   context "with an approved activity report" do
     let(:activity_report_application_form) { create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
+    let(:get_started_section) { 'section[aria-label="Get started"]' }
 
     before do
       assign(:activity_report_application_form, activity_report_application_form)
@@ -432,6 +433,11 @@ RSpec.describe "dashboard/index", type: :view do
     it 'does not render the Figma get started callout' do
       render
       expect(rendered).not_to have_css('.member-dashboard-compliance__onboarding')
+    end
+
+    it 'does not render the get-started hero (accept_activity_report closes the case)' do
+      render
+      expect(rendered).not_to have_css(get_started_section)
     end
 
     context "with a completed prior certification period (OSCER-717)" do
