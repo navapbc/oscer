@@ -1,42 +1,103 @@
-<%# Shared partial for displaying current period compliance status %>
+<%# Shared partial for displaying current period compliance status. %>
 <%# Required locals: current_period, target_hours, period_end_date, total_hours_reported, hours_needed %>
+<%# Optional local: compliance (MemberDashboardCompliance). Drives whether the summary shows
+    hours, income, or both (OSCER-716). When absent (the legacy nil-compliance fallback path in
+    dashboard/_new_certification), the partial renders the hours-only layout unchanged. %>
+
+<% i18n = "dashboard.new_certification.current_period" %>
+<% mode = compliance&.compliance_summary_mode || :hours_only %>
+<% period_end_display = period_end_date&.strftime("%B %d, %Y") %>
+<% target_income_display = compliance && number_to_currency(compliance.target_income, precision: 0) %>
+
+<%# Met state. In :combined the requirement is satisfied by hours OR income, so either side
+    meeting the target counts as met. Income reads stay gated: they only run for the income
+    modes, where compliance#show_income_summary is true. %>
+<% summary_met =
+     case mode
+     when :income_only then !compliance.income_needed.to_d.positive?
+     when :combined    then hours_needed.to_i <= 0 || !compliance.income_needed.to_d.positive?
+     else                   hours_needed.to_i <= 0
+     end %>
+<% status_icon = summary_met ?
+     uswds_icon("check_circle", size: 4, css_class: "text-green margin-right-1") :
+     uswds_icon("warning", size: 4, css_class: "text-gold margin-right-1") %>
 
 <%# Current Period Compliance Status Section %>
 <h2 class="font-heading-xl margin-bottom-2">
-  <%= t("dashboard.new_certification.current_period.header", period: current_period&.strftime("%B %Y")) %>
+  <%= t("#{i18n}.header", period: current_period&.strftime("%B %Y")) %>
 </h2>
 <p class="margin-bottom-4">
-  <%= t("dashboard.new_certification.current_period.requirement_info", 
-        target_hours: target_hours, 
-        period_end_date: period_end_date&.strftime("%B %d, %Y")) %>
+  <% case mode %>
+  <% when :income_only %>
+    <%= t("#{i18n}.requirement_info_income", target_income: target_income_display, period_end_date: period_end_display) %>
+  <% when :combined %>
+    <%= t("#{i18n}.requirement_info_combined", target_hours: target_hours, target_income: target_income_display, period_end_date: period_end_display) %>
+  <% else %>
+    <%= t("#{i18n}.requirement_info", target_hours: target_hours, period_end_date: period_end_display) %>
+  <% end %>
 </p>
 
-<%# Total Hours Reported %>
-<div class="margin-bottom-3">
-  <p class="margin-bottom-05 text-base"><%= t("dashboard.new_certification.current_period.total_hours_label") %></p>
-  <p class="display-flex flex-align-center margin-top-0">
-    <% if hours_needed > 0 %>
-      <%= uswds_icon("warning", size: 4, css_class: "text-gold margin-right-1") %>
-    <% else %>
-      <%= uswds_icon("check_circle", size: 4, css_class: "text-green margin-right-1") %>
-    <% end %>
-    <span class="font-body-lg text-bold"><%= t("dashboard.new_certification.current_period.hours_value", hours: total_hours_reported) %></span>
-  </p>
-</div>
-
-<%# Additional Hours Needed %>
-<div class="margin-bottom-4">
-  <p class="margin-bottom-05 text-base"><%= t("dashboard.new_certification.current_period.additional_hours_label", target_hours: target_hours) %></p>
-  <% if hours_needed > 0 %>
+<%# Totals — hours shown unless the requirement is income-only; income shown for both income modes. %>
+<% if mode != :income_only %>
+  <div class="margin-bottom-3">
+    <p class="margin-bottom-05 text-base"><%= t("#{i18n}.total_hours_label") %></p>
     <p class="display-flex flex-align-center margin-top-0">
-      <%= uswds_icon("warning", size: 4, css_class: "text-gold margin-right-1") %>
-      <span class="font-body-lg text-bold"><%= t("dashboard.new_certification.current_period.hours_value", hours: hours_needed) %></span>
+      <%= status_icon %>
+      <span class="font-body-lg text-bold"><%= t("#{i18n}.hours_value", hours: total_hours_reported) %></span>
     </p>
+  </div>
+<% end %>
+
+<% if mode == :income_only || mode == :combined %>
+  <div class="margin-bottom-3">
+    <p class="margin-bottom-05 text-base"><%= t("#{i18n}.total_income_label") %></p>
+    <p class="display-flex flex-align-center margin-top-0">
+      <%= status_icon %>
+      <span class="font-body-lg text-bold"><%= number_to_currency(compliance.total_income, precision: 2) %></span>
+    </p>
+  </div>
+<% end %>
+
+<%# Additional needed / requirements met. %>
+<div class="margin-bottom-4">
+  <% case mode %>
+  <% when :income_only %>
+    <p class="margin-bottom-05 text-base"><%= t("#{i18n}.additional_income_label", target_income: target_income_display) %></p>
+    <% if compliance.income_needed.to_d.positive? %>
+      <p class="display-flex flex-align-center margin-top-0">
+        <%= uswds_icon("warning", size: 4, css_class: "text-gold margin-right-1") %>
+        <span class="font-body-lg text-bold"><%= number_to_currency(compliance.income_needed, precision: 2) %></span>
+      </p>
+    <% else %>
+      <div class="margin-top-0">
+        <%= uswds_icon("check_circle", size: 4, css_class: "text-green margin-right-05", style: "vertical-align: middle;") %>
+        <span class="font-body-lg text-bold" style="vertical-align: middle;"><%= t("#{i18n}.requirements_met", period: current_period&.strftime("%B %Y")) %></span>
+      </div>
+    <% end %>
+  <% when :combined %>
+    <% if summary_met %>
+      <div class="margin-top-0">
+        <%= uswds_icon("check_circle", size: 4, css_class: "text-green margin-right-05", style: "vertical-align: middle;") %>
+        <span class="font-body-lg text-bold" style="vertical-align: middle;"><%= t("#{i18n}.requirements_met", period: current_period&.strftime("%B %Y")) %></span>
+      </div>
+    <% else %>
+      <p class="display-flex flex-align-center margin-top-0">
+        <%= uswds_icon("warning", size: 4, css_class: "text-gold margin-right-1") %>
+        <span class="font-body-lg text-bold"><%= t("#{i18n}.combined_additional_needed", target_hours: target_hours, target_income: target_income_display, period_end_date: period_end_display) %></span>
+      </p>
+    <% end %>
   <% else %>
-    <div class="margin-top-0">
-      <%= uswds_icon("check_circle", size: 4, css_class: "text-green margin-right-05", style: "vertical-align: middle;") %>
-      <span class="font-body-lg text-bold" style="vertical-align: middle;"><%= t("dashboard.new_certification.current_period.requirements_met", period: current_period&.strftime("%B %Y")) %></span>
-    </div>
+    <p class="margin-bottom-05 text-base"><%= t("#{i18n}.additional_hours_label", target_hours: target_hours) %></p>
+    <% if hours_needed > 0 %>
+      <p class="display-flex flex-align-center margin-top-0">
+        <%= uswds_icon("warning", size: 4, css_class: "text-gold margin-right-1") %>
+        <span class="font-body-lg text-bold"><%= t("#{i18n}.hours_value", hours: hours_needed) %></span>
+      </p>
+    <% else %>
+      <div class="margin-top-0">
+        <%= uswds_icon("check_circle", size: 4, css_class: "text-green margin-right-05", style: "vertical-align: middle;") %>
+        <span class="font-body-lg text-bold" style="vertical-align: middle;"><%= t("#{i18n}.requirements_met", period: current_period&.strftime("%B %Y")) %></span>
+      </div>
+    <% end %>
   <% end %>
 </div>
-

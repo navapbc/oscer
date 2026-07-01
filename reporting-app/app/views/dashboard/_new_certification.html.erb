@@ -14,6 +14,7 @@
 <% else %>
   <div>
     <%= render "dashboard/compliance_status",
+               compliance: local_assigns[:compliance],
                current_period: current_period,
                target_hours: target_hours,
                period_end_date: period_end_date,

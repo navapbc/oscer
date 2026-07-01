@@ -55,19 +55,15 @@ class CertificationCase < Strata::Case
 
   def accept_activity_report(user, application_form)
     certification = Certification.find(certification_id)
-    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, application_form:)
 
     transaction do
       self.activity_report_approval_status = "approved"
       self.activity_report_approval_status_updated_at = Time.current
       close!
 
-      certification.record_determination!(
-        decision_method: :manual,
-        reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_compliant] ],
-        outcome: :compliant,
-        determination_data: Determinations::HoursBasedDeterminationData.from_aggregate(hours_data).to_h,
-        determined_at: certification.certification_requirements.certification_date,
+      record_approved_activity_report_determination(
+        certification: certification,
+        application_form: application_form,
         actor: user
       )
     end
@@ -322,6 +318,86 @@ class CertificationCase < Strata::Case
         actor:
       )
     end
+  end
+
+  # Records the compliant determination for a staff-approved activity report. The calculation
+  # type follows what the member reported on the form (income, hours, or both) so the member
+  # dashboard current-period summary surfaces the matching totals instead of defaulting to a
+  # 0-hour hours-based row when the member reported income (OSCER-716). Approval is a staff
+  # decision, so the outcome is always +:compliant+ regardless of whether either track meets
+  # its threshold.
+  #
+  # @param certification [Certification] aggregate root for +record_determination!+
+  # @param application_form [ActivityReportApplicationForm] the reviewed report
+  # @param actor [User] approving staff member
+  def record_approved_activity_report_determination(certification:, application_form:, actor:)
+    reported_income = IncomeComplianceDeterminationService
+      .member_income_activities_for_certification(certification, application_form:).exists?
+    reported_hours = HoursComplianceDeterminationService
+      .member_hour_activities_for_certification(certification, application_form:).exists?
+
+    determination_data, reasons =
+      if reported_income && reported_hours
+        approved_combined_determination(certification:, application_form:)
+      elsif reported_income
+        approved_income_determination(certification:, application_form:)
+      else
+        approved_hours_determination(certification:, application_form:)
+      end
+
+    certification.record_determination!(
+      decision_method: :manual,
+      reasons: reasons,
+      outcome: :compliant,
+      determination_data: determination_data,
+      determined_at: certification.certification_requirements.certification_date,
+      actor: actor
+    )
+  end
+
+  # @return [Array(Hash, Array<String>)] determination_data payload and reason codes
+  def approved_hours_determination(certification:, application_form:)
+    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, application_form:)
+    [
+      Determinations::HoursBasedDeterminationData.from_aggregate(hours_data).to_h,
+      [ Determination::REASON_CODE_MAPPING[:hours_reported_compliant] ]
+    ]
+  end
+
+  # @return [Array(Hash, Array<String>)] determination_data payload and reason codes
+  def approved_income_determination(certification:, application_form:)
+    income_data = IncomeComplianceDeterminationService.aggregate_income_for_certification(certification, application_form:)
+    [
+      Determinations::IncomeBasedDeterminationData.from_aggregate(income_data).to_h,
+      [ Determination::REASON_CODE_MAPPING[:income_reported_compliant] ]
+    ]
+  end
+
+  # Mixed report: record one combined determination carrying both tracks. +hours_ok+/+income_ok+
+  # reflect each track's threshold for the stored payload, but staff approval keeps both compliant
+  # reason codes (the outcome is +:compliant+ either way) so reasons stay non-empty and consistent
+  # with the approval.
+  # @return [Array(Hash, Array<String>)] determination_data payload and reason codes
+  def approved_combined_determination(certification:, application_form:)
+    hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification, application_form:)
+    income_data = IncomeComplianceDeterminationService.aggregate_income_for_certification(certification, application_form:)
+    hours_ok = HoursComplianceDeterminationService.compliant_for_total_hours?(hours_data[:total_hours])
+    income_ok = IncomeComplianceDeterminationService.compliant_for_total_income?(income_data[:total_income])
+
+    determination_data = Determinations::ExternalCECombinedDeterminationData.build(
+      hours_data: hours_data,
+      income_data: income_data,
+      hours_ok: hours_ok,
+      income_ok: income_ok
+    ).to_h
+
+    [
+      determination_data,
+      [
+        Determination::REASON_CODE_MAPPING[:hours_reported_compliant],
+        Determination::REASON_CODE_MAPPING[:income_reported_compliant]
+      ]
+    ]
   end
 
   def external_ce_combined_reason_codes(outcome:, hours_ok:, income_ok:)

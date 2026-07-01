@@ -451,6 +451,159 @@ RSpec.describe "dashboard/index", type: :view do
     end
   end
 
+  # The approved-activity-report frame is the surviving render path for the shared
+  # dashboard/_compliance_status current-period summary. OSCER-716 makes that summary show
+  # income / hours / both, driven by MemberDashboardCompliance#compliance_summary_mode, which is
+  # derived from the latest determination's calculation type. Each context pins a calculation type
+  # via a determination, rebuilds the read model, and asserts which summary blocks render.
+  context "when an approved report's CE calculation type drives the current-period summary (OSCER-716)" do
+    let(:activity_report_application_form) do
+      create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+    end
+    let(:lookback) { certification.certification_requirements.continuous_lookback_period }
+    let(:total_hours_label) { I18n.t("dashboard.new_certification.current_period.total_hours_label") }
+    let(:total_income_label) { I18n.t("dashboard.new_certification.current_period.total_income_label") }
+    let(:target_income_display) do
+      ActiveSupport::NumberHelper.number_to_currency(
+        IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY, precision: 0
+      )
+    end
+
+    before do
+      assign(:activity_report_application_form, activity_report_application_form)
+      assign(:certification_case, certification_case)
+      assign(:hours_needed, 0)
+      assign(:total_hours_reported, HoursComplianceDeterminationService::TARGET_HOURS)
+
+      allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
+        total_hours: 85, hours_by_category: {}, hours_by_source: { external: 85, activity: 0 },
+        external_hourly_activity_ids: [], activity_ids: []
+      })
+      ReviewActivityReportTask.find_by(application_form: activity_report_application_form).completed!
+      certification_case.accept_activity_report(nil, activity_report_application_form)
+    end
+
+    # Records a compliant determination of the given calculation type as the latest decision, then
+    # rebuilds the read model so #compliance_summary_mode reflects it.
+    def approve_with_calculation_type(calculation_type, satisfied_by: nil)
+      data = { "calculation_type" => calculation_type }
+      data["satisfied_by"] = satisfied_by if satisfied_by
+      create(:determination, subject: certification, outcome: "compliant", decision_method: "automated",
+             reasons: [ "hours_reported_compliant" ], determination_data: data)
+      reassign_compliance_read_model
+    end
+
+    def create_external_income(gross_income:)
+      create(:external_income_activity, member_id: certification.member_id, category: "employment",
+             gross_income: gross_income, period_start: lookback.start.to_date,
+             period_end: lookback.start.to_date.end_of_month)
+    end
+
+    context "when the CE requirement is hours-based" do
+      before { approve_with_calculation_type(Determination::CALCULATION_TYPE_HOURS_BASED) }
+
+      it "shows the hours summary only, not income" do
+        render
+        expect(rendered).to have_text(total_hours_label)
+        expect(rendered).not_to have_text(total_income_label)
+      end
+
+      it "uses the hours-only requirement intro" do
+        render
+        expect(rendered).to have_text(
+          I18n.t("dashboard.new_certification.current_period.requirement_info",
+                 target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
+                 period_end_date: certification.certification_requirements.due_date.strftime("%B %d, %Y"))
+        )
+      end
+    end
+
+    context "when the CE requirement is income-based" do
+      context "when income still falls short of the target" do
+        before { approve_with_calculation_type(Determination::CALCULATION_TYPE_INCOME_BASED) }
+
+        it "shows the income summary only, not hours" do
+          render
+          expect(rendered).to have_text(total_income_label)
+          expect(rendered).not_to have_text(total_hours_label)
+        end
+
+        it "shows the additional-income-needed label and intro, without the requirements-met message" do
+          render
+          expect(rendered).to have_text(
+            I18n.t("dashboard.new_certification.current_period.additional_income_label",
+                   target_income: target_income_display)
+          )
+          expect(rendered).to have_text(
+            I18n.t("dashboard.new_certification.current_period.requirement_info_income",
+                   target_income: target_income_display,
+                   period_end_date: certification.certification_requirements.due_date.strftime("%B %d, %Y"))
+          )
+          expect(rendered).not_to have_text(
+            I18n.t("dashboard.new_certification.current_period.requirements_met",
+                   period: certification.certification_requirements.certification_date.strftime("%B %Y"))
+          )
+        end
+      end
+
+      context "when income meets the target" do
+        before do
+          create_external_income(gross_income: IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY * 2)
+          approve_with_calculation_type(Determination::CALCULATION_TYPE_INCOME_BASED)
+        end
+
+        it "shows the requirements-met message under the income summary" do
+          render
+          expect(rendered).to have_text(total_income_label)
+          expect(rendered).to have_text(
+            I18n.t("dashboard.new_certification.current_period.requirements_met",
+                   period: certification.certification_requirements.certification_date.strftime("%B %Y"))
+          )
+        end
+      end
+    end
+
+    context "when the CE requirement is combined (hours or income)" do
+      it "shows both the hours and income summaries with the combined intro" do
+        approve_with_calculation_type(Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED,
+                                      satisfied_by: Determination::SATISFIED_BY_BOTH)
+        render
+        expect(rendered).to have_text(total_hours_label)
+        expect(rendered).to have_text(total_income_label)
+        expect(rendered).to have_text(
+          I18n.t("dashboard.new_certification.current_period.requirement_info_combined",
+                 target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
+                 target_income: target_income_display,
+                 period_end_date: certification.certification_requirements.due_date.strftime("%B %d, %Y"))
+        )
+      end
+
+      it "shows the single combined 'report hours or income' line when neither target is met" do
+        assign(:hours_needed, HoursComplianceDeterminationService::TARGET_HOURS)
+        assign(:total_hours_reported, 0)
+        approve_with_calculation_type(Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED,
+                                      satisfied_by: Determination::SATISFIED_BY_NEITHER)
+        render
+        expect(rendered).to have_text(
+          I18n.t("dashboard.new_certification.current_period.combined_additional_needed",
+                 target_hours: HoursComplianceDeterminationService::TARGET_HOURS,
+                 target_income: target_income_display,
+                 period_end_date: certification.certification_requirements.due_date.strftime("%B %d, %Y"))
+        )
+      end
+
+      it "shows the requirements-met message when hours satisfy the combined requirement" do
+        approve_with_calculation_type(Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED,
+                                      satisfied_by: Determination::SATISFIED_BY_HOURS)
+        render
+        expect(rendered).to have_text(
+          I18n.t("dashboard.new_certification.current_period.requirements_met",
+                 period: certification.certification_requirements.certification_date.strftime("%B %Y"))
+        )
+      end
+    end
+  end
+
   context "with an approved exemption request" do
     let (:exemption_application_form) { create(:exemption_application_form, :with_submitted_status, :incarceration, certification_case_id: certification_case.id) }
 

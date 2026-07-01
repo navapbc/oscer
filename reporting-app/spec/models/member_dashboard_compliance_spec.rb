@@ -116,6 +116,42 @@ RSpec.describe MemberDashboardCompliance do
     end
   end
 
+  describe "#compliance_summary_mode (OSCER-716)" do
+    def determine(calculation_type, outcome: "compliant", reasons: [ "hours_reported_compliant" ])
+      create(:determination,
+             subject: certification,
+             outcome: outcome,
+             decision_method: "automated",
+             reasons: reasons,
+             determination_data: { "calculation_type" => calculation_type })
+    end
+
+    it "is :combined before any determination (income assumed until product narrows it)" do
+      expect(read_model.compliance_summary_mode).to eq(:combined)
+    end
+
+    it "is :hours_only for an hours-based requirement" do
+      determine(Determination::CALCULATION_TYPE_HOURS_BASED)
+      expect(read_model.compliance_summary_mode).to eq(:hours_only)
+    end
+
+    it "is :income_only for an income-based requirement" do
+      determine(Determination::CALCULATION_TYPE_INCOME_BASED, reasons: [ "income_reported_compliant" ])
+      expect(read_model.compliance_summary_mode).to eq(:income_only)
+    end
+
+    it "is :combined for a combined requirement (hours or income)" do
+      determine(Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED)
+      expect(read_model.compliance_summary_mode).to eq(:combined)
+    end
+
+    it "is :hours_only when income is hidden (e.g. an exempt member)" do
+      determine("age_under_19_exempt", outcome: "exempt", reasons: [ "age_under_19_exempt" ])
+      expect(read_model.show_income_summary).to be false
+      expect(read_model.compliance_summary_mode).to eq(:hours_only)
+    end
+  end
+
   describe "#hour_table_rows" do
     before { create_external_hourly(hours: 40, category: "employment") }
 

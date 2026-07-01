@@ -9,8 +9,13 @@ en:
       current_period:
         header: "Current period: %{period}"
         requirement_info: "For this period, you will need to report at least %{target_hours} hours of Community Engagement activities by %{period_end_date} in order to keep your Medicaid coverage."
+        requirement_info_income: "For this period, you will need to report at least %{target_income} of income by %{period_end_date} in order to keep your Medicaid coverage."
+        requirement_info_combined: "For this period, you will need to report at least %{target_hours} hours of Community Engagement activities or %{target_income} of income by %{period_end_date} in order to keep your Medicaid coverage."
         total_hours_label: "Total hours reported"
+        total_income_label: "Total income reported"
         additional_hours_label: "Additional hours needed to meet the %{target_hours}-hour requirement"
+        additional_income_label: "Additional income needed to meet the %{target_income} requirement"
+        combined_additional_needed: "Report %{target_hours} hours or %{target_income} of income by %{period_end_date}."
         hours_value: "%{hours} hours"
         requirements_met: "None. You have met the requirement for %{period}."
         report_activities_button: "Report activities for the current period"
