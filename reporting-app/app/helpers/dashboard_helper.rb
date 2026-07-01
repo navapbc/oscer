@@ -103,14 +103,4 @@ module DashboardHelper
       !certification_case.verification_window_ended? &&
       !ActivityReportApplicationForm.has_pending_form(certification_case.id)
   end
-
-  # Post-approval "Report this month's activities / Get started" hero (OSCER-718).
-  # Unlike +member_compliance_reporting_period_open?+, a blank due date hides the block here
-  # so we never render a dateless heading.
-  def show_activity_report_approved_get_started?(certification_case, certification)
-    return false unless certification_case&.open?
-
-    due_date = certification&.certification_requirements&.due_date
-    due_date.present? && due_date >= Date.current
-  end
 end
