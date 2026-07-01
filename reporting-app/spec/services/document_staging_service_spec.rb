@@ -59,7 +59,7 @@ RSpec.describe DocumentStagingService do
 
     it "enqueues FetchDocAiResultsJob" do
       result = service.submit(files: [ file ], user: user)
-      expect(FetchDocAiResultsJob).to have_received(:set).with(wait: 1.minute)
+      expect(FetchDocAiResultsJob).to have_received(:set).with(wait: 5.seconds)
       expect(FetchDocAiResultsJob).to have_received(:perform_later).with([ result.first.id ])
     end
 
