@@ -67,7 +67,7 @@ resource "aws_wafv2_web_acl" "main" {
 resource "aws_cloudwatch_log_group" "waf_logs" {
   # checkov:skip=CKV_AWS_158:The KMS key triggered an operation error
   name              = "aws-waf-logs-${var.name}"
-  retention_in_days = 30
+  retention_in_days = 365
 }
 
 resource "aws_wafv2_web_acl_logging_configuration" "waf_logs" {
@@ -97,7 +97,7 @@ data "aws_iam_policy_document" "waf_logs" {
     resources = ["${aws_cloudwatch_log_group.waf_logs.arn}:*"]
     condition {
       test     = "ArnLike"
-      values   = ["arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"]
+      values   = ["arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:*"]
       variable = "aws:SourceArn"
     }
     condition {

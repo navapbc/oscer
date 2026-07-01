@@ -11,6 +11,8 @@ module "staging_config" {
   has_incident_management_service = local.has_incident_management_service
   enable_identity_provider        = local.enable_identity_provider
   enable_notifications            = local.enable_notifications
+  enable_document_data_extraction = local.enable_document_data_extraction
+  enable_sms_notifications        = local.enable_sms_notifications
 
   # Enables ECS Exec access for debugging or jump access.
   # See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html

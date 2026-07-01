@@ -11,9 +11,9 @@
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.11.3",
-    "@playwright/test": "^1.61.0",
-    "@types/node": "^26.0.0",
+    "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^26.0.1",
     "prettier": "^3.9.4",
     "typescript": "^6.0.3"
   }
