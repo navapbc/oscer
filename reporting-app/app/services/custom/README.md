@@ -5,16 +5,16 @@ here, namespaced under `Custom::`.
 
 ## Example
 
-    # app/services/custom/exemption_determination_service.rb
+    # app/services/custom/exclusion_determination_service.rb
     module Custom
-      class ExemptionDeterminationService < ::ExemptionDeterminationService
+      class ExclusionDeterminationService < ::ExclusionDeterminationService
         # deployment-specific overrides
       end
     end
 
 Note: OSCER's services live flat under `app/services/` with no `Services::`
 namespace, so the parent class is referenced as
-`::ExemptionDeterminationService` (not `::Services::ExemptionDeterminationService`).
+`::ExclusionDeterminationService` (not `::Services::ExclusionDeterminationService`).
 By contrast, `Rules::` and `Custom::` ARE proper namespaces. The full
 namespacing guidance is in CUSTOMIZATION.md.
 

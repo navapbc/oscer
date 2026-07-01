@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe ExemptionDeterminationService do
+RSpec.describe ExclusionDeterminationService do
   let(:service) { described_class }
   let(:cert_date) { Date.new(2025, 7, 1) }
   let(:member_data) { build(:certification_member_data, date_of_birth: dob, cert_date: cert_date) }
@@ -34,9 +34,9 @@ RSpec.describe ExemptionDeterminationService do
     context 'when applicant is under 19 years old' do
       let(:dob) { cert_date - 18.years }
 
-      it 'publishes DeterminedExempt event' do
+      it 'publishes DeterminedExcluded event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id, certification_id: kase.certification_id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExcluded', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'closes the case' do
@@ -67,9 +67,9 @@ RSpec.describe ExemptionDeterminationService do
     context 'when applicant is 65 years old or older' do
       let(:dob) { cert_date - 65.years }
 
-      it 'publishes DeterminedExempt event' do
+      it 'publishes DeterminedExcluded event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id, certification_id: kase.certification_id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExcluded', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'closes the case' do
@@ -94,9 +94,9 @@ RSpec.describe ExemptionDeterminationService do
     context 'when applicant is 19 years old' do
       let(:dob) { cert_date - 19.years }
 
-      it 'publishes DeterminedNotExempt event' do
+      it 'publishes DeterminedNotExcluded event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id, certification_id: kase.certification_id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExcluded', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'does not close the case' do
@@ -115,9 +115,9 @@ RSpec.describe ExemptionDeterminationService do
     context 'when applicant is 64 years old' do
       let(:dob) { cert_date - 64.years }
 
-      it 'publishes DeterminedNotExempt event' do
+      it 'publishes DeterminedNotExcluded event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id, certification_id: kase.certification_id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExcluded', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'does not close the case' do
@@ -136,9 +136,9 @@ RSpec.describe ExemptionDeterminationService do
     context 'when member_data has no date_of_birth' do
       let(:dob) { nil }
 
-      it 'publishes DeterminedNotExempt event' do
+      it 'publishes DeterminedNotExcluded event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id, certification_id: kase.certification_id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExcluded', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'does not close the case' do
@@ -163,10 +163,10 @@ RSpec.describe ExemptionDeterminationService do
     context 'when date_of_birth is invalid format' do
       let(:dob) { "invalid-date-format" }
 
-      it 'publishes DeterminedNotExempt event' do
+      it 'publishes DeterminedNotExcluded event' do
         allow(Rails.logger).to receive(:warn)
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id, certification_id: kase.certification_id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExcluded', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'does not close the case' do
@@ -182,9 +182,9 @@ RSpec.describe ExemptionDeterminationService do
         build(:certification_member_data, race_ethnicity: "american_indian_or_alaska_native", cert_date: cert_date)
       end
 
-      it 'publishes DeterminedExempt event' do
+      it 'publishes DeterminedExcluded event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id, certification_id: kase.certification_id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExcluded', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'closes the case' do
@@ -211,9 +211,9 @@ RSpec.describe ExemptionDeterminationService do
         build(:certification_member_data, race_ethnicity: "white", cert_date: cert_date)
       end
 
-      it 'publishes DeterminedNotExempt event' do
+      it 'publishes DeterminedNotExcluded event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id, certification_id: kase.certification_id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExcluded', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'does not close the case' do
@@ -234,9 +234,9 @@ RSpec.describe ExemptionDeterminationService do
         build(:certification_member_data, pregnancy_status: true, cert_date: cert_date)
       end
 
-      it 'publishes DeterminedExempt event' do
+      it 'publishes DeterminedExcluded event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id, certification_id: kase.certification_id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExcluded', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'closes the case' do
@@ -263,9 +263,9 @@ RSpec.describe ExemptionDeterminationService do
         build(:certification_member_data, pregnancy_status: false, cert_date: cert_date)
       end
 
-      it 'publishes DeterminedNotExempt event' do
+      it 'publishes DeterminedNotExcluded event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id, certification_id: kase.certification_id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExcluded', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'does not close the case' do
@@ -285,9 +285,9 @@ RSpec.describe ExemptionDeterminationService do
       let(:member_data) { build(:certification_member_data, :with_icn, cert_date: cert_date) }
       let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 100 } } } }
 
-      it 'publishes DeterminedExempt event' do
+      it 'publishes DeterminedExcluded event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExempt', { case_id: kase.id, certification_id: kase.certification_id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExcluded', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'closes the case' do
@@ -307,9 +307,9 @@ RSpec.describe ExemptionDeterminationService do
       let(:member_data) { build(:certification_member_data, :with_icn, cert_date: cert_date) }
       let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 70 } } } }
 
-      it 'publishes DeterminedNotExempt event' do
+      it 'publishes DeterminedNotExcluded event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id, certification_id: kase.certification_id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExcluded', { case_id: kase.id, certification_id: kase.certification_id })
       end
 
       it 'does not close the case' do
@@ -322,9 +322,9 @@ RSpec.describe ExemptionDeterminationService do
     context 'when VA service returns nil (fail-open)' do
       let(:member_data) { build(:certification_member_data, :with_icn, cert_date: cert_date) }
 
-      it 'publishes DeterminedNotExempt event' do
+      it 'publishes DeterminedNotExcluded event' do
         service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExempt', { case_id: kase.id, certification_id: kase.certification_id })
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExcluded', { case_id: kase.id, certification_id: kase.certification_id })
       end
     end
   end

@@ -31,14 +31,14 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       })
   end
 
-  describe 'external_exemption_check' do
+  describe 'external_exclusion_check' do
     before do
       certification_case.update!(
-        business_process_current_step: CertificationBusinessProcess::EXTERNAL_EXEMPTION_CHECK_STEP
+        business_process_current_step: CertificationBusinessProcess::EXTERNAL_EXCLUSION_CHECK_STEP
       )
     end
 
-    context 'when applicant is eligible for exemption' do
+    context 'when applicant is eligible for exclusion' do
       let(:age_fact) do
         Strata::RulesEngine::Fact.new(
           :age_under_19, true, reasons: []
@@ -58,14 +58,14 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       end
 
       it 'transitions to end' do
-        # Step 1: Case has been created and is on external_exemption_check step
-        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EXTERNAL_EXEMPTION_CHECK_STEP)
+        # Step 1: Case has been created and is on external_exclusion_check step
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EXTERNAL_EXCLUSION_CHECK_STEP)
         expect(certification_case.member_status).to eq(MemberStatus::AWAITING_REPORT)
         expect(certification_case).to be_open
 
-        # Step 2: System process determines applicant is eligible for exemption
-        certification_case.record_exemption_determination(eligibility_fact, ExemptionDeterminationService)
-        Strata::EventManager.publish("DeterminedExempt", { case_id: certification_case.id, certification_id: certification_case.certification_id })
+        # Step 2: System process determines applicant is eligible for exclusion
+        certification_case.record_exclusion_determination(eligibility_fact, ExclusionDeterminationService)
+        Strata::EventManager.publish("DeterminedExcluded", { case_id: certification_case.id, certification_id: certification_case.certification_id })
         certification_case.reload
 
         expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
@@ -74,7 +74,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       end
     end
 
-    context 'when applicant is not eligible for exemption' do
+    context 'when applicant is not eligible for exclusion' do
       let(:eligibility_fact) do
         Strata::RulesEngine::Fact.new(
           "no-op",
@@ -83,13 +83,13 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
       end
 
       it 'transitions to external_community_engagement_check' do
-        # Step 1: Case has been created and is on external_exemption_check step
-        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EXTERNAL_EXEMPTION_CHECK_STEP)
+        # Step 1: Case has been created and is on external_exclusion_check step
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EXTERNAL_EXCLUSION_CHECK_STEP)
         expect(certification_case.member_status).to eq(MemberStatus::AWAITING_REPORT)
         expect(certification_case).to be_open
 
-        # Step 2: System process determines applicant is not eligible for exemption
-        Strata::EventManager.publish("DeterminedNotExempt", { case_id: certification_case.id, certification_id: certification_case.certification_id })
+        # Step 2: System process determines applicant is not eligible for exclusion
+        Strata::EventManager.publish("DeterminedNotExcluded", { case_id: certification_case.id, certification_id: certification_case.certification_id })
         certification_case.reload
 
         # Case transitions to report_activities step is hardcoded in the business process

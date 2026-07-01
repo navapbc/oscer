@@ -1,33 +1,33 @@
 # frozen_string_literal: true
 
-class ExemptionDeterminationService
+class ExclusionDeterminationService
   include Strata::VirtualActor
   class << self
-    # Called by CertificationBusinessProcess at EXTERNAL_EXEMPTION_CHECK_STEP
+    # Called by CertificationBusinessProcess at EXTERNAL_EXCLUSION_CHECK_STEP
     # Service handles: evaluation, recording via model, and publishing events
     # Business process handles: transitions and notifications
     # @param kase [CertificationCase]
     def determine(kase)
       certification = Certification.find(kase.certification_id)
-      eligibility_fact = evaluate_exemption_eligibility(certification)
+      eligibility_fact = evaluate_exclusion_eligibility(certification)
 
       if eligibility_fact.value
-        kase.record_exemption_determination(eligibility_fact, self)
-        Strata::EventManager.publish("DeterminedExempt", { case_id: kase.id, certification_id: kase.certification_id })
+        kase.record_exclusion_determination(eligibility_fact, self)
+        Strata::EventManager.publish("DeterminedExcluded", { case_id: kase.id, certification_id: kase.certification_id })
       else
         Strata::AuditLog.write!(
           action: "case.exemption.denied",
           actor: self,
           subject: certification,
         )
-        Strata::EventManager.publish("DeterminedNotExempt", { case_id: kase.id, certification_id: kase.certification_id })
+        Strata::EventManager.publish("DeterminedNotExcluded", { case_id: kase.id, certification_id: kase.certification_id })
       end
     end
 
     private
 
-    def evaluate_exemption_eligibility(certification)
-      ruleset = Rules::ExemptionRuleset.new
+    def evaluate_exclusion_eligibility(certification)
+      ruleset = Rules::ExclusionRuleset.new
       engine = Strata::RulesEngine.new(ruleset)
 
       evaluation_date = extract_evaluation_date(certification)
@@ -44,7 +44,7 @@ class ExemptionDeterminationService
         veteran_disability_rating: veteran_disability_rating
       )
 
-      engine.evaluate(:eligible_for_exemption)
+      engine.evaluate(:eligible_for_exclusion)
     end
 
     def extract_evaluation_date(certification)
