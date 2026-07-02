@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
-class Demo::CertificationsController < ApplicationController
-  include DemoAccessGate
-
-  layout "demo"
-
+class Demo::CertificationsController < Demo::BaseController
   before_action :set_regions
 
   skip_after_action :verify_authorized

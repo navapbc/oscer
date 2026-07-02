@@ -191,9 +191,11 @@ Rails.application.routes.draw do
     end
   end
 
-  # Demo tools
-  get "/demo", to: "demo#index"
-  namespace :demo do
-    resources :certifications, only: [ :new, :create ]
+  # Demo tools — gated at the route layer and in DemoAccessGate (defense in depth).
+  constraints ->(_req) { DemoAccessGate.access_allowed? } do
+    get "/demo", to: "demo#index"
+    namespace :demo do
+      resources :certifications, only: [ :new, :create ]
+    end
   end
 end

@@ -64,6 +64,9 @@ RSpec.describe "/demo/certifications", type: :request do
             post demo_certifications_url,
                  params: { demo_certifications_create_form: valid_request_attributes }
           }.to change(Certification, :count).by(1)
+
+          cert = Certification.order(created_at: :desc).first
+          expect(response).to redirect_to(certification_path(cert))
         end
       end
     end
