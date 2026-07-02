@@ -18,7 +18,7 @@
 #   record.record_determination!(
 #     decision_method: :automated,
 #     reasons: ["pregnant_member"],
-#     outcome: :automated_exemption,
+#     outcome: :automated_exclusion,
 #     determination_data: rules_engine.evaluate(:pregnant_member).reasons,
 #     determined_at: Time.current
 #   )
@@ -59,7 +59,9 @@ module Determinable
     )
 
     determination_method =
-      if (reasons & Determination::EXEMPTION_REASONS).any?
+      if outcome.to_sym == :excluded
+        :exclusion
+      elsif (reasons & Determination::EXEMPTION_REASONS).any?
         :exemption
       elsif (reasons & Determination::DENIAL_RESPONSE_REASONS).any?
         :denial_response

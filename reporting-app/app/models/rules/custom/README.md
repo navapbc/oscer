@@ -5,10 +5,10 @@ here, namespaced under `Rules::Custom::`.
 
 ## Example
 
-    # app/models/rules/custom/exemption_ruleset.rb
+    # app/models/rules/custom/exclusion_ruleset.rb
     module Rules
       module Custom
-        class ExemptionRuleset < Rules::ExemptionRuleset
+        class ExclusionRuleset < Rules::ExclusionRuleset
           # deployment-specific rule methods + composition override
         end
       end

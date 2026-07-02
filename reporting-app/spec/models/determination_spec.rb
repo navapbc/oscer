@@ -6,7 +6,7 @@ RSpec.describe Determination, type: :model do
   before do
     # Prevent auto-triggering business process during test setup
     allow(Strata::EventManager).to receive(:publish).and_call_original
-    allow(ExemptionDeterminationService).to receive(:determine)
+    allow(ExclusionDeterminationService).to receive(:determine)
     allow(NotificationService).to receive(:send_email_notification)
   end
 
@@ -19,7 +19,7 @@ RSpec.describe Determination, type: :model do
 
     describe 'outcome' do
       it 'defines the outcome enum with correct values' do
-        expect(described_class.outcomes.keys).to contain_exactly('compliant', 'exempt', 'not_compliant')
+        expect(described_class.outcomes.keys).to contain_exactly('compliant', 'exempt', 'excluded', 'not_compliant')
       end
     end
   end
@@ -28,16 +28,16 @@ RSpec.describe Determination, type: :model do
     describe 'reasons' do
       it 'defines valid reason constants' do
         expected_reasons = %w[
-          age_under_19_exempt
-          age_over_65_exempt
-          pregnancy_exempt
-          american_indian_alaska_native_exempt
+          age_under_19_excluded
+          age_over_65_excluded
+          pregnancy_excluded
+          american_indian_alaska_native_excluded
           income_reported_compliant
           income_reported_insufficient
           hours_reported_compliant
           hours_reported_insufficient
           exemption_request_compliant
-          veteran_disability_exempt
+          veteran_disability_excluded
           denial_response_convincing
           denial_response_not_convincing
         ]
@@ -57,12 +57,12 @@ RSpec.describe Determination, type: :model do
       end
 
       it 'allows valid reasons' do
-        determination = build(:determination, reasons: [ 'age_under_19_exempt' ])
+        determination = build(:determination, reasons: [ 'age_under_19_excluded' ])
         expect(determination).to be_valid
       end
 
       it 'allows multiple valid reasons' do
-        determination = build(:determination, reasons: [ 'age_under_19_exempt', 'pregnancy_exempt' ])
+        determination = build(:determination, reasons: [ 'age_under_19_excluded', 'pregnancy_excluded' ])
         expect(determination).to be_valid
       end
 
@@ -73,7 +73,7 @@ RSpec.describe Determination, type: :model do
       end
 
       it 'rejects mixed valid and invalid reasons' do
-        determination = build(:determination, reasons: [ 'age_under_19_exempt', 'invalid_reason' ])
+        determination = build(:determination, reasons: [ 'age_under_19_excluded', 'invalid_reason' ])
         expect(determination).not_to be_valid
         expect(determination.errors[:reasons]).to include(match(/must contain only valid reason values/))
       end
@@ -103,7 +103,7 @@ RSpec.describe Determination, type: :model do
 
       before do
         create(:determination, subject: compliant_cert, outcome: 'compliant', reasons: [ 'hours_reported_compliant' ])
-        create(:determination, subject: exempt_cert, outcome: 'exempt', reasons: [ 'age_under_19_exempt' ])
+        create(:determination, subject: exempt_cert, outcome: 'exempt', reasons: [ 'age_under_19_excluded' ])
       end
 
       it 'returns determinations for specified certification IDs' do
@@ -143,7 +143,7 @@ RSpec.describe Determination, type: :model do
         create(:determination,
                subject: compliant_cert,
                outcome: 'compliant',
-               reasons: [ 'age_under_19_exempt' ],
+               reasons: [ 'age_under_19_excluded' ],
                created_at: 2.days.ago)
 
         # Create multiple determinations for exempt_cert
@@ -155,7 +155,7 @@ RSpec.describe Determination, type: :model do
         create(:determination,
                subject: exempt_cert,
                outcome: 'exempt',
-               reasons: [ 'pregnancy_exempt' ],
+               reasons: [ 'pregnancy_excluded' ],
                created_at: 1.day.ago)
       end
 
@@ -212,7 +212,7 @@ RSpec.describe Determination, type: :model do
         create(:determination,
                subject: compliant_cert,
                outcome: 'exempt',
-               reasons: [ 'age_under_19_exempt' ],
+               reasons: [ 'age_under_19_excluded' ],
                created_at: 2.days.ago)
         create(:determination,
                subject: compliant_cert,
@@ -229,7 +229,7 @@ RSpec.describe Determination, type: :model do
         create(:determination,
                subject: exempt_cert,
                outcome: 'exempt',
-               reasons: [ 'pregnancy_exempt' ],
+               reasons: [ 'pregnancy_excluded' ],
                created_at: 1.day.ago)
 
         # cert3: 1 determination

@@ -5,7 +5,7 @@ require "rails_helper"
 RSpec.describe MemberDashboardComplianceService do
   before do
     allow(Strata::EventManager).to receive(:publish).and_call_original
-    allow(ExemptionDeterminationService).to receive(:determine)
+    allow(ExclusionDeterminationService).to receive(:determine)
     allow(NotificationService).to receive(:send_email_notification)
   end
 
@@ -154,13 +154,13 @@ RSpec.describe MemberDashboardComplianceService do
       end
     end
 
-    context "when member status is exempt" do
+    context "when member status is exempt (automated exclusion)" do
       before do
         create(:determination,
                subject: certification,
-               outcome: "exempt",
+               outcome: "excluded",
                decision_method: "automated",
-               reasons: [ "age_under_19_exempt" ])
+               reasons: [ "age_under_19_excluded" ])
       end
 
       let(:member_status) { MemberStatusService.determine(certification) }
@@ -182,9 +182,9 @@ RSpec.describe MemberDashboardComplianceService do
         expect(read_model.exemption_flow_state).to eq(MemberDashboardCompliance::EXEMPTION_APPROVED)
       end
 
-      it "includes automated exempt determination in exemption history" do
+      it "includes automated exclusion determination in exemption history" do
         expect(read_model.exemption_history.size).to eq(1)
-        expect(read_model.exemption_history.first.exemption_type_key).to eq("age_under_19_exempt")
+        expect(read_model.exemption_history.first.exemption_type_key).to eq("age_under_19_excluded")
         expect(read_model.exemption_history.first.status_token).to eq(MemberDashboardCompliance::EXEMPTION_APPROVED)
       end
 
@@ -327,23 +327,23 @@ RSpec.describe MemberDashboardComplianceService do
       end
     end
 
-    context "when an automated exempt determination has a legacy String determination_data" do
-      # Reproduces the production shape that 500'd the dashboard: the automated exemption
+    context "when an automated exclusion determination has a legacy String determination_data" do
+      # Reproduces the production shape that 500'd the dashboard: the automated exclusion
       # path historically wrote reasons.to_json (a String) into the jsonb column, so AR
       # reads it back as a String instead of a Hash.
       before do
         det = create(:determination,
                      subject: certification,
-                     outcome: "exempt",
+                     outcome: "excluded",
                      decision_method: "automated",
-                     reasons: [ "age_under_19_exempt" ])
+                     reasons: [ "age_under_19_excluded" ])
         force_string_determination_data(det)
       end
 
       it "builds exemption history without raising and labels from the reason code" do
         expect { read_model.exemption_history }.not_to raise_error
         entry = read_model.exemption_history.first
-        expect(entry.exemption_type_key).to eq("age_under_19_exempt")
+        expect(entry.exemption_type_key).to eq("age_under_19_excluded")
         expect(entry.exemption_type_label).to eq("Age under 19")
       end
     end
@@ -364,17 +364,17 @@ RSpec.describe MemberDashboardComplianceService do
       end
     end
 
-    context "when an automated exemption is for veteran disability" do
+    context "when an automated exclusion is for veteran disability" do
       before do
         create(:determination,
                subject: certification,
-               outcome: "exempt",
+               outcome: "excluded",
                decision_method: "automated",
-               reasons: [ "veteran_disability_exempt" ])
+               reasons: [ "veteran_disability_excluded" ])
       end
 
       it "labels it with the curated reason-code translation" do
-        entry = read_model.exemption_history.find { |e| e.exemption_type_key == "veteran_disability_exempt" }
+        entry = read_model.exemption_history.find { |e| e.exemption_type_key == "veteran_disability_excluded" }
         expect(entry.exemption_type_label).to eq("Veteran with a disability")
       end
     end

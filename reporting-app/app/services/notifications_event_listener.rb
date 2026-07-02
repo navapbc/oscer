@@ -4,7 +4,8 @@
 # This decouples notifications from the business process workflow.
 #
 # Subscribed events and their notifications:
-# - DeterminedExempt → exempt_email
+# - DeterminedExempt (manual exemption approval) → exempt_email
+# - DeterminedExcluded (automated exclusion) → exempt_email
 # - DeterminedHoursMet / DeterminedCommunityEngagementMet → compliant_email
 # - DeterminedCommunityEngagementActionRequired → action_required_email
 # - DeterminedHoursInsufficient → insufficient_hours_email
@@ -32,6 +33,7 @@ class NotificationsEventListener
   class << self
     def subscribe
       Strata::EventManager.subscribe("DeterminedExempt", method(:handle_exempt))
+      Strata::EventManager.subscribe("DeterminedExcluded", method(:handle_exempt))
       Strata::EventManager.subscribe("DeterminedHoursMet", method(:handle_compliant))
       Strata::EventManager.subscribe("DeterminedCommunityEngagementMet", method(:handle_compliant))
       Strata::EventManager.subscribe("DeterminedCommunityEngagementActionRequired", method(:handle_action_required))

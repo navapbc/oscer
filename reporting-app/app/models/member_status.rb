@@ -29,7 +29,7 @@
 #   status = MemberStatusService.determine(certification)
 #   status.status # => "compliant"
 #   status.determination_method # => "automated"
-#   status.reason_codes # => ["age_under_19_exempt"]
+#   status.reason_codes # => ["age_under_19_excluded"]
 #   status.latest_determination # => <Determination ...> or nil
 class MemberStatus < Strata::ValueObject
   # Stable tokens for member dashboard / OSCER-480 (display copy is client-side i18n).

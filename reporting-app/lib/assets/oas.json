@@ -455,12 +455,12 @@
           "properties": {
             "status": {
               "type": "string",
-              "enum": ["compliant", "exempt", "indeterminate", "not_compliant"],
+              "enum": ["compliant", "excluded", "exempt", "indeterminate", "not_compliant"],
               "description": "Current status of community engagement requirement checks"
             },
             "reason": {
               "type": ["string", "null"],
-              "description": "Which exemption or community engagement requirement led to the decision"
+              "description": "Which exclusion, exemption, or community engagement requirement led to the decision"
             },
             "source": {
               "type": ["string", "null"],

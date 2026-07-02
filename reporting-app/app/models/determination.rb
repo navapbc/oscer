@@ -62,16 +62,16 @@ class Determination < Strata::Determination
   CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE = "automated_income_intake"
 
   REASON_CODE_MAPPING = {
-    age_under_19: "age_under_19_exempt",
-    age_over_65: "age_over_65_exempt",
-    is_pregnant: "pregnancy_exempt",
-    is_american_indian_or_alaska_native: "american_indian_alaska_native_exempt",
+    age_under_19: "age_under_19_excluded",
+    age_over_65: "age_over_65_excluded",
+    is_pregnant: "pregnancy_excluded",
+    is_american_indian_or_alaska_native: "american_indian_alaska_native_excluded",
     income_reported_compliant: "income_reported_compliant",
     income_reported_insufficient: "income_reported_insufficient",
     hours_reported_compliant: "hours_reported_compliant",
     hours_reported_insufficient: "hours_reported_insufficient",
     exemption_request_compliant: "exemption_request_compliant",
-    is_veteran_with_disability: "veteran_disability_exempt",
+    is_veteran_with_disability: "veteran_disability_excluded",
     denial_response_convincing: "denial_response_convincing",
     denial_response_not_convincing: "denial_response_not_convincing"
   }.freeze
@@ -94,7 +94,7 @@ class Determination < Strata::Determination
   VALID_REASONS = REASON_CODE_MAPPING.values.freeze
 
   enum :decision_method, { automated: "automated", manual: "manual" }
-  enum :outcome, { compliant: "compliant", exempt: "exempt", not_compliant: "not_compliant" }
+  enum :outcome, { compliant: "compliant", exempt: "exempt", excluded: "excluded", not_compliant: "not_compliant" }
 
   validates :reasons, presence: true, inclusion: { in: VALID_REASONS }
 
