@@ -14,7 +14,9 @@ DocAI is configured entirely via environment variables:
 
 ```bash
 # REQUIRED: URL of the DocAI API service
-DOC_AI_API_HOST=http://doc-ai-service.example.com
+DOC_AI_API_HOST=https:document-ai.dev.medicaid.navateam.com
+# Found in AWS Secrets Manager
+DOC_AI_API_KEY=test
 
 # Optional: API request timeout (seconds)
 DOC_AI_TIMEOUT_SECONDS=60
@@ -99,8 +101,6 @@ cd path/to/strata-service-document-ai
 docker compose up -d
 
 # 2. Start the reporting-app with the overlay that joins that network
-cd path/to/oscer/reporting-app
-make start-with-doc-ai
 ```
 
 In your `.env`, set `DOC_AI_API_HOST` to the container service name so that Docker DNS resolves it:
@@ -108,6 +108,8 @@ In your `.env`, set `DOC_AI_API_HOST` to the container service name so that Dock
 ```bash
 DOC_AI_API_HOST=http://strata-service-document-ai-service:8080
 ```
+cd path/to/oscer/reporting-app
+make start-with-doc-ai
 
 ## Verifying the Connection
 
