@@ -412,7 +412,7 @@ RSpec.describe CertificationCase, type: :model do
       certification = Certification.find(certification_case.certification_id)
       expect do
         certification_case.record_exclusion_determination(eligibility_fact, MockSubmitter)
-      end.to change { Strata::AuditLine.where(subject: certification, actor_type: MockSubmitter.name, action: "case.exemption.approved").count }.by(1)
+      end.to change { Strata::AuditLine.where(subject: certification, actor_type: MockSubmitter.name, action: "case.exclusion.approved").count }.by(1)
     end
 
     it 'creates determination with correct attributes' do

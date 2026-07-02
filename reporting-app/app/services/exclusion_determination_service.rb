@@ -16,7 +16,7 @@ class ExclusionDeterminationService
         Strata::EventManager.publish("DeterminedExcluded", { case_id: kase.id, certification_id: kase.certification_id })
       else
         Strata::AuditLog.write!(
-          action: "case.exemption.denied",
+          action: "case.exclusion.denied",
           actor: self,
           subject: certification,
         )

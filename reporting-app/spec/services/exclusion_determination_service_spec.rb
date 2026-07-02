@@ -60,7 +60,7 @@ RSpec.describe ExclusionDeterminationService do
       it 'logs approved event' do
         expect do
           service.determine(kase)
-        end.to change { Strata::AuditLine.where(subject: certification, actor_type: described_class.name, action: 'case.exemption.approved').count }.by(1)
+        end.to change { Strata::AuditLine.where(subject: certification, actor_type: described_class.name, action: 'case.exclusion.approved').count }.by(1)
       end
     end
 
@@ -156,7 +156,7 @@ RSpec.describe ExclusionDeterminationService do
       it 'logs denied event' do
         expect do
           service.determine(kase)
-        end.to change { Strata::AuditLine.where(subject: certification, actor_type: described_class.name, action: 'case.exemption.denied').count }.by(1)
+        end.to change { Strata::AuditLine.where(subject: certification, actor_type: described_class.name, action: 'case.exclusion.denied').count }.by(1)
       end
     end
 
