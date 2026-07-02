@@ -25,10 +25,4 @@ module "prod_config" {
   # Defaults to `false`. Uncomment the next line to enable.
   # ⚠️ Warning! It is not recommended to enable this in a production environment.
   # enable_command_execution = true
-
-  service_override_extra_environment_variables = {
-    # Demo certification seeding UI. This creates real Certification records via
-    # an unauthenticated write path, so it MUST stay disabled in production.
-    FEATURE_DEMO_CERTIFICATIONS = "false"
-  }
 }
