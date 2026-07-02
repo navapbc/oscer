@@ -38,6 +38,6 @@ module "dev_config" {
     FEATURE_BATCH_UPLOAD_V2     = "true"
     PERFORM_EMAIL_DELIVERY      = "false"
     FEATURE_DOC_AI              = "false"
-    FEATURE_DEMO_CERTIFICATIONS = "false"
+    FEATURE_DEMO_CERTIFICATIONS = "true"
   }
 }
