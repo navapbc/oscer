@@ -22,6 +22,53 @@ RSpec.describe "/demo/certifications", type: :request do
     Warden.test_reset!
   end
 
+  # In development/test the gate always allows access (matching today's DX), so
+  # the examples below exercise the un-gated behavior. The "feature gating"
+  # context simulates a deployed (non-local) environment where the flag governs.
+
+  describe "feature gating in a deployed environment" do
+    before do
+      allow(Rails).to receive(:env).and_return(ActiveSupport::EnvironmentInquirer.new("production"))
+    end
+
+    context "when FEATURE_DEMO_CERTIFICATIONS is disabled" do
+      it "returns 404 for GET /new" do
+        with_demo_certifications_disabled do
+          get new_demo_certification_url
+        end
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it "returns 404 and creates nothing for POST /create" do
+        with_demo_certifications_disabled do
+          expect {
+            post demo_certifications_url,
+                 params: { demo_certifications_create_form: valid_request_attributes }
+          }.not_to change(Certification, :count)
+        end
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    context "when FEATURE_DEMO_CERTIFICATIONS is enabled" do
+      it "allows GET /new" do
+        with_demo_certifications_enabled do
+          get new_demo_certification_url
+        end
+        expect(response).to be_successful
+      end
+
+      it "allows POST /create to seed a Certification" do
+        with_demo_certifications_enabled do
+          expect {
+            post demo_certifications_url,
+                 params: { demo_certifications_create_form: valid_request_attributes }
+          }.to change(Certification, :count).by(1)
+        end
+      end
+    end
+  end
+
   describe "GET /new" do
     it "renders Generic form by default" do
       get new_demo_certification_url

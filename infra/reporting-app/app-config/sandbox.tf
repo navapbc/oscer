@@ -23,9 +23,10 @@ module "sandbox_config" {
   service_memory = 1024
 
   service_override_extra_environment_variables = {
-    ENABLE_LOOKBOOK         = "true"
-    SSO_ENABLED             = "true"
-    FEATURE_BATCH_UPLOAD_V2 = "true"
-    FEATURE_DOC_AI          = "false"
+    ENABLE_LOOKBOOK             = "true"
+    SSO_ENABLED                 = "true"
+    FEATURE_BATCH_UPLOAD_V2     = "true"
+    FEATURE_DOC_AI              = "false"
+    FEATURE_DEMO_CERTIFICATIONS = "false"
   }
 }

@@ -18,4 +18,12 @@ module "staging_config" {
   # See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html
   # Defaults to `false`. Uncomment the next line to enable.
   # enable_command_execution = true
+
+  service_override_extra_environment_variables = {
+    # Demo certification seeding UI. Creates real Certification records with no
+    # authentication, so it stays disabled by default. To run UAT seeding in
+    # this (non-prod) environment, flip this to "true" and re-deploy; set it
+    # back to "false" afterward. Production must remain "false".
+    FEATURE_DEMO_CERTIFICATIONS = "false"
+  }
 }
