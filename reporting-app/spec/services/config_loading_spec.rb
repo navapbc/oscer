@@ -2,17 +2,21 @@
 
 require "rails_helper"
 
-# Direct regression net for the plumbing extracted from ExemptionTypesLoader and
-# FeatureFlagsLoader. The module is exercised through a throwaway anonymous module that
-# `extend`s it — mirroring how the real loaders consume it (`extend ConfigLoading`) and
-# proving the methods land as PUBLIC singleton methods. `write_yaml` comes from the shared
-# spec/support/yaml_config_helpers.rb helper.
+# Direct regression net for the load/parse/error methods extracted from
+# ExemptionTypesLoader and FeatureFlagsLoader. The module is exercised through a throwaway
+# anonymous module that `extend`s it — mirroring how the real loaders consume it
+# (`extend ConfigLoading`) and proving the methods become PUBLIC class methods on the
+# extending loader. `write_yaml` comes from the shared spec/support/yaml_config_helpers.rb
+# helper.
 RSpec.describe ConfigLoading, type: :service do
   # A stand-in for a real loader: gains safe_load_optional / parse_yaml as public
   # singleton methods, just as `extend ConfigLoading` does on ExemptionTypesLoader et al.
   let(:loader) { Module.new { extend ConfigLoading } }
 
-  it "exposes the plumbing as public methods after extend" do
+  it "makes safe_load_optional and parse_yaml public class methods on an extending loader" do
+    # `extend ConfigLoading` copies the module's instance methods onto the loader as
+    # public singleton (class) methods, which is what lets the initializers call
+    # Loader.safe_load_optional(...) at boot. module_function would make them private.
     expect(loader.singleton_class.public_method_defined?(:safe_load_optional)).to be(true)
     expect(loader.singleton_class.public_method_defined?(:parse_yaml)).to be(true)
   end
