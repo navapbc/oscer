@@ -404,15 +404,17 @@ class MemberDashboardCompliance
     rows
   end
 
-  # Exempt-outcome determinations (automated eligibility and staff/form approvals) plus
-  # in-flight exemption application rows when the case is not yet approved.
+  # Exemption/exclusion-outcome determinations (automated exclusion eligibility and staff/form
+  # approvals) plus in-flight exemption application rows when the case is not yet approved.
+  # Automated exclusions record +outcome: :excluded+; manual exemption approvals record
+  # +outcome: :exempt+ — both belong in this history.
   def build_exemption_history
     entries = []
 
     determination_rows = Determination
       .unscope(:order)
       .where(subject_type: "Certification", subject_id: @certification.id)
-      .where(outcome: :exempt)
+      .where(outcome: [ :exempt, :excluded ])
       .order(determined_at: :desc, created_at: :desc)
       .to_a
 
@@ -474,7 +476,7 @@ class MemberDashboardCompliance
   # automated row from ever reaching the Hash read (see #680).
   def exemption_history_type_for_determination(det)
     if det.decision_method == "automated"
-      # The row is already +outcome: :exempt+, so its reasons are exemption reasons; the
+      # The row is already +outcome: :excluded+, so its reasons are exclusion reasons; the
       # reason code is the type. No need to inspect determination_data.
       reason = Array(det.reasons).first
       reason ? [ reason, exemption_reason_label(reason) ] : unknown_exemption_type

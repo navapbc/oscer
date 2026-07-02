@@ -6,7 +6,7 @@ RSpec.describe MemberStatusService do
   # Stub business process to prevent auto-triggering determinations when creating certifications
   before do
     allow(Strata::EventManager).to receive(:publish).and_call_original
-    allow(ExemptionDeterminationService).to receive(:determine)
+    allow(ExclusionDeterminationService).to receive(:determine)
     allow(NotificationService).to receive(:send_email_notification)
   end
 
@@ -47,16 +47,16 @@ RSpec.describe MemberStatusService do
       end
     end
 
-    context 'when Determination exists with outcome "exempt"' do
+    context 'when Determination exists with automated outcome "excluded"' do
       before do
         create(:determination,
                subject: certification,
-               outcome: "exempt",
+               outcome: "excluded",
                decision_method: "automated",
-               reasons: [ "age_over_65_exempt", "pregnancy_exempt" ])
+               reasons: [ "age_over_65_excluded", "pregnancy_excluded" ])
       end
 
-      it 'returns status "exempt"' do
+      it 'surfaces the automated exclusion as status "exempt"' do
         result = service.determine(certification)
         expect(result.status).to eq("exempt")
       end
@@ -68,7 +68,7 @@ RSpec.describe MemberStatusService do
 
       it 'returns all reason_codes' do
         result = service.determine(certification)
-        expect(result.reason_codes).to eq([ "age_over_65_exempt", "pregnancy_exempt" ])
+        expect(result.reason_codes).to eq([ "age_over_65_excluded", "pregnancy_excluded" ])
       end
     end
 
@@ -124,13 +124,13 @@ RSpec.describe MemberStatusService do
                subject: certification,
                outcome: "exempt",
                decision_method: "automated",
-               reasons: [ "age_under_19_exempt" ],
+               reasons: [ "age_under_19_excluded" ],
                created_at: 1.day.ago)
         create(:determination,
                subject: certification,
                outcome: "compliant",
                decision_method: "manual",
-               reasons: [ "age_over_65_exempt" ],
+               reasons: [ "age_over_65_excluded" ],
                created_at: Time.current)
       end
 
@@ -138,7 +138,7 @@ RSpec.describe MemberStatusService do
         result = service.determine(certification)
         expect(result.status).to eq("compliant")
         expect(result.determination_method).to eq("manual")
-        expect(result.reason_codes).to eq([ "age_over_65_exempt" ])
+        expect(result.reason_codes).to eq([ "age_over_65_excluded" ])
       end
     end
 
@@ -337,7 +337,7 @@ RSpec.describe MemberStatusService do
                subject: certification,
                outcome: "exempt",
                decision_method: "automated",
-               reasons: [ "age_over_65_exempt" ])
+               reasons: [ "age_over_65_excluded" ])
         create(:determination,
                subject: create(:certification),
                outcome: "compliant",
@@ -366,7 +366,7 @@ RSpec.describe MemberStatusService do
                subject: cert,
                outcome: "compliant",
                decision_method: "automated",
-               reasons: [ "pregnancy_exempt" ],
+               reasons: [ "pregnancy_excluded" ],
                created_at: 1.hour.ago)
         create(:determination,
                subject: cert,
@@ -465,7 +465,7 @@ RSpec.describe MemberStatusService do
              subject: completed_certification,
              outcome: "exempt",
              decision_method: "automated",
-             reasons: [ "age_under_19_exempt" ])
+             reasons: [ "age_under_19_excluded" ])
     end
 
     it "returns only prior certifications with terminal outcomes" do

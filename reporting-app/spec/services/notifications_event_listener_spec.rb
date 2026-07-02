@@ -15,7 +15,7 @@ RSpec.describe NotificationsEventListener, type: :service do
   before do
     allow(NotificationService).to receive(:send_email_notification)
     # Stub services that may publish events during certification creation
-    allow(ExemptionDeterminationService).to receive(:determine)
+    allow(ExclusionDeterminationService).to receive(:determine)
   end
 
   describe ".subscribe" do
@@ -25,6 +25,7 @@ RSpec.describe NotificationsEventListener, type: :service do
       described_class.subscribe
 
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedExempt", anything)
+      expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedExcluded", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedHoursMet", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedCommunityEngagementMet", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedCommunityEngagementActionRequired", anything)

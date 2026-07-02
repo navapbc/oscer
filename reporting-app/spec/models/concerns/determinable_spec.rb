@@ -90,6 +90,24 @@ RSpec.describe Determinable, type: :model do
     end
   end
 
+  RSpec.shared_examples "an exclusion" do |reason_code|
+    let(:params) do
+      {
+        reasons: [ Determination::REASON_CODE_MAPPING[reason_code] ],
+        decision_method: :automated,
+        outcome: :excluded,
+        determination_data: { foo: :bar },
+        determined_at: Time.now
+      }
+    end
+
+    it "creates an audit log with the exclusion action" do
+      expect do
+        certification.record_determination!(**params)
+      end.to change { Strata::AuditLine.where(subject: certification, actor: nil, action: "case.exclusion.approved").count }.by(1)
+    end
+  end
+
   RSpec.shared_examples "an activity report" do |reason_code|
     let(:base_params) do
       {
@@ -126,6 +144,17 @@ RSpec.describe Determinable, type: :model do
       context reason_code do
         it_behaves_like "a submitted determination", reason_code
         it_behaves_like "an exemption", reason_code
+      end
+    end
+  end
+
+  # The automated ExternalExclusionCheck system process records +outcome: :excluded+ with these
+  # exclusion reason codes. The audit action for that path is renamed to +case.exclusion.*+ while
+  # manual exemption approvals (+outcome: :exempt+) keep +case.exemption.*+.
+  describe 'Exclusion outcome' do
+    %i[age_under_19 age_over_65 is_pregnant is_american_indian_or_alaska_native is_veteran_with_disability].each do |reason_code|
+      context reason_code do
+        it_behaves_like "an exclusion", reason_code
       end
     end
   end

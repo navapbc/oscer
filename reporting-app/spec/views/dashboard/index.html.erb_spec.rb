@@ -22,7 +22,7 @@ RSpec.describe "dashboard/index", type: :view do
   before do
     # Prevent auto-triggering business process during test setup
     allow(Strata::EventManager).to receive(:publish).and_call_original
-    allow(ExemptionDeterminationService).to receive(:determine)
+    allow(ExclusionDeterminationService).to receive(:determine)
     allow(NotificationService).to receive(:send_email_notification)
 
     assign(:all_certifications, [
@@ -782,7 +782,7 @@ RSpec.describe "dashboard/index", type: :view do
              subject: certification,
              outcome: "exempt",
              decision_method: "automated",
-             reasons: [ "age_under_19_exempt" ])
+             reasons: [ "age_under_19_excluded" ])
       reassign_compliance_read_model
     end
 
