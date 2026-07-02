@@ -1,0 +1,321 @@
+[
+  {
+    "id": "Payslip",
+    "version": "1.0.0",
+    "mimeTypes": ["application/pdf", "image/jpeg", "image/png", "image/tiff"],
+    "typeAliases": [
+      "pay_stub",
+      "paystub",
+      "paycheck",
+      "earnings_statement",
+      "pay_statement"
+    ],
+    "fields": [
+      {
+        "name": "pay_period_start_date",
+        "type": "date",
+        "required": true,
+        "confidenceFloor": 0.7,
+        "description": "First day of the pay period in ISO format. Used to derive the reporting month."
+      },
+      {
+        "name": "pay_period_end_date",
+        "type": "date",
+        "required": false,
+        "confidenceFloor": 0.7,
+        "description": "Last day of the pay period in ISO format."
+      },
+      {
+        "name": "pay_date",
+        "type": "date",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Date the employee was paid."
+      },
+
+      {
+        "name": "current_gross_pay",
+        "type": "currency",
+        "required": true,
+        "confidenceFloor": 0.7,
+        "description": "Total gross earnings for the current pay period before deductions. Used to populate the income activity."
+      },
+      {
+        "name": "current_net_pay",
+        "type": "currency",
+        "required": false,
+        "confidenceFloor": 0.7,
+        "description": "Take-home pay after all deductions for the current pay period."
+      },
+      {
+        "name": "current_total_deductions",
+        "type": "currency",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Total deductions withheld during the current pay period."
+      },
+
+      {
+        "name": "ytd_gross_pay",
+        "type": "currency",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Year-to-date gross earnings before deductions."
+      },
+      {
+        "name": "ytd_net_pay",
+        "type": "currency",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Year-to-date net (take-home) pay."
+      },
+      {
+        "name": "ytd_federal_tax",
+        "type": "currency",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Year-to-date federal income tax withheld."
+      },
+      {
+        "name": "ytd_state_tax",
+        "type": "currency",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Year-to-date state income tax withheld."
+      },
+      {
+        "name": "ytd_city_tax",
+        "type": "currency",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Year-to-date city/local income tax withheld."
+      },
+      {
+        "name": "ytd_total_deductions",
+        "type": "currency",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Year-to-date total deductions."
+      },
+      {
+        "name": "regular_hourly_rate",
+        "type": "number",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Employee's regular hourly rate of pay."
+      },
+      {
+        "name": "holiday_hourly_rate",
+        "type": "number",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Employee's holiday or premium hourly rate of pay."
+      },
+      {
+        "name": "federal_filing_status",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Employee's federal tax filing status (e.g. Single, Married)."
+      },
+      {
+        "name": "state_filing_status",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Employee's state tax filing status."
+      },
+      {
+        "name": "employee_number",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Employer-assigned employee identification number."
+      },
+      {
+        "name": "payroll_number",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Payroll run or check number."
+      },
+      {
+        "name": "currency",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "ISO 4217 currency code for all monetary amounts on the payslip (e.g. USD)."
+      },
+      {
+        "name": "employee_name.first_name",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Employee's first (given) name."
+      },
+      {
+        "name": "employee_name.middle_name",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Employee's middle name or initial."
+      },
+      {
+        "name": "employee_name.last_name",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Employee's last (family) name."
+      },
+      {
+        "name": "employee_name.suffix_name",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Employee's name suffix (e.g. Jr., Sr., III)."
+      },
+      {
+        "name": "employee_address.line1",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "First line of the employee's mailing address."
+      },
+      {
+        "name": "employee_address.line2",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Second line of the employee's mailing address (apt, suite, etc.)."
+      },
+      {
+        "name": "employee_address.city",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "City of the employee's mailing address."
+      },
+      {
+        "name": "employee_address.state",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "State/territory abbreviation of the employee's mailing address."
+      },
+      {
+        "name": "employee_address.zipcode",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "ZIP or postal code of the employee's mailing address."
+      },
+      {
+        "name": "company_address.line1",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "First line of the employer's business address."
+      },
+      {
+        "name": "company_address.line2",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "Second line of the employer's business address."
+      },
+      {
+        "name": "company_address.city",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "City of the employer's business address."
+      },
+      {
+        "name": "company_address.state",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "State/territory abbreviation of the employer's business address."
+      },
+      {
+        "name": "company_address.zipcode",
+        "type": "string",
+        "required": false,
+        "confidenceFloor": 0.65,
+        "description": "ZIP or postal code of the employer's business address."
+      },
+      {
+        "name": "federal_taxes.item_description",
+        "type": "string",
+        "required": false,
+        "repeated": true,
+        "confidenceFloor": 0.65,
+        "description": "Label for a federal tax line item (e.g. Federal Income Tax)."
+      },
+      {
+        "name": "federal_taxes.period",
+        "type": "currency",
+        "required": false,
+        "repeated": true,
+        "confidenceFloor": 0.65,
+        "description": "Current period amount for a federal tax line item."
+      },
+      {
+        "name": "federal_taxes.ytd",
+        "type": "currency",
+        "required": false,
+        "repeated": true,
+        "confidenceFloor": 0.65,
+        "description": "Year-to-date amount for a federal tax line item."
+      },
+      {
+        "name": "state_taxes.item_description",
+        "type": "string",
+        "required": false,
+        "repeated": true,
+        "confidenceFloor": 0.65,
+        "description": "Label for a state tax line item."
+      },
+      {
+        "name": "state_taxes.period",
+        "type": "currency",
+        "required": false,
+        "repeated": true,
+        "confidenceFloor": 0.65,
+        "description": "Current period amount for a state tax line item."
+      },
+      {
+        "name": "state_taxes.ytd",
+        "type": "currency",
+        "required": false,
+        "repeated": true,
+        "confidenceFloor": 0.65,
+        "description": "Year-to-date amount for a state tax line item."
+      },
+      {
+        "name": "city_taxes.item_description",
+        "type": "string",
+        "required": false,
+        "repeated": true,
+        "confidenceFloor": 0.65,
+        "description": "Label for a city/local tax line item."
+      },
+      {
+        "name": "city_taxes.period",
+        "type": "currency",
+        "required": false,
+        "repeated": true,
+        "confidenceFloor": 0.65,
+        "description": "Current period amount for a city/local tax line item."
+      },
+      {
+        "name": "city_taxes.ytd",
+        "type": "currency",
+        "required": false,
+        "repeated": true,
+        "confidenceFloor": 0.65,
+        "description": "Year-to-date amount for a city/local tax line item."
+      }
+    ]
+  }
+]

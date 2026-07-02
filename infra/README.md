@@ -136,6 +136,104 @@ Set up the following before launching to end users in production:
 - [Web application firewall (WAF)](/docs/infra/web-application-firewall.md)
 - [Staging and production environments](../docs/infra/staging-and-production-environments.md)
 
+## 🤖 Document AI service
+
+The `infra/document-ai/` directory provisions the [strata-service-document-ai](https://github.com/navapbc/strata-service-document-ai) microservice, which processes and extracts text from documents using Amazon Textract + Bedrock.
+
+### Architecture
+
+| Component | Details |
+|---|---|
+| Service | ECS Fargate behind an ALB |
+| AI backend | Amazon Textract + Bedrock (`aws_model = "textract"`) |
+| Storage | S3 + DynamoDB for document jobs |
+| Domain | `document-ai.dev.medicaid.navateam.com` |
+| ECR | `community-engagement-medicaid-document-ai` |
+| Network | Shares the existing `dev` VPC |
+
+### First-time setup
+
+Run these steps in order. Steps 1 and 2 are one-time; step 3 is repeated for each release.
+
+**1. Provision the ACM certificate (if not already done)**
+
+The cert for `document-ai.dev.medicaid.navateam.com` is defined in `infra/project-config/networks.tf` and provisioned alongside the network:
+
+```sh
+cd infra/networks
+terraform init -backend-config=dev.s3.tfbackend
+terraform apply -var network_name=dev
+```
+
+**2. Create the ECR repository**
+
+```sh
+cd infra/document-ai/build-repository
+terraform init -backend-config=shared.s3.tfbackend
+terraform apply
+```
+
+**3. Push a container image**
+
+Build and push an image tagged with the version you want to deploy (e.g. `latest` for dev).
+
+Authenticate with GHCR first (the upstream image is published there):
+
+```sh
+# Grant your local token read:packages scope
+gh auth refresh -s read:packages
+
+# Log Docker into GHCR using your GitHub token
+echo $(gh auth token) | docker login ghcr.io -u $(gh api user -q .login) --password-stdin
+```
+
+Then log into ECR, build, and push:
+
+```sh
+aws ecr get-login-password --region us-east-1 \
+  | docker login --username AWS \
+    --password-stdin <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+
+docker build -t community-engagement-medicaid-document-ai:latest document-ai/
+docker tag  community-engagement-medicaid-document-ai:latest \
+  <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/community-engagement-medicaid-document-ai:latest
+docker push <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/community-engagement-medicaid-document-ai:latest
+```
+
+**4. Deploy the service**
+
+```sh
+cd infra/document-ai/service
+terraform init -backend-config=dev.s3.tfbackend
+terraform apply -var environment_name=dev
+```
+
+Pass a specific image tag with `-var image_tag=<tag>` if you are not using `latest`.
+
+### ⚠️ Post-deploy: set the API auth key
+
+The module creates a Secrets Manager secret named `cem-docai-dev-api-auth-key` with an **empty value**. The service will not authenticate requests until this is set.
+
+After the first `terraform apply`, set the key:
+
+```sh
+aws secretsmanager put-secret-value \
+  --secret-id cem-docai-dev-api-auth-key \
+  --secret-string "<your-secret-key>"
+```
+
+Generate a strong random key with `openssl rand -hex 32`. The value is passed to the service as the `API_AUTH_INSECURE_SHARED_KEY` environment variable and must be included in requests as a bearer token.
+
+### Destroying the dev environment
+
+Deletion protection is disabled for dev, so a clean destroy is possible:
+
+```sh
+# Service first, then ECR
+cd infra/document-ai/service && terraform destroy -var environment_name=dev
+cd infra/document-ai/build-repository && terraform destroy
+```
+
 ### Setting up additional capabilities
 
 - [Additional applications](../docs/infra/add-application.md)
