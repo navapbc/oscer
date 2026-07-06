@@ -34,8 +34,10 @@ RSpec.describe DemoAccessGate, type: :controller do
   end
 
   describe "before_action guard (defense in depth beyond route constraints)" do
+    concern = described_class
+
     controller(ActionController::Base) do
-      include described_class
+      include concern
 
       def index
         head :ok
