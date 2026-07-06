@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "config_loading"
+
 # Loads exemption-type configuration by deep-merging an optional deployment
 # override (config/custom/exemption_types.yml, the deployment-owned override
 # surface) over the federal-floor defaults declared in DEFAULTS below.
@@ -7,8 +9,16 @@
 # Defaults represent OSCER's federal floor and are OSCER-owned (updated by
 # Nava as CMS regulations evolve). Deployments customize via the override
 # file, not by editing this constant.
+#
+# The YAML load/parse/error plumbing lives in the shared ConfigLoading module
+# (extend below); this loader keeps only its deep-merge + transform logic.
 module ExemptionTypesLoader
-  class ConfigurationError < StandardError; end
+  extend ConfigLoading
+
+  # Alias keeps ExemptionTypesLoader::ConfigurationError valid for existing
+  # rescues/specs; unqualified `raise ConfigurationError` in transform resolves
+  # to it via lexical scope, so no raise site changes.
+  ConfigurationError = ConfigLoading::ConfigurationError
 
   DEFAULTS = {
     "caregiver_disability" => { "enabled" => true },
@@ -21,11 +31,6 @@ module ExemptionTypesLoader
   }.freeze
 
   module_function
-
-  def safe_load_optional(path)
-    return {} unless File.exist?(path)
-    parse_yaml(path)
-  end
 
   def merge_with_defaults(overrides)
     DEFAULTS.deep_merge(overrides)
@@ -41,16 +46,5 @@ module ExemptionTypesLoader
       end
       attrs.symbolize_keys.merge(id: id.to_sym)
     end
-  end
-
-  def parse_yaml(path)
-    raw = YAML.safe_load(File.read(path), permitted_classes: [], permitted_symbols: [], aliases: false)
-    return {} if raw.nil?
-    unless raw.is_a?(Hash)
-      raise ConfigurationError, "Expected a Hash at top level in #{path}, got #{raw.class}"
-    end
-    raw
-  rescue Psych::SyntaxError, Psych::DisallowedClass => e
-    raise ConfigurationError, "Invalid YAML in #{path}: #{e.message}"
   end
 end

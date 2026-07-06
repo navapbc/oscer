@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-class ExemptionApplicationForm < Strata::ApplicationForm
-  include FormApprovalStatus
+class ExemptionApplicationForm < OscerApplicationForm
   has_review_task "ReviewExemptionClaimTask"
+  case_approval_status :exemption_request_approval_status
 
   # TODO: Remove when revising the old exemption screener flow
   LEGACY_EXEMPTION_TYPES = %w[short_term_hardship incarceration].freeze
@@ -10,69 +10,21 @@ class ExemptionApplicationForm < Strata::ApplicationForm
   enum :exemption_type, Exemption.enum_hash
   validates :exemption_type, inclusion: { in: Exemption.types + LEGACY_EXEMPTION_TYPES }, allow_nil: true
 
-  validate :case_not_closed, on: :create
-  validate :no_pending_forms, on: :create
-
   has_many_attached :supporting_documents
 
   default_scope { with_attached_supporting_documents.includes(:determinations) }
 
   strata_attribute :exemption_type, :string
 
-  def self.find_by_certification_case_id(certification_case_id)
-    find_by(certification_case_id:)
-  end
-
-  def event_payload
-    super.merge(case_id: certification_case_id)
-  end
-
   def self.information_request_class
     ExemptionInformationRequest
   end
 
-  def flow_status
-    unless @flow_status.present?
-      task_complete = staff_exemption_review_complete?
-      @flow_status = if task_complete
-                       CertificationCase.find(certification_case_id).exemption_request_approval_status
-      else
-                       status
-      end
-    end
-
-    @flow_status
-  end
-
   # True when caseworker review for this form has finished (+ReviewExemptionClaimTask+ completed).
   # Case-level +exemption_request_approval_status+ applies only after this; a new submission
-  # after a prior denial stays pending until staff review the new request.
+  # after a prior denial stays pending until staff review the new request. Public delegator over
+  # the base's review-task check; has external callers (member dashboard compliance).
   def staff_exemption_review_complete?
-    ReviewExemptionClaimTask.where(case_id: certification_case_id,
-                                   application_form: self,
-                                   status: :completed).exists?
-  end
-
-  def self.has_pending_form(certification_case_id)
-    ExemptionApplicationForm.where(certification_case_id:, status: :in_progress).exists? ||
-    ReviewExemptionClaimTask.where(application_form: ExemptionApplicationForm.where(certification_case_id:).all,
-                                   status: [ :on_hold, :pending ]).exists?
-  end
-
-  private
-
-  def case_not_closed
-    certification_case = CertificationCase.find_by(id: certification_case_id)
-    if certification_case.blank?
-      errors.add(:certification_case_id, "is invalid")
-    elsif certification_case.closed?
-      errors.add(:certification_case_id, "has closed")
-    elsif certification_case.verification_window_ended?
-      errors.add(:certification_case_id, "verification window has ended")
-    end
-  end
-
-  def no_pending_forms
-    errors.add(:certification_case_id, "has already been taken") if ExemptionApplicationForm.has_pending_form(certification_case_id)
+    review_task_completed?
   end
 end
