@@ -46,8 +46,8 @@ class DocAiResult < Strata::ValueObject
 
   def self.build(response)
     instance = new(
-      job_id:                        response["job_id"],
-      status:                        response["status"],
+      job_id:                        response["jobId"],
+      status:                        response["jobStatus"],
       matched_document_class:        response["matchedDocumentClass"],
       message:                       response["message"],
       created_at:                    response["createdAt"],
@@ -70,8 +70,12 @@ class DocAiResult < Strata::ValueObject
 
   # Returns a FieldValue containing both the extracted value and its confidence score.
   # Returns nil if the field was not present in the API response.
+  # Lookup is case-insensitive to handle camelCase keys from the API matching
+  # lowercase keys used by subclass accessors.
   def field_for(api_key)
-    raw = fields.dig(api_key.to_s)
+    normalized = api_key.to_s.downcase
+    key = fields.keys.find { |k| k.downcase == normalized }
+    raw = fields[key]
     return nil unless raw
 
     FieldValue.new(value: raw["value"], confidence: raw["confidence"])

@@ -43,6 +43,7 @@ class DocAiAdapter < DataIntegration::BaseAdapter
       f.adapter Faraday.default_adapter
       f.options.open_timeout = 10
       f.options.timeout      = Rails.application.config.doc_ai[:timeout_seconds]
+      f.headers["X-API-Key"] = Rails.application.config.doc_ai[:api_key]
     end
   end
 end

@@ -3,7 +3,8 @@
 # DocAI Integration Configuration
 #
 # Environment variables:
-#   DOC_AI_API_HOST                 - DocAI API base endpoint (default: platform-test-dev endpoint)
+#   DOC_AI_API_HOST                 - DocAI API base endpoint
+#   DOC_AI_API_KEY                  - API key sent as X-API-Key header
 #   DOC_AI_TIMEOUT_SECONDS          - HTTP timeout in seconds (default: 60)
 #   DOC_AI_LOW_CONFIDENCE_THRESHOLD - Minimum confidence threshold (default: 0.7)
 #   STAGED_DOCUMENT_CLEANUP_ENABLED - Enable rake cleanup of orphaned staged docs (default: true)
@@ -12,6 +13,7 @@
 
 Rails.application.config.doc_ai = {
   api_host:                        ENV.fetch("DOC_AI_API_HOST", nil),
+  api_key:                         ENV.fetch("DOC_AI_API_KEY", nil),
   timeout_seconds:                 ENV.fetch("DOC_AI_TIMEOUT_SECONDS", "60").to_i,
   low_confidence_threshold:        ENV.fetch("DOC_AI_LOW_CONFIDENCE_THRESHOLD", "0.7").to_f,
   staged_document_cleanup_enabled: ActiveModel::Type::Boolean.new.cast(

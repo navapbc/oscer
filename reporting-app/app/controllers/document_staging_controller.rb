@@ -57,7 +57,7 @@ class DocumentStagingController < ApplicationController
   private
 
   def create_params
-    params.permit(:activity_report_application_form_id, files: [], existing_ids: [])
+    @create_params ||= params.permit(:activity_report_application_form_id, files: [], existing_ids: [])
   end
 
   def lookup_params

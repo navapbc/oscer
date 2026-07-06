@@ -10,8 +10,8 @@ RSpec.describe DocAiService do
 
   let(:payslip_response) do
     {
-      "job_id"                     => "d773fa8f-3cc7-47d8-be78-4125c190c290",
-      "status"                     => "completed",
+      "jobId"                      => "d773fa8f-3cc7-47d8-be78-4125c190c290",
+      "jobStatus"                  => "completed",
       "matchedDocumentClass"       => "Payslip",
       "message"                    => "Document processed successfully",
       "totalProcessingTimeSeconds" => 38.6,
@@ -23,9 +23,9 @@ RSpec.describe DocAiService do
 
   let(:failed_response) do
     {
-      "job_id" => "a4187dd2-8ccd-4e6f-b7a7-164092e49eca",
-      "status" => "failed",
-      "error"  => "Handler handler failed"
+      "jobId"     => "a4187dd2-8ccd-4e6f-b7a7-164092e49eca",
+      "jobStatus" => "failed",
+      "error"     => "Handler handler failed"
     }
   end
 
@@ -93,7 +93,7 @@ RSpec.describe DocAiService do
   end
 
   describe "#analyze_async" do
-    let(:submit_response) { { "jobId" => "abc-123", "status" => "not_started" } }
+    let(:submit_response) { { "jobId" => "abc-123", "jobStatus" => "not_started", "message" => "Document submitted" } }
 
     context "when the adapter returns a successful response" do
       before do
@@ -148,7 +148,7 @@ RSpec.describe DocAiService do
     end
 
     context "when the job is still processing" do
-      let(:processing_response) { { "job_id" => job_id, "status" => "processing" } }
+      let(:processing_response) { { "jobId" => job_id, "jobStatus" => "processing" } }
 
       before do
         allow(adapter).to receive(:get_document_status).with(job_id: job_id)

@@ -4,12 +4,14 @@ require "rails_helper"
 
 RSpec.describe DocAiAdapter do
   let(:api_host) { "https://app-docai.example.com" }
+  let(:api_key) { "test" }
   let(:connection) do
     Faraday.new(url: api_host) do |f|
       f.request :multipart
       f.request :url_encoded
       f.response :json
       f.adapter :test, stubs
+      f.headers["X-API-Key"] = api_key
     end
   end
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
@@ -40,8 +42,8 @@ RSpec.describe DocAiAdapter do
 
   let(:success_response_body) do
     {
-      "job_id"               => "d773fa8f-3cc7-47d8-be78-4125c190c290",
-      "status"               => "completed",
+      "jobId"                => "d773fa8f-3cc7-47d8-be78-4125c190c290",
+      "jobStatus"            => "completed",
       "matchedDocumentClass" => "Payslip",
       "message"              => "Document processed successfully",
       "fields" => {
@@ -55,11 +57,12 @@ RSpec.describe DocAiAdapter do
       it "sends wait=true query param and returns the parsed response body" do
         stubs.post("/v1/documents") do |env|
           expect(env.params["wait"]).to eq("true")
+          expect(env.request_headers["X-Api-Key"]).to eq(api_key)
           [ 200, { "Content-Type" => "application/json" }, success_response_body.to_json ]
         end
 
         result = adapter.analyze_document(file: file_double)
-        expect(result["job_id"]).to eq("d773fa8f-3cc7-47d8-be78-4125c190c290")
+        expect(result["jobId"]).to eq("d773fa8f-3cc7-47d8-be78-4125c190c290")
         expect(result["matchedDocumentClass"]).to eq("Payslip")
       end
     end
@@ -120,21 +123,22 @@ RSpec.describe DocAiAdapter do
   describe "#analyze_document_async" do
     let(:submit_response_body) do
       {
-        "jobId"  => "abc-123",
-        "status" => "not_started"
+        "jobId"     => "abc-123",
+        "jobStatus" => "not_started",
+        "message"   => "Document submitted"
       }
     end
 
-    context "when the request is successful (200)" do
+    context "when the request is successful (202)" do
       it "returns the parsed response body without wait=true" do
         stubs.post("/v1/documents") do |env|
           expect(env.params["wait"]).to be_nil
-          [ 200, { "Content-Type" => "application/json" }, submit_response_body.to_json ]
+          [ 202, { "Content-Type" => "application/json" }, submit_response_body.to_json ]
         end
 
         result = adapter.analyze_document_async(file: file_double)
         expect(result["jobId"]).to eq("abc-123")
-        expect(result["status"]).to eq("not_started")
+        expect(result["jobStatus"]).to eq("not_started")
       end
     end
 
@@ -188,13 +192,13 @@ RSpec.describe DocAiAdapter do
 
         result = adapter.get_document_status(job_id: job_id)
 
-        expect(result["status"]).to eq("completed")
-        expect(result["job_id"]).to eq(job_id)
+        expect(result["jobStatus"]).to eq("completed")
+        expect(result["jobId"]).to eq(job_id)
       end
     end
 
     context "when the job is still processing" do
-      let(:processing_body) { { "job_id" => job_id, "status" => "processing" } }
+      let(:processing_body) { { "jobId" => job_id, "jobStatus" => "processing" } }
 
       before do
         stubs.get("/v1/documents/#{job_id}") do
@@ -204,12 +208,12 @@ RSpec.describe DocAiAdapter do
 
       it "returns the parsed response body with processing status" do
         result = adapter.get_document_status(job_id: job_id)
-        expect(result["status"]).to eq("processing")
+        expect(result["jobStatus"]).to eq("processing")
       end
     end
 
     context "when the job has failed" do
-      let(:failed_body) { { "job_id" => job_id, "status" => "failed", "error" => "Processing error" } }
+      let(:failed_body) { { "jobId" => job_id, "jobStatus" => "failed", "error" => "Processing error" } }
 
       before do
         stubs.get("/v1/documents/#{job_id}") do
@@ -219,7 +223,7 @@ RSpec.describe DocAiAdapter do
 
       it "returns the parsed response body with failed status" do
         result = adapter.get_document_status(job_id: job_id)
-        expect(result["status"]).to eq("failed")
+        expect(result["jobStatus"]).to eq("failed")
         expect(result["error"]).to eq("Processing error")
       end
     end

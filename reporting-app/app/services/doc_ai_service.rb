@@ -25,7 +25,7 @@ class DocAiService < DataIntegration::BaseService
   def analyze_async(file:)
     response = @adapter.analyze_document_async(file: file)
     Rails.logger.info(
-      "[DocAiService] Submitted document: job_id=#{response["jobId"]} status=#{response["status"]}"
+      "[DocAiService] Submitted document: job_id=#{response["jobId"]} status=#{response["jobStatus"]}"
     )
     response
   rescue DocAiAdapter::ApiError => e
@@ -35,7 +35,7 @@ class DocAiService < DataIntegration::BaseService
   def check_status(job_id:)
     response = @adapter.get_document_status(job_id: job_id)
 
-    case response["status"]
+    case response["jobStatus"]
     when "completed"
       result = DocAiResult.from_response(response)
       raise ProcessingError, result.error if result.failed?

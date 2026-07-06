@@ -5,12 +5,12 @@ require "rails_helper"
 RSpec.describe DocAiResult do
   let(:payslip_response) do
     {
-      "job_id"                    => "d773fa8f-3cc7-47d8-be78-4125c190c290",
-      "status"                    => "completed",
-      "matchedDocumentClass"      => "Payslip",
-      "message"                   => "Document processed successfully",
-      "createdAt"                 => "2026-02-23T18:26:50.830294+00:00",
-      "completedAt"               => "2026-02-23T18:27:29.434195+00:00",
+      "jobId"                      => "d773fa8f-3cc7-47d8-be78-4125c190c290",
+      "jobStatus"                  => "completed",
+      "matchedDocumentClass"       => "Payslip",
+      "message"                    => "Document processed successfully",
+      "createdAt"                  => "2026-02-23T18:26:50.830294+00:00",
+      "completedAt"                => "2026-02-23T18:27:29.434195+00:00",
       "totalProcessingTimeSeconds" => 38.6,
       "fields" => {
         "payperiodstartdate" => { "confidence" => 0.91, "value" => "2017-07-10" },
@@ -22,16 +22,16 @@ RSpec.describe DocAiResult do
 
   let(:failed_response) do
     {
-      "job_id" => "a4187dd2-8ccd-4e6f-b7a7-164092e49eca",
-      "status" => "failed",
-      "error"  => "Handler handler failed"
+      "jobId"     => "a4187dd2-8ccd-4e6f-b7a7-164092e49eca",
+      "jobStatus" => "failed",
+      "error"     => "Handler handler failed"
     }
   end
 
   let(:unknown_response) do
     {
-      "job_id"               => "abc123",
-      "status"               => "completed",
+      "jobId"                => "abc123",
+      "jobStatus"            => "completed",
       "matchedDocumentClass" => "BankStatement",
       "fields"               => {}
     }

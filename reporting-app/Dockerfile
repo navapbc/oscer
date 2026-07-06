@@ -79,6 +79,8 @@ COPY . .
 VOLUME /rails/log
 VOLUME /rails/storage
 
+ENTRYPOINT ["/rails/bin/docker-entrypoint"]
+
 CMD ["./bin/dev"]
 
 
@@ -133,5 +135,7 @@ COPY --from=release-build /rails /rails
 RUN useradd rails --create-home --shell /bin/bash && \
     chown -R rails:rails db log storage tmp
 USER rails:rails
+
+ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
 CMD ["./bin/rails", "server"]
