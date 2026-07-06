@@ -4,9 +4,29 @@ plugins:
 inherit_gem:
   pundit: config/rubocop-rspec.yml
   rubocop-rails-omakase: rubocop.yml
+inherit_from: .rubocop_todo.yml
 
 AllCops:
   NewCops: disable
+
+# Migration safety enforcement (OSCER-543). See docs/reporting-app/migrations.md
+# for the full convention. Pre-convention violations are grandfathered in
+# .rubocop_todo.yml; all of these apply to new migrations.
+#
+# Reversibility (convention rule 2):
+Rails/ReversibleMigration:
+  Enabled: true
+Rails/ReversibleMigrationMethodDefinition:
+  Enabled: true
+# Additional migration safety + hygiene (no pre-existing violations):
+Rails/NotNullColumn: # NOT NULL without a default breaks replay against populated tables
+  Enabled: true
+Rails/AddColumnIndex: # add_column(..., index: true) is silently ignored, no index created
+  Enabled: true
+Rails/DangerousColumnNames: # column names that overwrite ActiveRecord methods
+  Enabled: true
+Rails/MigrationClassName: # class name must match the migration filename
+  Enabled: true
 
 RSpec/IncludeExamples:
   Enabled: true

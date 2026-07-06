@@ -20,11 +20,11 @@ Security-critical templates (Devise sessions/MFA, destructive-action
 confirmations, CSRF-bearing forms) silently win when overridden. Preserve
 auth, CSRF tokens, and MFA prompts in any override you ship.
 
-For the full pattern, see CUSTOMIZATION.md "Layer 4: View and Mailer
-Overrides" (in progress:
-[#539](https://github.com/navapbc/oscer/issues/539)).
+For the full pattern, see CUSTOMIZATION.md (Extension points — View and
+mailer overrides).
 
 ## Ownership
 
-`.erb` files here are deployment-owned and untouched by `nava-platform app
-update`. `README.md` and `.keep` are template-owned and refresh on update.
+The `.erb` overrides you add here are deployment-owned. This `README.md` and
+`.keep` are maintained upstream by OSCER; leave them unedited so syncing
+upstream changes stays conflict-free.

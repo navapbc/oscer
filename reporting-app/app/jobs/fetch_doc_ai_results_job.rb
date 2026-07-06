@@ -18,7 +18,7 @@ class FetchDocAiResultsJob < ApplicationJob
       StagedDocument.where(id: still_pending_ids, status: :pending).update_all(status: :failed) # rubocop:disable Rails/SkipsModelValidations
       broadcast_completion(staged_document_ids)
     else
-      self.class.set(wait: 30.seconds).perform_later(still_pending_ids, attempt: attempt + 1)
+      self.class.set(wait: (5 * (2**attempt)).seconds).perform_later(still_pending_ids, attempt: attempt + 1)
     end
   end
 

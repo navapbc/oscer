@@ -235,7 +235,7 @@ RSpec.describe Staff::CertificationBatchUploadsController, type: :controller do
         allow(MemberStatusService).to receive(:determine_many).and_return(
           {
             [ "CertificationCase", compliant_case.id ] => MemberStatus.new(status: MemberStatus::COMPLIANT, determination_method: "automated", reason_codes: []),
-            [ "CertificationCase", exempt_case.id ] => MemberStatus.new(status: MemberStatus::EXEMPT, determination_method: "automated", reason_codes: [ "age_under_19_exempt" ]),
+            [ "CertificationCase", exempt_case.id ] => MemberStatus.new(status: MemberStatus::EXEMPT, determination_method: "automated", reason_codes: [ "age_under_19_excluded" ]),
             [ "CertificationCase", not_compliant_case.id ] => MemberStatus.new(status: MemberStatus::NOT_COMPLIANT, determination_method: "automated", reason_codes: []),
             [ "CertificationCase", pending_review_case.id ] => MemberStatus.new(status: pending_review_cert_status, determination_method: "manual", reason_codes: [])
           }

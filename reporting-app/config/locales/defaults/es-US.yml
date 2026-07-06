@@ -6,6 +6,7 @@ es-US:
       long: "%B %d, %Y"
       month_name: "%B"
       month_year: "%B %Y"
+      month_abbr_year: "%b, %Y"
   helpers:
     submit:
       create: "Submit"

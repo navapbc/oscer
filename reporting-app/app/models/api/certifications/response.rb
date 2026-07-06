@@ -8,6 +8,8 @@ class Api::Certifications::Response < ValueObject
   attribute :certification_requirements, Certifications::Requirements.to_type
   attribute :member_data, Certifications::MemberData.to_type
 
+  attribute :outcome
+
   attribute :created_at, :datetime
   attribute :updated_at, :datetime
 

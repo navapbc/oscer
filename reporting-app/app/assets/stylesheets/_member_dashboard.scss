@@ -44,23 +44,6 @@
   margin: 0 0 units(2);
 }
 
-.member-dashboard-previous-certifications {
-  align-items: flex-start;
-  display: flex;
-  flex-direction: column;
-  gap: units(2);
-  margin-top: units(3);
-  padding-bottom: units(4);
-
-  &__intro {
-    max-width: measure(4);
-  }
-
-  .usa-button {
-    width: auto;
-  }
-}
-
 // Get started frame (OSCER-639)
 .member-dashboard-compliance {
   &__alert {

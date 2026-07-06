@@ -404,6 +404,36 @@ components:
       oneOf:
       - "$ref": "#/components/schemas/CertificationMemberDataHourlyActivity"
       - "$ref": "#/components/schemas/CertificationMemberDataIncomeActivity"
+    CertificationOutcome:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - compliant
+          - excluded
+          - exempt
+          - indeterminate
+          - not_compliant
+          description: Current status of community engagement requirement checks
+        reason:
+          type:
+          - string
+          - 'null'
+          description: Which exclusion, exemption, or community engagement requirement
+            led to the decision
+        source:
+          type:
+          - string
+          - 'null'
+          description: Which source provided the reason
+        timestamp:
+          type: string
+          format: date-time
+          description: When the status was set
+      required:
+      - status
+      - timestamp
     CertificationResponseBody:
       type: object
       properties:
@@ -434,6 +464,10 @@ components:
         member_data:
           anyOf:
           - "$ref": "#/components/schemas/CertificationMemberData"
+          - type: 'null'
+        outcome:
+          anyOf:
+          - "$ref": "#/components/schemas/CertificationOutcome"
           - type: 'null'
         created_at:
           type: string
@@ -475,7 +509,7 @@ components:
           activities:
           - type: hourly
             category: community_service
-            hours: '20'
+            hours: '80'
             period_start: '2025-09-01'
             period_end: '2025-09-30'
             employer: Community Center
@@ -483,8 +517,13 @@ components:
           date_of_birth: '1980-01-01'
           race_ethnicity: Hispanic
           pregnancy_status: false
-        created_at: '1970-01-01T00:00:00.000Z'
-        updated_at: '1970-01-01T00:00:00.000Z'
+        outcome:
+          status: compliant
+          reason: hours_reported_compliant
+          source: api
+          timestamp: '2025-10-01T00:00:00.040Z'
+        created_at: '2025-10-01T00:00:00.000Z'
+        updated_at: '2025-10-01T00:00:00.000Z'
     ErrorResponseBody:
       type: object
       properties:
@@ -497,6 +536,7 @@ components:
       example:
         errors:
         - Not found
+    d41d8cd98f00b204e9800998ecf8427e: ''
     ece4f2c15f241af4536e1132d15a279a:
       type: object
       properties:
@@ -505,43 +545,67 @@ components:
       required:
       - status
   responses:
-    b6fb0dc600c724cbb98ccb3ed39e4c92:
-      description: Created Certification.
-      content:
-        application/json:
-          schema:
-            "$ref": "#/components/schemas/CertificationResponseBody"
-    4f5ee61101e46f868752c5cbb0f9b68a:
-      description: User error.
-      content:
-        application/json:
-          schema:
-            "$ref": "#/components/schemas/ErrorResponseBody"
-    1367d8d1c3c952fdfa05598d96a776c3:
-      description: User error.
-      content:
-        application/json:
-          schema:
-            "$ref": "#/components/schemas/ErrorResponseBody"
-    21fe6ae572cfd4f88699d7ea9065867a:
+    b8f2f38bc8c2f6235cbe11844e1f22e6:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    59fd9e7ad939bbb121880fb019a3a316:
+    83f294ae63467238e4f35a0cad57a3ea:
+      description: Accepted
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
+    503ff0a2127a2fff361cb1db9ebe3428:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    40d9b75ae67de0b77cf25883f557d0d6:
+    a27e926ab0dbb7017819cbd94b436cb0:
+      description: Created Certification.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/CertificationResponseBody"
+    14dcafc2f5493e99a23abd80ec1c0d54:
+      description: Accepted
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
+    ef12758e50a588b4630a6c74ce376fd2:
+      description: User error.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/ErrorResponseBody"
+    71f1a8f0db1028f1e43e425cfbcdc546:
+      description: User error.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/ErrorResponseBody"
+    8a9bf8f59f62d05218c6701932491f46:
+      description: A Certification
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/CertificationResponseBody"
+    bb50fff96a9fd952e87329ae102a1d6b:
+      description: Not found.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/ErrorResponseBody"
+    9dc2f80603cf140b44be92b75d34f111:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    f27444a9c7b748596d9512daf45d041c:
+    74d65d516ee19718a9f33d523da50238:
       description: Response
       content:
         application/json:
@@ -556,6 +620,14 @@ components:
       schema:
         type: string
       style: simple
+    4f7cce241e43c9b4680b65e2612ab599:
+      name: prefer
+      in: header
+      description: Header to use when want async response - respond-async
+      required: false
+      schema:
+        type: string
+      style: simple
     8973e06a33e4a0e5595d813ac576e9d9:
       name: id
       in: path
@@ -565,7 +637,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    93e37fa17742e9d41fc9cfa4f8aa8828:
+    bf9dfb13c9c40fce7127413e9a7d0f6e:
       description: The Certification data.
       content:
         application/json:
@@ -647,6 +719,25 @@ servers:
 - url: http://medicaid.navateam.com
   description: Dev
 paths:
+  "/api/certifications/{id}/outcome":
+    get:
+      tags:
+      - Certifications
+      summary: Retrieve a Certification record with an outcome or a 202 without
+      description: ''
+      operationId: GET_api_certifications_id_outcome
+      parameters:
+      - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
+      responses:
+        '200':
+          "$ref": "#/components/responses/b8f2f38bc8c2f6235cbe11844e1f22e6"
+        '202':
+          "$ref": "#/components/responses/83f294ae63467238e4f35a0cad57a3ea"
+        '404':
+          "$ref": "#/components/responses/503ff0a2127a2fff361cb1db9ebe3428"
+      security:
+      - hmac: []
+      deprecated: false
   "/api/certifications":
     post:
       tags:
@@ -654,15 +745,19 @@ paths:
       summary: Create a Certification record
       description: ''
       operationId: POST_api_certifications
+      parameters:
+      - "$ref": "#/components/parameters/4f7cce241e43c9b4680b65e2612ab599"
       requestBody:
-        "$ref": "#/components/requestBodies/93e37fa17742e9d41fc9cfa4f8aa8828"
+        "$ref": "#/components/requestBodies/bf9dfb13c9c40fce7127413e9a7d0f6e"
       responses:
         '201':
-          "$ref": "#/components/responses/b6fb0dc600c724cbb98ccb3ed39e4c92"
+          "$ref": "#/components/responses/a27e926ab0dbb7017819cbd94b436cb0"
+        '202':
+          "$ref": "#/components/responses/14dcafc2f5493e99a23abd80ec1c0d54"
         '400':
-          "$ref": "#/components/responses/4f5ee61101e46f868752c5cbb0f9b68a"
+          "$ref": "#/components/responses/ef12758e50a588b4630a6c74ce376fd2"
         '422':
-          "$ref": "#/components/responses/1367d8d1c3c952fdfa05598d96a776c3"
+          "$ref": "#/components/responses/71f1a8f0db1028f1e43e425cfbcdc546"
       security:
       - hmac: []
       deprecated: false
@@ -677,9 +772,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/21fe6ae572cfd4f88699d7ea9065867a"
+          "$ref": "#/components/responses/8a9bf8f59f62d05218c6701932491f46"
         '404':
-          "$ref": "#/components/responses/59fd9e7ad939bbb121880fb019a3a316"
+          "$ref": "#/components/responses/bb50fff96a9fd952e87329ae102a1d6b"
       security:
       - hmac: []
       deprecated: false
@@ -714,9 +809,9 @@ paths:
       operationId: GET_api_health
       responses:
         '200':
-          "$ref": "#/components/responses/40d9b75ae67de0b77cf25883f557d0d6"
+          "$ref": "#/components/responses/9dc2f80603cf140b44be92b75d34f111"
         '503':
-          "$ref": "#/components/responses/f27444a9c7b748596d9512daf45d041c"
+          "$ref": "#/components/responses/74d65d516ee19718a9f33d523da50238"
       security:
       - hmac: []
       deprecated: false

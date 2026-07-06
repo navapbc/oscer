@@ -8,7 +8,7 @@ RSpec.describe DashboardHelper, type: :helper do
 
   before do
     allow(Strata::EventManager).to receive(:publish).and_call_original
-    allow(ExemptionDeterminationService).to receive(:determine)
+    allow(ExclusionDeterminationService).to receive(:determine)
     allow(NotificationService).to receive(:send_email_notification)
   end
 

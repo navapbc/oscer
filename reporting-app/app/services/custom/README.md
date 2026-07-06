@@ -5,25 +5,24 @@ here, namespaced under `Custom::`.
 
 ## Example
 
-    # app/services/custom/exemption_determination_service.rb
+    # app/services/custom/exclusion_determination_service.rb
     module Custom
-      class ExemptionDeterminationService < ::ExemptionDeterminationService
+      class ExclusionDeterminationService < ::ExclusionDeterminationService
         # deployment-specific overrides
       end
     end
 
 Note: OSCER's services live flat under `app/services/` with no `Services::`
 namespace, so the parent class is referenced as
-`::ExemptionDeterminationService` (not `::Services::ExemptionDeterminationService`).
+`::ExclusionDeterminationService` (not `::Services::ExclusionDeterminationService`).
 By contrast, `Rules::` and `Custom::` ARE proper namespaces. The full
-namespacing guidance will live in CUSTOMIZATION.md
-([#539](https://github.com/navapbc/oscer/issues/539)).
+namespacing guidance is in CUSTOMIZATION.md.
 
 To wire a custom service into existing flows, see CUSTOMIZATION.md
-"Layer 4: Service and Ruleset Customization" (in progress:
-[#539](https://github.com/navapbc/oscer/issues/539)).
+(Extension points — Service and ruleset subclassing).
 
 ## Ownership
 
-`.rb` files here are deployment-owned and untouched by `nava-platform app
-update`. `README.md` is template-owned and refreshes on update.
+The `.rb` files you add here are deployment-owned. This `README.md` is
+maintained upstream by OSCER; leave it unedited so syncing upstream changes
+stays conflict-free.

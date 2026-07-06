@@ -15,6 +15,14 @@ This is a [Ruby on Rails](https://rubyonrails.org/) application. It includes:
 - Testing using [rspec](https://rspec.info)
 - Code coverage analysis using [SimpleCov](https://github.com/simplecov-ruby/simplecov)
 
+## Customizing a deployment
+
+Standing up a downstream OSCER deployment? Start with
+**[`CUSTOMIZATION.md`](./CUSTOMIZATION.md)**: the Day-1 guide mapping each kind
+of change (branding, copy, eligibility policy, code extension) to the supported
+override mechanism, so your customizations land in seams that stay clean when
+you sync upstream OSCER in.
+
 ## 📂 Directory structure
 
 As a Rails app, much of the directory structure is driven by Rails conventions. We've also included directories for common patterns, such as adapters, form objects and services.
@@ -154,5 +162,6 @@ Beyond this README, you should also refer to the [`docs/reporting-app` directory
 - [Technical foundation](../docs/reporting-app/technical-foundation.md)
 - [Software architecture](../docs/reporting-app/software-architecture.md)
 - [Authentication & Authorization](../docs/reporting-app/auth.md)
+- [Configuration & operations](../docs/reporting-app/configuration.md)
 - [Internationalization (i18n)](../docs/reporting-app/internationalization.md)
 - [Container images](../docs/reporting-app/container-images.md)

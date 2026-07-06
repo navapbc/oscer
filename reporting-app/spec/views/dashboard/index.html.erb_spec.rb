@@ -22,7 +22,7 @@ RSpec.describe "dashboard/index", type: :view do
   before do
     # Prevent auto-triggering business process during test setup
     allow(Strata::EventManager).to receive(:publish).and_call_original
-    allow(ExemptionDeterminationService).to receive(:determine)
+    allow(ExclusionDeterminationService).to receive(:determine)
     allow(NotificationService).to receive(:send_email_notification)
 
     assign(:all_certifications, [
@@ -57,6 +57,24 @@ RSpec.describe "dashboard/index", type: :view do
              exemption_application_form: exemption_application_form,
              activity_report_application_form: activity_report_application_form,
              member_status: member_status
+           ))
+  end
+
+  def assign_previous_completed_certification_period
+    older_certification = create(:certification, member_data: member_data)
+    create(:certification_case, certification: older_certification)
+    create(:determination,
+           subject: older_certification,
+           outcome: "compliant",
+           decision_method: "manual",
+           reasons: [ "hours_reported_compliant" ])
+    older_certification.update!(created_at: 2.months.ago)
+    certification.update!(created_at: 1.day.ago)
+    assign(:all_certifications, [ certification, older_certification ])
+    assign(:previous_completed_certifications,
+           MemberStatusService.previous_completed_certifications(
+             [ certification, older_certification ],
+             current_certification: certification
            ))
   end
 
@@ -135,7 +153,7 @@ RSpec.describe "dashboard/index", type: :view do
 
     it 'renders a button to continue the activity report' do
       render
-      expect(rendered).to have_selector('a', text: I18n.t('dashboard.new_certification.activity_report.continue_report_button'))
+      expect(rendered).to have_selector('a', text: I18n.t('dashboard.member_compliance.reporting.continue_report_button'))
     end
 
     it 'does not render the Figma get started callout' do
@@ -244,7 +262,22 @@ RSpec.describe "dashboard/index", type: :view do
   end
 
   context "with a submitted activity report" do
-    let (:activity_report_application_form) { create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
+    let(:activity_report_application_form) do
+      create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+    end
+    let(:lookback) { certification.certification_requirements.continuous_lookback_period }
+    let(:hours_table) { ".member-dashboard-compliance__table--hours" }
+    let(:income_table) { ".member-dashboard-compliance__table--income" }
+
+    def create_external_hourly(hours: 30)
+      create(:external_hourly_activity, member_id: certification.member_id, category: "employment",
+             hours: hours, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
+    end
+
+    def create_external_income(gross_income: 300)
+      create(:external_income_activity, member_id: certification.member_id, category: "employment",
+             gross_income: gross_income, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
+    end
 
     before do
       assign(:activity_report_application_form, activity_report_application_form)
@@ -267,6 +300,58 @@ RSpec.describe "dashboard/index", type: :view do
         'a',
         text: I18n.t('dashboard.member_compliance.exemption_alerts.not_started.button')
       )
+    end
+
+    context "with reported activities" do
+      before do
+        create_external_hourly
+        create_external_income
+        reassign_compliance_read_model
+      end
+
+      it "renders activity tables under the month-based heading" do
+        render
+        month = I18n.l(certification.certification_requirements.certification_date, format: :month_year)
+        expect(rendered).to have_selector(
+          "h3",
+          text: I18n.t("dashboard.member_compliance.activity_report_title", period: month)
+        )
+        expect(rendered).to have_css(hours_table)
+        expect(rendered).to have_css(income_table)
+        expect(rendered.index("member-dashboard-compliance__table--hours"))
+          .to be < rendered.index("member-dashboard-compliance__table--income")
+      end
+    end
+
+    context "with reported activities on the submitted report (OSCER-642 + OSCER-690)" do
+      let(:lookback) { certification.certification_requirements.continuous_lookback_period }
+      let(:activity_report_application_form) do
+        form = create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        activity = create(:hourly_activity, activity_report_application_form_id: form.id, name: "Submitted Employer",
+               category: "employment", hours: 25, month: lookback.start.to_date)
+        activity.supporting_documents.attach(
+          fixture_file_upload("spec/fixtures/files/test_document_1.pdf", "application/pdf")
+        )
+        form
+      end
+
+      before do
+        create(:external_hourly_activity, member_id: certification.member_id, category: "employment",
+               hours: 30, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
+        assign(:activity_report_application_form, activity_report_application_form)
+        reassign_compliance_read_model
+      end
+
+      it "renders compliance summary tables, line items, and a supporting-document download link" do
+        render
+        period = I18n.l(certification.certification_requirements.certification_date, format: :month_year)
+        expect(rendered).to have_selector("h3", text: I18n.t("dashboard.member_compliance.activity_report_title", period: period))
+        expect(rendered).to have_css(".member-dashboard-compliance__table--hours")
+        expect(rendered).to have_selector("h2#member-compliance-line-items-heading",
+                                          text: I18n.t("dashboard.member_compliance.activity_line_items.heading"))
+        expect(rendered).to have_selector(".member-dashboard-compliance__line-items td", text: "Submitted Employer")
+        expect(rendered).to have_link("test_document_1.pdf", href: %r{/rails/active_storage/blobs/})
+      end
     end
   end
 
@@ -318,6 +403,7 @@ RSpec.describe "dashboard/index", type: :view do
 
   context "with an approved activity report" do
     let(:activity_report_application_form) { create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
+    let(:get_started_section) { 'section[aria-label="Get started"]' }
 
     before do
       assign(:activity_report_application_form, activity_report_application_form)
@@ -347,6 +433,27 @@ RSpec.describe "dashboard/index", type: :view do
     it 'does not render the Figma get started callout' do
       render
       expect(rendered).not_to have_css('.member-dashboard-compliance__onboarding')
+    end
+
+    it 'does not render the get-started hero (accept_activity_report closes the case)' do
+      render
+      expect(rendered).not_to have_css(get_started_section)
+    end
+
+    context "with a completed prior certification period (OSCER-717)" do
+      before { assign_previous_completed_certification_period }
+
+      it 'renders the previously-completed requirements section exactly once after the approved-frame CTA' do
+        render
+        title = I18n.t('dashboard.index.previous_certifications.title')
+        view_report_label = I18n.t('dashboard.activity_report_approved.view_activity_report_button')
+
+        expect(rendered.scan(title).length).to eq(1)
+        expect(rendered).to have_css('section[aria-labelledby="previous-certifications-heading"]')
+        expect(rendered).to have_selector('h2#previous-certifications-heading', text: title)
+        expect(rendered.index(view_report_label)).to be < rendered.index(title)
+        expect(rendered).not_to have_css('.member-dashboard-previous-certifications')
+      end
     end
   end
 
@@ -430,6 +537,30 @@ RSpec.describe "dashboard/index", type: :view do
     it 'renders button to submit a new activity report' do
       render
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.activity_report_denied.submit_new_activity_report_button'))
+    end
+
+    context "with reported activities (OSCER-642: denied activities must not render a table)" do
+      let(:lookback) { certification.certification_requirements.continuous_lookback_period }
+
+      before do
+        create(:hourly_activity, activity_report_application_form_id: activity_report_application_form.id,
+               name: "Denied job", category: "employment", hours: 30, month: lookback.start.to_date)
+        reassign_compliance_read_model
+      end
+
+      it "does not render an activity table for the denied report, but keeps the view-report button" do
+        render
+        expect(rendered).not_to have_css(".member-dashboard-compliance__table--hours")
+        expect(rendered).not_to have_css(".member-dashboard-compliance__table--income")
+        expect(rendered).to have_selector("a", text: I18n.t("dashboard.activity_report_denied.view_activity_report_button"))
+      end
+
+      it "still renders the Activity line items section (OSCER-690 recommendation A) even though summary tables are skipped" do
+        render
+        expect(rendered).to have_selector("h2#member-compliance-line-items-heading",
+                                          text: I18n.t("dashboard.member_compliance.activity_line_items.heading"))
+        expect(rendered).to have_selector(".member-dashboard-compliance__line-items", text: "Denied job")
+      end
     end
 
     context "when verification window ended" do
@@ -550,7 +681,7 @@ RSpec.describe "dashboard/index", type: :view do
       )
     end
 
-    it 'renders the "Report your activities" heading and intro above the CTA' do
+    it 'renders the "Reported activities" heading and intro above the CTA' do
       render
       expect(rendered).to have_selector(
         'h2#member-compliance-reporting-heading',
@@ -651,7 +782,7 @@ RSpec.describe "dashboard/index", type: :view do
              subject: certification,
              outcome: "exempt",
              decision_method: "automated",
-             reasons: [ "age_under_19_exempt" ])
+             reasons: [ "age_under_19_excluded" ])
       reassign_compliance_read_model
     end
 
@@ -670,25 +801,185 @@ RSpec.describe "dashboard/index", type: :view do
     end
   end
 
-  context "with a completed prior certification period" do
-    let(:older_certification) { create(:certification, member_data: member_data) }
+  context "with an in-progress activity report and reported activities (OSCER-642)" do
+    let(:activity_report_application_form) do
+      create(:activity_report_application_form, certification_case_id: certification_case.id)
+    end
+    let(:lookback) { certification.certification_requirements.continuous_lookback_period }
+    let(:hours_table) { ".member-dashboard-compliance__table--hours" }
+    let(:income_table) { ".member-dashboard-compliance__table--income" }
+
+    def create_external_hourly(hours: 30)
+      create(:external_hourly_activity, member_id: certification.member_id, category: "employment",
+             hours: hours, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
+    end
+
+    def create_external_income(gross_income: 300)
+      create(:external_income_activity, member_id: certification.member_id, category: "employment",
+             gross_income: gross_income, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
+    end
 
     before do
-      create(:certification_case, certification: older_certification)
-      create(:determination,
-             subject: older_certification,
-             outcome: "compliant",
-             decision_method: "manual",
-             reasons: [ "hours_reported_compliant" ])
-      older_certification.update!(created_at: 2.months.ago)
-      certification.update!(created_at: 1.day.ago)
-      assign(:all_certifications, [ certification, older_certification ])
-      assign(:previous_completed_certifications,
-             MemberStatusService.previous_completed_certifications(
-               [ certification, older_certification ],
-               current_certification: certification
-             ))
+      assign(:activity_report_application_form, activity_report_application_form)
     end
+
+
+    context "when only hours have been reported" do
+      before do
+        create_external_hourly
+        reassign_compliance_read_model
+      end
+
+      it "renders the hours table only, under the month-based activity report heading" do
+        render
+        month = I18n.l(certification.certification_requirements.certification_date, format: :month_year)
+        expect(rendered).to have_selector("h3", text: "#{month} Activity Report")
+        expect(rendered).to have_css(hours_table)
+        expect(rendered).not_to have_css(income_table)
+      end
+    end
+
+    context "when only income has been reported" do
+      before do
+        create_external_income
+        reassign_compliance_read_model
+      end
+
+      it "renders the income table only" do
+        render
+        expect(rendered).to have_css(income_table)
+        expect(rendered).not_to have_css(hours_table)
+      end
+    end
+
+    context "when both hours and income have been reported" do
+      before do
+        create_external_hourly
+        create_external_income
+        reassign_compliance_read_model
+      end
+
+      it "renders both tables, hours first" do
+        render
+        expect(rendered).to have_css(hours_table)
+        expect(rendered).to have_css(income_table)
+        expect(rendered.index("member-dashboard-compliance__table--hours"))
+          .to be < rendered.index("member-dashboard-compliance__table--income")
+      end
+    end
+
+    context "when no activities have been reported yet" do
+      it "renders the empty reporting copy and no tables" do
+        render
+        expect(rendered).to have_text(I18n.t("dashboard.member_compliance.reporting.no_activity_reported"))
+        expect(rendered).not_to have_css(hours_table)
+        expect(rendered).not_to have_css(income_table)
+      end
+    end
+
+
+    it "renders continue and submit CTAs while the report is unsubmitted" do
+      render
+      expect(rendered).to have_selector("a", text: I18n.t("dashboard.member_compliance.reporting.continue_report_button"))
+      expect(rendered).to have_link(
+        I18n.t("dashboard.member_compliance.reporting.submit_button"),
+        href: review_activity_report_application_form_path(activity_report_application_form)
+      )
+    end
+  end
+
+  context "with activity line items (OSCER-690)" do
+    let(:lookback) { certification.certification_requirements.continuous_lookback_period }
+    let(:line_items_section) { ".member-dashboard-compliance__line-items" }
+
+    context "with a single in-progress form that has reported activities" do
+      let(:activity_report_application_form) do
+        form = create(:activity_report_application_form, certification_case_id: certification_case.id)
+        create(:hourly_activity, activity_report_application_form_id: form.id, name: "Helping Hands",
+               category: "employment", hours: 20, month: lookback.start.to_date)
+        form
+      end
+
+      before do
+        assign(:activity_report_application_form, activity_report_application_form)
+        reassign_compliance_read_model
+      end
+
+      it "renders the line items heading and a table with the activity's organization and month" do
+        render
+        expect(rendered).to have_selector("h2#member-compliance-line-items-heading",
+                                          text: I18n.t("dashboard.member_compliance.activity_line_items.heading"))
+        expect(rendered).to have_selector("#{line_items_section} td", text: "Helping Hands")
+        expect(rendered).to have_selector("#{line_items_section} td",
+                                          text: I18n.l(lookback.start.to_date, format: :month_abbr_year))
+      end
+
+      it "does not render a per-form submitted-date subheading or status badge for a single form" do
+        render
+        expect(rendered).not_to have_selector("#{line_items_section} h3")
+        expect(rendered).not_to have_selector("#{line_items_section} .usa-tag")
+      end
+    end
+
+    context "with multiple forms on the case (older denied + newer submitted)" do
+      # Built entirely in this before (not via let!) so the no-op event stub is in place before
+      # any form is submitted: submitting must not spin up a pending review task that would block
+      # a second form on the same case (mirrors certification_cases_spec). The older form's review
+      # task records a per-form "denied" decision; the newer form is submitted. The shared outer
+      # before assigns a nil activity report first; this reassigns the newer form afterward.
+      let(:activity_report_application_form) { nil }
+
+      before do
+        allow(Strata::EventManager).to receive(:publish)
+
+        denied_form = create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        create(:hourly_activity, activity_report_application_form_id: denied_form.id, name: "Older Employer Inc",
+               category: "employment", hours: 30, month: lookback.start.to_date)
+        task = create(:review_activity_report_task, application_form: denied_form, case: certification_case)
+        task.approval_status = :denied
+        task.completed!
+
+        submitted_form = create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id)
+        create(:income_activity, activity_report_application_form_id: submitted_form.id, name: "Newer Employer Inc",
+               category: "employment", income: 50_000, month: lookback.start.to_date)
+
+        denied_form.update_column(:created_at, 2.days.ago)
+        submitted_form.update_column(:created_at, 1.day.ago)
+
+        assign(:activity_report_application_form, submitted_form)
+        reassign_compliance_read_model
+      end
+
+      it "renders one table per form with both organization names" do
+        render
+        expect(rendered).to have_selector(line_items_section, text: "Older Employer Inc")
+        expect(rendered).to have_selector(line_items_section, text: "Newer Employer Inc")
+      end
+
+      it "labels each form with a status badge (denied + submitted) so re-submissions are distinguishable" do
+        render
+        expect(rendered).to have_selector("#{line_items_section} .usa-tag",
+                                          text: I18n.t("dashboard.member_compliance.activity_line_items.form_status.denied"))
+        expect(rendered).to have_selector("#{line_items_section} .usa-tag",
+                                          text: I18n.t("dashboard.member_compliance.activity_line_items.form_status.submitted"))
+      end
+
+      it "orders forms newest first (submitted above denied)" do
+        render
+        expect(rendered.index("Newer Employer Inc")).to be < rendered.index("Older Employer Inc")
+      end
+
+      it "omits the staff-only Doc AI confidence column even when Doc AI is enabled" do
+        with_doc_ai_enabled do
+          render
+          expect(rendered).not_to have_text(I18n.t("activity_report_application_forms.staff_activity_report.confidence"))
+        end
+      end
+    end
+  end
+
+  context "with a completed prior certification period" do
+    before { assign_previous_completed_certification_period }
 
     it 'renders a section for previous certifications' do
       render

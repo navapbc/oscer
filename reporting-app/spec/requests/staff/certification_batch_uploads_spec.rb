@@ -12,7 +12,7 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
     login_as user
     # Prevent auto-triggering business process during test setup
     allow(Strata::EventManager).to receive(:publish).and_call_original
-    allow(ExemptionDeterminationService).to receive(:determine)
+    allow(ExclusionDeterminationService).to receive(:determine)
     allow(NotificationService).to receive(:send_email_notification)
   end
 
@@ -289,7 +289,7 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
                subject_type: "Certification",
                subject_id: exempt_cert.id,
                outcome: MemberStatus::EXEMPT,
-               reasons: [ "age_under_19_exempt" ])
+               reasons: [ "age_under_19_excluded" ])
       end
       let(:not_compliant_determination) do
         create(:determination,
@@ -311,7 +311,7 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
       before do
         # Stub services to prevent auto-triggering during certification creation
         allow(Strata::EventManager).to receive(:publish).and_call_original
-        allow(ExemptionDeterminationService).to receive(:determine)
+        allow(ExclusionDeterminationService).to receive(:determine)
         allow(NotificationService).to receive(:send_email_notification)
 
         # Force creation of all test data

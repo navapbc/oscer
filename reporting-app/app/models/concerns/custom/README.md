@@ -24,10 +24,10 @@ Wire it into the base model with one `include` line:
 Concerns under `Custom::` are plain Ruby modules — they can also be included
 in deployment-owned models, not only OSCER's base models.
 
-For the full pattern, see CUSTOMIZATION.md "Layer 5: Model Customization"
-(in progress: [#539](https://github.com/navapbc/oscer/issues/539)).
+For the full pattern, see CUSTOMIZATION.md (Extension points — Model extension).
 
 ## Ownership
 
-`.rb` files here are deployment-owned and untouched by `nava-platform app
-update`. `README.md` is template-owned and refreshes on update.
+The `.rb` files you add here are deployment-owned. This `README.md` is
+maintained upstream by OSCER; leave it unedited so syncing upstream changes
+stays conflict-free.

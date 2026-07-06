@@ -68,6 +68,7 @@ en:
       long: "%B %d, %Y"
       month_name: "%B"
       month_year: "%B %Y"
+      month_abbr_year: "%b, %Y"
   errors:
     attributes:
       spam_trap:
