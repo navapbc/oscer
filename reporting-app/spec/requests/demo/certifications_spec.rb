@@ -28,7 +28,7 @@ RSpec.describe "/demo/certifications", type: :request do
 
   describe "feature gating in a deployed environment" do
     before do
-      allow(Rails).to receive(:env).and_return(ActiveSupport::EnvironmentInquirer.new("production"))
+      allow(Rails.env).to receive(:local?).and_return(false)
     end
 
     context "when FEATURE_DEMO_CERTIFICATIONS is disabled" do

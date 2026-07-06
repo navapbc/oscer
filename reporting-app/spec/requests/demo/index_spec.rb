@@ -15,7 +15,7 @@ RSpec.describe "/demo", type: :request do
 
     context "when in a deployed environment" do
       before do
-        allow(Rails).to receive(:env).and_return(ActiveSupport::EnvironmentInquirer.new("production"))
+        allow(Rails.env).to receive(:local?).and_return(false)
       end
 
       it "returns 404 when the flag is disabled" do
