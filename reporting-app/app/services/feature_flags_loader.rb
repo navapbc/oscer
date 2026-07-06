@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "config_loading"
+
 # Builds the in-memory feature-flag registry by adding optional
 # deployment-defined flags (config/custom/feature_flags.yml, the
 # deployment-owned override surface) onto the OSCER-shipped built-ins declared
@@ -10,12 +12,12 @@
 # override file. The override is ADDITIVE ONLY: a deployment cannot redefine or
 # disable a built-in here. To toggle a built-in, set its env var.
 #
-# Mirrors ExemptionTypesLoader's load/validate discipline:
-#   - safe_load_optional treats a missing/empty file as "no overrides"
-#   - parse_yaml uses YAML.safe_load (no Ruby object deserialization)
-#   - build_registry raises a ConfigurationError naming the offending entry and
-#     field on any malformed/colliding deployment flag, so misconfiguration
-#     fails loudly at boot rather than silently at runtime.
+# Shares its YAML load/parse plumbing with ExemptionTypesLoader via the shared
+# ConfigLoading module (extend below): safe_load_optional treats a missing/empty
+# file as "no overrides"; parse_yaml uses YAML.safe_load (no Ruby object
+# deserialization). build_registry then raises a ConfigurationError naming the
+# offending entry and field on any malformed/colliding deployment flag, so
+# misconfiguration fails loudly at boot rather than silently at runtime.
 #
 # Merge semantics intentionally DIFFER from ExemptionTypesLoader: that loader
 # deep_merges deployment values over OSCER defaults (the deployment owns the
@@ -23,7 +25,12 @@
 # state, so this loader is purely ADDITIVE and raises on any collision. Do not
 # "align" the two by introducing deep_merge here.
 module FeatureFlagsLoader
-  class ConfigurationError < StandardError; end
+  extend ConfigLoading
+
+  # Alias keeps FeatureFlagsLoader::ConfigurationError valid for existing
+  # rescues/specs; unqualified `raise ConfigurationError` in build_registry /
+  # validate_entry! resolves to it via lexical scope, so no raise site changes.
+  ConfigurationError = ConfigLoading::ConfigurationError
 
   # Deployment-defined env vars must match the same FEATURE_<NAME> convention
   # the built-ins follow: "FEATURE_" + uppercase letters/digits/underscores.
@@ -43,11 +50,6 @@ module FeatureFlagsLoader
   ALLOWED_ENTRY_KEYS = %w[env_var default description].freeze
 
   module_function
-
-  def safe_load_optional(path)
-    return {} unless File.exist?(path)
-    parse_yaml(path)
-  end
 
   # Merge deployment overrides on top of the OSCER-shipped built-ins.
   #
@@ -94,17 +96,6 @@ module FeatureFlagsLoader
     end
 
     registry
-  end
-
-  def parse_yaml(path)
-    raw = YAML.safe_load(File.read(path), permitted_classes: [], permitted_symbols: [], aliases: false)
-    return {} if raw.nil?
-    unless raw.is_a?(Hash)
-      raise ConfigurationError, "Expected a Hash at top level in #{path}, got #{raw.class}"
-    end
-    raw
-  rescue Psych::SyntaxError, Psych::DisallowedClass => e
-    raise ConfigurationError, "Invalid YAML in #{path}: #{e.message}"
   end
 
   # Validate a single deployment-defined flag entry. Each entry requires an
