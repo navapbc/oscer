@@ -11,6 +11,10 @@
 #
 # When neither condition holds, requests return 404 as if the route did not
 # exist.
+#
+# Route constraints in config/routes.rb are the primary gate. The controller
+# before_action here guards demo controllers reachable via routes added outside
+# that constraints block.
 module DemoAccessGate
   extend ActiveSupport::Concern
 

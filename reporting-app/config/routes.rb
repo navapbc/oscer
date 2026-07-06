@@ -191,7 +191,8 @@ Rails.application.routes.draw do
     end
   end
 
-  # Demo tools — gated at the route layer and in DemoAccessGate (defense in depth).
+  # Demo tools — route constraint is the primary gate; DemoAccessGate on controllers
+  # guards demo routes that may be added outside this block later.
   constraints ->(_req) { DemoAccessGate.access_allowed? } do
     get "/demo", to: "demo#index"
     namespace :demo do
