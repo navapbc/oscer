@@ -41,7 +41,6 @@ class MemberStatus < Strata::ValueObject
 
   AWAITING_REPORT = "awaiting_report"
   EXEMPT = "exempt"
-  EXCEPTED = "excepted"
   COMPLIANT = "compliant"
   NOT_COMPLIANT = "not_compliant"
   PENDING_REVIEW = "pending_review"
@@ -63,7 +62,7 @@ class MemberStatus < Strata::ValueObject
   attr_accessor :latest_determination
 
   validates :status, presence: true,
-                     inclusion: { in: [ AWAITING_REPORT, EXCEPTED, EXEMPT, COMPLIANT, NOT_COMPLIANT, PENDING_REVIEW ] }
+                     inclusion: { in: [ AWAITING_REPORT, EXEMPT, COMPLIANT, NOT_COMPLIANT, PENDING_REVIEW ] }
 
   # Maps domain +status+ to dashboard report-state tokens (OSCER-409 / #480).
   # @return [String]
@@ -74,7 +73,6 @@ class MemberStatus < Strata::ValueObject
     when COMPLIANT then DASHBOARD_REPORT_COMPLIANT
     when NOT_COMPLIANT then DASHBOARD_REPORT_NOT_COMPLIANT
     when EXEMPT then DASHBOARD_REPORT_EXEMPT
-    when EXCEPTED then DASHBOARD_REPORT_EXEMPT
     else DASHBOARD_REPORT_IN_PROGRESS
     end
   end

@@ -29,11 +29,6 @@ RSpec.describe MemberStatus do
       expect(ms.dashboard_report_status).to eq(described_class::DASHBOARD_REPORT_EXEMPT)
     end
 
-    it "maps excepted token" do
-      ms = described_class.new(status: described_class::EXCEPTED)
-      expect(ms.dashboard_report_status).to eq(described_class::DASHBOARD_REPORT_EXEMPT)
-    end
-
     it "falls back to in_progress for unknown status values (defensive else branch)" do
       expect(described_class.new(status: "garbage").dashboard_report_status).to eq(described_class::DASHBOARD_REPORT_IN_PROGRESS)
     end
