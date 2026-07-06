@@ -213,6 +213,31 @@ class CertificationCase < Strata::Case
     end
   end
 
+  # Called by ExceptionDeterminationService to record an external exception determination.
+  # Model only handles state changes; the service handles events.
+  #
+  # @param reason_codes [Array<String>] reason codes for the matched exception check(s)
+  # @param actor [Strata::VirtualActor] recording the exception
+  def record_exception_determination(reason_codes, actor)
+    certification = Certification.find(certification_id)
+
+    transaction do
+      close!
+
+      certification.record_determination!(
+        decision_method: :automated,
+        reasons: reason_codes,
+        outcome: :excepted,
+        # determination_data is a jsonb column holding a structured Hash (OSCER convention; must
+        # stay a Hash, not a JSON String — see record_exclusion_determination). The exception type
+        # is carried by the reason codes, recorded here.
+        determination_data: { "exception_reasons" => reason_codes },
+        determined_at: certification.certification_requirements.certification_date,
+        actor:
+      )
+    end
+  end
+
   # Called by HoursComplianceDeterminationService (+#calculate+, etc.) to persist hours-based CE.
   # Model only handles state changes; services own events/notifications.
   # Uses +record_automated_ce_compliance+ with default +close_on_compliant: true+ — when +outcome+ is

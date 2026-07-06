@@ -100,6 +100,37 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     end
   end
 
+  describe 'external_exception_check' do
+    before do
+      certification_case.update!(
+        business_process_current_step: CertificationBusinessProcess::EXTERNAL_EXCEPTION_CHECK_STEP
+      )
+    end
+
+    context 'when an exception applies' do
+      it 'transitions to end' do
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EXTERNAL_EXCEPTION_CHECK_STEP)
+
+        Strata::EventManager.publish("DeterminedExcepted", { case_id: certification_case.id, certification_id: certification_case.certification_id })
+        certification_case.reload
+
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
+      end
+    end
+
+    context 'when no exception applies' do
+      it 'continues to the community-engagement check (then report_activities)' do
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EXTERNAL_EXCEPTION_CHECK_STEP)
+
+        Strata::EventManager.publish("DeterminedNotExcepted", { case_id: certification_case.id, certification_id: certification_case.certification_id })
+        certification_case.reload
+
+        # The CE check is stubbed (top-level before) to publish ActionRequired → report_activities.
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::REPORT_ACTIVITIES_STEP)
+      end
+    end
+  end
+
   describe 'activity report workflow' do
     it 'transitions through the full workflow and updates member status correctly' do
       # Step 1: Case starts on report_activities
