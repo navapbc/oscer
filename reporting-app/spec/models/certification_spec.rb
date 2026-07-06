@@ -164,11 +164,11 @@ RSpec.describe Certification, type: :model do
                               subject: certification,
                               outcome: 'exempt',
                               decision_method: 'automated',
-                              reasons: [ 'age_under_19_exempt' ],
+                              reasons: [ 'age_under_19_excluded' ],
                               created_at: 2.days.ago)
       outcome = certification.outcome
       expect(outcome.status).to eq 'exempt'
-      expect(outcome.reason).to eq 'age_under_19_exempt'
+      expect(outcome.reason).to eq 'age_under_19_excluded'
       expect(outcome.source).to eq 'api'
       expect(outcome.timestamp).to eq determination.created_at
     end

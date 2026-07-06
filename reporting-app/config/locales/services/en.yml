@@ -2,11 +2,11 @@ en:
   services:
     member_status_service:
       reason_codes:
-        age_under_19_exempt: "Age under 19"
-        age_over_65_exempt: "Age over 65"
-        pregnancy_exempt: "Pregnant"
-        american_indian_alaska_native_exempt: "American Indian or Alaska Native"
-        veteran_disability_exempt: "Veteran with a disability"
+        age_under_19_excluded: "Age under 19"
+        age_over_65_excluded: "Age over 65"
+        pregnancy_excluded: "Pregnant"
+        american_indian_alaska_native_excluded: "American Indian or Alaska Native"
+        veteran_disability_excluded: "Veteran with a disability"
         income_reported_compliant: "Income reported compliant"
         income_reported_insufficient: "Insufficient community engagement income"
         hours_reported_compliant: "Hours reported compliant"
