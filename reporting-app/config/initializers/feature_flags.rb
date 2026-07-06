@@ -37,6 +37,11 @@ module Features
       env_var: "FEATURE_DOC_AI",
       default: false,
       description: "Enable DocAI document analysis for income verification"
+    },
+    demo_certifications: {
+      env_var: "FEATURE_DEMO_CERTIFICATIONS",
+      default: false,
+      description: "Enable the demo certification seeding UI"
     }
     # Example of adding more built-in flags:
     # realtime_progress: {

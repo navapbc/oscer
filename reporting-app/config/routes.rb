@@ -191,9 +191,12 @@ Rails.application.routes.draw do
     end
   end
 
-  # Demo tools
-  get "/demo", to: "demo#index"
-  namespace :demo do
-    resources :certifications, only: [ :new, :create ]
+  # Demo tools — route constraint is the primary gate; DemoAccessGate on controllers
+  # guards demo routes that may be added outside this block later.
+  constraints ->(_req) { DemoAccessGate.access_allowed? } do
+    get "/demo", to: "demo#index"
+    namespace :demo do
+      resources :certifications, only: [ :new, :create ]
+    end
   end
 end
