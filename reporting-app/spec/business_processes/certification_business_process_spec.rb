@@ -95,7 +95,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         Strata::EventManager.publish("DeterminedNotExcluded", { case_id: certification_case.id, certification_id: certification_case.certification_id })
         certification_case.reload
 
-        # Case transitions to report_activities step is hardcoded in the business process
+        # Case transitions to external_exception_check step is hardcoded in the business process
         expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EXTERNAL_EXCEPTION_CHECK_STEP)
         expect(certification_case.member_status).to eq(MemberStatus::AWAITING_REPORT)
         expect(certification_case).to be_open
