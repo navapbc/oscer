@@ -34,9 +34,10 @@ module "dev_config" {
   # }
 
   service_override_extra_environment_variables = {
-    ENABLE_LOOKBOOK         = "true"
-    FEATURE_BATCH_UPLOAD_V2 = "true"
-    PERFORM_EMAIL_DELIVERY  = "false"
-    FEATURE_DOC_AI          = "false"
+    ENABLE_LOOKBOOK             = "true"
+    FEATURE_BATCH_UPLOAD_V2     = "true"
+    PERFORM_EMAIL_DELIVERY      = "false"
+    FEATURE_DOC_AI              = "false"
+    FEATURE_DEMO_CERTIFICATIONS = "true"
   }
 }

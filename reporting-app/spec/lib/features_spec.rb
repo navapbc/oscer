@@ -12,6 +12,13 @@ RSpec.describe Features do
     it 'holds the OSCER-shipped built-ins (doc_ai)' do
       expect(described_class::FEATURE_FLAGS.keys).to include(:doc_ai)
     end
+
+    it 'registers demo_certifications with the expected env var and default off' do
+      expect(described_class::FEATURE_FLAGS[:demo_certifications]).to include(
+        env_var: 'FEATURE_DEMO_CERTIFICATIONS',
+        default: false
+      )
+    end
   end
 
   describe 'REGISTRY' do

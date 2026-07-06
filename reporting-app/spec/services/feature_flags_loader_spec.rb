@@ -1,17 +1,9 @@
 # frozen_string_literal: true
 
 require "rails_helper"
-require "tempfile"
 
 RSpec.describe FeatureFlagsLoader, type: :service do
-  # Helper: write content to a tempfile and return the closed Tempfile.
-  # Callers should `.unlink` in an `after` block and use `.path` for paths.
-  def write_yaml(content)
-    file = Tempfile.new([ "feature_flags_test", ".yml" ])
-    file.write(content)
-    file.close
-    file
-  end
+  # write_yaml comes from spec/support/yaml_config_helpers.rb.
 
   # The OSCER-shipped built-ins the loader merges deployment flags on top of.
   # Mirrors the real Features::FEATURE_FLAGS shape so collision/merge behavior
@@ -24,6 +16,13 @@ RSpec.describe FeatureFlagsLoader, type: :service do
         description: "Enable DocAI document analysis for income verification"
       }
     }
+  end
+
+  it "aliases ConfigurationError to the shared ConfigLoading::ConfigurationError" do
+    # The alias is load-bearing: it keeps FeatureFlagsLoader::ConfigurationError
+    # valid for existing rescues/specs and makes unqualified `raise ConfigurationError`
+    # in build_registry / validate_entry! resolve to the shared class. Pin identity.
+    expect(described_class::ConfigurationError).to equal(ConfigLoading::ConfigurationError)
   end
 
   describe ".safe_load_optional" do
