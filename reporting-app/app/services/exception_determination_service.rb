@@ -7,6 +7,17 @@
 # Business process handles: transitions and notifications.
 class ExceptionDeterminationService
   include Strata::VirtualActor
+
+  # Each symbol names a private check method taking member_data and returning its reason code when
+  # the exception applies (and is enabled), or nil otherwise. Add a check by adding its symbol here
+  # and defining the matching method. Order is the evaluation order; the first applicable check wins.
+  EXCEPTION_CHECKS = %i[
+    inpatient_medical_care
+    declared_emergency_county
+    high_unemployment_county
+    medical_travel
+  ].freeze
+
   class << self
     # @param kase [CertificationCase]
     def determine(kase)
@@ -28,11 +39,53 @@ class ExceptionDeterminationService
 
     private
 
-    # Runs the exception checks against the member's data and returns a list containing the first reason code that
-    # applies. No checks are implemented yet, so this returns [] and no member is excepted. Each check's
-    # own story adds its predicate and reason code here.
-    def applicable_exception_reason_codes(_certification)
-      []
+    # Returns an array holding the reason code for the first exception check that applies (empty when
+    # none apply, which leaves the member not excepted). A member needs only one exception reason, so
+    # checks run lazily and stop at the first success. Each check is a plain method (no rules engine)
+    # that gates itself on ExternalException.enabled?, so a deployment can disable any optional
+    # exception via configuration.
+    def applicable_exception_reason_codes(certification)
+      member_data = certification.member_data
+      return [] if member_data.nil?
+
+      reason_code = EXCEPTION_CHECKS.lazy.filter_map { |check| send(check, member_data) }.first
+      reason_code ? [ reason_code ] : []
+    end
+
+    # @return [String, nil] the reason code when the member is receiving inpatient medical care and
+    #   the exception is enabled, otherwise nil.
+    def inpatient_medical_care(member_data)
+      return unless ExternalException.enabled?(:inpatient_medical_care)
+      return unless member_data.receiving_inpatient_medical_care
+
+      Determination::REASON_CODE_MAPPING.fetch(:receiving_inpatient_medical_care)
+    end
+
+    # @return [String, nil] the reason code when the member resides in a declared-emergency county
+    #   and the exception is enabled, otherwise nil.
+    def declared_emergency_county(member_data)
+      return unless ExternalException.enabled?(:declared_emergency_county)
+      return unless member_data.resides_in_declared_emergency_county
+
+      Determination::REASON_CODE_MAPPING.fetch(:resides_in_declared_emergency_county)
+    end
+
+    # @return [String, nil] the reason code when the member resides in a high-unemployment county and
+    #   the exception is enabled, otherwise nil.
+    def high_unemployment_county(member_data)
+      return unless ExternalException.enabled?(:high_unemployment_county)
+      return unless member_data.resides_in_high_unemployment_county
+
+      Determination::REASON_CODE_MAPPING.fetch(:resides_in_high_unemployment_county)
+    end
+
+    # @return [String, nil] the reason code when the member is travelling for medical care (for
+    #   themselves or a dependent) and the exception is enabled, otherwise nil.
+    def medical_travel(member_data)
+      return unless ExternalException.enabled?(:medical_travel)
+      return unless member_data.traveling_for_medical_care
+
+      Determination::REASON_CODE_MAPPING.fetch(:traveling_for_medical_care)
     end
   end
 end

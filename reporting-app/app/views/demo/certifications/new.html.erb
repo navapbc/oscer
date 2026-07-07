@@ -32,6 +32,8 @@
 
   <%= f.check_box :pregnancy_status %>
 
+  <%= f.select :external_exception, ExternalException.enabled.map { |e| [ t("certifications.demo_create.external_exception_options.#{e[:id]}"), e[:id] ] }, { include_blank: true } %>
+
   <%= f.select :race_ethnicity, Demo::Certifications::CreateForm::RACE_ETHNICITY_OPTIONS.map { |re| [ t("certifications.demo_create.race_ethnicity_options.#{re}"), re ] }, { include_blank: true } %>
 
   <%= f.select :external_scenario, Demo::Certifications::CreateForm::EXTERNAL_SCENARIO_OPTIONS %>
