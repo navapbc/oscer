@@ -1,0 +1,50 @@
+# Deployment-owned override surface for exclusion priority configuration.
+#
+# OSCER ships this file with no active overrides (the empty hash below); fill
+# it in to re-rank exclusions or add deployment-specific ones. Because OSCER
+# rarely edits this file, your overrides stay conflict-free when you sync
+# upstream changes.
+#
+# Exclusions are the mandatory federal minimum: a deployment cannot disable one,
+# so there is no `enabled` field. The only configurable dimension is `priority`.
+#
+# Loader: app/services/exclusion_types_loader.rb deep-merges this file over the
+# federal-minimum defaults declared in ExclusionTypesLoader::DEFAULTS. Keys
+# present here win; keys absent here inherit from the defaults. See
+# CUSTOMIZATION.md (Config) for the customization model.
+#
+# ## Shape
+#
+# The top-level hash is keyed by exclusion id, with attribute hashes as values.
+# Each entry requires a `priority` (Integer, 1 = highest durability) — the
+# loader raises a boot-time ConfigurationError otherwise. Priorities must be
+# distinct across all entries; a duplicate priority also raises at boot. Because
+# deep-merge operates per key, an override can change one exclusion's priority
+# without restating the others.
+#
+# ## Examples
+#
+# Re-rank exclusions by swapping their priorities. Because priorities must stay
+# distinct, promoting one exclusion means demoting whatever held that slot; a
+# promotion is always a swap (here, veteran disability and American Indian /
+# Alaska Native trade priorities 3 and 1):
+#
+#     veteran_disability:
+#       priority: 1
+#     american_indian_alaska_native:
+#       priority: 3
+#
+# Add a deployment-specific exclusion (use a not-yet-used priority):
+#
+#     state_specific_exclusion:
+#       priority: 10
+#
+# Federal-minimum defaults shipped by OSCER live in
+# ExclusionTypesLoader::DEFAULTS (app/services/exclusion_types_loader.rb).
+#
+# ## Empty-file note
+#
+# If you want to ship no overrides, leave the empty hash below as-is, or delete
+# the file entirely — the loader treats a missing file as no overrides.
+
+{}
