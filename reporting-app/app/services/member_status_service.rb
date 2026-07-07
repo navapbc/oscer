@@ -165,7 +165,7 @@ class MemberStatusService
         # (dashboards, staff filters) treats them identically to manual exemptions, so surface
         # them as +MemberStatus::EXEMPT+. Only the Determination enum, domain events, and API
         # outcome carry the distinct "excluded" value.
-        status: determination.outcome == "excluded" ? MemberStatus::EXEMPT : determination.outcome,
+        status: %w[excepted excluded].include?(determination.outcome) ? MemberStatus::EXEMPT : determination.outcome,
         determination_method: determination.decision_method,
         reason_codes: determination.reasons,
         human_readable_reason_codes: human_readable_reason_codes(determination.reasons),

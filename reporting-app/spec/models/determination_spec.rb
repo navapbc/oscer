@@ -19,7 +19,7 @@ RSpec.describe Determination, type: :model do
 
     describe 'outcome' do
       it 'defines the outcome enum with correct values' do
-        expect(described_class.outcomes.keys).to contain_exactly('compliant', 'exempt', 'excluded', 'not_compliant')
+        expect(described_class.outcomes.keys).to contain_exactly('compliant', 'exempt', 'excluded', 'excepted', 'not_compliant')
       end
     end
   end

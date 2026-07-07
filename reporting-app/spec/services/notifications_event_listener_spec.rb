@@ -26,6 +26,7 @@ RSpec.describe NotificationsEventListener, type: :service do
 
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedExempt", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedExcluded", anything)
+      expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedExcepted", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedHoursMet", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedCommunityEngagementMet", anything)
       expect(Strata::EventManager).to have_received(:subscribe).with("DeterminedCommunityEngagementActionRequired", anything)

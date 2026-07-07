@@ -94,7 +94,7 @@ class Determination < Strata::Determination
   VALID_REASONS = REASON_CODE_MAPPING.values.freeze
 
   enum :decision_method, { automated: "automated", manual: "manual" }
-  enum :outcome, { compliant: "compliant", exempt: "exempt", excluded: "excluded", not_compliant: "not_compliant" }
+  enum :outcome, { compliant: "compliant", exempt: "exempt", excluded: "excluded", excepted: "excepted", not_compliant: "not_compliant" }
 
   validates :reasons, presence: true, inclusion: { in: VALID_REASONS }
 
