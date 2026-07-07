@@ -46,6 +46,7 @@ require_relative 'support/sso_helpers'
 require_relative 'support/feature_flag_helpers'
 require_relative 'support/env_helpers'
 require_relative 'support/yaml_config_helpers'
+require_relative 'support/verification/data_source_shared_examples'
 require "strata/testing/api_auth_helpers"
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
