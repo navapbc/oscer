@@ -16,28 +16,26 @@
 # ## Shape
 #
 # The top-level hash is keyed by exclusion id, with attribute hashes as values.
-# Each entry requires a `priority` (Integer, 1 = highest durability) — the
+# Each entry requires a `priority` (Integer, lower = higher durability) — the
 # loader raises a boot-time ConfigurationError otherwise. Priorities must be
-# distinct across all entries; a duplicate priority also raises at boot. Because
-# deep-merge operates per key, an override can change one exclusion's priority
-# without restating the others.
+# distinct across all entries; a duplicate priority also raises at boot. The
+# shipped defaults are spaced by 10 (10, 20, 30, ...). Because deep-merge
+# operates per key, an override can change one exclusion's priority without
+# restating the others.
 #
 # ## Examples
 #
-# Re-rank exclusions by swapping their priorities. Because priorities must stay
-# distinct, promoting one exclusion means demoting whatever held that slot; a
-# promotion is always a swap (here, veteran disability and American Indian /
-# Alaska Native trade priorities 3 and 1):
+# Re-rank an exclusion by dropping it into the gap between its new neighbors.
+# The by-10 spacing means you move one without renumbering the rest: to move
+# former foster care just below caretaker (priority 50), set it to 55.
 #
-#     veteran_disability:
-#       priority: 1
-#     american_indian_alaska_native:
-#       priority: 3
+#     former_foster_care:
+#       priority: 55
 #
 # Add a deployment-specific exclusion (use a not-yet-used priority):
 #
 #     state_specific_exclusion:
-#       priority: 10
+#       priority: 100
 #
 # Federal-minimum defaults shipped by OSCER live in
 # ExclusionTypesLoader::DEFAULTS (app/services/exclusion_types_loader.rb).

@@ -31,9 +31,9 @@ RSpec.describe Exclusion, type: :model do
       before do
         allow(Rails.application.config).to receive(:exclusion_types).and_return(
           [
-            { id: :pregnant, priority: 8 },
-            { id: :american_indian_alaska_native, priority: 1 },
-            { id: :veteran_disability, priority: 3 }
+            { id: :pregnant, priority: 80 },
+            { id: :american_indian_alaska_native, priority: 10 },
+            { id: :veteran_disability, priority: 30 }
           ]
         )
       end
@@ -62,7 +62,7 @@ RSpec.describe Exclusion, type: :model do
     it "returns the config entry for a given id" do
       entry = described_class.find(:veteran_disability)
       expect(entry[:id]).to eq(:veteran_disability)
-      expect(entry[:priority]).to eq(3)
+      expect(entry[:priority]).to eq(30)
     end
 
     it "returns nil for an unknown id" do

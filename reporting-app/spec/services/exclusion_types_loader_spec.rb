@@ -5,18 +5,18 @@ require "rails_helper"
 RSpec.describe ExclusionTypesLoader, type: :service do
   # write_yaml comes from spec/support/yaml_config_helpers.rb.
 
-  # The spec's default priority order (high durability -> low), priorities 1-9.
+  # The spec's default priority order (high durability -> low), spaced by 10.
   let(:expected_defaults) do
     {
-      american_indian_alaska_native: 1,
-      former_foster_care: 2,
-      veteran_disability: 3,
-      medically_frail: 4,
-      caretaker: 5,
-      tanf_snap_work: 6,
-      drug_treatment: 7,
-      pregnant: 8,
-      inmate: 9
+      american_indian_alaska_native: 10,
+      former_foster_care: 20,
+      veteran_disability: 30,
+      medically_frail: 40,
+      caretaker: 50,
+      tanf_snap_work: 60,
+      drug_treatment: 70,
+      pregnant: 80,
+      inmate: 90
     }
   end
 
@@ -38,8 +38,8 @@ RSpec.describe ExclusionTypesLoader, type: :service do
     context "when the file contains a valid override hash" do
       let(:override_file) do
         write_yaml(<<~YAML)
-          veteran_disability:
-            priority: 1
+          former_foster_care:
+            priority: 55
         YAML
       end
 
@@ -47,7 +47,7 @@ RSpec.describe ExclusionTypesLoader, type: :service do
 
       it "returns the parsed hash with string keys" do
         expect(described_class.safe_load_optional(override_file.path)).to eq(
-          "veteran_disability" => { "priority" => 1 }
+          "former_foster_care" => { "priority" => 55 }
         )
       end
     end
@@ -60,24 +60,22 @@ RSpec.describe ExclusionTypesLoader, type: :service do
       end
     end
 
-    context "with an override that swaps two priorities" do
-      it "deep-merges; the overridden priorities win and unrelated entries are untouched" do
-        result = described_class.merge_with_defaults(
-          "veteran_disability" => { "priority" => 1 },
-          "american_indian_alaska_native" => { "priority" => 3 }
-        )
-        expect(result["veteran_disability"]["priority"]).to eq(1)
-        expect(result["american_indian_alaska_native"]["priority"]).to eq(3)
-        expect(result["pregnant"]["priority"]).to eq(8)
+    context "with an override that re-ranks an exclusion into a gap" do
+      it "deep-merges; the overridden priority wins and unrelated entries are untouched" do
+        # Move former_foster_care (20) into the gap just below caretaker (50).
+        result = described_class.merge_with_defaults("former_foster_care" => { "priority" => 55 })
+        expect(result["former_foster_care"]["priority"]).to eq(55)
+        expect(result["caretaker"]["priority"]).to eq(50)
+        expect(result["american_indian_alaska_native"]["priority"]).to eq(10)
         expect(result.size).to eq(ExclusionTypesLoader::DEFAULTS.size)
       end
     end
 
     context "with an override that adds a new exclusion" do
       it "produces all defaults plus the new entry" do
-        result = described_class.merge_with_defaults("state_specific" => { "priority" => 10 })
+        result = described_class.merge_with_defaults("state_specific" => { "priority" => 100 })
         expect(result.size).to eq(ExclusionTypesLoader::DEFAULTS.size + 1)
-        expect(result["state_specific"]).to eq("priority" => 10)
+        expect(result["state_specific"]).to eq("priority" => 100)
       end
     end
   end
@@ -86,8 +84,8 @@ RSpec.describe ExclusionTypesLoader, type: :service do
     context "with a well-formed hash-of-hashes (happy path)" do
       let(:merged) do
         {
-          "veteran_disability" => { "priority" => 3 },
-          "pregnant" => { "priority" => 8 }
+          "veteran_disability" => { "priority" => 30 },
+          "pregnant" => { "priority" => 80 }
         }
       end
 
@@ -96,7 +94,7 @@ RSpec.describe ExclusionTypesLoader, type: :service do
         expect(result).to be_an(Array)
         entry = result.find { |e| e[:id] == :veteran_disability }
         expect(entry[:id]).to be_a(Symbol)
-        expect(entry[:priority]).to eq(3)
+        expect(entry[:priority]).to eq(30)
       end
     end
 
@@ -119,7 +117,7 @@ RSpec.describe ExclusionTypesLoader, type: :service do
     context "when priority is not an Integer" do
       it "raises ConfigurationError mentioning the offending id" do
         expect {
-          described_class.transform("pregnant" => { "priority" => "8" })
+          described_class.transform("pregnant" => { "priority" => "80" })
         }.to raise_error(ExclusionTypesLoader::ConfigurationError, /pregnant/)
       end
     end
@@ -127,8 +125,8 @@ RSpec.describe ExclusionTypesLoader, type: :service do
     context "when two entries share a priority" do
       it "raises ConfigurationError naming the duplicate priority" do
         merged = {
-          "veteran_disability" => { "priority" => 1 },
-          "pregnant" => { "priority" => 1 }
+          "veteran_disability" => { "priority" => 10 },
+          "pregnant" => { "priority" => 10 }
         }
         expect {
           described_class.transform(merged)
@@ -138,13 +136,11 @@ RSpec.describe ExclusionTypesLoader, type: :service do
   end
 
   describe "full load pipeline" do
-    context "when an override swaps priorities" do
+    context "when an override re-ranks an exclusion into a gap" do
       let(:override_file) do
         write_yaml(<<~YAML)
-          veteran_disability:
-            priority: 1
-          american_indian_alaska_native:
-            priority: 3
+          former_foster_care:
+            priority: 55
         YAML
       end
 
@@ -155,16 +151,16 @@ RSpec.describe ExclusionTypesLoader, type: :service do
         merged = described_class.merge_with_defaults(overrides)
         result = described_class.transform(merged)
 
-        veteran = result.find { |e| e[:id] == :veteran_disability }
-        american_indian = result.find { |e| e[:id] == :american_indian_alaska_native }
-        expect(veteran[:priority]).to eq(1)
-        expect(american_indian[:priority]).to eq(3)
+        former_foster_care = result.find { |e| e[:id] == :former_foster_care }
+        caretaker = result.find { |e| e[:id] == :caretaker }
+        expect(former_foster_care[:priority]).to eq(55)
+        expect(caretaker[:priority]).to eq(50)
       end
     end
   end
 
   describe "integration" do
-    it "module-direct against the real override path returns the 9 defaults with priorities 1-9" do
+    it "module-direct against the real override path returns the 9 defaults spaced by 10" do
       override_path = Rails.root.join("config/custom/exclusion_types.yml")
       overrides = described_class.safe_load_optional(override_path)
       merged = described_class.merge_with_defaults(overrides)
