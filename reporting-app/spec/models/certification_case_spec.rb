@@ -18,6 +18,33 @@ RSpec.describe CertificationCase, type: :model do
     end
   end
 
+  describe '#record_exception_determination' do
+    # The positive (excepted) path is wired end to end but currently unreachable: no exception
+    # checks are registered, so ExceptionDeterminationService never supplies reason codes. When a
+    # check story does, the case records an automated :excepted determination and closes. Reason
+    # codes are supplied by the caller (deferred to each check's story).
+    let(:reason_codes) { [ 'external_exception_met' ] }
+
+    it 'records an automated determination with the excepted outcome' do
+      expect {
+        certification_case.record_exception_determination(reason_codes, ExceptionDeterminationService)
+      }.to change { Determination.where(outcome: 'excepted').count }.by(1)
+    end
+
+    it 'closes the case' do
+      certification_case.record_exception_determination(reason_codes, ExceptionDeterminationService)
+      expect(certification_case.reload).to be_closed
+    end
+
+    it 'writes an approved exception audit line' do
+      expect {
+        certification_case.record_exception_determination(reason_codes, ExceptionDeterminationService)
+      }.to change {
+        Strata::AuditLine.where(action: 'case.exception.approved').count
+      }.by(1)
+    end
+  end
+
   describe '#accept_activity_report' do
     let(:application_form) { create(:activity_report_application_form) }
 

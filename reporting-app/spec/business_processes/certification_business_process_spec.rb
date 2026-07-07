@@ -82,14 +82,50 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         )
       end
 
-      it 'transitions to external_community_engagement_check' do
+      it 'transitions to external_exception_check' do
         # Step 1: Case has been created and is on external_exclusion_check step
         expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EXTERNAL_EXCLUSION_CHECK_STEP)
         expect(certification_case.member_status).to eq(MemberStatus::AWAITING_REPORT)
         expect(certification_case).to be_open
 
+        # Block execution of CertificationBusinessProcess::EXTERNAL_EXCEPTION_CHECK_STEP
+        allow(ExceptionDeterminationService).to receive(:determine)
+
         # Step 2: System process determines applicant is not eligible for exclusion
         Strata::EventManager.publish("DeterminedNotExcluded", { case_id: certification_case.id, certification_id: certification_case.certification_id })
+        certification_case.reload
+
+        # Case transitions to external_exception_check step is hardcoded in the business process
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EXTERNAL_EXCEPTION_CHECK_STEP)
+        expect(certification_case.member_status).to eq(MemberStatus::AWAITING_REPORT)
+        expect(certification_case).to be_open
+      end
+    end
+  end
+
+  describe 'external_exception_check' do
+    before do
+      certification_case.update!(
+        business_process_current_step: CertificationBusinessProcess::EXTERNAL_EXCEPTION_CHECK_STEP
+      )
+    end
+
+    context 'when an exception applies' do
+      it 'transitions to end' do
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EXTERNAL_EXCEPTION_CHECK_STEP)
+
+        Strata::EventManager.publish("DeterminedExcepted", { case_id: certification_case.id, certification_id: certification_case.certification_id })
+        certification_case.reload
+
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
+      end
+    end
+
+    context 'when no exception applies' do
+      it 'continues to the community-engagement check (then report_activities)' do
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EXTERNAL_EXCEPTION_CHECK_STEP)
+
+        Strata::EventManager.publish("DeterminedNotExcepted", { case_id: certification_case.id, certification_id: certification_case.certification_id })
         certification_case.reload
 
         # Case transitions to report_activities step is hardcoded in the business process
