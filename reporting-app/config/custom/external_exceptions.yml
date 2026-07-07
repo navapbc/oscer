@@ -1,0 +1,42 @@
+# Deployment-owned override surface for external-exception composition.
+#
+# These are the optional short-term hardship exceptions evaluated by the
+# external exception check (see ExceptionDeterminationService). "Exception" is
+# a distinct legal term from "exclusion" and "exemption" — this file governs
+# external exceptions only.
+#
+# OSCER ships this file with no active overrides (the empty hash below); fill
+# it in to tailor which optional exceptions your program applies. Because OSCER
+# rarely edits this file, your overrides stay conflict-free when you sync
+# upstream changes.
+#
+# Loader: app/services/external_exceptions_loader.rb deep-merges this file over
+# the federal-floor defaults declared in ExternalExceptionsLoader::DEFAULTS.
+# Keys present here win; keys absent here inherit from the defaults. See
+# CUSTOMIZATION.md (Config) for the customization model.
+#
+# ## Shape
+#
+# The top-level hash is keyed by external-exception id, with attribute hashes
+# as values. The `enabled` key is required on every entry — the loader raises a
+# boot-time ConfigurationError otherwise.
+#
+# ## Examples
+#
+# Disable an optional exception so the external exception check never applies
+# it:
+#
+#     high_unemployment_county:
+#       enabled: false
+#
+# Federal-floor defaults shipped by OSCER live in
+# ExternalExceptionsLoader::DEFAULTS (app/services/external_exceptions_loader.rb):
+# inpatient_medical_care, declared_emergency_county, high_unemployment_county,
+# medical_travel — all enabled.
+#
+# ## Empty-file note
+#
+# If you want to ship no overrides, leave the empty hash below as-is, or delete
+# the file entirely — the loader treats a missing file as no overrides.
+
+{}

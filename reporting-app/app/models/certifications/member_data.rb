@@ -75,4 +75,11 @@ class Certifications::MemberData < ValueObject
   attribute :payroll_accounts, :array, of: PayrollAccount.to_type
   attribute :activities, :array, of: Activity.to_type
   attribute :pregnancy_status, :boolean, default: false
+
+  # External-exception signals evaluated by ExceptionDeterminationService.
+  # Distinct from exclusion/exemption signals above; see ExternalException.
+  attribute :receiving_inpatient_medical_care, :boolean, default: false
+  attribute :resides_in_declared_emergency_county, :boolean, default: false
+  attribute :resides_in_high_unemployment_county, :boolean, default: false
+  attribute :traveling_for_medical_care, :boolean, default: false
 end
