@@ -9,6 +9,7 @@ module Demo
         "Fully met income requirement"
       ].freeze
 
+      attribute :external_exception, :string
       attribute :external_scenario, :enum, options: EXTERNAL_SCENARIO_OPTIONS
 
       def self.new_for_certification_type(certification_type)

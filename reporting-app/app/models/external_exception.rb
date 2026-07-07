@@ -23,23 +23,10 @@ class ExternalException
       all.select { |t| t[:enabled] }
     end
 
-    def ids
-      all.map { |t| t[:id] }
-    end
-
-    def find(id)
-      all.find { |t| t[:id] == id.to_sym }
-    end
-
     # True when +id+ is a known external exception that is currently enabled.
     # ExceptionDeterminationService calls this before running each check.
     def enabled?(id)
       enabled.any? { |t| t[:id] == id.to_sym }
-    end
-
-    # True when +id+ is a known external exception, regardless of enabled state.
-    def valid_type?(id)
-      all.any? { |t| t[:id] == id.to_sym }
     end
   end
 end

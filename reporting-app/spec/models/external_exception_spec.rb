@@ -19,38 +19,6 @@ RSpec.describe ExternalException, type: :model do
     end
   end
 
-  describe ".ids" do
-    it "returns the list of external-exception ids as symbols" do
-      expect(described_class.ids).to match_array(
-        %i[inpatient_medical_care declared_emergency_county high_unemployment_county medical_travel]
-      )
-    end
-  end
-
-  describe ".find" do
-    it "returns the config entry for a given id" do
-      expect(described_class.find(:inpatient_medical_care)[:id]).to eq(:inpatient_medical_care)
-    end
-
-    it "accepts a string id" do
-      expect(described_class.find("medical_travel")[:id]).to eq(:medical_travel)
-    end
-
-    it "returns nil for an unknown id" do
-      expect(described_class.find(:not_a_real_exception)).to be_nil
-    end
-  end
-
-  describe ".valid_type?" do
-    it "is true for a known id (regardless of enabled state)" do
-      expect(described_class.valid_type?(:medical_travel)).to be true
-    end
-
-    it "is false for an unknown id" do
-      expect(described_class.valid_type?(:not_a_real_exception)).to be false
-    end
-  end
-
   describe ".enabled and .enabled?" do
     context "when all defaults are enabled" do
       it ".enabled returns all four" do
@@ -91,10 +59,6 @@ RSpec.describe ExternalException, type: :model do
 
       it ".enabled? remains true for the still-enabled types" do
         expect(described_class.enabled?(:inpatient_medical_care)).to be true
-      end
-
-      it ".valid_type? is still true for the disabled type (known but off)" do
-        expect(described_class.valid_type?(:high_unemployment_county)).to be true
       end
     end
   end

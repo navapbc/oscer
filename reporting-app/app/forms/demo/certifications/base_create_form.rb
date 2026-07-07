@@ -25,9 +25,6 @@ module Demo
       attribute :case_number, :string
       attribute :va_icn, :string
       attribute :pregnancy_status, :boolean, default: false
-      # Selected external-exception scenario to trigger (an ExternalException id), or blank for none.
-      # to_certification maps the choice onto the matching MemberData signal.
-      attribute :external_exception, :string
       attribute :race_ethnicity, :enum, options: RACE_ETHNICITY_OPTIONS
 
       # TODO: add validation you can't set both certification_type and the other params?
