@@ -95,8 +95,22 @@ module Verification
         Array(outcomes).freeze
       end
 
+      # Deep-copies, then deep-freezes, so the persisted audit record is
+      # tamper-resistant all the way down. The +deep_dup+ ensures we freeze our
+      # own copy rather than mutating the caller's hash (and its nested objects)
+      # in place.
       def normalize_audit_data(audit_data)
-        (audit_data || {}).to_h.freeze
+        deep_freeze((audit_data || {}).to_h.deep_dup)
+      end
+
+      def deep_freeze(value)
+        case value
+        when Hash
+          value.each_value { |v| deep_freeze(v) }
+        when Array
+          value.each { |v| deep_freeze(v) }
+        end
+        value.freeze
       end
     end
 

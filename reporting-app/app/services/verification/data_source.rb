@@ -43,9 +43,22 @@ module Verification
     def call(certification:)
       return skipped_result unless precondition_met?(certification)
 
-      ensure_result!(perform(certification: certification))
-    rescue *expected_error_classes => e
-      error_result(e)
+      begin
+        result = perform(certification: certification)
+      rescue ContractError
+        # A subclass may raise ContractError from #perform directly; re-raise so
+        # an over-broad expected_error_classes can never swallow a contract
+        # violation. (ensure_result! below runs outside this block, so codes it
+        # raises always propagate too.)
+        raise
+      rescue *expected_error_classes => e
+        # An empty expected_error_classes ([]) intentionally catches nothing:
+        # `rescue *[]` matches no exceptions, so unexpected errors propagate by
+        # default and only declared integration failures become :error results.
+        return error_result(e)
+      end
+
+      ensure_result!(result)
     end
 
     protected
@@ -98,8 +111,15 @@ module Verification
       )
     end
 
+    # Best-effort machine-readable code derived from the error's class name.
+    # This is *not* a stable contract: renaming the exception class changes the
+    # code. Subclasses that persist or match on +error_code+ should override
+    # this (or {#error_result}) to map known errors to stable symbols.
     def error_code_for(error)
-      error.class.name.demodulize.underscore.to_sym
+      class_name = error.class.name
+      return :unknown_error if class_name.nil?
+
+      class_name.demodulize.underscore.to_sym
     end
 
     private

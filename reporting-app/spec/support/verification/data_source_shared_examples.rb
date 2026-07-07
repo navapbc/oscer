@@ -89,8 +89,8 @@ RSpec.shared_examples "an errored verification result" do
 end
 
 # Invariants that require exercising +#call+ rather than inspecting a single
-# result. Host specs provide +let(:data_source)+, +let(:certification)+, and
-# +let(:expected_error)+ (an instance of a declared expected error class).
+# result. Host specs provide +let(:data_source)+ and +let(:certification)+,
+# where the data source is configured to hit an expected integration failure.
 RSpec.shared_examples "a resilient verification data source" do
   it "declares the outcomes it can emit" do
     expect(data_source.class.declared_outcomes).to all(be_a(Symbol))

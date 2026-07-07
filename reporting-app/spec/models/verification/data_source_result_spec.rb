@@ -100,6 +100,22 @@ RSpec.describe Verification::DataSourceResult do
     it "freezes audit_data" do
       expect(result.audit_data).to be_frozen
     end
+
+    it "deep-freezes nested audit_data structures" do
+      nested = described_class.success(audit_data: { outer: { inner: [ 1 ] } })
+
+      expect(nested.audit_data[:outer]).to be_frozen
+      expect(nested.audit_data[:outer][:inner]).to be_frozen
+    end
+
+    it "does not freeze the caller's audit_data in place" do
+      caller_audit = { outer: { inner: [ 1 ] } }
+
+      described_class.success(audit_data: caller_audit)
+
+      expect(caller_audit).not_to be_frozen
+      expect(caller_audit[:outer]).not_to be_frozen
+    end
   end
 
   describe "status predicates" do

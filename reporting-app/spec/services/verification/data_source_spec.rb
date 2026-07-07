@@ -79,7 +79,6 @@ RSpec.describe Verification::DataSource do
 
     context "when the source hits an expected integration failure" do
       let(:data_source) { TestDataSource.new(behavior: :raise_expected) }
-      let(:expected_error) { TestVerificationApiError.new }
 
       it_behaves_like "an errored verification result"
       it_behaves_like "a resilient verification data source"
@@ -102,6 +101,20 @@ RSpec.describe Verification::DataSource do
       let(:data_source) { TestDataSource.new(behavior: :return_nil) }
 
       it "raises ContractError" do
+        expect { result }.to raise_error(Verification::DataSource::ContractError, /must return/)
+      end
+    end
+
+    context "when a subclass declares an over-broad expected_error_classes" do
+      let(:data_source) do
+        Class.new(described_class) do
+          def precondition_met?(_certification) = true
+          def perform(certification:) = nil
+          def expected_error_classes = [ StandardError ]
+        end.new
+      end
+
+      it "still raises ContractError rather than swallowing it as an :error result" do
         expect { result }.to raise_error(Verification::DataSource::ContractError, /must return/)
       end
     end
