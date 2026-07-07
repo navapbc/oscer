@@ -4,19 +4,19 @@ Feature flags are an important tool that enables [trunk-based development](https
 
 ## How it works
 
-This project stores feature flags in AWS Parameter Store and injects them into the application as environment variables. See the [feature_flags module](/infra/modules/feature_flags/).
+Feature flags are read at runtime from `FEATURE_<NAME>` environment variables by the `Features` module in [`config/initializers/feature_flags.rb`](/reporting-app/config/initializers/feature_flags.rb). Flags come from two sources, unioned into one registry at boot: OSCER-shipped built-ins in the `Features::FEATURE_FLAGS` hash, and deployment-defined flags in `config/custom/feature_flags.yml`.
 
 ## Create a feature flag
 
-Add a feature flag by updating the map of feature flags and their default values in the app-config module (in `/infra/<APP_NAME>/app-config/feature_flags.tf`). The set of feature flags will be updated on the next `terraform apply` of the service layer, or during the next deploy of the application.
+Add an OSCER-shipped built-in by adding an entry (`env_var`, `default`, `description`) to the `FEATURE_FLAGS` hash in `config/initializers/feature_flags.rb`. A deployment adds its own flag by adding an entry to `config/custom/feature_flags.yml` instead, which avoids editing the OSCER-owned registry and conflicting on every upstream sync. See [CUSTOMIZATION.md](/reporting-app/CUSTOMIZATION.md) for the deployment-defined workflow and validation rules.
 
 ## Set a feature flag value for an environment
 
-Set the value of a feature flag for an environment by setting the `feature_flag_overrides` variable to the env-config module for that environment. The value of the feature flag will be updated on the next `terraform apply` of the service layer, or during the next deploy of the application.
+Set a flag's value for an environment in the `service_override_extra_environment_variables` block of that environment's app-config file (`infra/reporting-app/app-config/<env>.tf`), as `FEATURE_DOC_AI` and `FEATURE_DEMO_CERTIFICATIONS` do. The value takes effect on the next `terraform apply` of the service layer, or during the next deploy of the application. A flag left unset falls back to the `default` in its registry entry.
 
 ## Query a feature flag value in the application
 
-To determine whether a particular feature should be enabled or disabled for a given user, check for an environment variable `FF_<FEATURE_FLAG_NAME>`. If the feature flag is enabled the environment variable will be set to the string `"true"`, otherwise it will be set to the string `"false"`.
+To determine whether a feature is enabled, call `Features.<flag>_enabled?` (e.g. `Features.doc_ai_enabled?`) or the generic `Features.enabled?(:flag_name)`. Both are generated automatically for every registered flag. In specs, use the auto-generated `with_<flag>_enabled` / `with_<flag>_disabled` block helpers from `spec/support/feature_flag_helpers.rb`.
 
 ## DocAI operational configuration (not feature flags)
 
