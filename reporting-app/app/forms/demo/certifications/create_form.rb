@@ -71,6 +71,7 @@ module Demo
           md.pregnancy_status = pregnancy_status if pregnancy_status.present?
           md.race_ethnicity = race_ethnicity if race_ethnicity.present?
           md.va_icn = va_icn if va_icn.present?
+          apply_external_exception(md)
         end
 
         @certification = FactoryBot.build(
@@ -81,6 +82,23 @@ module Demo
           certification_requirements: certification_requirements,
           member_data: member_data,
         )
+      end
+
+      private
+
+      # Sets the MemberData signal that triggers the selected external exception, so the check fires
+      # downstream in ExceptionDeterminationService. A blank selection leaves member data unchanged.
+      def apply_external_exception(member_data)
+        case external_exception
+        when "inpatient_medical_care"
+          member_data.receiving_inpatient_medical_care = true
+        when "declared_emergency_county"
+          member_data.resides_in_declared_emergency_county = true
+        when "high_unemployment_county"
+          member_data.resides_in_high_unemployment_county = true
+        when "medical_travel"
+          member_data.traveling_for_medical_care = true
+        end
       end
     end
   end

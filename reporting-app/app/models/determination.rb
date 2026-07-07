@@ -73,7 +73,13 @@ class Determination < Strata::Determination
     exemption_request_compliant: "exemption_request_compliant",
     is_veteran_with_disability: "veteran_disability_excluded",
     denial_response_convincing: "denial_response_convincing",
-    denial_response_not_convincing: "denial_response_not_convincing"
+    denial_response_not_convincing: "denial_response_not_convincing",
+    # External-exception reason codes (see ExceptionDeterminationService). "Excepted" is a
+    # distinct outcome from "excluded"/"exempt" — do not conflate the three.
+    receiving_inpatient_medical_care: "inpatient_medical_care_excepted",
+    resides_in_declared_emergency_county: "declared_emergency_county_excepted",
+    resides_in_high_unemployment_county: "high_unemployment_county_excepted",
+    traveling_for_medical_care: "medical_travel_excepted"
   }.freeze
 
   # Reasons recorded when a staff reviewer approves or denies a member's denial response.

@@ -19,11 +19,10 @@ RSpec.describe CertificationCase, type: :model do
   end
 
   describe '#record_exception_determination' do
-    # The positive (excepted) path is wired end to end but currently unreachable: no exception
-    # checks are registered, so ExceptionDeterminationService never supplies reason codes. When a
-    # check story does, the case records an automated :excepted determination and closes. Reason
-    # codes are supplied by the caller (deferred to each check's story).
-    let(:reason_codes) { [ 'external_exception_met' ] }
+    # The excepted path records an automated :excepted determination and closes the case. Reason
+    # codes are supplied by the caller (ExceptionDeterminationService, from the matched check); use a
+    # real reason so the determination passes its reasons-inclusion validation.
+    let(:reason_codes) { [ 'inpatient_medical_care_excepted' ] }
 
     it 'records an automated determination with the excepted outcome' do
       expect {
