@@ -3,6 +3,7 @@
 class CertificationBusinessProcess < Strata::BusinessProcess
   # Determination steps
   EXTERNAL_EXCLUSION_CHECK_STEP = "external_exclusion_check"
+  EXTERNAL_EXCEPTION_CHECK_STEP = "external_exception_check"
   EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP = "external_community_engagement_check"
 
   # User task steps
@@ -15,8 +16,15 @@ class CertificationBusinessProcess < Strata::BusinessProcess
 
   # --- System processes: Determination ---
   # Notifications are sent via NotificationsEventListener which subscribes to domain events
+
+  # External exclusion: see ExclusionDeterminationService.
   system_process(EXTERNAL_EXCLUSION_CHECK_STEP, ->(kase) {
     ExclusionDeterminationService.determine(kase)
+  })
+
+  # External exception: see ExceptionDeterminationService.
+  system_process(EXTERNAL_EXCEPTION_CHECK_STEP, ->(kase) {
+    ExceptionDeterminationService.determine(kase)
   })
 
   # External CE: see CommunityEngagementCheckService (combined hours/income determination + events).
@@ -36,8 +44,14 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   end
 
   # --- Transitions: External exclusion check ---
-  transition(EXTERNAL_EXCLUSION_CHECK_STEP, "DeterminedNotExcluded", EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP)
+  transition(EXTERNAL_EXCLUSION_CHECK_STEP, "DeterminedNotExcluded", EXTERNAL_EXCEPTION_CHECK_STEP)
   transition(EXTERNAL_EXCLUSION_CHECK_STEP, "DeterminedExcluded", END_STEP)
+
+  # --- Transitions: External exception check ---
+  # DeterminedExcepted: case ends (member need not report).
+  # DeterminedNotExcepted: continue to the community-engagement check.
+  transition(EXTERNAL_EXCEPTION_CHECK_STEP, "DeterminedExcepted", END_STEP)
+  transition(EXTERNAL_EXCEPTION_CHECK_STEP, "DeterminedNotExcepted", EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP)
 
   # --- Transitions: External CE check (combined hours/income; generic community-engagement event names) ---
   # DeterminedCommunityEngagementMet: At least one CE track (hours or income) satisfied
