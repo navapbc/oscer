@@ -61,6 +61,8 @@ module Determinable
     determination_method =
       if outcome.to_sym == :excluded
         :exclusion
+      elsif outcome.to_sym == :excepted
+        :exception
       elsif (reasons & Determination::EXEMPTION_REASONS).any?
         :exemption
       elsif (reasons & Determination::DENIAL_RESPONSE_REASONS).any?
