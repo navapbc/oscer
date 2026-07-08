@@ -184,10 +184,10 @@ class CertificationCase < Strata::Case
   end
 
   # Called by ExclusionDeterminationService to record exclusion determination
-  # Model only handles state changes - service handles events
-  # @param eligibility_fact [Strata::RulesEngine::Fact] the evaluation result
+  # Model only handles state changes - service handles selection and events
+  # @param reason_codes [Array<String>] reason code(s) for the selected exclusion
   # @param actor [Strata::VirtualActor] recording the exclusion
-  def record_exclusion_determination(eligibility_fact, actor)
+  def record_exclusion_determination(reason_codes, actor)
     certification = Certification.find(certification_id)
 
     transaction do
@@ -195,7 +195,6 @@ class CertificationCase < Strata::Case
       self.exemption_request_approval_status_updated_at = Time.current
       close!
 
-      reason_codes = Determination.to_reason_codes(eligibility_fact)
       certification.record_determination!(
         decision_method: :automated,
         reasons: reason_codes,

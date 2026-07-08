@@ -5,27 +5,18 @@ require 'rails_helper'
 RSpec.describe Rules::ExclusionRuleset do
   let(:ruleset) { described_class.new }
 
-  describe '#age_under_19' do
-    context 'when age is nil' do
-      it 'returns nil' do
-        expect(ruleset.age_under_19(nil)).to be_nil
+  describe 'EXCLUSION_FACT_IDS' do
+    # Guards the fact/id/config/reason-code seam at test time so drift is caught
+    # here rather than as a fail-loud KeyError in the determination flow.
+    it 'bridges every fact to an exclusion configured with a priority' do
+      described_class::EXCLUSION_FACT_IDS.each_value do |id|
+        expect(Exclusion.find(id)).to include(:priority)
       end
     end
 
-    context 'when age is less than 19' do
-      it 'returns true' do
-        expect(ruleset.age_under_19(18)).to be true
-        expect(ruleset.age_under_19(0)).to be true
-        expect(ruleset.age_under_19(1)).to be true
-      end
-    end
-
-    context 'when age is 19 or greater' do
-      it 'returns false' do
-        expect(ruleset.age_under_19(19)).to be false
-        expect(ruleset.age_under_19(64)).to be false
-        expect(ruleset.age_under_19(65)).to be false
-        expect(ruleset.age_under_19(100)).to be false
+    it 'bridges only facts that map to a determination reason code' do
+      described_class::EXCLUSION_FACT_IDS.each_key do |fact_name|
+        expect(Determination::REASON_CODE_MAPPING).to include(fact_name)
       end
     end
   end
@@ -118,67 +109,49 @@ RSpec.describe Rules::ExclusionRuleset do
   describe '#eligible_for_exclusion' do
     context 'when all parameters are nil' do
       it 'returns nil' do
-        expect(ruleset.eligible_for_exclusion(nil, nil, nil, nil, nil)).to be_nil
+        expect(ruleset.eligible_for_exclusion(nil, nil, nil)).to be_nil
       end
     end
 
     context 'when only is_pregnant is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(nil, nil, true, nil, nil)).to be true
-      end
-    end
-
-    context 'when only age_under_19 is true' do
-      it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(true, nil, nil, nil, nil)).to be true
-      end
-    end
-
-    context 'when only age_over_65 is true' do
-      it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(nil, true, nil, nil, nil)).to be true
+        expect(ruleset.eligible_for_exclusion(true, nil, nil)).to be true
       end
     end
 
     context 'when only is_american_indian_or_alaska_native is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(nil, nil, nil, true, nil)).to be true
+        expect(ruleset.eligible_for_exclusion(nil, true, nil)).to be true
       end
     end
 
     context 'when only is_veteran_with_disability is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(nil, nil, nil, nil, true)).to be true
+        expect(ruleset.eligible_for_exclusion(nil, nil, true)).to be true
       end
     end
 
-    context 'when age_under_19 and is_pregnant are both true' do
-      it 'returns true (multiple reasons)' do
-        expect(ruleset.eligible_for_exclusion(true, nil, true, nil, nil)).to be true
+    context 'when multiple parameters are true' do
+      it 'returns true' do
+        expect(ruleset.eligible_for_exclusion(true, true, nil)).to be true
       end
     end
 
     context 'when all are true' do
-      it 'returns true (all reasons)' do
-        expect(ruleset.eligible_for_exclusion(true, true, true, true, true)).to be true
+      it 'returns true' do
+        expect(ruleset.eligible_for_exclusion(true, true, true)).to be true
       end
     end
 
     context 'when all are false' do
-      it 'returns false (no exemption)' do
-        expect(ruleset.eligible_for_exclusion(false, false, false, false, false)).to be false
+      it 'returns false' do
+        expect(ruleset.eligible_for_exclusion(false, false, false)).to be false
       end
     end
 
-    context 'when age-based exemption is false but is_american_indian_or_alaska_native is true' do
-      it 'returns true (race-based exemption)' do
-        expect(ruleset.eligible_for_exclusion(false, false, false, true, nil)).to be true
-      end
-    end
-
-    context 'when age-based exemption is false but pregnant is true' do
-      it 'returns true (pregnant exemption)' do
-        expect(ruleset.eligible_for_exclusion(false, false, true, nil, nil)).to be true
+    context 'when some are false but one is true' do
+      it 'returns true' do
+        expect(ruleset.eligible_for_exclusion(false, true, false)).to be true
       end
     end
   end

@@ -408,18 +408,12 @@ RSpec.describe CertificationCase, type: :model do
   end
 
   describe '#record_exclusion_determination' do
-    # Model only records state - service handles conditional logic and events
+    # Model only records the given reason codes - the service selects the single
+    # highest-priority exclusion and owns the conditional logic and events.
     before { stub_const("MockSubmitter", Class.new { include Strata::VirtualActor }) }
 
-
     it 'sets approval status and closes case' do
-      age_fact = Strata::RulesEngine::Fact.new(
-        :age_under_19, true, reasons: []
-      )
-      eligibility_fact = Strata::RulesEngine::Fact.new(
-        :age_eligibility, true, reasons: [ age_fact ]
-      )
-      certification_case.record_exclusion_determination(eligibility_fact, MockSubmitter)
+      certification_case.record_exclusion_determination([ "pregnancy_excluded" ], MockSubmitter)
       certification_case.reload
 
       expect(certification_case.exemption_request_approval_status).to eq("approved")
@@ -427,58 +421,27 @@ RSpec.describe CertificationCase, type: :model do
       expect(certification_case).to be_closed
     end
 
-
     it "logs approved decision to audit log" do
-      age_fact = Strata::RulesEngine::Fact.new(
-        :age_under_19, true, reasons: []
-      )
-      eligibility_fact = Strata::RulesEngine::Fact.new(
-        :age_eligibility, true, reasons: [ age_fact ]
-      )
       certification = Certification.find(certification_case.certification_id)
       expect do
-        certification_case.record_exclusion_determination(eligibility_fact, MockSubmitter)
+        certification_case.record_exclusion_determination([ "pregnancy_excluded" ], MockSubmitter)
       end.to change { Strata::AuditLine.where(subject: certification, actor_type: MockSubmitter.name, action: "case.exclusion.approved").count }.by(1)
     end
 
-    it 'creates determination with correct attributes' do
-      age_fact = Strata::RulesEngine::Fact.new(
-        :age_under_19, true, reasons: []
-      )
-      eligibility_fact = Strata::RulesEngine::Fact.new(
-        :age_eligibility, true, reasons: [ age_fact ]
-      )
-      certification_case.record_exclusion_determination(eligibility_fact, MockSubmitter)
+    it 'creates a determination that records the given reason code' do
+      certification_case.record_exclusion_determination([ "pregnancy_excluded" ], MockSubmitter)
 
       determination = Determination.first
 
       expect(determination.decision_method).to eq("automated")
-      expect(determination.reasons).to include("age_under_19_excluded")
+      expect(determination.reasons).to eq([ "pregnancy_excluded" ])
       expect(determination.outcome).to eq("excluded")
       expect(determination.determined_at).to be_present
       # determination_data is a jsonb column and must be stored as a Hash, never a JSON
       # String (writing reasons.to_json double-encodes it into a String — see #680). For
       # automated exclusions it records the granting reason codes.
       expect(determination.determination_data).to be_a(Hash)
-      expect(determination.determination_data).to eq({ "exclusion_reasons" => [ "age_under_19_excluded" ] })
-    end
-
-    it 'records multiple reasons (age and pregnancy)' do
-      age_fact = Strata::RulesEngine::Fact.new(
-        :age_under_19, true, reasons: []
-      )
-      pregnant_fact = Strata::RulesEngine::Fact.new(
-        :is_pregnant, true, reasons: []
-      )
-      eligibility_fact = Strata::RulesEngine::Fact.new(
-        :eligible_for_exclusion, true, reasons: [ age_fact, pregnant_fact ]
-      )
-      certification_case.record_exclusion_determination(eligibility_fact, MockSubmitter)
-
-      determination = Determination.first
-
-      expect(determination.reasons).to include("age_under_19_excluded", "pregnancy_excluded")
-      expect(determination.outcome).to eq("excluded")
+      expect(determination.determination_data).to eq({ "exclusion_reasons" => [ "pregnancy_excluded" ] })
     end
   end
 
