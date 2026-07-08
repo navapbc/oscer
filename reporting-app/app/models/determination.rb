@@ -76,6 +76,7 @@ class Determination < Strata::Determination
     denial_response_not_convincing: "denial_response_not_convincing",
     # External-exception reason codes (see ExceptionDeterminationService). "Excepted" is a
     # distinct outcome from "excluded"/"exempt" — do not conflate the three.
+    age_was_under_19: "age_under_19_excepted",
     receiving_inpatient_medical_care: "inpatient_medical_care_excepted",
     resides_in_declared_emergency_county: "declared_emergency_county_excepted",
     resides_in_high_unemployment_county: "high_unemployment_county_excepted",

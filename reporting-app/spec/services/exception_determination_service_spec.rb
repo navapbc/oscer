@@ -36,14 +36,7 @@ RSpec.describe ExceptionDeterminationService do
     end
   end
 
-  shared_examples 'a disabled external exception' do |exception_id|
-    before do
-      # Default to the real config, then disable only the exception under test, so the checks that
-      # run before it (up to the first success) still consult real enablement.
-      allow(ExternalException).to receive(:enabled?).and_call_original
-      allow(ExternalException).to receive(:enabled?).with(exception_id).and_return(false)
-    end
-
+  shared_examples 'a failed check' do
     it 'does not except the member (publishes DeterminedNotExcepted)' do
       service.determine(kase)
       expect(Strata::EventManager).to have_received(:publish)
@@ -57,18 +50,20 @@ RSpec.describe ExceptionDeterminationService do
     end
   end
 
+  shared_examples 'a disabled external exception' do |exception_id|
+    before do
+      # Default to the real config, then disable only the exception under test, so the checks that
+      # run before it (up to the first success) still consult real enablement.
+      allow(ExternalException).to receive(:enabled?).and_call_original
+      allow(ExternalException).to receive(:enabled?).with(exception_id).and_return(false)
+    end
+
+    it_behaves_like 'a failed check'
+  end
+
   describe '#determine' do
     context 'when no exception check applies (member data carries no exception signals)' do
-      it 'publishes DeterminedNotExcepted' do
-        service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish)
-          .with('DeterminedNotExcepted', { case_id: kase.id, certification_id: kase.certification_id })
-      end
-
-      it 'does not close the case' do
-        service.determine(kase)
-        expect(kase.reload.status).to eq('open')
-      end
+      it_behaves_like 'a failed check'
 
       it 'logs a denied event in the audit log' do
         expect do
@@ -86,6 +81,41 @@ RSpec.describe ExceptionDeterminationService do
         allow(kase).to receive(:record_exception_determination)
         service.determine(kase)
         expect(kase).not_to have_received(:record_exception_determination)
+      end
+    end
+
+    context 'when applicant was under 19 years old' do
+      let(:cert_date) { Date.new(2025, 7, 1) }
+      let(:dob) { cert_date - (19.years + 2.months + 5.days) }
+      let(:certification) do
+        create(
+          :certification,
+          member_data: build(:certification_member_data, date_of_birth: dob, cert_date:),
+          certification_requirements: build(:certification_certification_requirements, certification_date: cert_date, months_that_can_be_certified:)
+        )
+      end
+
+      context 'within months that can be certified' do
+        let(:months_that_can_be_certified) { (0..3).map { |i| cert_date - i.month } }
+        it_behaves_like 'an applied external exception', 'age_under_19_excepted'
+      end
+
+      context 'before months that can be certified' do
+        let(:months_that_can_be_certified) { (0..2).map { |i| cert_date - i.month } }
+        it_behaves_like 'a failed check'
+      end
+    end
+
+    context 'when applicant was enrolled in other cms program' do
+      let(:cert_date) { Date.new(2025, 7, 1) }
+      let(:dob) { cert_date - (19.years + 2.months + 5.days) }
+      let(:months_that_can_be_certified) { (0..3).map { |i| cert_date - i.month } }
+      let(:certification) do
+        create(
+          :certification,
+          member_data: build(:certification_member_data, date_of_birth: dob, cert_date:),
+          certification_requirements: build(:certification_certification_requirements, certification_date: cert_date, months_that_can_be_certified:)
+        )
       end
     end
 

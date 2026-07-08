@@ -40,6 +40,7 @@ RSpec.describe Determination, type: :model do
           veteran_disability_excluded
           denial_response_convincing
           denial_response_not_convincing
+          age_under_19_excepted
           inpatient_medical_care_excepted
           declared_emergency_county_excepted
           high_unemployment_county_excepted
