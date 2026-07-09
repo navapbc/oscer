@@ -455,7 +455,7 @@
           "properties": {
             "status": {
               "type": "string",
-              "enum": ["compliant", "excluded", "exempt", "indeterminate", "not_compliant"],
+              "enum": ["compliant", "excluded", "excepted", "exempt", "indeterminate", "not_compliant"],
               "description": "Current status of community engagement requirement checks"
             },
             "reason": {

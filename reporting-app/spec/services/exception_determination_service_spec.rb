@@ -36,14 +36,7 @@ RSpec.describe ExceptionDeterminationService do
     end
   end
 
-  shared_examples 'a disabled external exception' do |exception_id|
-    before do
-      # Default to the real config, then disable only the exception under test, so the checks that
-      # run before it (up to the first success) still consult real enablement.
-      allow(ExternalException).to receive(:enabled?).and_call_original
-      allow(ExternalException).to receive(:enabled?).with(exception_id).and_return(false)
-    end
-
+  shared_examples 'a failed check' do
     it 'does not except the member (publishes DeterminedNotExcepted)' do
       service.determine(kase)
       expect(Strata::EventManager).to have_received(:publish)
@@ -57,18 +50,54 @@ RSpec.describe ExceptionDeterminationService do
     end
   end
 
-  describe '#determine' do
-    context 'when no exception check applies (member data carries no exception signals)' do
-      it 'publishes DeterminedNotExcepted' do
-        service.determine(kase)
-        expect(Strata::EventManager).to have_received(:publish)
-          .with('DeterminedNotExcepted', { case_id: kase.id, certification_id: kase.certification_id })
-      end
+  shared_examples 'a disabled optional exception' do |exception_id|
+    before do
+      # Default to the real config, then disable only the exception under test, so the checks that
+      # run before it (up to the first success) still consult real enablement.
+      allow(ExternalException).to receive(:enabled?).and_call_original
+      allow(ExternalException).to receive(:enabled?).with(exception_id).and_return(false)
+    end
 
-      it 'does not close the case' do
-        service.determine(kase)
-        expect(kase.reload.status).to eq('open')
-      end
+    it_behaves_like 'a failed check'
+  end
+
+  shared_examples 'an optional exception' do |attribute, exception_id|
+    let(:member_data) { build(:certification_member_data, cert_date:, attribute => event_date) }
+
+    context 'when event in month that can be certified' do
+      let(:event_date) { [ cert_date - 2.months - 2.days ] }
+
+      it_behaves_like 'an applied external exception', "#{exception_id}_excepted"
+      it_behaves_like 'a disabled optional exception', exception_id
+    end
+
+    context 'when event not in month that can be certified' do
+      let(:event_date) { [ cert_date - 3.months - 2.days ] }
+
+      it_behaves_like 'a failed check'
+    end
+
+    context 'with invalid data' do
+      let(:event_date) { [ 'not a date' ] }
+
+      it_behaves_like 'a failed check'
+    end
+  end
+
+  describe '#determine' do
+    let(:cert_date) { Date.new(2025, 7, 1) }
+    let(:member_data) { build(:certification_member_data, cert_date:) }
+    let(:months_that_can_be_certified) { (0..3).map { |i| cert_date - i.month } }
+    let(:certification) do
+      create(
+        :certification,
+        member_data:,
+        certification_requirements: build(:certification_certification_requirements, certification_date: cert_date, months_that_can_be_certified:)
+      )
+    end
+
+    context 'when no exception check applies (member data carries no exception signals)' do
+      it_behaves_like 'a failed check'
 
       it 'logs a denied event in the audit log' do
         expect do
@@ -89,50 +118,26 @@ RSpec.describe ExceptionDeterminationService do
       end
     end
 
-    context 'when the inpatient-medical-care check applies' do
-      let(:certification) do
-        create(:certification, member_data: build(:certification_member_data, receiving_inpatient_medical_care: true))
-      end
-
-      it_behaves_like 'an applied external exception', 'inpatient_medical_care_excepted'
-      it_behaves_like 'a disabled external exception', :inpatient_medical_care
+    describe 'checking inpatient-medical-care' do
+      it_behaves_like 'an optional exception', :dates_receiving_inpatient_medical_care, :inpatient_medical_care
     end
 
-    context 'when the declared-emergency-county check applies' do
-      let(:certification) do
-        create(:certification, member_data: build(:certification_member_data, resides_in_declared_emergency_county: true))
-      end
-
-      it_behaves_like 'an applied external exception', 'declared_emergency_county_excepted'
-      it_behaves_like 'a disabled external exception', :declared_emergency_county
+    describe 'checking declared-emergency-county' do
+      it_behaves_like 'an optional exception', :dates_in_declared_emergency_county, :declared_emergency_county
     end
 
-    context 'when the high-unemployment-county check applies' do
-      let(:certification) do
-        create(:certification, member_data: build(:certification_member_data, resides_in_high_unemployment_county: true))
-      end
-
-      it_behaves_like 'an applied external exception', 'high_unemployment_county_excepted'
-      it_behaves_like 'a disabled external exception', :high_unemployment_county
+    describe 'checking high-unemployment-county' do
+      it_behaves_like 'an optional exception', :dates_in_high_unemployment_county, :high_unemployment_county
     end
 
-    context 'when the medical-travel check applies' do
-      let(:certification) do
-        create(:certification, member_data: build(:certification_member_data, traveling_for_medical_care: true))
-      end
-
-      it_behaves_like 'an applied external exception', 'medical_travel_excepted'
-      it_behaves_like 'a disabled external exception', :medical_travel
+    describe 'checking medical-travel' do
+      it_behaves_like 'an optional exception', :dates_traveling_for_medical_care, :medical_travel
     end
 
     context 'when more than one exception check would apply' do
-      let(:certification) do
-        create(:certification, member_data: build(
-          :certification_member_data,
-          receiving_inpatient_medical_care: true,
-          resides_in_declared_emergency_county: true
-        ))
-      end
+      let(:dates_receiving_inpatient_medical_care) { [ cert_date - 3.months ] }
+      let(:dates_traveling_for_medical_care) { [ cert_date - 3.months ] }
+      let(:member_data) { build(:certification_member_data, cert_date:, dates_traveling_for_medical_care:, dates_receiving_inpatient_medical_care:) }
 
       it 'records only the first applicable reason (stops at first success)' do
         service.determine(kase)
