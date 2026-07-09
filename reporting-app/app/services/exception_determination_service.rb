@@ -50,7 +50,7 @@ class ExceptionDeterminationService
       member_data = certification.member_data
       return [] if member_data.nil?
 
-      certifiable_months = certification.certification_requirements.months_that_can_be_certified.map(&:beginning_of_month)
+      certifiable_months = certification.certification_requirements.months_that_can_be_certified.compact.map(&:beginning_of_month)
       return [] unless certifiable_months.present?
 
       reason_code = EXCEPTION_CHECKS.lazy.filter_map { |check| send(check, member_data, certifiable_months) }.first
@@ -74,7 +74,7 @@ class ExceptionDeterminationService
       return unless ExternalException.enabled?(:inpatient_medical_care)
       return unless member_data.dates_receiving_inpatient_medical_care.present?
 
-      inpatient_months = member_data.dates_receiving_inpatient_medical_care.map(&:beginning_of_month)
+      inpatient_months = member_data.dates_receiving_inpatient_medical_care.compact.map(&:beginning_of_month)
       return unless (certifiable_months & inpatient_months).present?
 
       Determination::REASON_CODE_MAPPING.fetch(:receiving_inpatient_medical_care)
@@ -86,7 +86,7 @@ class ExceptionDeterminationService
       return unless ExternalException.enabled?(:declared_emergency_county)
       return unless member_data.dates_in_declared_emergency_county.present?
 
-      emergency_months = member_data.dates_in_declared_emergency_county.map(&:beginning_of_month)
+      emergency_months = member_data.dates_in_declared_emergency_county.compact.map(&:beginning_of_month)
       return unless (certifiable_months & emergency_months).present?
 
       Determination::REASON_CODE_MAPPING.fetch(:resides_in_declared_emergency_county)
@@ -98,7 +98,7 @@ class ExceptionDeterminationService
       return unless ExternalException.enabled?(:high_unemployment_county)
       return unless member_data.dates_in_high_unemployment_county.present?
 
-      high_unemployment_months = member_data.dates_in_high_unemployment_county.map(&:beginning_of_month)
+      high_unemployment_months = member_data.dates_in_high_unemployment_county.compact.map(&:beginning_of_month)
       return unless (certifiable_months & high_unemployment_months).present?
 
       Determination::REASON_CODE_MAPPING.fetch(:resides_in_high_unemployment_county)
@@ -110,7 +110,7 @@ class ExceptionDeterminationService
       return unless ExternalException.enabled?(:medical_travel)
       return unless member_data.dates_traveling_for_medical_care.present?
 
-      medical_travel_months = member_data.dates_traveling_for_medical_care.map(&:beginning_of_month)
+      medical_travel_months = member_data.dates_traveling_for_medical_care.compact.map(&:beginning_of_month)
       return unless (certifiable_months & medical_travel_months).present?
 
       Determination::REASON_CODE_MAPPING.fetch(:traveling_for_medical_care)
