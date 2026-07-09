@@ -8,7 +8,7 @@
 class ExceptionDeterminationService
   include Strata::VirtualActor
 
-  # Each symbol names a private check method taking certification and returning its reason code when
+  # Each symbol names a private check method taking member_data and lookback months and returning its reason code when
   # the exception applies (and is enabled), or nil otherwise. Add a check by adding its symbol here
   # and defining the matching method. Order is the evaluation order; the first applicable check wins.
   EXCEPTION_CHECKS = %i[
