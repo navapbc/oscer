@@ -62,18 +62,23 @@ RSpec.describe ExceptionDeterminationService do
   end
 
   shared_examples 'an optional exception' do |attribute, exception_id|
-    let(:event_date) { [ cert_date - 3.months ] }
     let(:member_data) { build(:certification_member_data, cert_date:, attribute => event_date) }
 
     context 'when event in month that can be certified' do
-      let(:months_that_can_be_certified) { (0..3).map { |i| cert_date - i.month } }
+      let(:event_date) { [ cert_date - 2.months - 2.days ] }
 
       it_behaves_like 'an applied external exception', "#{exception_id}_excepted"
       it_behaves_like 'a disabled optional exception', exception_id
     end
 
     context 'when event not in month that can be certified' do
-      let(:months_that_can_be_certified) { (0..2).map { |i| cert_date - i.month } }
+      let(:event_date) { [ cert_date - 3.months - 2.days ] }
+
+      it_behaves_like 'a failed check'
+    end
+
+    context 'with invalid data' do
+      let(:event_date) { [ 'not a date' ] }
 
       it_behaves_like 'a failed check'
     end
@@ -82,7 +87,7 @@ RSpec.describe ExceptionDeterminationService do
   describe '#determine' do
     let(:cert_date) { Date.new(2025, 7, 1) }
     let(:member_data) { build(:certification_member_data, cert_date:) }
-    let(:months_that_can_be_certified) { [] }
+    let(:months_that_can_be_certified) { (0..3).map { |i| cert_date - i.month } }
     let(:certification) do
       create(
         :certification,
@@ -92,8 +97,6 @@ RSpec.describe ExceptionDeterminationService do
     end
 
     context 'when no exception check applies (member data carries no exception signals)' do
-      let(:months_that_can_be_certified) { (0..3).map { |i| cert_date - i.month } }
-
       it_behaves_like 'a failed check'
 
       it 'logs a denied event in the audit log' do
@@ -135,7 +138,6 @@ RSpec.describe ExceptionDeterminationService do
       let(:dates_receiving_inpatient_medical_care) { [ cert_date - 3.months ] }
       let(:dates_traveling_for_medical_care) { [ cert_date - 3.months ] }
       let(:member_data) { build(:certification_member_data, cert_date:, dates_traveling_for_medical_care:, dates_receiving_inpatient_medical_care:) }
-      let(:months_that_can_be_certified) { (0..3).map { |i| cert_date - i.month } }
 
       it 'records only the first applicable reason (stops at first success)' do
         service.determine(kase)
