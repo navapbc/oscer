@@ -121,7 +121,7 @@ class ExceptionDeterminationService
     def other_program(member_data, certifiable_months)
       return unless member_data.dates_participating_in_other_program.present?
 
-      other_program_months = member_data.dates_participating_in_other_program.map(&:beginning_of_month)
+      other_program_months = member_data.dates_participating_in_other_program.compact.map(&:beginning_of_month)
       return unless (certifiable_months & other_program_months).present?
 
       Determination::REASON_CODE_MAPPING.fetch(:participating_in_other_program)

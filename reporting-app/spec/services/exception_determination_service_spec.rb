@@ -154,6 +154,12 @@ RSpec.describe ExceptionDeterminationService do
       let(:member_data) { build(:certification_member_data, cert_date:, dates_participating_in_other_program: event_date) }
 
       it_behaves_like 'a mandatory exception', :other_program
+
+      context 'with invalid data' do
+        let(:event_date) { [ 'not a date' ] }
+
+        it_behaves_like 'a failed check'
+      end
     end
 
     describe 'checking inpatient-medical-care' do
