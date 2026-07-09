@@ -14,7 +14,7 @@ RSpec.describe Demo::Certifications::CreateForm do
       let(:selected) { "inpatient_medical_care" }
 
       it "sets the matching member-data signal so the exception can eq triggered" do
-        expect(member_data.receiving_inpatient_medical_care).to eq months
+        expect(member_data.dates_receiving_inpatient_medical_care).to eq months
       end
     end
 
@@ -22,7 +22,7 @@ RSpec.describe Demo::Certifications::CreateForm do
       let(:selected) { "declared_emergency_county" }
 
       it "sets the matching member-data signal" do
-        expect(member_data.resides_in_declared_emergency_county).to eq months
+        expect(member_data.dates_in_declared_emergency_county).to eq months
       end
     end
 
@@ -30,7 +30,7 @@ RSpec.describe Demo::Certifications::CreateForm do
       let(:selected) { "high_unemployment_county" }
 
       it "sets the matching member-data signal" do
-        expect(member_data.resides_in_high_unemployment_county).to eq months
+        expect(member_data.dates_in_high_unemployment_county).to eq months
       end
     end
 
@@ -38,7 +38,7 @@ RSpec.describe Demo::Certifications::CreateForm do
       let(:selected) { "medical_travel" }
 
       it "sets the matching member-data signal" do
-        expect(member_data.traveling_for_medical_care).to eq months
+        expect(member_data.dates_traveling_for_medical_care).to eq months
       end
     end
 
@@ -46,7 +46,7 @@ RSpec.describe Demo::Certifications::CreateForm do
       let(:selected) { "other_program" }
 
       it "sets the matching member-data signal" do
-        expect(member_data.participating_in_other_program).to eq months
+        expect(member_data.dates_participating_in_other_program).to eq months
       end
     end
 
@@ -54,11 +54,11 @@ RSpec.describe Demo::Certifications::CreateForm do
       let(:selected) { nil }
 
       it "leaves the exception signals at their defaults" do
-        expect(member_data.receiving_inpatient_medical_care).to be_blank
-        expect(member_data.resides_in_declared_emergency_county).to be_blank
-        expect(member_data.resides_in_high_unemployment_county).to be_blank
-        expect(member_data.traveling_for_medical_care).to be_blank
-        expect(member_data.participating_in_other_program).to be_blank
+        expect(member_data.dates_receiving_inpatient_medical_care).to be_blank
+        expect(member_data.dates_in_declared_emergency_county).to be_blank
+        expect(member_data.dates_in_high_unemployment_county).to be_blank
+        expect(member_data.dates_traveling_for_medical_care).to be_blank
+        expect(member_data.dates_participating_in_other_program).to be_blank
       end
     end
   end

@@ -118,6 +118,8 @@ RSpec.describe ExceptionDeterminationService do
     end
 
     context 'when no exception check applies (member data carries no exception signals)' do
+      let(:months_that_can_be_certified) { (0..3).map { |i| cert_date - i.month } }
+
       it_behaves_like 'a failed check'
 
       it 'logs a denied event in the audit log' do
@@ -148,31 +150,31 @@ RSpec.describe ExceptionDeterminationService do
 
     describe 'checking participating-in-other-program' do
       let(:event_date) { [ cert_date - 3.months ] }
-      let(:member_data) { build(:certification_member_data, cert_date:, participating_in_other_program: event_date) }
+      let(:member_data) { build(:certification_member_data, cert_date:, dates_participating_in_other_program: event_date) }
 
       it_behaves_like 'a mandatory exception', :other_program
     end
 
     describe 'checking inpatient-medical-care' do
-      it_behaves_like 'an optional exception', :receiving_inpatient_medical_care, :inpatient_medical_care
+      it_behaves_like 'an optional exception', :dates_receiving_inpatient_medical_care, :inpatient_medical_care
     end
 
     describe 'checking declared-emergency-county' do
-      it_behaves_like 'an optional exception', :resides_in_declared_emergency_county, :declared_emergency_county
+      it_behaves_like 'an optional exception', :dates_in_declared_emergency_county, :declared_emergency_county
     end
 
     describe 'checking high-unemployment-county' do
-      it_behaves_like 'an optional exception', :resides_in_high_unemployment_county, :high_unemployment_county
+      it_behaves_like 'an optional exception', :dates_in_high_unemployment_county, :high_unemployment_county
     end
 
     describe 'checking medical-travel' do
-      it_behaves_like 'an optional exception', :traveling_for_medical_care, :medical_travel
+      it_behaves_like 'an optional exception', :dates_traveling_for_medical_care, :medical_travel
     end
 
     context 'when more than one exception check would apply' do
-      let(:receiving_inpatient_medical_care) { [ cert_date - 3.months ] }
-      let(:traveling_for_medical_care) { [ cert_date - 3.months ] }
-      let(:member_data) { build(:certification_member_data, cert_date:, traveling_for_medical_care:, receiving_inpatient_medical_care:) }
+      let(:dates_receiving_inpatient_medical_care) { [ cert_date - 3.months ] }
+      let(:dates_traveling_for_medical_care) { [ cert_date - 3.months ] }
+      let(:member_data) { build(:certification_member_data, cert_date:, dates_traveling_for_medical_care:, dates_receiving_inpatient_medical_care:) }
       let(:months_that_can_be_certified) { (0..3).map { |i| cert_date - i.month } }
 
       it 'records only the first applicable reason (stops at first success)' do

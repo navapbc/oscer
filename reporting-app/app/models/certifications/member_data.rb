@@ -78,9 +78,9 @@ class Certifications::MemberData < ValueObject
 
   # External-exception signals evaluated by ExceptionDeterminationService.
   # Distinct from exclusion/exemption signals above; see ExternalException.
-  attribute :receiving_inpatient_medical_care, :array, of: ActiveModel::Type::Date.new
-  attribute :resides_in_declared_emergency_county, :array, of: ActiveModel::Type::Date.new
-  attribute :resides_in_high_unemployment_county, :array, of: ActiveModel::Type::Date.new
-  attribute :traveling_for_medical_care, :array, of: ActiveModel::Type::Date.new
-  attribute :participating_in_other_program, :array, of: ActiveModel::Type::Date.new
+  attribute :dates_receiving_inpatient_medical_care, :array, of: ActiveModel::Type::Date.new
+  attribute :dates_in_declared_emergency_county, :array, of: ActiveModel::Type::Date.new
+  attribute :dates_in_high_unemployment_county, :array, of: ActiveModel::Type::Date.new
+  attribute :dates_traveling_for_medical_care, :array, of: ActiveModel::Type::Date.new
+  attribute :dates_participating_in_other_program, :array, of: ActiveModel::Type::Date.new
 end
