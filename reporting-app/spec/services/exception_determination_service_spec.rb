@@ -142,12 +142,14 @@ RSpec.describe ExceptionDeterminationService do
     context 'when applicant was under 19 years old' do
       let(:date_of_birth) { cert_date - (19.years + 2.months + 5.days) }
       let(:member_data) { build(:certification_member_data, cert_date:, date_of_birth:) }
+
       it_behaves_like 'a mandatory exception', :age_under_19
     end
 
     describe 'checking participating-in-other-program' do
       let(:event_date) { [ cert_date - 3.months ] }
       let(:member_data) { build(:certification_member_data, cert_date:, participating_in_other_program: event_date) }
+
       it_behaves_like 'a mandatory exception', :other_program
     end
 
