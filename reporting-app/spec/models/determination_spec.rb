@@ -45,6 +45,7 @@ RSpec.describe Determination, type: :model do
           declared_emergency_county_excepted
           high_unemployment_county_excepted
           medical_travel_excepted
+          other_program_excepted
         ]
         expect(Determination::VALID_REASONS).to match_array(expected_reasons)
       end

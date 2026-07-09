@@ -17,6 +17,7 @@ class ExceptionDeterminationService
     declared_emergency_county
     high_unemployment_county
     medical_travel
+    other_program
   ].freeze
 
   class << self
@@ -49,16 +50,20 @@ class ExceptionDeterminationService
       member_data = certification.member_data
       return [] if member_data.nil?
 
-      reason_code = EXCEPTION_CHECKS.lazy.filter_map { |check| send(check, certification) }.first
+      certifiable_months = certification.certification_requirements.months_that_can_be_certified.map(&:beginning_of_month)
+      return [] unless certifiable_months.present?
+
+      reason_code = EXCEPTION_CHECKS.lazy.filter_map { |check| send(check, certifiable_months, member_data) }.first
       reason_code ? [ reason_code ] : []
     end
 
     # @return [String, nil] the reason code when the member was less than 19 in lookback period,
     #   otherwise nil.
-    def age_under_19(certification)
-      dob = certification.member_data.date_of_birth
+    def age_under_19(certifiable_months, member_data)
+      dob = member_data.date_of_birth
       return unless dob
-      earliest_month = certification.certification_requirements.months_that_can_be_certified.sort.first
+      earliest_month = certifiable_months.sort.first
+      return unless earliest_month
       return unless earliest_month - 19.years < dob
 
       Determination::REASON_CODE_MAPPING.fetch(:age_was_under_19)
@@ -66,38 +71,61 @@ class ExceptionDeterminationService
 
     # @return [String, nil] the reason code when the member is receiving inpatient medical care and
     #   the exception is enabled, otherwise nil.
-    def inpatient_medical_care(certification)
+    def inpatient_medical_care(certifiable_months, member_data)
       return unless ExternalException.enabled?(:inpatient_medical_care)
-      return unless certification.member_data.receiving_inpatient_medical_care
+      return unless member_data.receiving_inpatient_medical_care.present?
+
+      inpatient_months = member_data.receiving_inpatient_medical_care.map(&:beginning_of_month)
+      return unless (certifiable_months & inpatient_months).present?
 
       Determination::REASON_CODE_MAPPING.fetch(:receiving_inpatient_medical_care)
     end
 
     # @return [String, nil] the reason code when the member resides in a declared-emergency county
     #   and the exception is enabled, otherwise nil.
-    def declared_emergency_county(certification)
+    def declared_emergency_county(certifiable_months, member_data)
       return unless ExternalException.enabled?(:declared_emergency_county)
-      return unless certification.member_data.resides_in_declared_emergency_county
+      return unless member_data.resides_in_declared_emergency_county.present?
+
+      emergency_months = member_data.resides_in_declared_emergency_county.map(&:beginning_of_month)
+      return unless (certifiable_months & emergency_months).present?
 
       Determination::REASON_CODE_MAPPING.fetch(:resides_in_declared_emergency_county)
     end
 
     # @return [String, nil] the reason code when the member resides in a high-unemployment county and
     #   the exception is enabled, otherwise nil.
-    def high_unemployment_county(certification)
+    def high_unemployment_county(certifiable_months, member_data)
       return unless ExternalException.enabled?(:high_unemployment_county)
-      return unless certification.member_data.resides_in_high_unemployment_county
+      return unless member_data.resides_in_high_unemployment_county.present?
+
+      high_unemployment_months = member_data.resides_in_high_unemployment_county.map(&:beginning_of_month)
+      return unless (certifiable_months & high_unemployment_months).present?
 
       Determination::REASON_CODE_MAPPING.fetch(:resides_in_high_unemployment_county)
     end
 
     # @return [String, nil] the reason code when the member is travelling for medical care (for
     #   themselves or a dependent) and the exception is enabled, otherwise nil.
-    def medical_travel(certification)
+    def medical_travel(certifiable_months, member_data)
       return unless ExternalException.enabled?(:medical_travel)
-      return unless certification.member_data.traveling_for_medical_care
+      return unless member_data.traveling_for_medical_care
+
+      medical_travel_months = member_data.traveling_for_medical_care.map(&:beginning_of_month)
+      return unless (certifiable_months & medical_travel_months).present?
 
       Determination::REASON_CODE_MAPPING.fetch(:traveling_for_medical_care)
+    end
+
+    # @return [String, nil] the reason code when the member participated in either
+    #   Medicare or Medicaid plans A or B
+    def other_program(certifiable_months, member_data)
+      return unless member_data.participating_in_other_program
+
+      other_program_months = member_data.participating_in_other_program.map(&:beginning_of_month)
+      return unless (certifiable_months & other_program_months).present?
+
+      Determination::REASON_CODE_MAPPING.fetch(:participating_in_other_program)
     end
   end
 end
