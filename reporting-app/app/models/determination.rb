@@ -79,7 +79,7 @@ class Determination < Strata::Determination
     receiving_inpatient_medical_care: "inpatient_medical_care_excepted",
     resides_in_declared_emergency_county: "declared_emergency_county_excepted",
     resides_in_high_unemployment_county: "high_unemployment_county_excepted",
-    traveling_for_medical_care: "medical_travel_excepted"
+    traveling_for_medical_care: "medical_travel_excepted",
   }.freeze
 
   # Reasons recorded when a staff reviewer approves or denies a member's denial response.
