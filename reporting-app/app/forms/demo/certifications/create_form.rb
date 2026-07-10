@@ -85,6 +85,10 @@ module Demo
         )
       end
 
+      def exception_options
+        ExternalException.enabled.map { |e| e[:id] } | [ :other_program ]
+      end
+
       private
 
       # Sets the MemberData signal that triggers the selected external exception, so the check fires
@@ -99,6 +103,8 @@ module Demo
           member_data.dates_in_high_unemployment_county = months
         when "medical_travel"
           member_data.dates_traveling_for_medical_care = months
+        when "other_program"
+          member_data.dates_participating_in_other_program = months
         end
       end
     end

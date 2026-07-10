@@ -42,6 +42,14 @@ RSpec.describe Demo::Certifications::CreateForm do
       end
     end
 
+    context "when other program is selected" do
+      let(:selected) { "other_program" }
+
+      it "sets the matching member-data signal" do
+        expect(member_data.dates_participating_in_other_program).to eq months
+      end
+    end
+
     context "when no external exception is selected" do
       let(:selected) { nil }
 
@@ -50,6 +58,7 @@ RSpec.describe Demo::Certifications::CreateForm do
         expect(member_data.dates_in_declared_emergency_county).to be_blank
         expect(member_data.dates_in_high_unemployment_county).to be_blank
         expect(member_data.dates_traveling_for_medical_care).to be_blank
+        expect(member_data.dates_participating_in_other_program).to be_blank
       end
     end
   end

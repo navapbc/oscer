@@ -28,6 +28,8 @@ class Exclusion
       all.map { |t| t[:id].to_s }
     end
 
+    # Ruled exclusion ids match their Rules::ExclusionRuleset fact names, so a
+    # rules fact resolves to its config entry directly through find.
     def find(id)
       all.find { |t| t[:id] == id.to_sym }
     end

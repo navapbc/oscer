@@ -76,10 +76,12 @@ class Determination < Strata::Determination
     denial_response_not_convincing: "denial_response_not_convincing",
     # External-exception reason codes (see ExceptionDeterminationService). "Excepted" is a
     # distinct outcome from "excluded"/"exempt" — do not conflate the three.
+    age_was_under_19: "age_under_19_excepted",
     receiving_inpatient_medical_care: "inpatient_medical_care_excepted",
     resides_in_declared_emergency_county: "declared_emergency_county_excepted",
     resides_in_high_unemployment_county: "high_unemployment_county_excepted",
-    traveling_for_medical_care: "medical_travel_excepted"
+    traveling_for_medical_care: "medical_travel_excepted",
+    participating_in_other_program: "other_program_excepted"
   }.freeze
 
   # Reasons recorded when a staff reviewer approves or denies a member's denial response.
@@ -89,8 +91,6 @@ class Determination < Strata::Determination
   ).freeze
 
   EXEMPTION_REASONS = REASON_CODE_MAPPING.values_at(
-    :age_under_19,
-    :age_over_65,
     :is_pregnant,
     :is_american_indian_or_alaska_native,
     :exemption_request_compliant,
@@ -117,11 +117,6 @@ class Determination < Strata::Determination
       .select("DISTINCT ON (subject_id) strata_determinations.*")
       .order("subject_id, created_at DESC")
   }
-
-  def self.to_reason_codes(eligibility_fact)
-    eligibility_fact_reasons = eligibility_fact.reasons.select { |reason| reason.value }.map(&:name).map(&:to_sym)
-    eligibility_fact_reasons.map { |reason| REASON_CODE_MAPPING[reason] }
-  end
 
   # CE automated/manual payload uses +determination_data["calculation_type"]+ with string keys from JSON.
   # @return [String, nil] e.g. +CALCULATION_TYPE_INCOME_BASED+, +CALCULATION_TYPE_HOURS_BASED+, +CALCULATION_TYPE_EXTERNAL_CE_COMBINED+

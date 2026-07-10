@@ -52,6 +52,7 @@ en:
         declared_emergency_county: "Residing in a county with a declared emergency"
         high_unemployment_county: "Residing in a county with a high unemployment rate"
         medical_travel: "Traveling for medical care (self or dependent)"
+        other_program: "Participating in Medicare or Medicaid A or B"
       race_ethnicity_options:
         "white": "White"
         "black_or_african_american": "Black or African American"

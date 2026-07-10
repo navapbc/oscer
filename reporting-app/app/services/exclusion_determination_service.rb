@@ -12,7 +12,7 @@ class ExclusionDeterminationService
       eligibility_fact = evaluate_exclusion_eligibility(certification)
 
       if eligibility_fact.value
-        kase.record_exclusion_determination(eligibility_fact, self)
+        kase.record_exclusion_determination([ highest_priority_reason_code(eligibility_fact) ], self)
         Strata::EventManager.publish("DeterminedExcluded", { case_id: kase.id, certification_id: kase.certification_id })
       else
         Strata::AuditLog.write!(
@@ -30,15 +30,11 @@ class ExclusionDeterminationService
       ruleset = Rules::ExclusionRuleset.new
       engine = Strata::RulesEngine.new(ruleset)
 
-      evaluation_date = extract_evaluation_date(certification)
-      date_of_birth = extract_date_of_birth(certification)
       pregnancy_status = extract_pregnancy_status(certification)
       race_ethnicity = extract_race_ethnicity(certification)
       veteran_disability_rating = extract_veteran_disability_status(certification)
 
       engine.set_facts(
-        date_of_birth: date_of_birth,
-        evaluated_on: evaluation_date,
         pregnancy_status: pregnancy_status,
         race_ethnicity: race_ethnicity,
         veteran_disability_rating: veteran_disability_rating
@@ -47,16 +43,23 @@ class ExclusionDeterminationService
       engine.evaluate(:eligible_for_exclusion)
     end
 
-    def extract_evaluation_date(certification)
-      return nil unless certification.certification_requirements
+    # Of the exclusions that evaluated true, return the reason code of the single
+    # highest-priority one (lowest Exclusion priority number wins).
+    def highest_priority_reason_code(eligibility_fact)
+      best_fact = eligibility_fact.reasons
+        .select(&:value)
+        .min_by { |fact| exclusion_priority(fact.name) }
 
-      certification.certification_requirements.certification_date
+      Determination::REASON_CODE_MAPPING.fetch(best_fact.name)
     end
 
-    def extract_date_of_birth(certification)
-      return nil unless certification.member_data
-
-      certification.member_data.date_of_birth
+    # Ruled exclusion ids match their ruleset fact names, so the fact name is the
+    # config id. Raises (naming the fact) if a fact has no configured exclusion —
+    # the fail-loud drift guard for the fact/config seam.
+    def exclusion_priority(fact_name)
+      exclusion = Exclusion.find(fact_name) ||
+        raise(KeyError, "no configured exclusion for fact #{fact_name.inspect}")
+      exclusion.fetch(:priority)
     end
 
     def extract_pregnancy_status(certification)

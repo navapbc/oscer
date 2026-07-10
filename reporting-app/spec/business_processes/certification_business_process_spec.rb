@@ -39,24 +39,6 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     end
 
     context 'when applicant is eligible for exclusion' do
-      let(:age_fact) do
-        Strata::RulesEngine::Fact.new(
-          :age_under_19, true, reasons: []
-        )
-      end
-      let(:other_age_fact) do
-        Strata::RulesEngine::Fact.new(
-          :age_over_65, false, reasons: []
-        )
-      end
-      let(:eligibility_fact) do
-        Strata::RulesEngine::Fact.new(
-          :age_eligibility,
-          true,
-          reasons: [ age_fact, other_age_fact ]
-        )
-      end
-
       it 'transitions to end' do
         # Step 1: Case has been created and is on external_exclusion_check step
         expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EXTERNAL_EXCLUSION_CHECK_STEP)
@@ -64,7 +46,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         expect(certification_case).to be_open
 
         # Step 2: System process determines applicant is eligible for exclusion
-        certification_case.record_exclusion_determination(eligibility_fact, ExclusionDeterminationService)
+        certification_case.record_exclusion_determination([ "pregnancy_excluded" ], ExclusionDeterminationService)
         Strata::EventManager.publish("DeterminedExcluded", { case_id: certification_case.id, certification_id: certification_case.certification_id })
         certification_case.reload
 
@@ -75,13 +57,6 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     end
 
     context 'when applicant is not eligible for exclusion' do
-      let(:eligibility_fact) do
-        Strata::RulesEngine::Fact.new(
-          "no-op",
-          false
-        )
-      end
-
       it 'transitions to external_exception_check' do
         # Step 1: Case has been created and is on external_exclusion_check step
         expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EXTERNAL_EXCLUSION_CHECK_STEP)

@@ -8,14 +8,14 @@ RSpec.describe ExclusionTypesLoader, type: :service do
   # The spec's default priority order (high durability -> low), spaced by 10.
   let(:expected_defaults) do
     {
-      american_indian_alaska_native: 10,
+      is_american_indian_or_alaska_native: 10,
       former_foster_care: 20,
-      veteran_disability: 30,
+      is_veteran_with_disability: 30,
       medically_frail: 40,
       caretaker: 50,
       tanf_snap_work: 60,
       drug_treatment: 70,
-      pregnant: 80,
+      is_pregnant: 80,
       inmate: 90
     }
   end
@@ -66,7 +66,7 @@ RSpec.describe ExclusionTypesLoader, type: :service do
         result = described_class.merge_with_defaults("former_foster_care" => { "priority" => 55 })
         expect(result["former_foster_care"]["priority"]).to eq(55)
         expect(result["caretaker"]["priority"]).to eq(50)
-        expect(result["american_indian_alaska_native"]["priority"]).to eq(10)
+        expect(result["is_american_indian_or_alaska_native"]["priority"]).to eq(10)
         expect(result.size).to eq(ExclusionTypesLoader::DEFAULTS.size)
       end
     end
