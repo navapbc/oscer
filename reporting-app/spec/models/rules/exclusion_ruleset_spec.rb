@@ -126,52 +126,207 @@ RSpec.describe Rules::ExclusionRuleset do
     end
   end
 
+  describe '#former_foster_care' do
+    # Former foster youth are excluded until age 26, evaluated against the certification date at
+    # month granularity (consistent with pregnancy).
+    let(:certification_date) { Date.new(2025, 7, 1) }
+
+    context 'when the member was not in foster care' do
+      it 'returns falsey' do
+        expect(ruleset.former_foster_care(false, certification_date - 20.years, certification_date)).to be_falsey
+      end
+    end
+
+    context 'when foster-care history is unknown (nil)' do
+      it 'returns falsey' do
+        expect(ruleset.former_foster_care(nil, certification_date - 20.years, certification_date)).to be_falsey
+      end
+    end
+
+    context 'when the date of birth is nil' do
+      it 'returns falsey' do
+        expect(ruleset.former_foster_care(true, nil, certification_date)).to be_falsey
+      end
+    end
+
+    context 'when the certification date is nil' do
+      it 'returns falsey' do
+        expect(ruleset.former_foster_care(true, certification_date - 20.years, nil)).to be_falsey
+      end
+    end
+
+    context 'when the member was in foster care and is under 26' do
+      it 'returns true' do
+        expect(ruleset.former_foster_care(true, certification_date - 20.years, certification_date)).to be true
+      end
+    end
+
+    context 'when the member turns 26 during the certification month (month granularity)' do
+      it 'returns true' do
+        certification_date = Date.new(2025, 7, 20)
+        date_of_birth = Date.new(1999, 7, 25) # 26th birthday 2025-07-25, later in the cert month
+        expect(ruleset.former_foster_care(true, date_of_birth, certification_date)).to be true
+      end
+    end
+
+    context 'when the member reached 26 before the certification month' do
+      it 'returns falsey' do
+        certification_date = Date.new(2025, 7, 20)
+        date_of_birth = Date.new(1999, 6, 25) # 26th birthday 2025-06-25, the month before
+        expect(ruleset.former_foster_care(true, date_of_birth, certification_date)).to be_falsey
+      end
+    end
+
+    context 'when the member was in foster care but is 26 or older' do
+      it 'returns falsey' do
+        expect(ruleset.former_foster_care(true, certification_date - 30.years, certification_date)).to be_falsey
+      end
+    end
+  end
+
+  describe '#medically_frail' do
+    context 'when the currently-medically-frail flag is unknown (nil)' do
+      it 'returns falsey' do
+        expect(ruleset.medically_frail(nil)).to be_falsey
+      end
+    end
+
+    context 'when the member is not currently medically frail' do
+      it 'returns falsey' do
+        expect(ruleset.medically_frail(false)).to be_falsey
+      end
+    end
+
+    context 'when the member is currently medically frail' do
+      it 'returns true' do
+        expect(ruleset.medically_frail(true)).to be true
+      end
+    end
+  end
+
+  describe '#caretaker' do
+    # Excluded when caretaker of an infirm person, or of a child under 14 (evaluated against the
+    # certification date at month granularity, consistent with the other age-based checks).
+    let(:certification_date) { Date.new(2025, 7, 1) }
+
+    context 'when no caretaker signals are present' do
+      it 'returns falsey' do
+        expect(ruleset.caretaker(false, [], certification_date)).to be_falsey
+        expect(ruleset.caretaker(nil, nil, certification_date)).to be_falsey
+      end
+    end
+
+    context 'when the member is a caretaker of an infirm person' do
+      it 'returns true' do
+        expect(ruleset.caretaker(true, [], certification_date)).to be true
+      end
+    end
+
+    context 'when the certification date is nil' do
+      it 'returns falsey' do
+        expect(ruleset.caretaker(false, [ certification_date - 5.years ], nil)).to be_falsey
+      end
+    end
+
+    context 'when the member has a dependent child under 14' do
+      it 'returns true' do
+        expect(ruleset.caretaker(false, [ certification_date - 5.years ], certification_date)).to be true
+      end
+    end
+
+    context 'when a dependent child turns 14 during the certification month (month granularity)' do
+      it 'returns true' do
+        certification_date = Date.new(2025, 7, 20)
+        child_birth_date = Date.new(2011, 7, 25) # 14th birthday 2025-07-25, later in the cert month
+        expect(ruleset.caretaker(false, [ child_birth_date ], certification_date)).to be true
+      end
+    end
+
+    context 'when a dependent child reached 14 before the certification month' do
+      it 'returns falsey' do
+        certification_date = Date.new(2025, 7, 20)
+        child_birth_date = Date.new(2011, 6, 25) # 14th birthday 2025-06-25, the month before
+        expect(ruleset.caretaker(false, [ child_birth_date ], certification_date)).to be_falsey
+      end
+    end
+
+    context 'when all dependent children are 14 or older' do
+      it 'returns falsey' do
+        expect(ruleset.caretaker(false, [ certification_date - 15.years, certification_date - 20.years ], certification_date)).to be_falsey
+      end
+    end
+
+    context 'when one of several dependent children is under 14' do
+      it 'returns true' do
+        expect(ruleset.caretaker(false, [ certification_date - 20.years, certification_date - 5.years ], certification_date)).to be true
+      end
+    end
+  end
+
   describe '#eligible_for_exclusion' do
     context 'when all parameters are nil' do
-      it 'returns nil' do
-        expect(ruleset.eligible_for_exclusion(nil, nil, nil)).to be_nil
+      it 'returns falsey' do
+        expect(ruleset.eligible_for_exclusion(nil, nil, nil, nil, nil, nil)).to be_falsey
       end
     end
 
     context 'when only is_pregnant is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(true, nil, nil)).to be true
+        expect(ruleset.eligible_for_exclusion(true, nil, nil, nil, nil, nil)).to be true
       end
     end
 
     context 'when only is_american_indian_or_alaska_native is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(nil, true, nil)).to be true
+        expect(ruleset.eligible_for_exclusion(nil, true, nil, nil, nil, nil)).to be true
       end
     end
 
     context 'when only is_veteran_with_disability is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(nil, nil, true)).to be true
+        expect(ruleset.eligible_for_exclusion(nil, nil, true, nil, nil, nil)).to be true
+      end
+    end
+
+    context 'when only former_foster_care is true' do
+      it 'returns true' do
+        expect(ruleset.eligible_for_exclusion(nil, nil, nil, true, nil, nil)).to be true
+      end
+    end
+
+    context 'when only medically_frail is true' do
+      it 'returns true' do
+        expect(ruleset.eligible_for_exclusion(nil, nil, nil, nil, true, nil)).to be true
+      end
+    end
+
+    context 'when only caretaker is true' do
+      it 'returns true' do
+        expect(ruleset.eligible_for_exclusion(nil, nil, nil, nil, nil, true)).to be true
       end
     end
 
     context 'when multiple parameters are true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(true, true, nil)).to be true
+        expect(ruleset.eligible_for_exclusion(true, true, nil, nil, nil, nil)).to be true
       end
     end
 
     context 'when all are true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(true, true, true)).to be true
+        expect(ruleset.eligible_for_exclusion(true, true, true, true, true, true)).to be true
       end
     end
 
     context 'when all are false' do
-      it 'returns false' do
-        expect(ruleset.eligible_for_exclusion(false, false, false)).to be false
+      it 'returns falsey' do
+        expect(ruleset.eligible_for_exclusion(false, false, false, false, false, false)).to be_falsey
       end
     end
 
     context 'when some are false but one is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(false, true, false)).to be true
+        expect(ruleset.eligible_for_exclusion(false, true, false, false, false, false)).to be true
       end
     end
   end

@@ -319,6 +319,42 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(cert.member_data.pregnancy_due_or_parturition_date).to eq(cert.certification_requirements.certification_date)
       end
 
+      it "sets was_in_foster_care when the was_in_foster_care checkbox is selected" do
+        create_attrs = valid_request_attributes.merge({ was_in_foster_care: "1", external_scenario: "No data" })
+
+        expect {
+          post demo_certifications_url,
+               params: { demo_certifications_create_form: create_attrs }
+        }.to change(Certification, :count).by(1)
+
+        cert = Certification.order(created_at: :desc).last
+        expect(cert.member_data.was_in_foster_care).to be true
+      end
+
+      it "sets currently_medically_frail when the currently_medically_frail checkbox is selected" do
+        create_attrs = valid_request_attributes.merge({ currently_medically_frail: "1", external_scenario: "No data" })
+
+        expect {
+          post demo_certifications_url,
+               params: { demo_certifications_create_form: create_attrs }
+        }.to change(Certification, :count).by(1)
+
+        cert = Certification.order(created_at: :desc).last
+        expect(cert.member_data.currently_medically_frail).to be true
+      end
+
+      it "sets caretaker_of_infirm when the caretaker checkbox is selected" do
+        create_attrs = valid_request_attributes.merge({ caretaker_of_infirm: "1", external_scenario: "No data" })
+
+        expect {
+          post demo_certifications_url,
+               params: { demo_certifications_create_form: create_attrs }
+        }.to change(Certification, :count).by(1)
+
+        cert = Certification.order(created_at: :desc).last
+        expect(cert.member_data.caretaker_of_infirm).to be true
+      end
+
       it "creates a new Certification with an external exception selected" do
         create_attrs = valid_request_attributes.merge({ external_exception: "inpatient_medical_care", external_scenario: "No data" })
 

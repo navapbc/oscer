@@ -77,6 +77,8 @@ class Certifications::MemberData < ValueObject
   # Exclusion signals evaluated by ExclusionDeterminationService
   attribute :pregnancy_due_or_parturition_date, :date
   attribute :race_ethnicity, :string
+  attribute :was_in_foster_care, :boolean, default: false
+  attribute :currently_medically_frail, :boolean, default: false
 
   # External-exception signals evaluated by ExceptionDeterminationService.
   # Distinct from exclusion/exemption signals above; see ExternalException.

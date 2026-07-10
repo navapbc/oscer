@@ -78,6 +78,42 @@ RSpec.describe ExclusionDeterminationService do
           expect(recorded_exclusion.reasons).to eq([ "veteran_disability_excluded" ])
         end
       end
+
+      context 'when the member is a former foster care youth under 26' do
+        let(:member_data) { build(:certification_member_data, was_in_foster_care: true, date_of_birth: cert_date - 20.years, cert_date:) }
+
+        it 'records the former-foster-care reason code' do
+          service.determine(kase)
+          expect(recorded_exclusion.reasons).to eq([ "former_foster_care_excluded" ])
+        end
+      end
+
+      context 'when the member is currently medically frail' do
+        let(:member_data) { build(:certification_member_data, currently_medically_frail: true, cert_date:) }
+
+        it 'records the medically-frail reason code' do
+          service.determine(kase)
+          expect(recorded_exclusion.reasons).to eq([ "medically_frail_excluded" ])
+        end
+      end
+
+      context 'when the member is a caretaker of an infirm person' do
+        let(:member_data) { build(:certification_member_data, caretaker_of_infirm: true, cert_date:) }
+
+        it 'records the caretaker reason code' do
+          service.determine(kase)
+          expect(recorded_exclusion.reasons).to eq([ "caretaker_excluded" ])
+        end
+      end
+
+      context 'when the member has a dependent child under 14' do
+        let(:member_data) { build(:certification_member_data, dependent_children_birth_dates: [ cert_date - 5.years ], cert_date:) }
+
+        it 'records the caretaker reason code' do
+          service.determine(kase)
+          expect(recorded_exclusion.reasons).to eq([ "caretaker_excluded" ])
+        end
+      end
     end
 
     context 'when multiple exclusions apply' do
@@ -89,6 +125,42 @@ RSpec.describe ExclusionDeterminationService do
         it 'records only the higher-priority veteran-disability exclusion' do
           service.determine(kase)
           expect(recorded_exclusion.reasons).to eq([ "veteran_disability_excluded" ])
+        end
+      end
+
+      context 'when a former foster care youth and pregnant' do
+        # former_foster_care (20) outranks is_pregnant (80)
+        let(:member_data) do
+          build(:certification_member_data, was_in_foster_care: true, date_of_birth: cert_date - 20.years, pregnancy_due_or_parturition_date: cert_date, cert_date:)
+        end
+
+        it 'records only the higher-priority former-foster-care exclusion' do
+          service.determine(kase)
+          expect(recorded_exclusion.reasons).to eq([ "former_foster_care_excluded" ])
+        end
+      end
+
+      context 'when medically frail and pregnant' do
+        # medically_frail (40) outranks is_pregnant (80)
+        let(:member_data) do
+          build(:certification_member_data, currently_medically_frail: true, pregnancy_due_or_parturition_date: cert_date, cert_date:)
+        end
+
+        it 'records only the higher-priority medically-frail exclusion' do
+          service.determine(kase)
+          expect(recorded_exclusion.reasons).to eq([ "medically_frail_excluded" ])
+        end
+      end
+
+      context 'when a caretaker and pregnant' do
+        # caretaker (50) outranks is_pregnant (80)
+        let(:member_data) do
+          build(:certification_member_data, caretaker_of_infirm: true, pregnancy_due_or_parturition_date: cert_date, cert_date:)
+        end
+
+        it 'records only the higher-priority caretaker exclusion' do
+          service.determine(kase)
+          expect(recorded_exclusion.reasons).to eq([ "caretaker_excluded" ])
         end
       end
 
@@ -157,6 +229,16 @@ RSpec.describe ExclusionDeterminationService do
     context 'when no exclusion applies' do
       context 'when the parturition date is more than 12 months before the certification date' do
         let(:member_data) { build(:certification_member_data, race_ethnicity: "white", pregnancy_due_or_parturition_date: cert_date - 13.months, cert_date:) }
+
+        it 'publishes DeterminedNotExcluded and records no exclusion' do
+          service.determine(kase)
+          expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExcluded', { case_id: kase.id, certification_id: kase.certification_id })
+          expect(recorded_exclusion).to be_nil
+        end
+      end
+
+      context 'when a former foster care youth is 26 or older' do
+        let(:member_data) { build(:certification_member_data, race_ethnicity: "white", was_in_foster_care: true, date_of_birth: cert_date - 30.years, cert_date:) }
 
         it 'publishes DeterminedNotExcluded and records no exclusion' do
           service.determine(kase)

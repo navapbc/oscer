@@ -66,6 +66,8 @@ class Determination < Strata::Determination
     age_over_65: "age_over_65_excluded",
     is_pregnant: "pregnancy_excluded",
     is_american_indian_or_alaska_native: "american_indian_alaska_native_excluded",
+    former_foster_care: "former_foster_care_excluded",
+    medically_frail: "medically_frail_excluded",
     income_reported_compliant: "income_reported_compliant",
     income_reported_insufficient: "income_reported_insufficient",
     hours_reported_compliant: "hours_reported_compliant",

@@ -8,6 +8,9 @@ module Rules
     # Pregnancy excludes from the due/parturition date through the following 12 months
     POSTPARTUM_EXCLUSION_MONTHS = 12
 
+    # Former foster youth are excluded until this age
+    FORMER_FOSTER_CARE_AGE_CAP = 26
+
     def is_pregnant(pregnancy_due_or_parturition_date, certification_date)
       return if pregnancy_due_or_parturition_date.nil?
       return if certification_date.nil?
@@ -31,8 +34,22 @@ module Rules
       combined_rating.to_i == 100
     end
 
-    def eligible_for_exclusion(is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability)
-      facts = [ is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability ]
+    # Former foster youth are excluded until age FORMER_FOSTER_CARE_AGE_CAP, evaluated against the
+    # certification date at month granularity (consistent with pregnancy).
+    def former_foster_care(was_in_foster_care, date_of_birth, certification_date)
+      return unless was_in_foster_care
+      return if date_of_birth.nil? || certification_date.nil?
+
+      certification_date.beginning_of_month < date_of_birth + FORMER_FOSTER_CARE_AGE_CAP.years
+    end
+
+    # Members determined currently medically frail are excluded.
+    def medically_frail(currently_medically_frail)
+      currently_medically_frail
+    end
+
+    def eligible_for_exclusion(is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail)
+      facts = [ is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail ]
       return if facts.all?(&:nil?)
 
       facts.any?
