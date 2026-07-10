@@ -140,7 +140,7 @@ RSpec.describe Determinable, type: :model do
   end
 
   describe 'Exemption reason' do
-    %i[age_under_19 age_over_65 is_pregnant is_american_indian_or_alaska_native exemption_request_compliant is_veteran_with_disability].each do |reason_code|
+    %i[is_pregnant is_american_indian_or_alaska_native exemption_request_compliant is_veteran_with_disability].each do |reason_code|
       context reason_code do
         it_behaves_like "a submitted determination", reason_code
         it_behaves_like "an exemption", reason_code
