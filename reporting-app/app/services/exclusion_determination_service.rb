@@ -53,12 +53,12 @@ class ExclusionDeterminationService
       Determination::REASON_CODE_MAPPING.fetch(best_fact.name)
     end
 
-    # Raises (naming the fact and id) if a fact is unbridged or its id has no
-    # configured priority — the drift guard for the fact/id/config seam.
+    # Raises (naming the fact) if a fact has no configured exclusion — the drift
+    # guard for the fact/config seam. Exclusion config carries the fact, so it is
+    # the single source of truth bridging rules fact to configured priority.
     def exclusion_priority(fact_name)
-      id = Rules::ExclusionRuleset::EXCLUSION_FACT_IDS.fetch(fact_name)
-      exclusion = Exclusion.find(id) ||
-        raise(KeyError, "no configured exclusion for id #{id.inspect} (bridged from fact #{fact_name.inspect})")
+      exclusion = Exclusion.find_by_fact(fact_name) ||
+        raise(KeyError, "no configured exclusion for fact #{fact_name.inspect}")
       exclusion.fetch(:priority)
     end
 

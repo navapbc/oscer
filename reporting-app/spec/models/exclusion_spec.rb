@@ -69,4 +69,34 @@ RSpec.describe Exclusion, type: :model do
       expect(described_class.find(:not_a_real_exclusion)).to be_nil
     end
   end
+
+  describe ".find_by_fact" do
+    it "returns the config entry for a ruled fact" do
+      entry = described_class.find_by_fact(:is_veteran_with_disability)
+      expect(entry[:id]).to eq(:veteran_disability)
+    end
+
+    it "returns nil for a fact with no configured exclusion" do
+      expect(described_class.find_by_fact(:not_a_real_fact)).to be_nil
+    end
+  end
+
+  # Guards the fact/config/reason-code seam at test time so drift is caught here
+  # rather than as a fail-loud KeyError in the determination flow. Only ruled
+  # exclusions (those with a :fact) participate; declarative entries are exempt.
+  describe "fact bridging (drift guard)" do
+    let(:ruled_facts) { described_class.all.filter_map { |t| t[:fact] } }
+
+    it "resolves every ruled fact through find_by_fact to a priority-carrying entry" do
+      ruled_facts.each do |fact|
+        expect(described_class.find_by_fact(fact)).to include(:priority)
+      end
+    end
+
+    it "bridges only facts that map to a determination reason code" do
+      ruled_facts.each do |fact|
+        expect(Determination::REASON_CODE_MAPPING).to include(fact.to_sym)
+      end
+    end
+  end
 end

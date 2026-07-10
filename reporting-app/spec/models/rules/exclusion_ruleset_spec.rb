@@ -5,22 +5,6 @@ require 'rails_helper'
 RSpec.describe Rules::ExclusionRuleset do
   let(:ruleset) { described_class.new }
 
-  describe 'EXCLUSION_FACT_IDS' do
-    # Guards the fact/id/config/reason-code seam at test time so drift is caught
-    # here rather than as a fail-loud KeyError in the determination flow.
-    it 'bridges every fact to an exclusion configured with a priority' do
-      described_class::EXCLUSION_FACT_IDS.each_value do |id|
-        expect(Exclusion.find(id)).to include(:priority)
-      end
-    end
-
-    it 'bridges only facts that map to a determination reason code' do
-      described_class::EXCLUSION_FACT_IDS.each_key do |fact_name|
-        expect(Determination::REASON_CODE_MAPPING).to include(fact_name)
-      end
-    end
-  end
-
   describe '#is_pregnant' do
     context 'when pregnancy_status is nil' do
       it 'returns nil' do

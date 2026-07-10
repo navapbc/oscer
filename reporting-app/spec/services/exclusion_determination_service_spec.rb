@@ -113,9 +113,9 @@ RSpec.describe ExclusionDeterminationService do
       before do
         allow(Rails.application.config).to receive(:exclusion_types).and_return(
           [
-            { id: :pregnant, priority: 10 },
-            { id: :veteran_disability, priority: 20 },
-            { id: :american_indian_alaska_native, priority: 30 }
+            { id: :pregnant, priority: 10, fact: "is_pregnant" },
+            { id: :veteran_disability, priority: 20, fact: "is_veteran_with_disability" },
+            { id: :american_indian_alaska_native, priority: 30, fact: "is_american_indian_or_alaska_native" }
           ]
         )
       end
@@ -130,18 +130,18 @@ RSpec.describe ExclusionDeterminationService do
     end
 
     context 'when a matched exclusion is missing from the priority config' do
-      # A fact evaluates true but its bridged id is absent from the configured
-      # exclusions — exercises the fail-loud drift guard in exclusion_priority.
+      # A fact evaluates true but no configured exclusion declares that fact —
+      # exercises the fail-loud drift guard in exclusion_priority.
       before do
         allow(Rails.application.config).to receive(:exclusion_types).and_return(
-          [ { id: :veteran_disability, priority: 30 } ]
+          [ { id: :veteran_disability, priority: 30, fact: "is_veteran_with_disability" } ]
         )
       end
 
       let(:member_data) { build(:certification_member_data, pregnancy_status: true, cert_date: cert_date) }
 
-      it 'raises a descriptive error naming the exclusion id' do
-        expect { service.determine(kase) }.to raise_error(KeyError, /pregnant/)
+      it 'raises a descriptive error naming the unbridged fact' do
+        expect { service.determine(kase) }.to raise_error(KeyError, /is_pregnant/)
       end
     end
 

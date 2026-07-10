@@ -29,20 +29,24 @@ module ExclusionTypesLoader
   # Default exclusion priority order (high durability -> low), per the
   # Data Source Hierarchy spec. Only american_indian_alaska_native,
   # veteran_disability, and pregnant have rules in Rules::ExclusionRuleset
-  # today; the rest are declarative until their rules land.
+  # today; those carry a `fact` naming their Rules::ExclusionRuleset fact, which
+  # is the single source of truth bridging config id, rules fact, and reason
+  # code (see Exclusion.find_by_fact). The rest are declarative until their
+  # rules land, so they omit `fact`. `fact` is OSCER-owned; deployments only
+  # override `priority`.
   #
   # Priorities are spaced by 10 so a deployment can re-rank one exclusion by
   # dropping it into the gap between two others (e.g. priority 55 to sit
   # between 50 and 60) without renumbering the rest.
   DEFAULTS = {
-    "american_indian_alaska_native" => { "priority" => 10 },
+    "american_indian_alaska_native" => { "priority" => 10, "fact" => "is_american_indian_or_alaska_native" },
     "former_foster_care" => { "priority" => 20 },
-    "veteran_disability" => { "priority" => 30 },
+    "veteran_disability" => { "priority" => 30, "fact" => "is_veteran_with_disability" },
     "medically_frail" => { "priority" => 40 },
     "caretaker" => { "priority" => 50 },
     "tanf_snap_work" => { "priority" => 60 },
     "drug_treatment" => { "priority" => 70 },
-    "pregnant" => { "priority" => 80 },
+    "pregnant" => { "priority" => 80, "fact" => "is_pregnant" },
     "inmate" => { "priority" => 90 }
   }.freeze
 

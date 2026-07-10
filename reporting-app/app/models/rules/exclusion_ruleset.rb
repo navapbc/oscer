@@ -5,15 +5,6 @@ module Rules
   class ExclusionRuleset < Strata::Rules::MedicaidRuleset
     AMERICAN_INDIAN_OR_ALASKA_NATIVE = [ "american_indian_or_alaska_native", "american_indian", "alaska_native" ].freeze
 
-    # Rules-engine fact name => Exclusion config id (its priority source). The two
-    # use different vocabularies (is_veteran_with_disability vs veteran_disability;
-    # the fact's "or" the AIAN id drops), so map explicitly — don't string-derive.
-    EXCLUSION_FACT_IDS = {
-      is_american_indian_or_alaska_native: :american_indian_alaska_native,
-      is_veteran_with_disability: :veteran_disability,
-      is_pregnant: :pregnant
-    }.freeze
-
     def is_pregnant(pregnancy_status)
       return if pregnancy_status.nil?
 
