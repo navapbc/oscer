@@ -72,7 +72,7 @@ RSpec.describe ExclusionDeterminationService do
     end
 
     context 'when multiple exclusions apply' do
-      # Default priorities: american_indian_alaska_native (10) < veteran_disability (30) < pregnant (80).
+      # Default priorities: is_american_indian_or_alaska_native (10) < is_veteran_with_disability (30) < is_pregnant (80).
       context 'when pregnant and a veteran with 100% disability' do
         let(:member_data) { build(:certification_member_data, :with_icn, pregnancy_status: true, cert_date: cert_date) }
         let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 100 } } } }
@@ -108,14 +108,14 @@ RSpec.describe ExclusionDeterminationService do
     end
 
     context 'when the configured priority order is overridden' do
-      # Re-rank so pregnant (10) outranks veteran_disability (20): proves selection consults
-      # Exclusion.priority_order rather than a hardcoded order.
+      # Re-rank so is_pregnant (10) outranks is_veteran_with_disability (20): proves selection
+      # consults Exclusion.priority_order rather than a hardcoded order.
       before do
         allow(Rails.application.config).to receive(:exclusion_types).and_return(
           [
-            { id: :pregnant, priority: 10, fact: "is_pregnant" },
-            { id: :veteran_disability, priority: 20, fact: "is_veteran_with_disability" },
-            { id: :american_indian_alaska_native, priority: 30, fact: "is_american_indian_or_alaska_native" }
+            { id: :is_pregnant, priority: 10 },
+            { id: :is_veteran_with_disability, priority: 20 },
+            { id: :is_american_indian_or_alaska_native, priority: 30 }
           ]
         )
       end
@@ -134,7 +134,7 @@ RSpec.describe ExclusionDeterminationService do
       # exercises the fail-loud drift guard in exclusion_priority.
       before do
         allow(Rails.application.config).to receive(:exclusion_types).and_return(
-          [ { id: :veteran_disability, priority: 30, fact: "is_veteran_with_disability" } ]
+          [ { id: :is_veteran_with_disability, priority: 30 } ]
         )
       end
 

@@ -28,18 +28,10 @@ class Exclusion
       all.map { |t| t[:id].to_s }
     end
 
+    # Ruled exclusion ids match their Rules::ExclusionRuleset fact names, so a
+    # rules fact resolves to its config entry directly through find.
     def find(id)
       all.find { |t| t[:id] == id.to_sym }
-    end
-
-    # The config entry whose Rules::ExclusionRuleset fact matches, or nil. Only
-    # ruled exclusions declare a :fact, so this is the single bridge from a rules
-    # fact to its priority-carrying config entry (replaces the old hardcoded
-    # fact->id map in the ruleset). The `t[:fact] &&` guard keeps a declarative
-    # entry (no :fact) from matching a nil lookup; the comparison is string-based
-    # because config stores the fact as a String while callers pass a Symbol.
-    def find_by_fact(fact_name)
-      all.find { |t| t[:fact] && t[:fact].to_s == fact_name.to_s }
     end
   end
 end

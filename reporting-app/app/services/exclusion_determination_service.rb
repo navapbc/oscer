@@ -53,11 +53,11 @@ class ExclusionDeterminationService
       Determination::REASON_CODE_MAPPING.fetch(best_fact.name)
     end
 
-    # Raises (naming the fact) if a fact has no configured exclusion — the drift
-    # guard for the fact/config seam. Exclusion config carries the fact, so it is
-    # the single source of truth bridging rules fact to configured priority.
+    # Ruled exclusion ids match their ruleset fact names, so the fact name is the
+    # config id. Raises (naming the fact) if a fact has no configured exclusion —
+    # the fail-loud drift guard for the fact/config seam.
     def exclusion_priority(fact_name)
-      exclusion = Exclusion.find_by_fact(fact_name) ||
+      exclusion = Exclusion.find(fact_name) ||
         raise(KeyError, "no configured exclusion for fact #{fact_name.inspect}")
       exclusion.fetch(:priority)
     end
