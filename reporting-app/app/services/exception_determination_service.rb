@@ -12,10 +12,12 @@ class ExceptionDeterminationService
   # the exception applies (and is enabled), or nil otherwise. Add a check by adding its symbol here
   # and defining the matching method. Order is the evaluation order; the first applicable check wins.
   EXCEPTION_CHECKS = %i[
+    age_under_19
     inpatient_medical_care
     declared_emergency_county
     high_unemployment_county
     medical_travel
+    other_program
   ].freeze
 
   class << self
@@ -53,6 +55,17 @@ class ExceptionDeterminationService
 
       reason_code = EXCEPTION_CHECKS.lazy.filter_map { |check| send(check, member_data, certifiable_months) }.first
       reason_code ? [ reason_code ] : []
+    end
+
+    # @return [String, nil] the reason code when the member was less than 19 in lookback period,
+    #   otherwise nil.
+    def age_under_19(member_data, certifiable_months)
+      dob = member_data.date_of_birth
+      return unless dob
+      earliest_month = certifiable_months.sort.first
+      return unless earliest_month - 19.years < dob
+
+      Determination::REASON_CODE_MAPPING.fetch(:age_was_under_19)
     end
 
     # @return [String, nil] the reason code when the member was receiving inpatient medical care and
@@ -101,6 +114,17 @@ class ExceptionDeterminationService
       return unless (certifiable_months & medical_travel_months).present?
 
       Determination::REASON_CODE_MAPPING.fetch(:traveling_for_medical_care)
+    end
+
+    # @return [String, nil] the reason code when the member participated in either
+    #   Medicare or Medicaid plans A or B, otherwise nil.
+    def other_program(member_data, certifiable_months)
+      return unless member_data.dates_participating_in_other_program.present?
+
+      other_program_months = member_data.dates_participating_in_other_program.compact.map(&:beginning_of_month)
+      return unless (certifiable_months & other_program_months).present?
+
+      Determination::REASON_CODE_MAPPING.fetch(:participating_in_other_program)
     end
   end
 end
