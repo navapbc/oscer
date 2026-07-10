@@ -150,7 +150,7 @@ RSpec.describe ExceptionDeterminationService do
     end
 
     describe 'checking participating-in-other-program' do
-      let(:event_date) { [ cert_date - 3.months ] }
+      let(:event_date) { [ cert_date - 2.months - 2.days ] }
       let(:member_data) { build(:certification_member_data, cert_date:, dates_participating_in_other_program: event_date) }
 
       it_behaves_like 'a mandatory exception', :other_program
