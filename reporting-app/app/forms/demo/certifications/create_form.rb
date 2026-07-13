@@ -73,6 +73,7 @@ module Demo
           md.was_in_foster_care = was_in_foster_care
           md.currently_medically_frail = currently_medically_frail
           md.dates_caretaking_infirm = [ certification_date ] if caretaker
+          md.meeting_tanf_or_snap_work = tanf_snap_work
           md.race_ethnicity = race_ethnicity if race_ethnicity.present?
           md.va_icn = va_icn if va_icn.present?
           apply_external_exception(md, certification_requirements.months_that_can_be_certified)

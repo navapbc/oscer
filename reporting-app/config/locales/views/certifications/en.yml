@@ -50,6 +50,7 @@ en:
       was_in_foster_care: "Was in Foster Care"
       currently_medically_frail: "Currently Medically Frail"
       caretaker: "Caretaker"
+      tanf_snap_work: "Meets SNAP/TANF Work Requirement"
       external_exception: "External exception"
       external_exception_options:
         inpatient_medical_care: "Receiving inpatient medical care"

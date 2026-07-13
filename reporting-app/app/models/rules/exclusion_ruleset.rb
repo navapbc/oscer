@@ -66,8 +66,13 @@ module Rules
       caretaking_infirm || caring_for_child
     end
 
-    def eligible_for_exclusion(is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail, caretaker)
-      facts = [ is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail, caretaker ]
+    # Members already meeting SNAP/TANF work requirements are excluded.
+    def tanf_snap_work(meeting_tanf_or_snap_work)
+      meeting_tanf_or_snap_work
+    end
+
+    def eligible_for_exclusion(is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail, caretaker, tanf_snap_work)
+      facts = [ is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail, caretaker, tanf_snap_work ]
       return if facts.all?(&:nil?)
 
       facts.any?

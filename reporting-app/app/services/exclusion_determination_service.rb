@@ -39,6 +39,7 @@ class ExclusionDeterminationService
       currently_medically_frail = extract_currently_medically_frail(certification)
       dates_caretaking_infirm = extract_dates_caretaking_infirm(certification)
       dependent_children_birth_dates = extract_dependent_children_birth_dates(certification)
+      meeting_tanf_or_snap_work = extract_meeting_tanf_or_snap_work(certification)
 
       engine.set_facts(
         pregnancy_due_or_parturition_date:,
@@ -49,7 +50,8 @@ class ExclusionDeterminationService
         date_of_birth:,
         currently_medically_frail:,
         dates_caretaking_infirm:,
-        dependent_children_birth_dates:
+        dependent_children_birth_dates:,
+        meeting_tanf_or_snap_work:
       )
 
       engine.evaluate(:eligible_for_exclusion)
@@ -120,6 +122,12 @@ class ExclusionDeterminationService
       return nil unless certification.member_data
 
       certification.member_data.dependent_children_birth_dates
+    end
+
+    def extract_meeting_tanf_or_snap_work(certification)
+      return nil unless certification.member_data
+
+      certification.member_data.meeting_tanf_or_snap_work
     end
   end
 end

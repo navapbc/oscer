@@ -270,70 +270,96 @@ RSpec.describe Rules::ExclusionRuleset do
     end
   end
 
+  describe '#tanf_snap_work' do
+    context 'when the meeting-SNAP/TANF-work flag is unknown (nil)' do
+      it 'returns falsey' do
+        expect(ruleset.tanf_snap_work(nil)).to be_falsey
+      end
+    end
+
+    context 'when the member is not meeting SNAP/TANF work requirements' do
+      it 'returns falsey' do
+        expect(ruleset.tanf_snap_work(false)).to be_falsey
+      end
+    end
+
+    context 'when the member is meeting SNAP/TANF work requirements' do
+      it 'returns true' do
+        expect(ruleset.tanf_snap_work(true)).to be true
+      end
+    end
+  end
+
   describe '#eligible_for_exclusion' do
     context 'when all parameters are nil' do
       it 'returns falsey' do
-        expect(ruleset.eligible_for_exclusion(nil, nil, nil, nil, nil, nil)).to be_falsey
+        expect(ruleset.eligible_for_exclusion(nil, nil, nil, nil, nil, nil, nil)).to be_falsey
       end
     end
 
     context 'when only is_pregnant is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(true, nil, nil, nil, nil, nil)).to be true
+        expect(ruleset.eligible_for_exclusion(true, nil, nil, nil, nil, nil, nil)).to be true
       end
     end
 
     context 'when only is_american_indian_or_alaska_native is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(nil, true, nil, nil, nil, nil)).to be true
+        expect(ruleset.eligible_for_exclusion(nil, true, nil, nil, nil, nil, nil)).to be true
       end
     end
 
     context 'when only is_veteran_with_disability is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(nil, nil, true, nil, nil, nil)).to be true
+        expect(ruleset.eligible_for_exclusion(nil, nil, true, nil, nil, nil, nil)).to be true
       end
     end
 
     context 'when only former_foster_care is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(nil, nil, nil, true, nil, nil)).to be true
+        expect(ruleset.eligible_for_exclusion(nil, nil, nil, true, nil, nil, nil)).to be true
       end
     end
 
     context 'when only medically_frail is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(nil, nil, nil, nil, true, nil)).to be true
+        expect(ruleset.eligible_for_exclusion(nil, nil, nil, nil, true, nil, nil)).to be true
       end
     end
 
     context 'when only caretaker is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(nil, nil, nil, nil, nil, true)).to be true
+        expect(ruleset.eligible_for_exclusion(nil, nil, nil, nil, nil, true, nil)).to be true
+      end
+    end
+
+    context 'when only tanf_snap_work is true' do
+      it 'returns true' do
+        expect(ruleset.eligible_for_exclusion(nil, nil, nil, nil, nil, nil, true)).to be true
       end
     end
 
     context 'when multiple parameters are true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(true, true, nil, nil, nil, nil)).to be true
+        expect(ruleset.eligible_for_exclusion(true, true, nil, nil, nil, nil, nil)).to be true
       end
     end
 
     context 'when all are true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(true, true, true, true, true, true)).to be true
+        expect(ruleset.eligible_for_exclusion(true, true, true, true, true, true, true)).to be true
       end
     end
 
     context 'when all are false' do
       it 'returns falsey' do
-        expect(ruleset.eligible_for_exclusion(false, false, false, false, false, false)).to be_falsey
+        expect(ruleset.eligible_for_exclusion(false, false, false, false, false, false, false)).to be_falsey
       end
     end
 
     context 'when some are false but one is true' do
       it 'returns true' do
-        expect(ruleset.eligible_for_exclusion(false, true, false, false, false, false)).to be true
+        expect(ruleset.eligible_for_exclusion(false, true, false, false, false, false, false)).to be true
       end
     end
   end

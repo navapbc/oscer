@@ -9,6 +9,7 @@ en:
         former_foster_care_excluded: "Former foster care youth"
         medically_frail_excluded: "Medically frail"
         caretaker_excluded: "Caretaker"
+        tanf_snap_work_excluded: "Meets SNAP/TANF work requirement"
         veteran_disability_excluded: "Veteran with a disability"
         income_reported_compliant: "Income reported compliant"
         income_reported_insufficient: "Insufficient community engagement income"

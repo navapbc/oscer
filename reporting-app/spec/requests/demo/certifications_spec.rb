@@ -355,6 +355,18 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(cert.member_data.dates_caretaking_infirm).to eq([ cert.certification_requirements.certification_date ])
       end
 
+      it "sets meeting_tanf_or_snap_work when the checkbox is selected" do
+        create_attrs = valid_request_attributes.merge({ tanf_snap_work: "1", external_scenario: "No data" })
+
+        expect {
+          post demo_certifications_url,
+               params: { demo_certifications_create_form: create_attrs }
+        }.to change(Certification, :count).by(1)
+
+        cert = Certification.order(created_at: :desc).last
+        expect(cert.member_data.meeting_tanf_or_snap_work).to be true
+      end
+
       it "creates a new Certification with an external exception selected" do
         create_attrs = valid_request_attributes.merge({ external_exception: "inpatient_medical_care", external_scenario: "No data" })
 

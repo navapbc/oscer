@@ -32,6 +32,10 @@ RSpec.describe Determination, type: :model do
           age_over_65_excluded
           pregnancy_excluded
           american_indian_alaska_native_excluded
+          former_foster_care_excluded
+          medically_frail_excluded
+          caretaker_excluded
+          tanf_snap_work_excluded
           income_reported_compliant
           income_reported_insufficient
           hours_reported_compliant
