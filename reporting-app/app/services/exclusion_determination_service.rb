@@ -33,7 +33,7 @@ class ExclusionDeterminationService
       pregnancy_due_or_parturition_date = extract_pregnancy_due_or_parturition_date(certification)
       certification_date = certification.certification_requirements.certification_date
       race_ethnicity = extract_race_ethnicity(certification)
-      veteran_disability_rating = extract_veteran_disability_status(certification)
+      veteran_with_disability = extract_veteran_with_disability(certification)
       was_in_foster_care = extract_was_in_foster_care(certification)
       date_of_birth = extract_date_of_birth(certification)
       currently_medically_frail = extract_currently_medically_frail(certification)
@@ -47,7 +47,7 @@ class ExclusionDeterminationService
         pregnancy_due_or_parturition_date:,
         certification_date:,
         race_ethnicity:,
-        veteran_disability_rating:,
+        veteran_with_disability:,
         was_in_foster_care:,
         date_of_birth:,
         currently_medically_frail:,
@@ -92,10 +92,10 @@ class ExclusionDeterminationService
       certification.member_data.race_ethnicity
     end
 
-    def extract_veteran_disability_status(certification)
-      return nil unless certification.member_data&.va_icn.present?
+    def extract_veteran_with_disability(certification)
+      return nil unless certification.member_data
 
-      VeteranDisabilityService.new.get_disability_rating(icn: certification.member_data.va_icn)
+      certification.member_data.veteran_with_disability
     end
 
     def extract_was_in_foster_care(certification)

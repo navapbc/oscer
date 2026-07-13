@@ -27,6 +27,7 @@ module Demo
       attribute :pregnancy_status, :boolean, default: false
       attribute :was_in_foster_care, :boolean, default: false
       attribute :currently_medically_frail, :boolean, default: false
+      attribute :veteran_with_disability, :boolean, default: false
       attribute :caretaker, :boolean, default: false
       attribute :tanf_snap_work, :boolean, default: false
       attribute :drug_treatment, :boolean, default: false

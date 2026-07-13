@@ -95,33 +95,21 @@ RSpec.describe Rules::ExclusionRuleset do
   end
 
   describe '#is_veteran_with_disability' do
-    context 'when rating_data is nil' do
-      it 'returns nil' do
-        expect(ruleset.is_veteran_with_disability(nil)).to be_nil
+    context 'when the veteran-with-disability flag is unknown (nil)' do
+      it 'returns falsey' do
+        expect(ruleset.is_veteran_with_disability(nil)).to be_falsey
       end
     end
 
-    context 'when rating is 100' do
-      let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 100 } } } }
+    context 'when the member is not a veteran with a disability' do
+      it 'returns falsey' do
+        expect(ruleset.is_veteran_with_disability(false)).to be_falsey
+      end
+    end
 
+    context 'when the member is a veteran with a disability' do
       it 'returns true' do
-        expect(ruleset.is_veteran_with_disability(rating_data)).to be true
-      end
-    end
-
-    context 'when rating is not 100' do
-      let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 70 } } } }
-
-      it 'returns false' do
-        expect(ruleset.is_veteran_with_disability(rating_data)).to be false
-      end
-    end
-
-    context 'when rating data is missing attributes' do
-      let(:rating_data) { { "data" => {} } }
-
-      it 'returns false' do
-        expect(ruleset.is_veteran_with_disability(rating_data)).to be false
+        expect(ruleset.is_veteran_with_disability(true)).to be true
       end
     end
   end

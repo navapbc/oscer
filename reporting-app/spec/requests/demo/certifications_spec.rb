@@ -343,6 +343,18 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(cert.member_data.currently_medically_frail).to be true
       end
 
+      it "sets veteran_with_disability when the veteran_with_disability checkbox is selected" do
+        create_attrs = valid_request_attributes.merge({ veteran_with_disability: "1", external_scenario: "No data" })
+
+        expect {
+          post demo_certifications_url,
+               params: { demo_certifications_create_form: create_attrs }
+        }.to change(Certification, :count).by(1)
+
+        cert = Certification.order(created_at: :desc).last
+        expect(cert.member_data.veteran_with_disability).to be true
+      end
+
       it "sets dates_caretaking_infirm to the certification date when the caretaker checkbox is selected" do
         create_attrs = valid_request_attributes.merge({ caretaker: "1", external_scenario: "No data" })
 

@@ -6,12 +6,6 @@ RSpec.describe ExclusionDeterminationService do
   let(:service) { described_class }
   let(:cert_date) { Date.new(2025, 7, 1) }
   let(:member_data) { build(:certification_member_data, cert_date: cert_date) }
-  let(:rating_data) { nil }
-  let(:veteran_disability_service) { instance_double(VeteranDisabilityService, get_disability_rating: rating_data) }
-
-  before do
-    allow(VeteranDisabilityService).to receive(:new).and_return(veteran_disability_service)
-  end
 
   describe '#determine' do
     let(:certification) do
@@ -69,9 +63,8 @@ RSpec.describe ExclusionDeterminationService do
         end
       end
 
-      context 'when the member is a veteran with 100% disability' do
-        let(:member_data) { build(:certification_member_data, :with_icn, cert_date: cert_date) }
-        let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 100 } } } }
+      context 'when the member is a veteran with a disability' do
+        let(:member_data) { build(:certification_member_data, veteran_with_disability: true, cert_date: cert_date) }
 
         it 'records the veteran-disability reason code' do
           service.determine(kase)
@@ -145,9 +138,8 @@ RSpec.describe ExclusionDeterminationService do
 
     context 'when multiple exclusions apply' do
       # Default priorities: is_american_indian_or_alaska_native (10) < is_veteran_with_disability (30) < is_pregnant (80).
-      context 'when pregnant and a veteran with 100% disability' do
-        let(:member_data) { build(:certification_member_data, :with_icn, pregnancy_due_or_parturition_date: cert_date, cert_date:) }
-        let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 100 } } } }
+      context 'when pregnant and a veteran with a disability' do
+        let(:member_data) { build(:certification_member_data, veteran_with_disability: true, pregnancy_due_or_parturition_date: cert_date, cert_date:) }
 
         it 'records only the higher-priority veteran-disability exclusion' do
           service.determine(kase)
@@ -240,9 +232,8 @@ RSpec.describe ExclusionDeterminationService do
 
       context 'when all three exclusions apply' do
         let(:member_data) do
-          build(:certification_member_data, :with_icn, pregnancy_due_or_parturition_date: cert_date, race_ethnicity: "american_indian_or_alaska_native", cert_date:)
+          build(:certification_member_data, veteran_with_disability: true, pregnancy_due_or_parturition_date: cert_date, race_ethnicity: "american_indian_or_alaska_native", cert_date:)
         end
-        let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 100 } } } }
 
         it 'records exactly one reason code — the highest priority (stop-at-first)' do
           service.determine(kase)
@@ -264,8 +255,7 @@ RSpec.describe ExclusionDeterminationService do
         )
       end
 
-      let(:member_data) { build(:certification_member_data, :with_icn, pregnancy_due_or_parturition_date: cert_date, cert_date:) }
-      let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 100 } } } }
+      let(:member_data) { build(:certification_member_data, veteran_with_disability: true, pregnancy_due_or_parturition_date: cert_date, cert_date:) }
 
       it 'records the exclusion now ranked highest (pregnancy)' do
         service.determine(kase)
@@ -330,18 +320,8 @@ RSpec.describe ExclusionDeterminationService do
         end
       end
 
-      context 'without a 100% veteran disability rating' do
-        let(:member_data) { build(:certification_member_data, :with_icn, cert_date: cert_date) }
-        let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 70 } } } }
-
-        it 'publishes DeterminedNotExcluded' do
-          service.determine(kase)
-          expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExcluded', { case_id: kase.id, certification_id: kase.certification_id })
-        end
-      end
-
-      context 'when the VA service returns nil (fail-open)' do
-        let(:member_data) { build(:certification_member_data, :with_icn, cert_date: cert_date) }
+      context 'when the member is not a veteran with a disability' do
+        let(:member_data) { build(:certification_member_data, race_ethnicity: "white", veteran_with_disability: false, cert_date:) }
 
         it 'publishes DeterminedNotExcluded' do
           service.determine(kase)

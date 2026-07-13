@@ -31,13 +31,8 @@ module Rules
       AMERICAN_INDIAN_OR_ALASKA_NATIVE.include?(race_ethnicity.downcase.gsub(/\s+/, "_"))
     end
 
-    def is_veteran_with_disability(veteran_disability_rating)
-      return if veteran_disability_rating.nil?
-
-      combined_rating = veteran_disability_rating.dig("data", "attributes", "combined_disability_rating")
-      return false if combined_rating.nil?
-
-      combined_rating.to_i == 100
+    def is_veteran_with_disability(veteran_with_disability)
+      veteran_with_disability
     end
 
     # Former foster youth are excluded until age FORMER_FOSTER_CARE_AGE_CAP, evaluated against the
