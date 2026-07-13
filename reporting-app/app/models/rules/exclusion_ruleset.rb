@@ -71,8 +71,16 @@ module Rules
       meeting_tanf_or_snap_work
     end
 
-    def eligible_for_exclusion(is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail, caretaker, tanf_snap_work)
-      facts = [ is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail, caretaker, tanf_snap_work ]
+    # Members participating in a drug/alcohol treatment program during the certification month are
+    # excluded (month granularity, consistent with the other date-based checks).
+    def drug_treatment(dates_in_drug_treatment, certification_date)
+      return if certification_date.nil?
+
+      Array(dates_in_drug_treatment).any? { |date| date.beginning_of_month == certification_date.beginning_of_month }
+    end
+
+    def eligible_for_exclusion(is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail, caretaker, tanf_snap_work, drug_treatment)
+      facts = [ is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail, caretaker, tanf_snap_work, drug_treatment ]
       return if facts.all?(&:nil?)
 
       facts.any?

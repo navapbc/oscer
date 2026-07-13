@@ -123,6 +123,15 @@ RSpec.describe ExclusionDeterminationService do
           expect(recorded_exclusion.reasons).to eq([ "tanf_snap_work_excluded" ])
         end
       end
+
+      context 'when the member is in drug/alcohol treatment during the certification month' do
+        let(:member_data) { build(:certification_member_data, dates_in_drug_treatment: [ cert_date ], cert_date:) }
+
+        it 'records the drug_treatment reason code' do
+          service.determine(kase)
+          expect(recorded_exclusion.reasons).to eq([ "drug_treatment_excluded" ])
+        end
+      end
     end
 
     context 'when multiple exclusions apply' do
@@ -182,6 +191,18 @@ RSpec.describe ExclusionDeterminationService do
         it 'records only the higher-priority tanf_snap_work exclusion' do
           service.determine(kase)
           expect(recorded_exclusion.reasons).to eq([ "tanf_snap_work_excluded" ])
+        end
+      end
+
+      context 'when in drug/alcohol treatment and pregnant' do
+        # drug_treatment (70) outranks is_pregnant (80)
+        let(:member_data) do
+          build(:certification_member_data, dates_in_drug_treatment: [ cert_date ], pregnancy_due_or_parturition_date: cert_date, cert_date:)
+        end
+
+        it 'records only the higher-priority drug_treatment exclusion' do
+          service.determine(kase)
+          expect(recorded_exclusion.reasons).to eq([ "drug_treatment_excluded" ])
         end
       end
 

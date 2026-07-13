@@ -82,6 +82,7 @@ class Certifications::MemberData < ValueObject
   attribute :dates_caretaking_infirm, :array, of: ActiveModel::Type::Date.new
   attribute :dependent_children_birth_dates, :array, of: ActiveModel::Type::Date.new
   attribute :meeting_tanf_or_snap_work, :boolean, default: false
+  attribute :dates_in_drug_treatment, :array, of: ActiveModel::Type::Date.new
 
   # External-exception signals evaluated by ExceptionDeterminationService.
   # Distinct from exclusion/exemption signals above; see ExternalException.

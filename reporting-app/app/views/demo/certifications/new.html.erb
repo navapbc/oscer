@@ -42,6 +42,8 @@
 
   <%= f.check_box :tanf_snap_work %>
 
+  <%= f.check_box :drug_treatment %>
+
   <%= f.select :race_ethnicity, Demo::Certifications::CreateForm::RACE_ETHNICITY_OPTIONS.map { |re| [ t("certifications.demo_create.race_ethnicity_options.#{re}"), re ] }, { include_blank: true } %>
 
   <%= f.select :external_exception, @form.exception_options.map { |e| [ t("certifications.demo_create.external_exception_options.#{e}"), e ] }, { include_blank: true } %>

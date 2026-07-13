@@ -70,6 +70,7 @@ class Determination < Strata::Determination
     medically_frail: "medically_frail_excluded",
     caretaker: "caretaker_excluded",
     tanf_snap_work: "tanf_snap_work_excluded",
+    drug_treatment: "drug_treatment_excluded",
     income_reported_compliant: "income_reported_compliant",
     income_reported_insufficient: "income_reported_insufficient",
     hours_reported_compliant: "hours_reported_compliant",
