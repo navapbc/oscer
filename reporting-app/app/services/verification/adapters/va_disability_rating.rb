@@ -12,9 +12,10 @@ module Verification
     #
     # NOTE: the 100%-rating interpretation duplicated here also still lives in
     # +Rules::ExclusionRuleset#is_veteran_with_disability+. That duplication is
-    # intentional and temporary for this slice — the ruleset copy is removed in
-    # a downstream migration once +ExclusionDeterminationService+ consumes these
-    # outcome symbols directly.
+    # intentional and temporary for this slice — resolved when the #756 data
+    # source registry registers this adapter and a later orchestrator slice
+    # wires +ExclusionDeterminationService+ to consume adapter outcomes (the
+    # ruleset copy is then removed).
     class VaDisabilityRating < Verification::DataSource
       SOURCE = "va_disability_rating"
       OUTCOME_VETERAN_WITH_DISABILITY = :is_veteran_with_disability
@@ -64,6 +65,7 @@ module Verification
         rating_data&.dig("data", "attributes", "combined_disability_rating")
       end
 
+      # +to_i+ coercion intentionally mirrors +Rules::ExclusionRuleset#is_veteran_with_disability+.
       def outcomes_for(combined_rating)
         return [] if combined_rating.nil?
 

@@ -29,6 +29,10 @@ RSpec.describe Verification::Adapters::VaDisabilityRating do
     it "declares the single VA outcome symbol" do
       expect(described_class.declared_outcomes).to eq([ :is_veteran_with_disability ])
     end
+
+    it "declares outcomes registered in Exclusion.valid_values" do
+      expect(described_class.declared_outcomes.map(&:to_s)).to all(be_in(Exclusion.valid_values))
+    end
   end
 
   describe "#call" do
@@ -81,6 +85,16 @@ RSpec.describe Verification::Adapters::VaDisabilityRating do
         expect(result.outcomes).to eq([])
       end
     end
+
+    context "when the combined rating is a string (coercion parity with ExclusionRuleset)" do
+      let(:rating_data) { rating_response("100") }
+
+      it_behaves_like "a successful verification result"
+
+      it "emits :is_veteran_with_disability via to_i coercion" do
+        expect(result.outcomes).to eq([ :is_veteran_with_disability ])
+      end
+    end
   end
 
   describe "#call when the ICN precondition is missing" do
@@ -98,6 +112,22 @@ RSpec.describe Verification::Adapters::VaDisabilityRating do
 
       expect(token_manager).not_to have_received(:get_access_token)
       expect(adapter).not_to have_received(:get_disability_rating)
+    end
+
+    context "when va_icn is a blank string" do
+      let(:certification) { build(:certification, member_data: build(:certification_member_data, va_icn: "")) }
+
+      it_behaves_like "a skipped verification result"
+
+      it "does not call the token manager or transport adapter" do
+        allow(token_manager).to receive(:get_access_token)
+        allow(adapter).to receive(:get_disability_rating)
+
+        result
+
+        expect(token_manager).not_to have_received(:get_access_token)
+        expect(adapter).not_to have_received(:get_disability_rating)
+      end
     end
   end
 
