@@ -14,6 +14,9 @@ module Rules
     # Caretakers of a dependent child under this age are excluded (i.e. 13 or younger)
     CARETAKER_CHILD_AGE_THRESHOLD = 14
 
+    # Incarceration excludes through this many months after the incarceration month
+    INMATE_BUFFER_MONTHS = 3
+
     def is_pregnant(pregnancy_due_or_parturition_date, certification_date)
       return if pregnancy_due_or_parturition_date.nil?
       return if certification_date.nil?
@@ -79,8 +82,20 @@ module Rules
       Array(dates_in_drug_treatment).any? { |date| date.beginning_of_month == certification_date.beginning_of_month }
     end
 
-    def eligible_for_exclusion(is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail, caretaker, tanf_snap_work, drug_treatment)
-      facts = [ is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail, caretaker, tanf_snap_work, drug_treatment ]
+    # Incarcerated members are excluded while incarcerated and for INMATE_BUFFER_MONTHS afterward,
+    # evaluated against the certification date at month granularity.
+    def inmate(dates_incarcerated, certification_date)
+      return if certification_date.nil?
+
+      cert_month = certification_date.beginning_of_month
+      Array(dates_incarcerated).any? do |date|
+        window_start = date.beginning_of_month
+        window_start <= cert_month && cert_month <= window_start + INMATE_BUFFER_MONTHS.months
+      end
+    end
+
+    def eligible_for_exclusion(is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail, caretaker, tanf_snap_work, drug_treatment, inmate)
+      facts = [ is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail, caretaker, tanf_snap_work, drug_treatment, inmate ]
       return if facts.all?(&:nil?)
 
       facts.any?

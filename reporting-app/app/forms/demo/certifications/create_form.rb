@@ -75,6 +75,7 @@ module Demo
           md.dates_caretaking_infirm = [ certification_date ] if caretaker
           md.meeting_tanf_or_snap_work = tanf_snap_work
           md.dates_in_drug_treatment = [ certification_date ] if drug_treatment
+          md.dates_incarcerated = [ certification_date ] if inmate
           md.race_ethnicity = race_ethnicity if race_ethnicity.present?
           md.va_icn = va_icn if va_icn.present?
           apply_external_exception(md, certification_requirements.months_that_can_be_certified)

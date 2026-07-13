@@ -132,6 +132,15 @@ RSpec.describe ExclusionDeterminationService do
           expect(recorded_exclusion.reasons).to eq([ "drug_treatment_excluded" ])
         end
       end
+
+      context 'when the member is incarcerated during the certification month' do
+        let(:member_data) { build(:certification_member_data, dates_incarcerated: [ cert_date ], cert_date:) }
+
+        it 'records the inmate reason code' do
+          service.determine(kase)
+          expect(recorded_exclusion.reasons).to eq([ "inmate_excluded" ])
+        end
+      end
     end
 
     context 'when multiple exclusions apply' do
@@ -203,6 +212,18 @@ RSpec.describe ExclusionDeterminationService do
         it 'records only the higher-priority drug_treatment exclusion' do
           service.determine(kase)
           expect(recorded_exclusion.reasons).to eq([ "drug_treatment_excluded" ])
+        end
+      end
+
+      context 'when incarcerated and pregnant' do
+        # is_pregnant (80) outranks inmate (90), the lowest-priority exclusion
+        let(:member_data) do
+          build(:certification_member_data, dates_incarcerated: [ cert_date ], pregnancy_due_or_parturition_date: cert_date, cert_date:)
+        end
+
+        it 'records only the higher-priority pregnancy exclusion' do
+          service.determine(kase)
+          expect(recorded_exclusion.reasons).to eq([ "pregnancy_excluded" ])
         end
       end
 

@@ -41,6 +41,7 @@ class ExclusionDeterminationService
       dependent_children_birth_dates = extract_dependent_children_birth_dates(certification)
       meeting_tanf_or_snap_work = extract_meeting_tanf_or_snap_work(certification)
       dates_in_drug_treatment = extract_dates_in_drug_treatment(certification)
+      dates_incarcerated = extract_dates_incarcerated(certification)
 
       engine.set_facts(
         pregnancy_due_or_parturition_date:,
@@ -53,7 +54,8 @@ class ExclusionDeterminationService
         dates_caretaking_infirm:,
         dependent_children_birth_dates:,
         meeting_tanf_or_snap_work:,
-        dates_in_drug_treatment:
+        dates_in_drug_treatment:,
+        dates_incarcerated:
       )
 
       engine.evaluate(:eligible_for_exclusion)
@@ -136,6 +138,12 @@ class ExclusionDeterminationService
       return nil unless certification.member_data
 
       certification.member_data.dates_in_drug_treatment
+    end
+
+    def extract_dates_incarcerated(certification)
+      return nil unless certification.member_data
+
+      certification.member_data.dates_incarcerated
     end
   end
 end

@@ -37,6 +37,7 @@ RSpec.describe Determination, type: :model do
           caretaker_excluded
           tanf_snap_work_excluded
           drug_treatment_excluded
+          inmate_excluded
           income_reported_compliant
           income_reported_insufficient
           hours_reported_compliant
