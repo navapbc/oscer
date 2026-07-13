@@ -97,8 +97,8 @@ RSpec.describe ExclusionDeterminationService do
         end
       end
 
-      context 'when the member is a caretaker of an infirm person' do
-        let(:member_data) { build(:certification_member_data, caretaker_of_infirm: true, cert_date:) }
+      context 'when the member is caretaking an infirm person during the certification month' do
+        let(:member_data) { build(:certification_member_data, dates_caretaking_infirm: [ cert_date ], cert_date:) }
 
         it 'records the caretaker reason code' do
           service.determine(kase)
@@ -155,7 +155,7 @@ RSpec.describe ExclusionDeterminationService do
       context 'when a caretaker and pregnant' do
         # caretaker (50) outranks is_pregnant (80)
         let(:member_data) do
-          build(:certification_member_data, caretaker_of_infirm: true, pregnancy_due_or_parturition_date: cert_date, cert_date:)
+          build(:certification_member_data, dates_caretaking_infirm: [ cert_date ], pregnancy_due_or_parturition_date: cert_date, cert_date:)
         end
 
         it 'records only the higher-priority caretaker exclusion' do

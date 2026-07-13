@@ -343,8 +343,8 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(cert.member_data.currently_medically_frail).to be true
       end
 
-      it "sets caretaker_of_infirm when the caretaker checkbox is selected" do
-        create_attrs = valid_request_attributes.merge({ caretaker_of_infirm: "1", external_scenario: "No data" })
+      it "sets dates_caretaking_infirm to the certification date when the caretaker checkbox is selected" do
+        create_attrs = valid_request_attributes.merge({ caretaker: "1", external_scenario: "No data" })
 
         expect {
           post demo_certifications_url,
@@ -352,7 +352,7 @@ RSpec.describe "/demo/certifications", type: :request do
         }.to change(Certification, :count).by(1)
 
         cert = Certification.order(created_at: :desc).last
-        expect(cert.member_data.caretaker_of_infirm).to be true
+        expect(cert.member_data.dates_caretaking_infirm).to eq([ cert.certification_requirements.certification_date ])
       end
 
       it "creates a new Certification with an external exception selected" do

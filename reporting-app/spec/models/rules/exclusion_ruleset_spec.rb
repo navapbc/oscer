@@ -205,32 +205,39 @@ RSpec.describe Rules::ExclusionRuleset do
   end
 
   describe '#caretaker' do
-    # Excluded when caretaker of an infirm person, or of a child under 14 (evaluated against the
-    # certification date at month granularity, consistent with the other age-based checks).
+    # Excluded when caretaking an infirm person during the certification month, or caring for a
+    # dependent child 13 or under (both evaluated against the certification date at month
+    # granularity, consistent with the other date-based checks).
     let(:certification_date) { Date.new(2025, 7, 1) }
 
     context 'when no caretaker signals are present' do
       it 'returns falsey' do
-        expect(ruleset.caretaker(false, [], certification_date)).to be_falsey
+        expect(ruleset.caretaker([], [], certification_date)).to be_falsey
         expect(ruleset.caretaker(nil, nil, certification_date)).to be_falsey
-      end
-    end
-
-    context 'when the member is a caretaker of an infirm person' do
-      it 'returns true' do
-        expect(ruleset.caretaker(true, [], certification_date)).to be true
       end
     end
 
     context 'when the certification date is nil' do
       it 'returns falsey' do
-        expect(ruleset.caretaker(false, [ certification_date - 5.years ], nil)).to be_falsey
+        expect(ruleset.caretaker([ certification_date ], [ certification_date - 5.years ], nil)).to be_falsey
+      end
+    end
+
+    context 'when caretaking an infirm person during the certification month' do
+      it 'returns true' do
+        expect(ruleset.caretaker([ certification_date + 15.days ], [], certification_date)).to be true
+      end
+    end
+
+    context 'when caretaking an infirm person only outside the certification month' do
+      it 'returns falsey' do
+        expect(ruleset.caretaker([ certification_date - 1.month ], [], certification_date)).to be_falsey
       end
     end
 
     context 'when the member has a dependent child under 14' do
       it 'returns true' do
-        expect(ruleset.caretaker(false, [ certification_date - 5.years ], certification_date)).to be true
+        expect(ruleset.caretaker([], [ certification_date - 5.years ], certification_date)).to be true
       end
     end
 
@@ -238,7 +245,7 @@ RSpec.describe Rules::ExclusionRuleset do
       it 'returns true' do
         certification_date = Date.new(2025, 7, 20)
         child_birth_date = Date.new(2011, 7, 25) # 14th birthday 2025-07-25, later in the cert month
-        expect(ruleset.caretaker(false, [ child_birth_date ], certification_date)).to be true
+        expect(ruleset.caretaker([], [ child_birth_date ], certification_date)).to be true
       end
     end
 
@@ -246,19 +253,19 @@ RSpec.describe Rules::ExclusionRuleset do
       it 'returns falsey' do
         certification_date = Date.new(2025, 7, 20)
         child_birth_date = Date.new(2011, 6, 25) # 14th birthday 2025-06-25, the month before
-        expect(ruleset.caretaker(false, [ child_birth_date ], certification_date)).to be_falsey
+        expect(ruleset.caretaker([], [ child_birth_date ], certification_date)).to be_falsey
       end
     end
 
     context 'when all dependent children are 14 or older' do
       it 'returns falsey' do
-        expect(ruleset.caretaker(false, [ certification_date - 15.years, certification_date - 20.years ], certification_date)).to be_falsey
+        expect(ruleset.caretaker([], [ certification_date - 15.years, certification_date - 20.years ], certification_date)).to be_falsey
       end
     end
 
     context 'when one of several dependent children is under 14' do
       it 'returns true' do
-        expect(ruleset.caretaker(false, [ certification_date - 20.years, certification_date - 5.years ], certification_date)).to be true
+        expect(ruleset.caretaker([], [ certification_date - 20.years, certification_date - 5.years ], certification_date)).to be true
       end
     end
   end

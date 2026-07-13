@@ -37,15 +37,19 @@ class ExclusionDeterminationService
       was_in_foster_care = extract_was_in_foster_care(certification)
       date_of_birth = extract_date_of_birth(certification)
       currently_medically_frail = extract_currently_medically_frail(certification)
+      dates_caretaking_infirm = extract_dates_caretaking_infirm(certification)
+      dependent_children_birth_dates = extract_dependent_children_birth_dates(certification)
 
       engine.set_facts(
-        pregnancy_due_or_parturition_date: pregnancy_due_or_parturition_date,
-        certification_date: certification_date,
-        race_ethnicity: race_ethnicity,
-        veteran_disability_rating: veteran_disability_rating,
-        was_in_foster_care: was_in_foster_care,
-        date_of_birth: date_of_birth,
-        currently_medically_frail: currently_medically_frail
+        pregnancy_due_or_parturition_date:,
+        certification_date:,
+        race_ethnicity:,
+        veteran_disability_rating:,
+        was_in_foster_care:,
+        date_of_birth:,
+        currently_medically_frail:,
+        dates_caretaking_infirm:,
+        dependent_children_birth_dates:
       )
 
       engine.evaluate(:eligible_for_exclusion)
@@ -104,6 +108,18 @@ class ExclusionDeterminationService
       return nil unless certification.member_data
 
       certification.member_data.currently_medically_frail
+    end
+
+    def extract_dates_caretaking_infirm(certification)
+      return nil unless certification.member_data
+
+      certification.member_data.dates_caretaking_infirm
+    end
+
+    def extract_dependent_children_birth_dates(certification)
+      return nil unless certification.member_data
+
+      certification.member_data.dependent_children_birth_dates
     end
   end
 end

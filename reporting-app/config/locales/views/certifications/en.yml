@@ -49,6 +49,7 @@ en:
       pregnancy_status: "Pregnancy Status"
       was_in_foster_care: "Was in Foster Care"
       currently_medically_frail: "Currently Medically Frail"
+      caretaker: "Caretaker"
       external_exception: "External exception"
       external_exception_options:
         inpatient_medical_care: "Receiving inpatient medical care"

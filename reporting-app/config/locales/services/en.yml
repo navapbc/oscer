@@ -8,6 +8,7 @@ en:
         american_indian_alaska_native_excluded: "American Indian or Alaska Native"
         former_foster_care_excluded: "Former foster care youth"
         medically_frail_excluded: "Medically frail"
+        caretaker_excluded: "Caretaker"
         veteran_disability_excluded: "Veteran with a disability"
         income_reported_compliant: "Income reported compliant"
         income_reported_insufficient: "Insufficient community engagement income"

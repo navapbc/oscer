@@ -72,6 +72,7 @@ module Demo
           md.pregnancy_due_or_parturition_date = certification_date if pregnancy_status
           md.was_in_foster_care = was_in_foster_care
           md.currently_medically_frail = currently_medically_frail
+          md.dates_caretaking_infirm = [ certification_date ] if caretaker
           md.race_ethnicity = race_ethnicity if race_ethnicity.present?
           md.va_icn = va_icn if va_icn.present?
           apply_external_exception(md, certification_requirements.months_that_can_be_certified)

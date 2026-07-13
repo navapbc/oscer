@@ -11,6 +11,9 @@ module Rules
     # Former foster youth are excluded until this age
     FORMER_FOSTER_CARE_AGE_CAP = 26
 
+    # Caretakers of a dependent child under this age are excluded (i.e. 13 or younger)
+    CARETAKER_CHILD_AGE_THRESHOLD = 14
+
     def is_pregnant(pregnancy_due_or_parturition_date, certification_date)
       return if pregnancy_due_or_parturition_date.nil?
       return if certification_date.nil?
@@ -48,8 +51,23 @@ module Rules
       currently_medically_frail
     end
 
-    def eligible_for_exclusion(is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail)
-      facts = [ is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail ]
+    # Caretakers are excluded if they are caretaking an infirm person during the certification month,
+    # or caring for a dependent child under CARETAKER_CHILD_AGE_THRESHOLD. Both windows are evaluated
+    # against the certification date at month granularity (consistent with the other date-based checks).
+    def caretaker(dates_caretaking_infirm, dependent_children_birth_dates, certification_date)
+      return if certification_date.nil?
+
+      as_of = certification_date.beginning_of_month
+      caretaking_infirm = Array(dates_caretaking_infirm).any? { |date| date.beginning_of_month == as_of }
+      caring_for_child = Array(dependent_children_birth_dates).any? do |date_of_birth|
+        as_of < date_of_birth + CARETAKER_CHILD_AGE_THRESHOLD.years
+      end
+
+      caretaking_infirm || caring_for_child
+    end
+
+    def eligible_for_exclusion(is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail, caretaker)
+      facts = [ is_pregnant, is_american_indian_or_alaska_native, is_veteran_with_disability, former_foster_care, medically_frail, caretaker ]
       return if facts.all?(&:nil?)
 
       facts.any?

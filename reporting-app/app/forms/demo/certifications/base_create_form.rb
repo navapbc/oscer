@@ -27,6 +27,7 @@ module Demo
       attribute :pregnancy_status, :boolean, default: false
       attribute :was_in_foster_care, :boolean, default: false
       attribute :currently_medically_frail, :boolean, default: false
+      attribute :caretaker, :boolean, default: false
       attribute :race_ethnicity, :enum, options: RACE_ETHNICITY_OPTIONS
 
       # TODO: add validation you can't set both certification_type and the other params?
