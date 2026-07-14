@@ -30,12 +30,14 @@ class ExclusionDeterminationService
       ruleset = Rules::ExclusionRuleset.new
       engine = Strata::RulesEngine.new(ruleset)
 
-      pregnancy_status = extract_pregnancy_status(certification)
+      pregnancy_due_or_parturition_date = extract_pregnancy_due_or_parturition_date(certification)
+      certification_date = certification.certification_requirements.certification_date
       race_ethnicity = extract_race_ethnicity(certification)
       veteran_disability_rating = extract_veteran_disability_status(certification)
 
       engine.set_facts(
-        pregnancy_status: pregnancy_status,
+        pregnancy_due_or_parturition_date: pregnancy_due_or_parturition_date,
+        certification_date: certification_date,
         race_ethnicity: race_ethnicity,
         veteran_disability_rating: veteran_disability_rating
       )
@@ -62,10 +64,10 @@ class ExclusionDeterminationService
       exclusion.fetch(:priority)
     end
 
-    def extract_pregnancy_status(certification)
+    def extract_pregnancy_due_or_parturition_date(certification)
       return nil unless certification.member_data
 
-      certification.member_data.pregnancy_status
+      certification.member_data.pregnancy_due_or_parturition_date
     end
 
     def extract_race_ethnicity(certification)

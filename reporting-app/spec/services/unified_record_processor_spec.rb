@@ -47,6 +47,29 @@ RSpec.describe UnifiedRecordProcessor do
         expect(certification.member_data.account_email).to eq("test@example.com")
       end
 
+      context "with pregnancy_status" do
+        [ "yes", "YES", " Yes ", "true", "TRUE" ].each do |flag|
+          it "records the certification date as the parturition date when pregnancy_status is #{flag.inspect}" do
+            allow(Strata::EventManager).to receive(:publish)
+
+            certification = processor.process(record.merge("pregnancy_status" => flag))
+
+            cert_date = certification.certification_requirements.certification_date
+            expect(certification.member_data.pregnancy_due_or_parturition_date).to eq(cert_date)
+          end
+        end
+
+        [ "no", "false", "FALSE", "" ].each do |flag|
+          it "leaves the parturition date unset when pregnancy_status is #{flag.inspect}" do
+            allow(Strata::EventManager).to receive(:publish)
+
+            certification = processor.process(record.merge("pregnancy_status" => flag))
+
+            expect(certification.member_data.pregnancy_due_or_parturition_date).to be_nil
+          end
+        end
+      end
+
       it "builds certification_requirements from record fields" do
         allow(Strata::EventManager).to receive(:publish)
 

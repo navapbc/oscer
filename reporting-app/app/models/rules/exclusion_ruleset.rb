@@ -5,10 +5,15 @@ module Rules
   class ExclusionRuleset < Strata::Rules::MedicaidRuleset
     AMERICAN_INDIAN_OR_ALASKA_NATIVE = [ "american_indian_or_alaska_native", "american_indian", "alaska_native" ].freeze
 
-    def is_pregnant(pregnancy_status)
-      return if pregnancy_status.nil?
+    # Pregnancy excludes from the due/parturition date through the following 12 months
+    POSTPARTUM_EXCLUSION_MONTHS = 12
 
-      pregnancy_status
+    def is_pregnant(pregnancy_due_or_parturition_date, certification_date)
+      return if pregnancy_due_or_parturition_date.nil?
+      return if certification_date.nil?
+
+      exclusion_end = pregnancy_due_or_parturition_date + POSTPARTUM_EXCLUSION_MONTHS.months
+      certification_date.beginning_of_month <= exclusion_end
     end
 
     def is_american_indian_or_alaska_native(race_ethnicity)

@@ -116,6 +116,8 @@ class UnifiedRecordProcessor
 
   # Build member_data hash from record fields
   def build_member_data(record)
+    parturition_date = record["certification_date"] if pregnancy_flag?(record["pregnancy_status"])
+
     {
       "name" => {
         "first" => record["first_name"],
@@ -130,7 +132,7 @@ class UnifiedRecordProcessor
       "county" => record["county"],
       "zip" => record["zip_code"],
       "date_of_birth" => record["date_of_birth"],
-      "pregnancy_status" => record["pregnancy_status"],
+      "pregnancy_due_or_parturition_date" => parturition_date,
       "race_ethnicity" => record["race_ethnicity"],
       "work_hours" => record["work_hours"],
       "other_income_sources" => record["other_income_sources"]
@@ -149,5 +151,12 @@ class UnifiedRecordProcessor
     }.compact_blank
 
     @certification_service.certification_requirements_from_input(requirement_input)
+  end
+
+  # Accepted (case-insensitive) spellings of a truthy pregnancy_status flag in an uploaded CSV.
+  PREGNANCY_TRUE_VALUES = %w[yes true].freeze
+
+  def pregnancy_flag?(value)
+    PREGNANCY_TRUE_VALUES.include?(value.to_s.strip.downcase)
   end
 end

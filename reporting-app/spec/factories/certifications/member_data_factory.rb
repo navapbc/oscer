@@ -31,7 +31,6 @@ FactoryBot.define do
 
     trait :with_no_exemptions do
       date_of_birth { cert_date - rand(19..64).years } # random age between 19 and 64 years old (ineligible for age exemption)
-      pregnancy_status { false }
       race_ethnicity do
         (
           Demo::Certifications::BaseCreateForm::RACE_ETHNICITY_OPTIONS - [ "american_indian_or_alaska_native" ]

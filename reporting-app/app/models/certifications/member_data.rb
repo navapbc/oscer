@@ -70,11 +70,13 @@ class Certifications::MemberData < ValueObject
   attribute :contact, ContactData.to_type
   attribute :name, ActiveModel::Type::Json.new(Strata::Name)
   attribute :date_of_birth, :date
-  attribute :race_ethnicity, :string
 
   attribute :payroll_accounts, :array, of: PayrollAccount.to_type
   attribute :activities, :array, of: Activity.to_type
-  attribute :pregnancy_status, :boolean, default: false
+
+  # Exclusion signals evaluated by ExclusionDeterminationService
+  attribute :pregnancy_due_or_parturition_date, :date
+  attribute :race_ethnicity, :string
 
   # External-exception signals evaluated by ExceptionDeterminationService.
   # Distinct from exclusion/exemption signals above; see ExternalException.
