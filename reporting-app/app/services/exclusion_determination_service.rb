@@ -30,18 +30,18 @@ class ExclusionDeterminationService
       ruleset = Rules::ExclusionRuleset.new
       engine = Strata::RulesEngine.new(ruleset)
 
-      pregnancy_due_or_parturition_date = extract_pregnancy_due_or_parturition_date(certification)
+      pregnancy_due_or_parturition_date = extract_attribute(certification, :pregnancy_due_or_parturition_date)
       certification_date = certification.certification_requirements.certification_date
-      race_ethnicity = extract_race_ethnicity(certification)
-      veteran_with_disability = extract_veteran_with_disability(certification)
-      was_in_foster_care = extract_was_in_foster_care(certification)
-      date_of_birth = extract_date_of_birth(certification)
-      currently_medically_frail = extract_currently_medically_frail(certification)
-      dates_caretaking_infirm = extract_dates_caretaking_infirm(certification)
-      dependent_children_birth_dates = extract_dependent_children_birth_dates(certification)
-      meeting_tanf_or_snap_work = extract_meeting_tanf_or_snap_work(certification)
-      dates_in_drug_treatment = extract_dates_in_drug_treatment(certification)
-      dates_incarcerated = extract_dates_incarcerated(certification)
+      race_ethnicity = extract_attribute(certification, :race_ethnicity)
+      veteran_with_disability = extract_attribute(certification, :veteran_with_disability)
+      was_in_foster_care = extract_attribute(certification, :was_in_foster_care)
+      date_of_birth = extract_attribute(certification, :date_of_birth)
+      currently_medically_frail = extract_attribute(certification, :currently_medically_frail)
+      dates_caretaking_infirm = extract_attribute(certification, :dates_caretaking_infirm)
+      dependent_children_birth_dates = extract_attribute(certification, :dependent_children_birth_dates)
+      meeting_tanf_or_snap_work = extract_attribute(certification, :meeting_tanf_or_snap_work)
+      dates_in_drug_treatment = extract_attribute(certification, :dates_in_drug_treatment)
+      dates_incarcerated = extract_attribute(certification, :dates_incarcerated)
 
       engine.set_facts(
         pregnancy_due_or_parturition_date:,
@@ -80,70 +80,10 @@ class ExclusionDeterminationService
       exclusion.fetch(:priority)
     end
 
-    def extract_pregnancy_due_or_parturition_date(certification)
+    def extract_attribute(certification, attribute)
       return nil unless certification.member_data
 
-      certification.member_data.pregnancy_due_or_parturition_date
-    end
-
-    def extract_race_ethnicity(certification)
-      return nil unless certification.member_data
-
-      certification.member_data.race_ethnicity
-    end
-
-    def extract_veteran_with_disability(certification)
-      return nil unless certification.member_data
-
-      certification.member_data.veteran_with_disability
-    end
-
-    def extract_was_in_foster_care(certification)
-      return nil unless certification.member_data
-
-      certification.member_data.was_in_foster_care
-    end
-
-    def extract_date_of_birth(certification)
-      return nil unless certification.member_data
-
-      certification.member_data.date_of_birth
-    end
-
-    def extract_currently_medically_frail(certification)
-      return nil unless certification.member_data
-
-      certification.member_data.currently_medically_frail
-    end
-
-    def extract_dates_caretaking_infirm(certification)
-      return nil unless certification.member_data
-
-      certification.member_data.dates_caretaking_infirm
-    end
-
-    def extract_dependent_children_birth_dates(certification)
-      return nil unless certification.member_data
-
-      certification.member_data.dependent_children_birth_dates
-    end
-
-    def extract_meeting_tanf_or_snap_work(certification)
-      return nil unless certification.member_data
-
-      certification.member_data.meeting_tanf_or_snap_work
-    end
-
-    def extract_dates_in_drug_treatment(certification)
-      return nil unless certification.member_data
-
-      certification.member_data.dates_in_drug_treatment
-    end
-
-    def extract_dates_incarcerated(certification)
-      return nil unless certification.member_data
-
-      certification.member_data.dates_incarcerated
+      certification.member_data.send(attribute)
     end
   end
 end
