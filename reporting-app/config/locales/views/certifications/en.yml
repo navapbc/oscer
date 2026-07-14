@@ -45,7 +45,15 @@ en:
       certification_type_options:
         new_application: "New application"
         recertification: "Recertification"
+      exclusions_heading: "Exclusions"
       pregnancy_status: "Pregnancy Status"
+      was_in_foster_care: "Was in Foster Care"
+      currently_medically_frail: "Currently Medically Frail"
+      veteran_with_disability: "Veteran with a Disability"
+      caretaker: "Caretaker"
+      tanf_snap_work: "Meets SNAP/TANF Work Requirement"
+      drug_treatment: "In Drug/Alcohol Treatment"
+      inmate: "Incarcerated"
       external_exception: "External exception"
       external_exception_options:
         inpatient_medical_care: "Receiving inpatient medical care"

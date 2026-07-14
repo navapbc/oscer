@@ -27,7 +27,7 @@ SimpleCov.start 'rails' do
   group "Mailers", "app/mailers"
   group "Components", "app/components"
   group "Business Processes", "app/business_processes"
-end
+end unless ENV['NO_COVERAGE']
 
 require 'spec_helper'
 ENV['RAILS_ENV'] = 'test'

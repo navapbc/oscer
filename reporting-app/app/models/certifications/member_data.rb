@@ -77,6 +77,14 @@ class Certifications::MemberData < ValueObject
   # Exclusion signals evaluated by ExclusionDeterminationService
   attribute :pregnancy_due_or_parturition_date, :date
   attribute :race_ethnicity, :string
+  attribute :was_in_foster_care, :boolean, default: false
+  attribute :currently_medically_frail, :boolean, default: false
+  attribute :veteran_with_disability, :boolean, default: false
+  attribute :dates_caretaking_infirm, :array, of: ActiveModel::Type::Date.new
+  attribute :dependent_children_birth_dates, :array, of: ActiveModel::Type::Date.new
+  attribute :meeting_tanf_or_snap_work, :boolean, default: false
+  attribute :dates_in_drug_treatment, :array, of: ActiveModel::Type::Date.new
+  attribute :dates_incarcerated, :array, of: ActiveModel::Type::Date.new
 
   # External-exception signals evaluated by ExceptionDeterminationService.
   # Distinct from exclusion/exemption signals above; see ExternalException.

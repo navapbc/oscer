@@ -30,11 +30,27 @@
   <%= f.select :number_of_months_to_certify, Demo::Certifications::CreateForm::NUMBER_OF_MONTHS_TO_CERTIFY_OPTIONS.map { |i| [ t("certifications.demo_create.number_of_months_to_certify_options.#{i}"), i ] }, {}, disabled: @form.locked_type_params? %>
   <%= f.select :due_period_days, Demo::Certifications::CreateForm::DUE_PERIOD_OPTIONS.map { |i| [ t("certifications.demo_create.due_period_options.#{i}"), i ] }, {}, disabled: @form.locked_type_params? %>
 
+  <h2><%= t("certifications.demo_create.exclusions_heading") %></h2>
+
   <%= f.check_box :pregnancy_status %>
 
-  <%= f.select :external_exception, @form.exception_options.map { |e| [ t("certifications.demo_create.external_exception_options.#{e}"), e ] }, { include_blank: true } %>
+  <%= f.check_box :was_in_foster_care %>
+
+  <%= f.check_box :currently_medically_frail %>
+
+  <%= f.check_box :veteran_with_disability %>
+
+  <%= f.check_box :caretaker %>
+
+  <%= f.check_box :tanf_snap_work %>
+
+  <%= f.check_box :drug_treatment %>
+
+  <%= f.check_box :inmate %>
 
   <%= f.select :race_ethnicity, Demo::Certifications::CreateForm::RACE_ETHNICITY_OPTIONS.map { |re| [ t("certifications.demo_create.race_ethnicity_options.#{re}"), re ] }, { include_blank: true } %>
+
+  <%= f.select :external_exception, @form.exception_options.map { |e| [ t("certifications.demo_create.external_exception_options.#{e}"), e ] }, { include_blank: true } %>
 
   <%= f.select :external_scenario, Demo::Certifications::CreateForm::EXTERNAL_SCENARIO_OPTIONS %>
 
