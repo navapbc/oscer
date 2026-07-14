@@ -6,21 +6,57 @@ RSpec.describe Rules::ExclusionRuleset do
   let(:ruleset) { described_class.new }
 
   describe '#is_pregnant' do
-    context 'when pregnancy_status is nil' do
+    let(:certification_date) { Date.new(2025, 7, 1) }
+
+    context 'when the due/parturition date is nil' do
       it 'returns nil' do
-        expect(ruleset.is_pregnant(nil)).to be_nil
+        expect(ruleset.is_pregnant(nil, certification_date)).to be_nil
       end
     end
 
-    context 'when pregnancy_status is true' do
+    context 'when the certification date is nil' do
+      it 'returns nil' do
+        expect(ruleset.is_pregnant(Date.new(2025, 6, 1), nil)).to be_nil
+      end
+    end
+
+    context 'when the due date is in the future (member is currently expecting)' do
       it 'returns true' do
-        expect(ruleset.is_pregnant(true)).to be true
+        expect(ruleset.is_pregnant(certification_date + 3.months, certification_date)).to be true
       end
     end
 
-    context 'when pregnancy_status is false' do
+    context 'when the parturition date is within the prior 12 months' do
+      it 'returns true' do
+        expect(ruleset.is_pregnant(certification_date - 6.months, certification_date)).to be true
+      end
+    end
+
+    context 'when the certification date is exactly 12 months after the parturition date (boundary)' do
+      it 'returns true' do
+        expect(ruleset.is_pregnant(certification_date - 12.months, certification_date)).to be true
+      end
+    end
+
+    context 'when the window ends the same month as the certification date but on an earlier day' do
+      it 'returns true' do
+        certification_date = Date.new(2025, 7, 20)
+        parturition_date = Date.new(2024, 7, 5)
+        expect(ruleset.is_pregnant(parturition_date, certification_date)).to be true
+      end
+    end
+
+    context 'when the window ends the month before the certification date' do
       it 'returns false' do
-        expect(ruleset.is_pregnant(false)).to be false
+        certification_date = Date.new(2025, 7, 20)
+        parturition_date = Date.new(2024, 6, 25)
+        expect(ruleset.is_pregnant(parturition_date, certification_date)).to be false
+      end
+    end
+
+    context 'when the parturition date is more than 12 months before the certification date' do
+      it 'returns false' do
+        expect(ruleset.is_pregnant(certification_date - 13.months, certification_date)).to be false
       end
     end
   end

@@ -51,8 +51,17 @@ RSpec.describe ExclusionDeterminationService do
         end
       end
 
-      context 'when the member is pregnant' do
-        let(:member_data) { build(:certification_member_data, pregnancy_status: true, cert_date: cert_date) }
+      context 'when the member is pregnant with a future due date (currently expecting)' do
+        let(:member_data) { build(:certification_member_data, pregnancy_due_or_parturition_date: cert_date + 3.months, cert_date:) }
+
+        it 'records the pregnancy reason code' do
+          service.determine(kase)
+          expect(recorded_exclusion.reasons).to eq([ "pregnancy_excluded" ])
+        end
+      end
+
+      context 'when the member is pregnant with a parturition date within the prior 12 months (postpartum)' do
+        let(:member_data) { build(:certification_member_data, pregnancy_due_or_parturition_date: cert_date - 6.months, cert_date:) }
 
         it 'records the pregnancy reason code' do
           service.determine(kase)
@@ -74,7 +83,7 @@ RSpec.describe ExclusionDeterminationService do
     context 'when multiple exclusions apply' do
       # Default priorities: is_american_indian_or_alaska_native (10) < is_veteran_with_disability (30) < is_pregnant (80).
       context 'when pregnant and a veteran with 100% disability' do
-        let(:member_data) { build(:certification_member_data, :with_icn, pregnancy_status: true, cert_date: cert_date) }
+        let(:member_data) { build(:certification_member_data, :with_icn, pregnancy_due_or_parturition_date: cert_date, cert_date:) }
         let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 100 } } } }
 
         it 'records only the higher-priority veteran-disability exclusion' do
@@ -85,7 +94,7 @@ RSpec.describe ExclusionDeterminationService do
 
       context 'when pregnant and American Indian or Alaska Native' do
         let(:member_data) do
-          build(:certification_member_data, pregnancy_status: true, race_ethnicity: "american_indian_or_alaska_native", cert_date: cert_date)
+          build(:certification_member_data, pregnancy_due_or_parturition_date: cert_date, race_ethnicity: "american_indian_or_alaska_native", cert_date:)
         end
 
         it 'records only the higher-priority AIAN exclusion' do
@@ -96,7 +105,7 @@ RSpec.describe ExclusionDeterminationService do
 
       context 'when all three exclusions apply' do
         let(:member_data) do
-          build(:certification_member_data, :with_icn, pregnancy_status: true, race_ethnicity: "american_indian_or_alaska_native", cert_date: cert_date)
+          build(:certification_member_data, :with_icn, pregnancy_due_or_parturition_date: cert_date, race_ethnicity: "american_indian_or_alaska_native", cert_date:)
         end
         let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 100 } } } }
 
@@ -120,7 +129,7 @@ RSpec.describe ExclusionDeterminationService do
         )
       end
 
-      let(:member_data) { build(:certification_member_data, :with_icn, pregnancy_status: true, cert_date: cert_date) }
+      let(:member_data) { build(:certification_member_data, :with_icn, pregnancy_due_or_parturition_date: cert_date, cert_date:) }
       let(:rating_data) { { "data" => { "attributes" => { "combined_disability_rating" => 100 } } } }
 
       it 'records the exclusion now ranked highest (pregnancy)' do
@@ -138,7 +147,7 @@ RSpec.describe ExclusionDeterminationService do
         )
       end
 
-      let(:member_data) { build(:certification_member_data, pregnancy_status: true, cert_date: cert_date) }
+      let(:member_data) { build(:certification_member_data, pregnancy_due_or_parturition_date: cert_date, cert_date:) }
 
       it 'raises a descriptive error naming the unbridged fact' do
         expect { service.determine(kase) }.to raise_error(KeyError, /is_pregnant/)
@@ -146,8 +155,18 @@ RSpec.describe ExclusionDeterminationService do
     end
 
     context 'when no exclusion applies' do
+      context 'when the parturition date is more than 12 months before the certification date' do
+        let(:member_data) { build(:certification_member_data, race_ethnicity: "white", pregnancy_due_or_parturition_date: cert_date - 13.months, cert_date:) }
+
+        it 'publishes DeterminedNotExcluded and records no exclusion' do
+          service.determine(kase)
+          expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExcluded', { case_id: kase.id, certification_id: kase.certification_id })
+          expect(recorded_exclusion).to be_nil
+        end
+      end
+
       context 'without any matching condition' do
-        let(:member_data) { build(:certification_member_data, race_ethnicity: "white", pregnancy_status: false, cert_date: cert_date) }
+        let(:member_data) { build(:certification_member_data, race_ethnicity: "white", cert_date:) }
 
         it 'publishes DeterminedNotExcluded and leaves the case open' do
           service.determine(kase)
@@ -188,7 +207,7 @@ RSpec.describe ExclusionDeterminationService do
 
     context 'when the member is outside the community-engagement age range' do
       context 'when under 19 with no other exclusion' do
-        let(:member_data) { build(:certification_member_data, date_of_birth: cert_date - 18.years, race_ethnicity: "white", pregnancy_status: false, cert_date: cert_date) }
+        let(:member_data) { build(:certification_member_data, date_of_birth: cert_date - 18.years, race_ethnicity: "white", cert_date:) }
 
         it 'publishes DeterminedNotExcluded and leaves the case open' do
           service.determine(kase)
@@ -198,7 +217,7 @@ RSpec.describe ExclusionDeterminationService do
       end
 
       context 'when 65 or older with no other exclusion' do
-        let(:member_data) { build(:certification_member_data, date_of_birth: cert_date - 65.years, race_ethnicity: "white", pregnancy_status: false, cert_date: cert_date) }
+        let(:member_data) { build(:certification_member_data, date_of_birth: cert_date - 65.years, race_ethnicity: "white", cert_date:) }
 
         it 'publishes DeterminedNotExcluded' do
           service.determine(kase)

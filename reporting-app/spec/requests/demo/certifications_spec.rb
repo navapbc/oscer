@@ -307,7 +307,7 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(cert.member_data.date_of_birth).to eq(Date.new(1990, 1, 15))
       end
 
-      it "creates a new Certification with pregnancy_status checkbox selected" do
+      it "writes the certification date to pregnancy_due_or_parturition_date when the pregnancy_status checkbox is selected" do
         create_attrs = valid_request_attributes.merge({ pregnancy_status: "1", external_scenario: "No data" })
 
         expect {
@@ -316,7 +316,7 @@ RSpec.describe "/demo/certifications", type: :request do
         }.to change(Certification, :count).by(1)
 
         cert = Certification.order(created_at: :desc).last
-        expect(cert.member_data.pregnancy_status).to be true
+        expect(cert.member_data.pregnancy_due_or_parturition_date).to eq(cert.certification_requirements.certification_date)
       end
 
       it "creates a new Certification with an external exception selected" do
