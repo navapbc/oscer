@@ -157,6 +157,18 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       }.to raise_error(described_class::ConfigurationError, /checks\.exclusion.*non-String/)
     end
 
+    it "raises when a check id is blank or whitespace-padded" do
+      expect {
+        described_class.transform("src" => source_attrs("checks" => { "exclusion" => [ " " ] }))
+      }.to raise_error(described_class::ConfigurationError, /checks\.exclusion.*blank or whitespace-padded/)
+    end
+
+    it "raises when 'checks' is missing" do
+      expect {
+        described_class.transform("src" => source_attrs.except("checks"))
+      }.to raise_error(described_class::ConfigurationError, /checks/)
+    end
+
     it "raises when an order field is not an Integer" do
       expect {
         described_class.transform("src" => source_attrs("exception_order" => "10"))
@@ -206,11 +218,42 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
     end
 
     it "accepts any adapter_class that subclasses Verification::DataSource" do
-      stub_const("SpecFixtureSource", Class.new(Verification::DataSource))
+      stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
+        def self.declared_outcomes
+          []
+        end
+      end)
       entries = described_class.transform(
         "src" => source_attrs("adapter_class" => "SpecFixtureSource", "checks" => {})
       )
       expect { described_class.validate_registry!(entries) }.not_to raise_error
+    end
+
+    it "raises when configured checks are not in the adapter's declared_outcomes" do
+      stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
+        def self.declared_outcomes
+          [ :is_veteran_with_disability ]
+        end
+      end)
+      entries = described_class.transform(
+        "src" => source_attrs(
+          "adapter_class" => "SpecFixtureSource",
+          "checks" => { "exclusion" => [ "is_veteran_with_disability", "is_pregnant" ] }
+        )
+      )
+      expect {
+        described_class.validate_registry!(entries)
+      }.to raise_error(described_class::ConfigurationError, /is_pregnant.*declared_outcomes/)
+    end
+
+    it "raises when adapter_class does not implement .declared_outcomes" do
+      stub_const("SpecFixtureSource", Class.new(Verification::DataSource))
+      entries = described_class.transform(
+        "src" => source_attrs("adapter_class" => "SpecFixtureSource", "checks" => {})
+      )
+      expect {
+        described_class.validate_registry!(entries)
+      }.to raise_error(described_class::ConfigurationError, /must implement \.declared_outcomes/)
     end
 
     it "raises when adapter_class does not constantize" do

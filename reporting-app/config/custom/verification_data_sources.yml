@@ -28,9 +28,14 @@
 #       exception_order: null                  # call order among exception sources (Integer or null)
 #       ce_order: null                         # call order among CE sources (Integer or null)
 #
+# The registry stores these order fields but does NOT pre-sort entries. Consumers
+# (orchestrator) must sort by exception_order / ce_order themselves (nil last /
+# after ordered sources) when building a call sequence.
+#
 # The loader validates at boot and raises a ConfigurationError naming the
 # offending entry for: a missing/blank required key; an adapter_class that does
-# not constantize (or is not a Verification::DataSource subclass); a declared
+# not constantize (or is not a Verification::DataSource subclass); configured
+# check ids absent from that adapter's .declared_outcomes; a declared
 # check id absent from its category registry; a non-Integer order; or two sources
 # sharing an exception_order / ce_order (call order must be unambiguous).
 #

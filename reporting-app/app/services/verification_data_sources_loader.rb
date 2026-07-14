@@ -24,8 +24,9 @@ require_relative "config_loading"
 #   * .transform performs pure structural validation (shapes, required keys,
 #     order types + distinctness) and needs no application constants, so it runs
 #     in the initializer body and is unit-testable in isolation.
-#   * .validate_registry! constantizes adapter_class and checks category ids
-#     against their registries. Both require autoloadable app constants (and the
+#   * .validate_registry! constantizes adapter_class, checks configured check ids
+#     against the adapter's .declared_outcomes, and checks category ids against
+#     their registries. These require autoloadable app constants (and the
 #     sibling exclusion/exception initializers to have run), so the initializer
 #     defers it to a to_prepare hook.
 #
@@ -142,8 +143,12 @@ module VerificationDataSourcesLoader
       raise ConfigurationError, "verification_data_sources.#{id}: checks.#{category} must be an Array of ids, got #{raw.class}"
     end
     raw.map do |check_id|
-      unless check_id.is_a?(String) && check_id.present?
+      unless check_id.is_a?(String)
         raise ConfigurationError, "verification_data_sources.#{id}: checks.#{category} contains a non-String id #{check_id.inspect}"
+      end
+      unless check_id.present? && check_id.strip == check_id
+        raise ConfigurationError,
+          "verification_data_sources.#{id}: checks.#{category} contains a blank or whitespace-padded id #{check_id.inspect}"
       end
       check_id.to_sym
     end
@@ -193,6 +198,30 @@ module VerificationDataSourcesLoader
       raise ConfigurationError,
         "verification_data_sources.#{entry[:id]}: adapter_class '#{entry[:adapter_class]}' must be a Verification::DataSource subclass"
     end
+    validate_checks_against_declared_outcomes!(entry, klass)
+  end
+
+  # Configured check ids must be a subset of the adapter's {.declared_outcomes}
+  # (see Verification::DataSource — ticket C / OSCER-756).
+  def validate_checks_against_declared_outcomes!(entry, klass)
+    declared = begin
+      klass.declared_outcomes
+    rescue NotImplementedError
+      raise ConfigurationError,
+        "verification_data_sources.#{entry[:id]}: adapter_class '#{entry[:adapter_class]}' must implement .declared_outcomes"
+    end
+    unless declared.is_a?(Array) && declared.all? { |outcome| outcome.is_a?(Symbol) }
+      raise ConfigurationError,
+        "verification_data_sources.#{entry[:id]}: '#{entry[:adapter_class]}.declared_outcomes' must return Array<Symbol>"
+    end
+
+    configured = entry[:checks].values.flatten
+    unknown = configured - declared
+    return if unknown.empty?
+
+    raise ConfigurationError,
+      "verification_data_sources.#{entry[:id]}: checks #{unknown.map(&:to_s)} are not in " \
+      "#{entry[:adapter_class]}.declared_outcomes (#{declared.map(&:to_s).sort})"
   end
 
   def validate_check_ids!(entry)
