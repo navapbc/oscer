@@ -3,12 +3,12 @@
 # SimpleCov needs to be required before any of your application code is loaded.
 require 'simplecov'
 SimpleCov.start 'rails' do
-  add_filter 'app/previews/'
-  add_filter 'app/channels/'
-  add_filter 'config/'
-  add_filter 'db/'
-  add_filter 'lib/'
-  add_filter 'spec/'
+  skip 'app/previews/'
+  skip 'app/channels/'
+  skip 'config/'
+  skip 'db/'
+  skip 'lib/'
+  skip 'spec/'
 
   enable_coverage :branch
 
@@ -16,17 +16,17 @@ SimpleCov.start 'rails' do
   # Current line coverage is ~92.44%
   minimum_coverage line: 92, branch: 70
 
-  add_group "Models", "app/models"
-  add_group "Controllers", "app/controllers"
-  add_group "Services", "app/services"
-  add_group "Adapters", "app/adapters"
-  add_group "Forms", "app/forms"
-  add_group "Policies", "app/policies"
-  add_group "Helpers", "app/helpers"
-  add_group "Jobs", "app/jobs"
-  add_group "Mailers", "app/mailers"
-  add_group "Components", "app/components"
-  add_group "Business Processes", "app/business_processes"
+  group "Models", "app/models"
+  group "Controllers", "app/controllers"
+  group "Services", "app/services"
+  group "Adapters", "app/adapters"
+  group "Forms", "app/forms"
+  group "Policies", "app/policies"
+  group "Helpers", "app/helpers"
+  group "Jobs", "app/jobs"
+  group "Mailers", "app/mailers"
+  group "Components", "app/components"
+  group "Business Processes", "app/business_processes"
 end
 
 require 'spec_helper'

@@ -21,7 +21,7 @@ gem "sprockets-rails"
 gem "pg", "~> 1.6"
 
 # Pagination for index pages [https://github.com/ddnexus/pagy]
-gem "pagy", "~> 43.5"
+gem "pagy", "~> 43.6"
 
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
@@ -71,7 +71,7 @@ gem "ruby-vips", "~> 2.0"
 gem "image_processing", "~> 2.0"
 
 # Authentication and Authorization
-gem "aws-sdk-cognitoidentityprovider", "~> 1.146"
+gem "aws-sdk-cognitoidentityprovider", "~> 1.147"
 gem "devise", "~> 5.0"
 gem "jwt"
 gem "pundit"
