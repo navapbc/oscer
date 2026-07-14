@@ -275,8 +275,18 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
     end
 
     it "raises when an exclusion check id is not in Exclusion.valid_values" do
+      # Fixture declares the outcome so we exercise category membership, not
+      # the earlier declared_outcomes subset guard.
+      stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
+        def self.declared_outcomes
+          [ :not_a_real_exclusion ]
+        end
+      end)
       entries = described_class.transform(
-        "src" => source_attrs("checks" => { "exclusion" => [ "not_a_real_exclusion" ] })
+        "src" => source_attrs(
+          "adapter_class" => "SpecFixtureSource",
+          "checks" => { "exclusion" => [ "not_a_real_exclusion" ] }
+        )
       )
       expect {
         described_class.validate_registry!(entries)
@@ -284,8 +294,16 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
     end
 
     it "raises when an exception check id is not in the ExternalException registry" do
+      stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
+        def self.declared_outcomes
+          [ :not_a_real_exception ]
+        end
+      end)
       entries = described_class.transform(
-        "src" => source_attrs("checks" => { "exception" => [ "not_a_real_exception" ] })
+        "src" => source_attrs(
+          "adapter_class" => "SpecFixtureSource",
+          "checks" => { "exception" => [ "not_a_real_exception" ] }
+        )
       )
       expect {
         described_class.validate_registry!(entries)
@@ -293,15 +311,30 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
     end
 
     it "accepts a real exception check id from the ExternalException registry" do
+      exception_id = ExternalException.all.first[:id]
+      stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
+        define_singleton_method(:declared_outcomes) { [ exception_id ] }
+      end)
       entries = described_class.transform(
-        "src" => source_attrs("checks" => { "exception" => [ ExternalException.all.first[:id].to_s ] })
+        "src" => source_attrs(
+          "adapter_class" => "SpecFixtureSource",
+          "checks" => { "exception" => [ exception_id.to_s ] }
+        )
       )
       expect { described_class.validate_registry!(entries) }.not_to raise_error
     end
 
     it "does not membership-check CE ids (no CE registry yet)" do
+      stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
+        def self.declared_outcomes
+          [ :some_future_ce_id ]
+        end
+      end)
       entries = described_class.transform(
-        "src" => source_attrs("checks" => { "ce" => [ "some_future_ce_id" ] })
+        "src" => source_attrs(
+          "adapter_class" => "SpecFixtureSource",
+          "checks" => { "ce" => [ "some_future_ce_id" ] }
+        )
       )
       expect { described_class.validate_registry!(entries) }.not_to raise_error
     end
