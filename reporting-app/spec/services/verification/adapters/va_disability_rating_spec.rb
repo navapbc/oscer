@@ -10,7 +10,7 @@ RSpec.describe Verification::Adapters::VaDisabilityRating do
   let(:access_token) { "test-token" }
   let(:certification) { build(:certification, member_data: build(:certification_member_data, va_icn: icn)) }
 
-  def rating_response(combined_rating)
+  let(:rating_response) do
     {
       "data" => {
         "id" => "12303",
@@ -40,11 +40,11 @@ RSpec.describe Verification::Adapters::VaDisabilityRating do
 
     before do
       allow(token_manager).to receive(:get_access_token).with(icn: icn).and_return(access_token)
-      allow(adapter).to receive(:get_disability_rating).with(access_token: access_token).and_return(rating_data)
+      allow(adapter).to receive(:get_disability_rating).with(access_token: access_token).and_return(rating_response)
     end
 
     context "when the combined rating is 100 (qualifying)" do
-      let(:rating_data) { rating_response(100) }
+      let(:combined_rating) { 100 }
 
       it_behaves_like "a successful verification result"
 
@@ -63,7 +63,7 @@ RSpec.describe Verification::Adapters::VaDisabilityRating do
     end
 
     context "when the combined rating is below 100 (no match)" do
-      let(:rating_data) { rating_response(70) }
+      let(:combined_rating) { 70 }
 
       it_behaves_like "a successful verification result"
 
@@ -77,7 +77,7 @@ RSpec.describe Verification::Adapters::VaDisabilityRating do
     end
 
     context "when the VA payload has no combined rating" do
-      let(:rating_data) { { "data" => { "id" => "12303", "attributes" => {} } } }
+      let(:rating_response) { { "data" => { "id" => "12303", "attributes" => {} } } }
 
       it_behaves_like "a successful verification result"
 
@@ -87,7 +87,7 @@ RSpec.describe Verification::Adapters::VaDisabilityRating do
     end
 
     context "when the combined rating is a string (coercion parity with ExclusionRuleset)" do
-      let(:rating_data) { rating_response("100") }
+      let(:combined_rating) { "100" }
 
       it_behaves_like "a successful verification result"
 
