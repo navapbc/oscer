@@ -275,7 +275,7 @@ GEM
       actionview (>= 7.0.0)
       activesupport (>= 7.0.0)
     jmespath (1.6.2)
-    json (2.20.0)
+    json (2.21.1)
     json-jwt (1.17.0)
       activesupport (>= 4.2)
       aes_key_wrap
@@ -407,7 +407,7 @@ GEM
       webfinger (~> 2.0)
     orm_adapter (0.5.0)
     ostruct (0.6.3)
-    pagy (43.5.6)
+    pagy (43.6.0)
       json
       uri
       yaml
@@ -722,7 +722,7 @@ DEPENDENCIES
   omniauth-rails_csrf_protection
   omniauth_openid_connect
   openapi_contracts
-  pagy (~> 43.5)
+  pagy (~> 43.6)
   pg (~> 1.6)
   pg-aws_rds_iam (~> 0.8.0)
   puma (>= 5.0)
