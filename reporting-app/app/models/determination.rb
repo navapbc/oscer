@@ -86,7 +86,7 @@ class Determination < Strata::Determination
     # Mandatory exceptions migrated from the exclusion ruleset carry the exclusion's reason code with
     # "excluded" replaced by "excepted" (e.g. pregnancy_excluded -> pregnancy_excepted).
     was_pregnant: "pregnancy_excepted",
-    was_former_foster_care: "former_foster_care_excepted",
+    was_former_foster_care: "was_former_foster_care",
     was_caretaker: "caretaker_excepted",
     was_in_drug_treatment: "drug_treatment_excepted",
     was_inmate: "inmate_excepted",

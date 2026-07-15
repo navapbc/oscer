@@ -203,7 +203,7 @@ RSpec.describe ExceptionDeterminationService do
         let(:was_in_foster_care) { true }
         let(:date_of_birth) { cert_date - (25.years + 2.months) } # ~25 -> under 26
 
-        it_behaves_like 'an applied external exception', 'former_foster_care_excepted'
+        it_behaves_like 'an applied external exception', 'was_former_foster_care'
       end
 
       context 'when a former foster youth is at/over the age cap in every certifiable month' do
@@ -218,7 +218,7 @@ RSpec.describe ExceptionDeterminationService do
         # 26th birthday is the 16th of the earliest certifiable month; still under 26 at its start
         let(:date_of_birth) { cert_date - 26.years - 3.months + 15.days }
 
-        it_behaves_like 'an applied external exception', 'former_foster_care_excepted'
+        it_behaves_like 'an applied external exception', 'was_former_foster_care'
       end
 
       context 'when a former foster youth turns 26 on the first of the earliest certifiable month' do

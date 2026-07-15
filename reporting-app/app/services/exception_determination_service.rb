@@ -88,7 +88,7 @@ class ExceptionDeterminationService
       earliest_month = certifiable_months.sort.first
       return unless earliest_month < age_cap_date
 
-      Determination::REASON_CODE_MAPPING.fetch(:former_foster_care_excepted)
+      Determination::REASON_CODE_MAPPING.fetch(:was_former_foster_care)
     end
 
     # Migrated from the caretaker exclusion: caretaking an infirm person during a certifiable month
