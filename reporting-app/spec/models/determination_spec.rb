@@ -46,6 +46,11 @@ RSpec.describe Determination, type: :model do
           veteran_disability_excluded
           denial_response_convincing
           denial_response_not_convincing
+          pregnancy_excepted
+          former_foster_care_excepted
+          caretaker_excepted
+          drug_treatment_excepted
+          inmate_excepted
           age_under_19_excepted
           inpatient_medical_care_excepted
           declared_emergency_county_excepted
