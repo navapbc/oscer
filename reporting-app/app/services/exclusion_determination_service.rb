@@ -30,16 +30,19 @@ class ExclusionDeterminationService
       ruleset = Rules::ExclusionRuleset.new
       engine = Strata::RulesEngine.new(ruleset)
 
-      pregnancy_due_or_parturition_date = extract_pregnancy_due_or_parturition_date(certification)
-      certification_date = certification.certification_requirements.certification_date
-      race_ethnicity = extract_race_ethnicity(certification)
-      veteran_disability_rating = extract_veteran_disability_status(certification)
-
       engine.set_facts(
-        pregnancy_due_or_parturition_date: pregnancy_due_or_parturition_date,
-        certification_date: certification_date,
-        race_ethnicity: race_ethnicity,
-        veteran_disability_rating: veteran_disability_rating
+        pregnancy_due_or_parturition_date: extract_attribute(certification, :pregnancy_due_or_parturition_date),
+        certification_date: certification.certification_requirements.certification_date,
+        race_ethnicity: extract_attribute(certification, :race_ethnicity),
+        veteran_with_disability: extract_attribute(certification, :veteran_with_disability),
+        was_in_foster_care: extract_attribute(certification, :was_in_foster_care),
+        date_of_birth: extract_attribute(certification, :date_of_birth),
+        currently_medically_frail: extract_attribute(certification, :currently_medically_frail),
+        dates_caretaking_infirm: extract_attribute(certification, :dates_caretaking_infirm),
+        dependent_children_birth_dates: extract_attribute(certification, :dependent_children_birth_dates),
+        meeting_tanf_or_snap_work: extract_attribute(certification, :meeting_tanf_or_snap_work),
+        dates_in_drug_treatment: extract_attribute(certification, :dates_in_drug_treatment),
+        dates_incarcerated: extract_attribute(certification, :dates_incarcerated)
       )
 
       engine.evaluate(:eligible_for_exclusion)
@@ -64,22 +67,10 @@ class ExclusionDeterminationService
       exclusion.fetch(:priority)
     end
 
-    def extract_pregnancy_due_or_parturition_date(certification)
+    def extract_attribute(certification, attribute)
       return nil unless certification.member_data
 
-      certification.member_data.pregnancy_due_or_parturition_date
-    end
-
-    def extract_race_ethnicity(certification)
-      return nil unless certification.member_data
-
-      certification.member_data.race_ethnicity
-    end
-
-    def extract_veteran_disability_status(certification)
-      return nil unless certification.member_data&.va_icn.present?
-
-      VeteranDisabilityService.new.get_disability_rating(icn: certification.member_data.va_icn)
+      certification.member_data.send(attribute)
     end
   end
 end

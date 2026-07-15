@@ -70,6 +70,13 @@ module Demo
           md.name = member_name if member_name.present?
           md.date_of_birth = date_of_birth if date_of_birth.present?
           md.pregnancy_due_or_parturition_date = certification_date if pregnancy_status
+          md.was_in_foster_care = was_in_foster_care
+          md.currently_medically_frail = currently_medically_frail
+          md.veteran_with_disability = veteran_with_disability
+          md.dates_caretaking_infirm = [ certification_date ] if caretaker
+          md.meeting_tanf_or_snap_work = tanf_snap_work
+          md.dates_in_drug_treatment = [ certification_date ] if drug_treatment
+          md.dates_incarcerated = [ certification_date ] if inmate
           md.race_ethnicity = race_ethnicity if race_ethnicity.present?
           md.va_icn = va_icn if va_icn.present?
           apply_external_exception(md, certification_requirements.months_that_can_be_certified)
