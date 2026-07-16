@@ -11,8 +11,7 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
     {
       "enabled" => true,
       "adapter_class" => "Verification::Adapters::VaDisabilityRating",
-      "exception_order" => nil,
-      "ce_order" => nil
+      "order" => nil
     }.merge(overrides)
   end
 
@@ -86,8 +85,7 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       expect(entry[:enabled]).to be(true)
       expect(entry[:adapter_class]).to eq("Verification::Adapters::VaDisabilityRating")
       expect(entry).not_to have_key(:checks)
-      expect(entry[:exception_order]).to be_nil
-      expect(entry[:ce_order]).to be_nil
+      expect(entry[:order]).to be_nil
     end
 
     it "raises naming the id when an entry value is not a Hash" do
@@ -130,8 +128,8 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
 
     it "raises when an order field is not an Integer" do
       expect {
-        described_class.transform("src" => source_attrs("exception_order" => "10"))
-      }.to raise_error(described_class::ConfigurationError, /exception_order.*Integer/)
+        described_class.transform("src" => source_attrs("order" => "10"))
+      }.to raise_error(described_class::ConfigurationError, /order.*Integer/)
     end
 
     it "rejects an 'exclusion_order' key (owned by Exclusion.priority_order)" do
@@ -140,31 +138,27 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       }.to raise_error(described_class::ConfigurationError, /exclusion_order.*not configurable/)
     end
 
-    it "raises when two sources share an exception_order" do
-      merged = {
-        "a" => source_attrs("exception_order" => 10),
-        "b" => source_attrs("exception_order" => 10)
-      }
+    it "rejects category-specific order fields" do
       expect {
-        described_class.transform(merged)
-      }.to raise_error(described_class::ConfigurationError, /duplicate exception_order/)
+        described_class.transform("src" => source_attrs("exception_order" => 10, "ce_order" => 20))
+      }.to raise_error(described_class::ConfigurationError, /exception_order.*ce_order.*unified 'order'/)
     end
 
-    it "raises when two sources share a ce_order" do
+    it "raises when two sources share an order" do
       merged = {
-        "a" => source_attrs("ce_order" => 5),
-        "b" => source_attrs("ce_order" => 5)
+        "a" => source_attrs("order" => 10),
+        "b" => source_attrs("order" => 10)
       }
       expect {
         described_class.transform(merged)
-      }.to raise_error(described_class::ConfigurationError, /duplicate ce_order/)
+      }.to raise_error(described_class::ConfigurationError, /duplicate order/)
     end
 
     it "allows multiple sources with distinct (and nil) order values" do
       merged = {
-        "a" => source_attrs("exception_order" => 10),
-        "b" => source_attrs("exception_order" => 20),
-        "c" => source_attrs("exception_order" => nil)
+        "a" => source_attrs("order" => 10),
+        "b" => source_attrs("order" => 20),
+        "c" => source_attrs("order" => nil)
       }
       expect { described_class.transform(merged) }.not_to raise_error
     end
@@ -281,34 +275,15 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       expect { described_class.validate_registry!(entries) }.not_to raise_error
     end
 
-    it "raises when exception_order is set but the adapter emits no exception outcome" do
-      # VA declares only an exclusion outcome, so an exception_order is dead config.
-      entries = described_class.transform(
-        "va_disability_rating" => source_attrs("exception_order" => 10)
-      )
-      expect {
-        described_class.validate_registry!(entries)
-      }.to raise_error(described_class::ConfigurationError, /exception_order.*no exception outcome/)
-    end
-
-    it "accepts exception_order when the adapter emits an exception outcome" do
+    it "accepts order for a source with exception and exclusion outcomes" do
       exception_id = ExternalException.all.first[:id]
       stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
-        define_singleton_method(:declared_outcomes) { [ exception_id ] }
+        define_singleton_method(:declared_outcomes) { [ exception_id, :is_veteran_with_disability ] }
       end)
       entries = described_class.transform(
-        "src" => source_attrs("adapter_class" => "SpecFixtureSource", "exception_order" => 10)
+        "src" => source_attrs("adapter_class" => "SpecFixtureSource", "order" => 10)
       )
       expect { described_class.validate_registry!(entries) }.not_to raise_error
-    end
-
-    it "raises when ce_order is set (no adapter can emit a CE outcome yet)" do
-      entries = described_class.transform(
-        "va_disability_rating" => source_attrs("ce_order" => 5)
-      )
-      expect {
-        described_class.validate_registry!(entries)
-      }.to raise_error(described_class::ConfigurationError, /ce_order.*no ce outcome/)
     end
 
     it "validates even sources that are disabled" do

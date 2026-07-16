@@ -12,9 +12,11 @@ require_relative "config_loading"
 # validation confirms those outcomes exist in the Exclusion / ExternalException
 # registries (CE membership lands with a CE registry later).
 #
-# Call order among *exception* and *CE* sources is configured here via the
-# per-source exception_order / ce_order integers. Exclusion call/selection order
-# is NOT configured here: Exclusion.priority_order (config/custom/exclusion_types.yml)
+# Call order among verification sources is configured here via the per-source
+# order integer. Exception and community-engagement sources may interleave in
+# the same business process, so there is one source call order rather than
+# separate category-specific orders. Exclusion call/selection order is NOT
+# configured here: Exclusion.priority_order (config/custom/exclusion_types.yml)
 # owns it, so an exclusion_order key on an entry is rejected at boot.
 #
 # Validation is split in two so the initializer body stays boot-safe:
@@ -23,11 +25,9 @@ require_relative "config_loading"
 #     order types + distinctness) and needs no application constants, so it runs
 #     in the initializer body and is unit-testable in isolation.
 #   * .validate_registry! constantizes adapter_class, requires .declared_outcomes,
-#     checks each outcome against the known registries, and confirms any
-#     exception_order / ce_order is set only on a source that actually emits that
-#     category. That requires autoloadable app constants (and the sibling
-#     exclusion/exception initializers to have run), so the initializer defers it
-#     to a to_prepare hook.
+#     and checks each outcome against the known registries. That requires
+#     autoloadable app constants (and the sibling exclusion/exception
+#     initializers to have run), so the initializer defers it to a to_prepare hook.
 #
 # Mirrors ExclusionTypesLoader / ExemptionTypesLoader; the YAML load/parse/error
 # plumbing lives in the shared ConfigLoading module (extend below).
@@ -48,8 +48,7 @@ module VerificationDataSourcesLoader
     "va_disability_rating" => {
       "enabled" => true,
       "adapter_class" => "Verification::Adapters::VaDisabilityRating",
-      "exception_order" => nil,
-      "ce_order" => nil
+      "order" => nil
     }
   }.freeze
 
@@ -83,7 +82,6 @@ module VerificationDataSourcesLoader
       klass = validate_adapter_class!(entry)
       outcomes = fetch_declared_outcomes!(entry, klass)
       validate_outcome_ids!(entry, outcomes, registries)
-      validate_order_categories!(entry, outcomes, registries)
     end
   end
 
@@ -94,14 +92,14 @@ module VerificationDataSourcesLoader
       raise ConfigurationError, "verification_data_sources.#{id}: expected Hash, got #{attrs.class}"
     end
     reject_exclusion_order!(id, attrs)
+    reject_category_order!(id, attrs)
     reject_checks_key!(id, attrs)
 
     {
       id: id.to_sym,
       enabled: fetch_enabled(id, attrs),
       adapter_class: fetch_adapter_class(id, attrs),
-      exception_order: transform_order(id, "exception_order", attrs),
-      ce_order: transform_order(id, "ce_order", attrs)
+      order: transform_order(id, "order", attrs)
     }
   end
 
@@ -144,6 +142,17 @@ module VerificationDataSourcesLoader
       "exclusion order is owned by Exclusion.priority_order (config/custom/exclusion_types.yml)"
   end
 
+  # Exception and CE verification happen in one process and may interleave, so
+  # source call order is one shared `order` field.
+  def reject_category_order!(id, attrs)
+    invalid_fields = %w[exception_order ce_order].select { |field| attrs.key?(field) }
+    return if invalid_fields.empty?
+
+    raise ConfigurationError,
+      "verification_data_sources.#{id}: #{invalid_fields.map { |field| "'#{field}'" }.join(', ')} " \
+      "not configurable here; use the unified 'order' field for source call order"
+  end
+
   # Outcomes are owned by the adapter's {.declared_outcomes}, not YAML. Reject a
   # leftover `checks` key so deployers get a clear pointer rather than silent ignore.
   def reject_checks_key!(id, attrs)
@@ -156,13 +165,12 @@ module VerificationDataSourcesLoader
   # A shared order value would make call order among sources depend on an unstable
   # sort, so reject duplicates at boot (mirrors ExclusionTypesLoader's priority guard).
   def validate_order_distinctness!(entries)
-    %i[exception_order ce_order].each do |field|
-      values = entries.map { |e| e[field] }.compact
-      duplicates = values.tally.select { |_value, count| count > 1 }.keys.sort
-      next if duplicates.empty?
-      raise ConfigurationError,
-        "verification_data_sources: duplicate #{field} values #{duplicates}; each source's #{field} must be distinct"
-    end
+    values = entries.map { |entry| entry[:order] }.compact
+    duplicates = values.tally.select { |_value, count| count > 1 }.keys.sort
+    return if duplicates.empty?
+
+    raise ConfigurationError,
+      "verification_data_sources: duplicate order values #{duplicates}; each source's order must be distinct"
   end
 
   # ---- registry-dependent (to_prepare) --------------------------------------
@@ -196,26 +204,6 @@ module VerificationDataSourcesLoader
         "verification_data_sources.#{entry[:id]}: enabled source must declare at least one outcome via .declared_outcomes"
     end
     declared
-  end
-
-  # A per-source exception_order / ce_order only means something if the source
-  # actually emits an outcome in that category; otherwise the order value is dead
-  # config that silently does nothing. Reject that mismatch so a misplaced order
-  # field fails loudly at boot.
-  #
-  # CE has no registry yet, so no outcome classifies as :ce — a non-nil ce_order
-  # therefore always trips this check today. That is intentional: CE call
-  # ordering only becomes configurable once a CE registry lands and adapters can
-  # declare CE outcomes, at which point this same check starts passing.
-  def validate_order_categories!(entry, outcomes, registries)
-    { exception_order: :exception, ce_order: :ce }.each do |order_field, category|
-      next if entry[order_field].nil?
-      next if outcomes.any? { |outcome| outcome_category(outcome, registries) == category }
-
-      raise ConfigurationError,
-        "verification_data_sources.#{entry[:id]}: '#{order_field}' is set but the adapter declares no " \
-        "#{category} outcome; call order for a category applies only to sources that emit that category"
-    end
   end
 
   # Every declared outcome must be a known exclusion or external-exception id.

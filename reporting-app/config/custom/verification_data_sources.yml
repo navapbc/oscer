@@ -1,7 +1,7 @@
 # Deployment-owned override surface for the verification Data Source registry.
 #
 # OSCER ships this file with no active overrides (the empty hash below); fill it
-# in to add a deployment-specific data source, re-order exception/CE sources, or
+# in to add a deployment-specific data source, re-order verification sources, or
 # disable a shipped source. Because OSCER rarely edits this file, your overrides
 # stay conflict-free when you sync upstream changes.
 #
@@ -23,23 +23,20 @@
 #       adapter_class: "Fully::Qualified::AdapterClass"  # required; must be a
 #                                                        # Verification::DataSource subclass
 #                                                        # that implements .declared_outcomes
-#       exception_order: null                  # call order among exception sources (Integer or null)
-#       ce_order: null                         # call order among CE sources (Integer or null);
-#                                              # dormant until a CE registry exists — no adapter can
-#                                              # declare a CE outcome yet, so a non-nil ce_order is
-#                                              # rejected at boot for now
+#       order: null                            # unified source call order (Integer or null)
 #
-# The registry stores these order fields but does NOT pre-sort entries. Consumers
-# (orchestrator) must sort by exception_order / ce_order themselves (nil last /
-# after ordered sources) when building a call sequence.
+# The registry stores this order field but does NOT pre-sort entries. Consumers
+# (orchestrator) must sort by order themselves (nil last / after ordered sources)
+# when building a call sequence. There is one source order because exception and
+# community-engagement sources are evaluated in the same business process and
+# may interleave.
 #
 # The loader validates at boot and raises a ConfigurationError naming the
 # offending entry for: a missing/blank required key; an adapter_class that does
 # not constantize (or is not a Verification::DataSource subclass); a missing /
 # malformed .declared_outcomes; a declared outcome absent from Exclusion /
-# ExternalException registries; a non-Integer order; an exception_order / ce_order
-# set on a source whose adapter emits no outcome in that category; or two sources
-# sharing an exception_order / ce_order (call order must be unambiguous).
+# ExternalException registries; a non-Integer order; legacy exception_order /
+# ce_order fields; or two sources sharing an order (call order must be unambiguous).
 #
 # NOTE: exclusion call/selection order is NOT configured here — Exclusion.priority_order
 # (config/custom/exclusion_types.yml) owns it. Setting `exclusion_order:` on an
@@ -50,13 +47,13 @@
 #
 # ## Examples
 #
-# Add a deployment-specific exception data source and place it first among
-# exception sources (outcomes come from the adapter's .declared_outcomes):
+# Add a deployment-specific data source and place it first among verification
+# sources (outcomes come from the adapter's .declared_outcomes):
 #
 #     county_emergency_feed:
 #       enabled: true
 #       adapter_class: "Verification::Adapters::CountyEmergencyFeed"
-#       exception_order: 10
+#       order: 10
 #
 # Disable a shipped source for this deployment (override just the toggle; other
 # keys deep-merge from the defaults):
