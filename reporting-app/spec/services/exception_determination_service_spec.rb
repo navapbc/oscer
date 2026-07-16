@@ -162,6 +162,179 @@ RSpec.describe ExceptionDeterminationService do
       end
     end
 
+    describe 'checking pregnancy' do
+      let(:member_data) { build(:certification_member_data, cert_date:, pregnancy_due_or_parturition_date:) }
+
+      context 'when the postpartum window covers a certifiable month' do
+        # postpartum window ends cert_date - 1.month, inside the certifiable window
+        let(:pregnancy_due_or_parturition_date) { cert_date - 13.months }
+
+        it_behaves_like 'an applied external exception', 'pregnancy_excepted'
+      end
+
+      context 'when within the postpartum window but it extends past the certifiable window' do
+        # gave birth cert_date - 1.month, so the postpartum window ends ~11 months after cert_date
+        # (past every certifiable month), yet the member was within it during each certifiable month.
+        # A currently-pregnant/postpartum member would normally qualify as an exemption and not reach
+        # the exception check; this covers it defensively.
+        let(:pregnancy_due_or_parturition_date) { cert_date - 1.month }
+
+        it_behaves_like 'an applied external exception', 'pregnancy_excepted'
+      end
+
+      context 'when the postpartum window ended before every certifiable month' do
+        # postpartum window ends cert_date - 4.months, before the earliest certifiable month
+        let(:pregnancy_due_or_parturition_date) { cert_date - 16.months }
+
+        it_behaves_like 'a failed check'
+      end
+
+      context 'when there is no pregnancy/parturition date' do
+        let(:pregnancy_due_or_parturition_date) { nil }
+
+        it_behaves_like 'a failed check'
+      end
+    end
+
+    describe 'checking former foster care' do
+      let(:member_data) { build(:certification_member_data, cert_date:, was_in_foster_care:, date_of_birth:) }
+
+      context 'when a former foster youth is under the age cap during a certifiable month' do
+        let(:was_in_foster_care) { true }
+        let(:date_of_birth) { cert_date - (25.years + 2.months) } # ~25 -> under 26
+
+        it_behaves_like 'an applied external exception', 'was_former_foster_care'
+      end
+
+      context 'when a former foster youth is at/over the age cap in every certifiable month' do
+        let(:was_in_foster_care) { true }
+        let(:date_of_birth) { cert_date - 27.years } # 27 -> over 26 throughout
+
+        it_behaves_like 'a failed check'
+      end
+
+      context 'when a former foster youth turns 26 mid-way through the earliest certifiable month' do
+        let(:was_in_foster_care) { true }
+        # 26th birthday is the 16th of the earliest certifiable month; still under 26 at its start
+        let(:date_of_birth) { cert_date - 26.years - 3.months + 15.days }
+
+        it_behaves_like 'an applied external exception', 'was_former_foster_care'
+      end
+
+      context 'when a former foster youth turns 26 on the first of the earliest certifiable month' do
+        let(:was_in_foster_care) { true }
+        # 26th birthday is the 1st of the earliest certifiable month; already 26 at its start
+        let(:date_of_birth) { cert_date - 26.years - 3.months }
+
+        it_behaves_like 'a failed check'
+      end
+
+      context 'when the member was not in foster care' do
+        let(:was_in_foster_care) { false }
+        let(:date_of_birth) { cert_date - (25.years + 2.months) }
+
+        it_behaves_like 'a failed check'
+      end
+
+      context 'when there is no date of birth' do
+        let(:was_in_foster_care) { true }
+        let(:date_of_birth) { nil }
+
+        it_behaves_like 'a failed check'
+      end
+    end
+
+    describe 'checking caretaker' do
+      let(:member_data) do
+        build(:certification_member_data, cert_date:, dates_caretaking_infirm:, dependent_children_birth_dates:)
+      end
+      let(:dates_caretaking_infirm) { [] }
+      let(:dependent_children_birth_dates) { [] }
+
+      context 'when caretaking an infirm person during a certifiable month' do
+        let(:dates_caretaking_infirm) { [ cert_date - 2.months ] }
+
+        it_behaves_like 'an applied external exception', 'caretaker_excepted'
+      end
+
+      context 'when caretaking an infirm person only outside the certifiable months' do
+        let(:dates_caretaking_infirm) { [ cert_date - 6.months ] }
+
+        it_behaves_like 'a failed check'
+      end
+
+      context 'when caring for a dependent child under the age threshold' do
+        let(:dependent_children_birth_dates) { [ cert_date - 10.years ] } # age 10 < 14
+
+        it_behaves_like 'an applied external exception', 'caretaker_excepted'
+      end
+
+      context 'when caring for both an under-threshold and an over-threshold child' do
+        let(:dependent_children_birth_dates) { [ cert_date - 15.years, cert_date - 10.years ] } # 15yo + 10yo
+
+        it_behaves_like 'an applied external exception', 'caretaker_excepted'
+      end
+
+      context 'when the dependent child is at/over the age threshold throughout' do
+        let(:dependent_children_birth_dates) { [ cert_date - 15.years ] } # turned 14 before the window
+
+        it_behaves_like 'a failed check'
+      end
+
+      context 'when there is no caretaking data' do
+        it_behaves_like 'a failed check'
+      end
+    end
+
+    describe 'checking drug treatment' do
+      let(:event_date) { [ cert_date - 2.months - 2.days ] }
+      let(:member_data) { build(:certification_member_data, cert_date:, dates_in_drug_treatment: event_date) }
+
+      it_behaves_like 'a mandatory exception', :drug_treatment
+
+      context 'with invalid data' do
+        let(:event_date) { [ 'not a date' ] }
+
+        it_behaves_like 'a failed check'
+      end
+    end
+
+    describe 'checking inmate' do
+      let(:member_data) { build(:certification_member_data, cert_date:, dates_incarcerated:) }
+
+      context 'when incarcerated during a certifiable month' do
+        let(:dates_incarcerated) { [ cert_date - 2.months ] } # window covers that month directly
+
+        it_behaves_like 'an applied external exception', 'inmate_excepted'
+      end
+
+      context 'when incarcerated before the window but the buffer reaches into a certifiable month' do
+        # incarcerated cert_date - 5.months; +3-month buffer still covers certifiable months
+        let(:dates_incarcerated) { [ cert_date - 5.months ] }
+
+        it_behaves_like 'an applied external exception', 'inmate_excepted'
+      end
+
+      context 'when one incarceration window covers a certifiable month and another does not' do
+        # cert_date - 8.months has expired (invalid); cert_date - 2.months is in-window (valid)
+        let(:dates_incarcerated) { [ cert_date - 8.months, cert_date - 2.months ] }
+
+        it_behaves_like 'an applied external exception', 'inmate_excepted'
+      end
+
+      context 'when the incarceration window (incl. buffer) ended before every certifiable month' do
+        let(:dates_incarcerated) { [ cert_date - 8.months ] } # window ends ~cert_date - 5.months
+
+        it_behaves_like 'a failed check'
+      end
+
+      context 'when there is no incarceration data' do
+        let(:dates_incarcerated) { [] }
+
+        it_behaves_like 'a failed check'
+      end
+    end
+
     describe 'checking inpatient-medical-care' do
       it_behaves_like 'an optional exception', :dates_receiving_inpatient_medical_care, :inpatient_medical_care
     end
