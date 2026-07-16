@@ -7,12 +7,10 @@ require_relative "config_loading"
 # deployment-owned override surface) over the OSCER-owned DEFAULTS below.
 #
 # A "data source" is an external verification adapter (a Verification::DataSource
-# subclass) plus a declaration of which checks it can make, grouped by category:
-#
-#   * exclusion  — ids must be a subset of Exclusion.valid_values
-#   * exception  — ids must be a subset of the ExternalException registry
-#   * ce         — community-engagement ids; no registry exists yet, so these are
-#                  structurally validated but not membership-checked (see below)
+# subclass). Config owns enablement, wiring, and call order; the adapter class
+# owns which outcome symbols it may emit via {.declared_outcomes}. Boot
+# validation confirms those outcomes exist in the Exclusion / ExternalException
+# registries (CE membership lands with a CE registry later).
 #
 # Call order among *exception* and *CE* sources is configured here via the
 # per-source exception_order / ce_order integers. Exclusion call/selection order
@@ -24,11 +22,12 @@ require_relative "config_loading"
 #   * .transform performs pure structural validation (shapes, required keys,
 #     order types + distinctness) and needs no application constants, so it runs
 #     in the initializer body and is unit-testable in isolation.
-#   * .validate_registry! constantizes adapter_class, checks configured check ids
-#     against the adapter's .declared_outcomes, and checks category ids against
-#     their registries. These require autoloadable app constants (and the
-#     sibling exclusion/exception initializers to have run), so the initializer
-#     defers it to a to_prepare hook.
+#   * .validate_registry! constantizes adapter_class, requires .declared_outcomes,
+#     checks each outcome against the known registries, and confirms any
+#     exception_order / ce_order is set only on a source that actually emits that
+#     category. That requires autoloadable app constants (and the sibling
+#     exclusion/exception initializers to have run), so the initializer defers it
+#     to a to_prepare hook.
 #
 # Mirrors ExclusionTypesLoader / ExemptionTypesLoader; the YAML load/parse/error
 # plumbing lives in the shared ConfigLoading module (extend below).
@@ -40,23 +39,15 @@ module VerificationDataSourcesLoader
   # lexical scope, so no raise site needs qualifying.
   ConfigurationError = ConfigLoading::ConfigurationError
 
-  # Check categories a source may declare under `checks`. Exclusion and exception
-  # each have a backing registry; :ce does not yet (its ids are shape-checked but
-  # not membership-checked until a CE registry lands).
-  CATEGORIES = %i[exclusion exception ce].freeze
-
   # OSCER-owned defaults. Deployments customize via the override file, not by
   # editing this constant. The VA disability-rating source lands here as the
   # first real registered source (OSCER-755 adapter, OSCER-756 registry).
+  # Outcomes for that adapter live on
+  # Verification::Adapters::VaDisabilityRating.declared_outcomes — not here.
   DEFAULTS = {
     "va_disability_rating" => {
       "enabled" => true,
       "adapter_class" => "Verification::Adapters::VaDisabilityRating",
-      "checks" => {
-        "exclusion" => [ "is_veteran_with_disability" ],
-        "exception" => [],
-        "ce" => []
-      },
       "exception_order" => nil,
       "ce_order" => nil
     }
@@ -69,7 +60,7 @@ module VerificationDataSourcesLoader
   end
 
   # Pure structural validation + normalization. Returns an Array of entries with
-  # symbolized ids/categories and a String adapter_class (constantized later, in
+  # symbolized ids and a String adapter_class (constantized later, in
   # validate_registry!). Raises ConfigurationError naming the offending entry.
   def transform(merged)
     entries = merged.map { |id, attrs| transform_entry(id, attrs) }
@@ -81,9 +72,18 @@ module VerificationDataSourcesLoader
   # ready and after the sibling registries are populated, so the initializer
   # calls this from a to_prepare hook rather than the body.
   def validate_registry!(entries)
+    # Snapshot once per boot validation pass — outcome lookups reuse these sets
+    # instead of re-mapping Exclusion / ExternalException on every outcome.
+    registries = {
+      exclusion: Exclusion.valid_values.map(&:to_sym),
+      exception: ExternalException.all.map { |registry_entry| registry_entry[:id] }
+    }
+
     entries.each do |entry|
-      validate_adapter_class!(entry)
-      validate_check_ids!(entry)
+      klass = validate_adapter_class!(entry)
+      outcomes = fetch_declared_outcomes!(entry, klass)
+      validate_outcome_ids!(entry, outcomes, registries)
+      validate_order_categories!(entry, outcomes, registries)
     end
   end
 
@@ -94,12 +94,12 @@ module VerificationDataSourcesLoader
       raise ConfigurationError, "verification_data_sources.#{id}: expected Hash, got #{attrs.class}"
     end
     reject_exclusion_order!(id, attrs)
+    reject_checks_key!(id, attrs)
 
     {
       id: id.to_sym,
       enabled: fetch_enabled(id, attrs),
       adapter_class: fetch_adapter_class(id, attrs),
-      checks: transform_checks(id, attrs["checks"]),
       exception_order: transform_order(id, "exception_order", attrs),
       ce_order: transform_order(id, "ce_order", attrs)
     }
@@ -124,36 +124,6 @@ module VerificationDataSourcesLoader
     adapter_class
   end
 
-  def transform_checks(id, checks)
-    unless checks.is_a?(Hash)
-      raise ConfigurationError, "verification_data_sources.#{id}: 'checks' must be a Hash keyed by category (#{CATEGORIES.join(', ')})"
-    end
-
-    unknown = checks.keys.map(&:to_sym) - CATEGORIES
-    unless unknown.empty?
-      raise ConfigurationError, "verification_data_sources.#{id}: unknown check category #{unknown.map(&:to_s)}; valid categories are #{CATEGORIES.map(&:to_s)}"
-    end
-
-    CATEGORIES.index_with { |category| normalize_check_ids(id, category, checks[category.to_s]) }
-  end
-
-  def normalize_check_ids(id, category, raw)
-    return [] if raw.nil?
-    unless raw.is_a?(Array)
-      raise ConfigurationError, "verification_data_sources.#{id}: checks.#{category} must be an Array of ids, got #{raw.class}"
-    end
-    raw.map do |check_id|
-      unless check_id.is_a?(String)
-        raise ConfigurationError, "verification_data_sources.#{id}: checks.#{category} contains a non-String id #{check_id.inspect}"
-      end
-      unless check_id.present? && check_id.strip == check_id
-        raise ConfigurationError,
-          "verification_data_sources.#{id}: checks.#{category} contains a blank or whitespace-padded id #{check_id.inspect}"
-      end
-      check_id.to_sym
-    end
-  end
-
   def transform_order(id, field, attrs)
     return nil unless attrs.key?(field)
     value = attrs[field]
@@ -172,6 +142,15 @@ module VerificationDataSourcesLoader
     raise ConfigurationError,
       "verification_data_sources.#{id}: 'exclusion_order' is not configurable here; " \
       "exclusion order is owned by Exclusion.priority_order (config/custom/exclusion_types.yml)"
+  end
+
+  # Outcomes are owned by the adapter's {.declared_outcomes}, not YAML. Reject a
+  # leftover `checks` key so deployers get a clear pointer rather than silent ignore.
+  def reject_checks_key!(id, attrs)
+    return unless attrs.key?("checks")
+    raise ConfigurationError,
+      "verification_data_sources.#{id}: 'checks' is not configurable here; " \
+      "outcomes are declared by the adapter class via .declared_outcomes"
   end
 
   # A shared order value would make call order among sources depend on an unstable
@@ -198,12 +177,10 @@ module VerificationDataSourcesLoader
       raise ConfigurationError,
         "verification_data_sources.#{entry[:id]}: adapter_class '#{entry[:adapter_class]}' must be a Verification::DataSource subclass"
     end
-    validate_checks_against_declared_outcomes!(entry, klass)
+    klass
   end
 
-  # Configured check ids must be a subset of the adapter's {.declared_outcomes}
-  # (see Verification::DataSource — ticket C / OSCER-756).
-  def validate_checks_against_declared_outcomes!(entry, klass)
+  def fetch_declared_outcomes!(entry, klass)
     declared = begin
       klass.declared_outcomes
     rescue NotImplementedError
@@ -214,34 +191,54 @@ module VerificationDataSourcesLoader
       raise ConfigurationError,
         "verification_data_sources.#{entry[:id]}: '#{entry[:adapter_class]}.declared_outcomes' must return Array<Symbol>"
     end
+    if entry[:enabled] && declared.empty?
+      raise ConfigurationError,
+        "verification_data_sources.#{entry[:id]}: enabled source must declare at least one outcome via .declared_outcomes"
+    end
+    declared
+  end
 
-    configured = entry[:checks].values.flatten
-    unknown = configured - declared
+  # A per-source exception_order / ce_order only means something if the source
+  # actually emits an outcome in that category; otherwise the order value is dead
+  # config that silently does nothing. Reject that mismatch so a misplaced order
+  # field fails loudly at boot.
+  #
+  # CE has no registry yet, so no outcome classifies as :ce — a non-nil ce_order
+  # therefore always trips this check today. That is intentional: CE call
+  # ordering only becomes configurable once a CE registry lands and adapters can
+  # declare CE outcomes, at which point this same check starts passing.
+  def validate_order_categories!(entry, outcomes, registries)
+    { exception_order: :exception, ce_order: :ce }.each do |order_field, category|
+      next if entry[order_field].nil?
+      next if outcomes.any? { |outcome| outcome_category(outcome, registries) == category }
+
+      raise ConfigurationError,
+        "verification_data_sources.#{entry[:id]}: '#{order_field}' is set but the adapter declares no " \
+        "#{category} outcome; call order for a category applies only to sources that emit that category"
+    end
+  end
+
+  # Every declared outcome must be a known exclusion or external-exception id.
+  # CE ids are not membership-checked yet (no CE registry); until that lands,
+  # outcomes that are neither exclusion nor exception raise so typos fail loudly
+  # rather than being silently treated as CE.
+  def validate_outcome_ids!(entry, outcomes, registries)
+    unknown = outcomes.reject { |outcome| outcome_category(outcome, registries) }
     return if unknown.empty?
 
+    known = registries[:exclusion] + registries[:exception]
     raise ConfigurationError,
-      "verification_data_sources.#{entry[:id]}: checks #{unknown.map(&:to_s)} are not in " \
-      "#{entry[:adapter_class]}.declared_outcomes (#{declared.map(&:to_s).sort})"
+      "verification_data_sources.#{entry[:id]}: .declared_outcomes references unknown id(s) #{unknown.map(&:to_s)}; " \
+      "valid ids are Exclusion.valid_values and ExternalException registry entries " \
+      "(#{known.map(&:to_s).sort})"
   end
 
-  def validate_check_ids!(entry)
-    entry[:checks].each do |category, ids|
-      valid_ids = category_valid_ids(category)
-      next if valid_ids.nil? # no registry for this category yet (e.g. :ce)
+  # The category an outcome belongs to, or nil when it is in neither registry.
+  # Exclusion takes precedence should an id ever appear in both (it should not).
+  def outcome_category(outcome, registries)
+    return :exclusion if registries[:exclusion].include?(outcome)
+    return :exception if registries[:exception].include?(outcome)
 
-      unknown = ids.reject { |check_id| valid_ids.include?(check_id) }
-      next if unknown.empty?
-      raise ConfigurationError,
-        "verification_data_sources.#{entry[:id]}: checks.#{category} references unknown id(s) #{unknown.map(&:to_s)}; " \
-        "valid #{category} ids: #{valid_ids.map(&:to_s).sort}"
-    end
-  end
-
-  # Valid ids for a category as Symbols, or nil when no registry backs it yet.
-  def category_valid_ids(category)
-    case category
-    when :exclusion then Exclusion.valid_values.map(&:to_sym)
-    when :exception then ExternalException.all.map { |entry| entry[:id] }
-    end
+    nil
   end
 end

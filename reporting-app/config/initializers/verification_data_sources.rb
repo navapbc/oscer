@@ -8,7 +8,8 @@ overrides     = VerificationDataSourcesLoader.safe_load_optional(override_path)
 merged        = VerificationDataSourcesLoader.merge_with_defaults(overrides)
 
 # Structural validation runs in the body; the config holds each entry's
-# adapter_class as a String (constantized/validated below, once autoloading is ready).
+# adapter_class as a String. Outcomes live on the adapter via .declared_outcomes
+# (constantized/validated below, once autoloading is ready).
 Rails.application.config.verification_data_sources = VerificationDataSourcesLoader.transform(merged)
 
 # Registry validation depends on application constants (adapter classes plus the

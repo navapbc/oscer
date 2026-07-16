@@ -11,11 +11,6 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
     {
       "enabled" => true,
       "adapter_class" => "Verification::Adapters::VaDisabilityRating",
-      "checks" => {
-        "exclusion" => [ "is_veteran_with_disability" ],
-        "exception" => [],
-        "ce" => []
-      },
       "exception_order" => nil,
       "ce_order" => nil
     }.merge(overrides)
@@ -69,7 +64,6 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
         entry = result["va_disability_rating"]
         expect(entry["enabled"]).to be(false)
         expect(entry["adapter_class"]).to eq("Verification::Adapters::VaDisabilityRating")
-        expect(entry["checks"]["exclusion"]).to eq([ "is_veteran_with_disability" ])
       end
     end
 
@@ -85,22 +79,15 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
   end
 
   describe ".transform (structural validation)" do
-    it "returns entries with symbolized id, categories, and check ids" do
+    it "returns entries with symbolized id and required fields" do
       result = described_class.transform("va_disability_rating" => source_attrs)
       entry = result.first
       expect(entry[:id]).to eq(:va_disability_rating)
       expect(entry[:enabled]).to be(true)
       expect(entry[:adapter_class]).to eq("Verification::Adapters::VaDisabilityRating")
-      expect(entry[:checks]).to eq(exclusion: [ :is_veteran_with_disability ], exception: [], ce: [])
+      expect(entry).not_to have_key(:checks)
       expect(entry[:exception_order]).to be_nil
       expect(entry[:ce_order]).to be_nil
-    end
-
-    it "defaults omitted check categories to empty arrays" do
-      result = described_class.transform(
-        "src" => source_attrs("checks" => { "exclusion" => [ "is_veteran_with_disability" ] })
-      )
-      expect(result.first[:checks]).to eq(exclusion: [ :is_veteran_with_disability ], exception: [], ce: [])
     end
 
     it "raises naming the id when an entry value is not a Hash" do
@@ -133,40 +120,12 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       }.to raise_error(described_class::ConfigurationError, /adapter_class/)
     end
 
-    it "raises when 'checks' is not a Hash" do
+    it "rejects a 'checks' key (outcomes owned by adapter .declared_outcomes)" do
       expect {
-        described_class.transform("src" => source_attrs("checks" => [ "exclusion" ]))
-      }.to raise_error(described_class::ConfigurationError, /checks/)
-    end
-
-    it "raises naming an unknown check category" do
-      expect {
-        described_class.transform("src" => source_attrs("checks" => { "bogus" => [] }))
-      }.to raise_error(described_class::ConfigurationError, /unknown check category.*bogus/)
-    end
-
-    it "raises when a category's value is not an Array" do
-      expect {
-        described_class.transform("src" => source_attrs("checks" => { "exclusion" => "x" }))
-      }.to raise_error(described_class::ConfigurationError, /checks\.exclusion.*Array/)
-    end
-
-    it "raises when a check id is not a String" do
-      expect {
-        described_class.transform("src" => source_attrs("checks" => { "exclusion" => [ 42 ] }))
-      }.to raise_error(described_class::ConfigurationError, /checks\.exclusion.*non-String/)
-    end
-
-    it "raises when a check id is blank or whitespace-padded" do
-      expect {
-        described_class.transform("src" => source_attrs("checks" => { "exclusion" => [ " " ] }))
-      }.to raise_error(described_class::ConfigurationError, /checks\.exclusion.*blank or whitespace-padded/)
-    end
-
-    it "raises when 'checks' is missing" do
-      expect {
-        described_class.transform("src" => source_attrs.except("checks"))
-      }.to raise_error(described_class::ConfigurationError, /checks/)
+        described_class.transform(
+          "src" => source_attrs("checks" => { "exclusion" => [ "is_veteran_with_disability" ] })
+        )
+      }.to raise_error(described_class::ConfigurationError, /checks.*not configurable/)
     end
 
     it "raises when an order field is not an Integer" do
@@ -217,48 +176,71 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       expect { described_class.validate_registry!(entries) }.not_to raise_error
     end
 
-    it "accepts any adapter_class that subclasses Verification::DataSource" do
-      stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
-        def self.declared_outcomes
-          []
-        end
-      end)
-      entries = described_class.transform(
-        "src" => source_attrs("adapter_class" => "SpecFixtureSource", "checks" => {})
-      )
-      expect { described_class.validate_registry!(entries) }.not_to raise_error
-    end
-
-    it "raises when configured checks are not in the adapter's declared_outcomes" do
+    it "accepts any adapter_class that subclasses Verification::DataSource with known outcomes" do
       stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
         def self.declared_outcomes
           [ :is_veteran_with_disability ]
         end
       end)
       entries = described_class.transform(
-        "src" => source_attrs(
-          "adapter_class" => "SpecFixtureSource",
-          "checks" => { "exclusion" => [ "is_veteran_with_disability", "is_pregnant" ] }
-        )
+        "src" => source_attrs("adapter_class" => "SpecFixtureSource")
       )
-      expect {
-        described_class.validate_registry!(entries)
-      }.to raise_error(described_class::ConfigurationError, /is_pregnant.*declared_outcomes/)
+      expect { described_class.validate_registry!(entries) }.not_to raise_error
     end
 
     it "raises when adapter_class does not implement .declared_outcomes" do
       stub_const("SpecFixtureSource", Class.new(Verification::DataSource))
       entries = described_class.transform(
-        "src" => source_attrs("adapter_class" => "SpecFixtureSource", "checks" => {})
+        "src" => source_attrs("adapter_class" => "SpecFixtureSource")
       )
       expect {
         described_class.validate_registry!(entries)
       }.to raise_error(described_class::ConfigurationError, /must implement \.declared_outcomes/)
     end
 
+    it "raises when .declared_outcomes is not Array<Symbol>" do
+      stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
+        def self.declared_outcomes
+          [ "is_veteran_with_disability" ]
+        end
+      end)
+      entries = described_class.transform(
+        "src" => source_attrs("adapter_class" => "SpecFixtureSource")
+      )
+      expect {
+        described_class.validate_registry!(entries)
+      }.to raise_error(described_class::ConfigurationError, /must return Array<Symbol>/)
+    end
+
+    it "raises when an enabled source declares no outcomes" do
+      stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
+        def self.declared_outcomes
+          []
+        end
+      end)
+      entries = described_class.transform(
+        "src" => source_attrs("adapter_class" => "SpecFixtureSource")
+      )
+      expect {
+        described_class.validate_registry!(entries)
+      }.to raise_error(described_class::ConfigurationError, /must declare at least one outcome/)
+    end
+
+    it "allows an empty .declared_outcomes when the source is disabled" do
+      stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
+        def self.declared_outcomes
+          []
+        end
+      end)
+      entries = described_class.transform(
+        "src" => source_attrs("enabled" => false, "adapter_class" => "SpecFixtureSource")
+      )
+      expect { described_class.validate_registry!(entries) }.not_to raise_error
+    end
+
     it "raises when adapter_class does not constantize" do
       entries = described_class.transform(
-        "src" => source_attrs("adapter_class" => "Verification::Adapters::TotallyMissing", "checks" => {})
+        "src" => source_attrs("adapter_class" => "Verification::Adapters::TotallyMissing")
       )
       expect {
         described_class.validate_registry!(entries)
@@ -267,81 +249,71 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
 
     it "raises when adapter_class is not a Verification::DataSource subclass" do
       entries = described_class.transform(
-        "src" => source_attrs("adapter_class" => "String", "checks" => {})
+        "src" => source_attrs("adapter_class" => "String")
       )
       expect {
         described_class.validate_registry!(entries)
       }.to raise_error(described_class::ConfigurationError, /must be a Verification::DataSource subclass/)
     end
 
-    it "raises when an exclusion check id is not in Exclusion.valid_values" do
-      # Fixture declares the outcome so we exercise category membership, not
-      # the earlier declared_outcomes subset guard.
+    it "raises when a declared outcome is not in Exclusion or ExternalException registries" do
       stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
         def self.declared_outcomes
-          [ :not_a_real_exclusion ]
+          [ :not_a_real_outcome ]
         end
       end)
       entries = described_class.transform(
-        "src" => source_attrs(
-          "adapter_class" => "SpecFixtureSource",
-          "checks" => { "exclusion" => [ "not_a_real_exclusion" ] }
-        )
+        "src" => source_attrs("adapter_class" => "SpecFixtureSource")
       )
       expect {
         described_class.validate_registry!(entries)
-      }.to raise_error(described_class::ConfigurationError, /checks\.exclusion.*not_a_real_exclusion/)
+      }.to raise_error(described_class::ConfigurationError, /unknown id\(s\).*not_a_real_outcome/)
     end
 
-    it "raises when an exception check id is not in the ExternalException registry" do
-      stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
-        def self.declared_outcomes
-          [ :not_a_real_exception ]
-        end
-      end)
-      entries = described_class.transform(
-        "src" => source_attrs(
-          "adapter_class" => "SpecFixtureSource",
-          "checks" => { "exception" => [ "not_a_real_exception" ] }
-        )
-      )
-      expect {
-        described_class.validate_registry!(entries)
-      }.to raise_error(described_class::ConfigurationError, /checks\.exception.*not_a_real_exception/)
-    end
-
-    it "accepts a real exception check id from the ExternalException registry" do
+    it "accepts a real exception outcome from the ExternalException registry" do
       exception_id = ExternalException.all.first[:id]
       stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
         define_singleton_method(:declared_outcomes) { [ exception_id ] }
       end)
       entries = described_class.transform(
-        "src" => source_attrs(
-          "adapter_class" => "SpecFixtureSource",
-          "checks" => { "exception" => [ exception_id.to_s ] }
-        )
+        "src" => source_attrs("adapter_class" => "SpecFixtureSource")
       )
       expect { described_class.validate_registry!(entries) }.not_to raise_error
     end
 
-    it "does not membership-check CE ids (no CE registry yet)" do
+    it "raises when exception_order is set but the adapter emits no exception outcome" do
+      # VA declares only an exclusion outcome, so an exception_order is dead config.
+      entries = described_class.transform(
+        "va_disability_rating" => source_attrs("exception_order" => 10)
+      )
+      expect {
+        described_class.validate_registry!(entries)
+      }.to raise_error(described_class::ConfigurationError, /exception_order.*no exception outcome/)
+    end
+
+    it "accepts exception_order when the adapter emits an exception outcome" do
+      exception_id = ExternalException.all.first[:id]
       stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
-        def self.declared_outcomes
-          [ :some_future_ce_id ]
-        end
+        define_singleton_method(:declared_outcomes) { [ exception_id ] }
       end)
       entries = described_class.transform(
-        "src" => source_attrs(
-          "adapter_class" => "SpecFixtureSource",
-          "checks" => { "ce" => [ "some_future_ce_id" ] }
-        )
+        "src" => source_attrs("adapter_class" => "SpecFixtureSource", "exception_order" => 10)
       )
       expect { described_class.validate_registry!(entries) }.not_to raise_error
+    end
+
+    it "raises when ce_order is set (no adapter can emit a CE outcome yet)" do
+      entries = described_class.transform(
+        "va_disability_rating" => source_attrs("ce_order" => 5)
+      )
+      expect {
+        described_class.validate_registry!(entries)
+      }.to raise_error(described_class::ConfigurationError, /ce_order.*no ce outcome/)
     end
 
     it "validates even sources that are disabled" do
       entries = described_class.transform(
-        "src" => source_attrs("enabled" => false, "adapter_class" => "String", "checks" => {})
+        "src" => source_attrs("enabled" => false, "adapter_class" => "String")
       )
       expect {
         described_class.validate_registry!(entries)
@@ -367,8 +339,11 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       expect(sources).to be_an(Array)
 
       va = sources.find { |s| s[:id] == :va_disability_rating }
+      expect(va[:enabled]).to be(true)
       expect(va[:adapter_class]).to eq("Verification::Adapters::VaDisabilityRating")
-      expect(va[:checks][:exclusion]).to eq([ :is_veteran_with_disability ])
+      expect(va).not_to have_key(:checks)
+      expect(Verification::Adapters::VaDisabilityRating.declared_outcomes)
+        .to eq([ :is_veteran_with_disability ])
     end
   end
 end
