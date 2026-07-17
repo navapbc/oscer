@@ -139,6 +139,7 @@ e2e-test: e2e-build
 		-e CI=$(CI) \
 		-v $(CURDIR)/e2e/playwright-report:/e2e/playwright-report \
 		-v $(CURDIR)/e2e/blob-report:/e2e/blob-report \
+		-v $(CURDIR)/e2e/perf-results:/e2e/perf-results \
 		$(E2E_IMAGE_NAME) \
 		npm test -- $(E2E_ARGS)
 	@echo "Run 'make e2e-show-report' to view the test report"
