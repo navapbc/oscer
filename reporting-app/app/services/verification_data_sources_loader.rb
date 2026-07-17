@@ -15,9 +15,10 @@ require_relative "config_loading"
 # Call order among verification sources is configured here via the per-source
 # order integer. Exception and community-engagement sources may interleave in
 # the same business process, so there is one source call order rather than
-# separate category-specific orders. Exclusion call/selection order is NOT
-# configured here: Exclusion.priority_order (config/custom/exclusion_types.yml)
-# owns it, so an exclusion_order key on an entry is rejected at boot.
+# separate category-specific orders. Set order only for sources used in that
+# shared exception/CE call sequence — leave it null for exclusion-only sources.
+# Exclusion outcome ranking is NOT configured here: Exclusion.priority_order
+# (config/custom/exclusion_types.yml) owns it.
 #
 # Validation is split in two so the initializer body stays boot-safe:
 #
@@ -91,9 +92,6 @@ module VerificationDataSourcesLoader
     unless attrs.is_a?(Hash)
       raise ConfigurationError, "verification_data_sources.#{id}: expected Hash, got #{attrs.class}"
     end
-    reject_exclusion_order!(id, attrs)
-    reject_category_order!(id, attrs)
-    reject_checks_key!(id, attrs)
 
     {
       id: id.to_sym,
@@ -130,36 +128,6 @@ module VerificationDataSourcesLoader
       raise ConfigurationError, "verification_data_sources.#{id}: '#{field}' must be an Integer or null, got #{value.class}"
     end
     value
-  end
-
-  # Exclusion call/selection order is owned by Exclusion.priority_order, not this
-  # registry. Reject the key rather than silently ignore it, so a deployment that
-  # sets it here gets a clear boot error pointing at the right knob.
-  def reject_exclusion_order!(id, attrs)
-    return unless attrs.key?("exclusion_order")
-    raise ConfigurationError,
-      "verification_data_sources.#{id}: 'exclusion_order' is not configurable here; " \
-      "exclusion order is owned by Exclusion.priority_order (config/custom/exclusion_types.yml)"
-  end
-
-  # Exception and CE verification happen in one process and may interleave, so
-  # source call order is one shared `order` field.
-  def reject_category_order!(id, attrs)
-    invalid_fields = %w[exception_order ce_order].select { |field| attrs.key?(field) }
-    return if invalid_fields.empty?
-
-    raise ConfigurationError,
-      "verification_data_sources.#{id}: #{invalid_fields.map { |field| "'#{field}'" }.join(', ')} " \
-      "not configurable here; use the unified 'order' field for source call order"
-  end
-
-  # Outcomes are owned by the adapter's {.declared_outcomes}, not YAML. Reject a
-  # leftover `checks` key so deployers get a clear pointer rather than silent ignore.
-  def reject_checks_key!(id, attrs)
-    return unless attrs.key?("checks")
-    raise ConfigurationError,
-      "verification_data_sources.#{id}: 'checks' is not configurable here; " \
-      "outcomes are declared by the adapter class via .declared_outcomes"
   end
 
   # A shared order value would make call order among sources depend on an unstable

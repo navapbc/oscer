@@ -118,30 +118,10 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       }.to raise_error(described_class::ConfigurationError, /adapter_class/)
     end
 
-    it "rejects a 'checks' key (outcomes owned by adapter .declared_outcomes)" do
-      expect {
-        described_class.transform(
-          "src" => source_attrs("checks" => { "exclusion" => [ "is_veteran_with_disability" ] })
-        )
-      }.to raise_error(described_class::ConfigurationError, /checks.*not configurable/)
-    end
-
     it "raises when an order field is not an Integer" do
       expect {
         described_class.transform("src" => source_attrs("order" => "10"))
       }.to raise_error(described_class::ConfigurationError, /order.*Integer/)
-    end
-
-    it "rejects an 'exclusion_order' key (owned by Exclusion.priority_order)" do
-      expect {
-        described_class.transform("src" => source_attrs("exclusion_order" => 10))
-      }.to raise_error(described_class::ConfigurationError, /exclusion_order.*not configurable/)
-    end
-
-    it "rejects category-specific order fields" do
-      expect {
-        described_class.transform("src" => source_attrs("exception_order" => 10, "ce_order" => 20))
-      }.to raise_error(described_class::ConfigurationError, /exception_order.*ce_order.*unified 'order'/)
     end
 
     it "raises when two sources share an order" do

@@ -31,24 +31,22 @@
 # community-engagement sources are evaluated in the same business process and
 # may interleave.
 #
+# Set `order` only for sources that participate in that shared exception/CE call
+# sequence. Leave it null for exclusion-only sources (for example the shipped VA
+# disability-rating adapter). Exclusion outcome ranking is owned by
+# Exclusion.priority_order (config/custom/exclusion_types.yml), not by this field.
+#
 # The loader validates at boot and raises a ConfigurationError naming the
 # offending entry for: a missing/blank required key; an adapter_class that does
 # not constantize (or is not a Verification::DataSource subclass); a missing /
 # malformed .declared_outcomes; a declared outcome absent from Exclusion /
-# ExternalException registries; a non-Integer order; legacy exception_order /
-# ce_order fields; or two sources sharing an order (call order must be unambiguous).
-#
-# NOTE: exclusion call/selection order is NOT configured here — Exclusion.priority_order
-# (config/custom/exclusion_types.yml) owns it. Setting `exclusion_order:` on an
-# entry is rejected at boot.
-#
-# NOTE: do not set `checks:` here — outcomes come from the adapter class. A
-# `checks` key is rejected at boot.
+# ExternalException registries; a non-Integer order; or two sources sharing an
+# order (call order must be unambiguous). Unknown keys are ignored.
 #
 # ## Examples
 #
-# Add a deployment-specific data source and place it first among verification
-# sources (outcomes come from the adapter's .declared_outcomes):
+# Add a deployment-specific exception/CE data source and place it first among
+# verification sources (outcomes come from the adapter's .declared_outcomes):
 #
 #     county_emergency_feed:
 #       enabled: true
