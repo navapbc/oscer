@@ -18,8 +18,7 @@ export class BeforeYouStartPage extends BasePage {
 
   async clickStart() {
     // Skip DocAI for original document upload flow
-    // TODO: re-enable this action when DOC_AI Feature flag back on
-    // await this.skipAiCheckbox.check();
+    await this.skipAiCheckbox.check();
     await this.startButton.click();
 
     return new ChooseMonthsPage(this.page).waitForURLtoMatchPagePath();
