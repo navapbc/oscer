@@ -1,0 +1,7 @@
+# Shared mutable root files are per-pass derived CACHES the reconciler rebuilds,
+# not ticket events (uuid-named ticket dirs never collide, so they never need a
+# merge policy). On a union reconverge (sync.py) keep OUR copy and let the next
+# reconciler pass rebuild the loser. merge=union is WRONG here — it line-unions
+# JSON into invalid JSON. The 'ours' driver is defined in git config by init
+# (merge.ours.driver=true); without it these patterns are silently ignored.
+.bridge_state/* merge=ours
