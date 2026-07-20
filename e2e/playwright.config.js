@@ -37,8 +37,6 @@ export default defineConfig({
     screenshot: 'on',
     video: 'on-first-retry',
   },
-  // TODO: stop ignoring this test when DOC_AI Feature flag back on
-  testIgnore: '**/docAiUploadFlow.spec.ts',
   // Splits tests into chunks for distributed parallel execution
   shard: {
     // Total number of shards
