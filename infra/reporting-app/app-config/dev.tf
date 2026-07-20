@@ -37,7 +37,7 @@ module "dev_config" {
     ENABLE_LOOKBOOK             = "true"
     FEATURE_BATCH_UPLOAD_V2     = "true"
     PERFORM_EMAIL_DELIVERY      = "false"
-    FEATURE_DOC_AI              = "false"
+    FEATURE_DOC_AI              = "true"
     FEATURE_DEMO_CERTIFICATIONS = "true"
   }
 }

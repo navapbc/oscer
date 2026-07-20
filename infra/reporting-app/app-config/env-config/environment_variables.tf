@@ -64,5 +64,9 @@ locals {
       manage_method     = "manual"
       secret_store_name = "/${var.app_name}-${var.environment}/service/doc-ai-api-host"
     }
+    DOC_AI_API_KEY = {
+      manage_method     = "manual"
+      secret_store_name = "/${var.app_name}-${var.environment}/service/doc-ai-api-key"
+    }
   }
 }

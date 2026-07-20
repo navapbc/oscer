@@ -27,8 +27,10 @@ module Verification
     class ContractError < StandardError; end
 
     class << self
-      # The full set of outcome symbols this source may emit. Config (ticket C)
-      # validates configured outcomes against this list.
+      # The full set of outcome symbols this source may emit. The data-source
+      # registry (OSCER-756) loads adapters from config and boot-validates these
+      # symbols against Exclusion / ExternalException registries — YAML does not
+      # re-declare them.
       #
       # @return [Array<Symbol>]
       def declared_outcomes
