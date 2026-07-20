@@ -1,5 +1,5 @@
 <% doc_ai_review = local_assigns.fetch(:doc_ai_review, false) %>
-<% pending_review_ids = local_assigns.fetch(:pending_review_ids, []) %>
+<% pending_review_ids = Array(local_assigns[:pending_review_ids]) %>
 
 <% unless doc_ai_review %>
   <h1>
