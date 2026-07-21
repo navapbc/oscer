@@ -78,6 +78,45 @@ make e2e-test-native APP_NAME=reporting-app \
   E2E_ARGS=reporting-app/tests/exemptionApplication.spec.ts
 ```
 
+### Performance baselines (frontier / low-bandwidth)
+
+Client-facing performance harnesses for [OSCER-747](https://github.com/navapbc/oscer/issues/747) live under `e2e/reporting-app/perf/` and two opt-in specs:
+
+| Spec | Purpose |
+| --- | --- |
+| `performanceBaseline.spec.ts` (Track A) | CDP throttling (DevTools Slow/Fast 3G), writes `e2e/perf-results/perf-baseline.json` + `.md` |
+| `lighthouseBudget.spec.ts` (Track B) | Lighthouse over CDP; writes reports under `e2e/perf-results/lighthouse/` |
+
+These specs are **excluded from the default e2e suite and CI** unless `PERF=1`. Run them explicitly (app must be up; same Cognito prerequisites as other member tests):
+
+```bash
+# Track A — capture baselines (chromium only)
+make e2e-perf-baseline APP_NAME=reporting-app
+
+# Optional: subset of profiles / output dir
+PERF_PROFILES="Slow 3G" make e2e-perf-baseline APP_NAME=reporting-app
+
+# Track B — Lighthouse reports (chromium, workers=1 for fixed CDP port 9222)
+make e2e-perf-lighthouse APP_NAME=reporting-app
+
+# After baselines are calibrated, enforce budget.json + score floors:
+PERF_ENFORCE_BUDGET=1 make e2e-perf-lighthouse APP_NAME=reporting-app
+```
+
+Equivalent with Docker (also mounts `e2e/perf-results/`):
+
+```bash
+make e2e-test APP_NAME=reporting-app BASE_URL=http://host.docker.internal:3000 PERF=1 \
+  E2E_ARGS='reporting-app/tests/performanceBaseline.spec.ts --project=chromium'
+```
+
+**Notes**
+
+- Track A uses CDP `Network.emulateNetworkConditions` with Chrome DevTools Slow/Fast 3G constants.
+- Track B uses Lighthouse `throttlingMethod: 'simulate'` with settings *derived from* Slow 3G. Simulated timings are **not** 1:1 comparable to Track A / DevTools.
+- Default Track B is capture-first (reports only). `PERF_ENFORCE_BUDGET=1` turns on `lighthouse/budget.json` and category thresholds.
+- Env vars: `PERF`, `PERF_PROFILES`, `PERF_OUT_DIR`, `PERF_ENFORCE_BUDGET`.
+
 ### Run tests in UI mode (native)
 
 ```bash

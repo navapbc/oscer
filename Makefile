@@ -137,6 +137,10 @@ e2e-test: e2e-build
 		-e CURRENT_SHARD=$(CURRENT_SHARD) \
 		-e TOTAL_SHARDS=$(TOTAL_SHARDS) \
 		-e CI=$(CI) \
+		-e PERF=$(PERF) \
+		-e PERF_PROFILES=$(PERF_PROFILES) \
+		-e PERF_OUT_DIR=$(PERF_OUT_DIR) \
+		-e PERF_ENFORCE_BUDGET=$(PERF_ENFORCE_BUDGET) \
 		-v $(CURDIR)/e2e/playwright-report:/e2e/playwright-report \
 		-v $(CURDIR)/e2e/blob-report:/e2e/blob-report \
 		-v $(CURDIR)/e2e/perf-results:/e2e/perf-results \
@@ -147,7 +151,17 @@ e2e-test: e2e-build
 e2e-test-native: ## Run end-to-end tests natively
 	@:$(call check_defined, APP_NAME, You must pass in a specific APP_NAME)
 	@echo "Running e2e tests with CI=${CI}, APP_NAME=${APP_NAME}, BASE_URL=${BASE_URL}"
-	cd e2e && APP_NAME=$(APP_NAME) BASE_URL=$(BASE_URL) npm test -- $(E2E_ARGS)
+	cd e2e && APP_NAME=$(APP_NAME) BASE_URL=$(BASE_URL) PERF=$(PERF) PERF_PROFILES="$(PERF_PROFILES)" PERF_OUT_DIR="$(PERF_OUT_DIR)" PERF_ENFORCE_BUDGET=$(PERF_ENFORCE_BUDGET) npm test -- $(E2E_ARGS)
+
+e2e-perf-baseline: ## Capture client-facing perf baselines (opt-in; writes e2e/perf-results/)
+	@:$(call check_defined, APP_NAME, You must pass in a specific APP_NAME)
+	$(MAKE) e2e-test-native APP_NAME=$(APP_NAME) BASE_URL=$(BASE_URL) PERF=1 \
+		E2E_ARGS='reporting-app/tests/performanceBaseline.spec.ts --project=chromium'
+
+e2e-perf-lighthouse: ## Run Lighthouse audits (opt-in reports; set PERF_ENFORCE_BUDGET=1 to fail on budgets)
+	@:$(call check_defined, APP_NAME, You must pass in a specific APP_NAME)
+	$(MAKE) e2e-test-native APP_NAME=$(APP_NAME) BASE_URL=$(BASE_URL) PERF=1 \
+		E2E_ARGS='reporting-app/tests/lighthouseBudget.spec.ts --project=chromium --workers=1'
 
 e2e-test-native-ui: ## Run end-to-end tests natively in UI mode
 	@:$(call check_defined, APP_NAME, You must pass in a specific APP_NAME)

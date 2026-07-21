@@ -64,18 +64,18 @@ const LCP_OBSERVER_SCRIPT = `
  * Usage:
  *   const collector = new PerfCollector(page);
  *   await collector.start(SLOW_3G);
- *   const measurement = await collector.measure('dashboard');
+ *   const measurement = await collector.measure('dashboard', SLOW_3G, url);
  *   await collector.stop();
  *
- * `measure()` reloads the current page under throttling with cache disabled
- * (cold-cache, first-visit worst case), so drive navigation to the target page
- * *before* calling it.
+ * `measure()` navigates once to `url` (or the current page URL) under throttling
+ * with cache disabled (cold-cache, first-visit worst case).
  */
 export class PerfCollector {
   private client?: CDPSession;
   private requestTypes = new Map<string, keyof ResourceBreakdown>();
   private resourceBytes: ResourceBreakdown = emptyBreakdown();
   private requestCount = 0;
+  private lcpScriptInstalled = false;
 
   constructor(private readonly page: Page) {}
 
@@ -103,18 +103,22 @@ export class PerfCollector {
     await this.client.send('Network.setCacheDisabled', { cacheDisabled: true });
 
     await this.installByteCounters(this.client);
-    await this.page.addInitScript(LCP_OBSERVER_SCRIPT);
+
+    if (!this.lcpScriptInstalled) {
+      await this.page.addInitScript(LCP_OBSERVER_SCRIPT);
+      this.lcpScriptInstalled = true;
+    }
   }
 
   /**
-   * Reload the current page under throttling and return its measurement.
-   * Navigate to the target page before calling this.
+   * Load `url` once under the active throttling profile and return its measurement.
+   * When `url` is omitted, navigates to the current page URL.
    */
-  async measure(pageName: string): Promise<PageMeasurement> {
+  async measure(pageName: string, profile: NetworkProfile, url?: string): Promise<PageMeasurement> {
     this.resetCounters();
-    const url = this.page.url();
+    const targetUrl = url ?? this.page.url();
 
-    await this.page.reload({ waitUntil: 'load' });
+    await this.page.goto(targetUrl, { waitUntil: 'load' });
     // Let late resources (fonts, lazy assets, LCP candidates) settle.
     await this.page.waitForLoadState('networkidle').catch(() => undefined);
 
@@ -135,8 +139,8 @@ export class PerfCollector {
 
     return {
       page: pageName,
-      url,
-      profile: '', // set by the caller (spec) which knows the active profile
+      url: targetUrl,
+      profile: profile.name,
       transferBytes: sumBreakdown(this.resourceBytes),
       requestCount: this.requestCount,
       resourceBytes: { ...this.resourceBytes },

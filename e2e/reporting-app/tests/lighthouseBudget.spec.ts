@@ -5,24 +5,26 @@ import type { Config } from 'lighthouse';
 import { playAudit } from 'playwright-lighthouse';
 
 import { test } from '../../fixtures';
-import { AccountCreationFlow } from '../flows';
-import { CertificationRequestPage } from '../pages';
-import { DashboardPage } from '../pages/members/DashboardPage';
+import {
+  captureDashboardAndScreenerTargets,
+  lighthouseSlow3gSimulatedThrottling,
+  signInAsNewMember,
+} from '../perf';
 
 /**
- * Runs Lighthouse against the authenticated member pages and enforces a
- * performance budget (e2e/reporting-app/lighthouse/budget.json). Supports the
- * "frontier / limited connectivity" work (issue #747): AC "meet a defined
- * performance budget".
+ * Runs Lighthouse against authenticated member pages. Supports the
+ * "frontier / limited connectivity" work (issue #747).
  *
- * Lighthouse attaches to the Playwright-controlled Chromium over CDP, so
- * Playwright owns authentication (one login path) and Lighthouse reuses the
- * session cookies. The browser must expose a remote debugging port — set below.
+ * Opt-in only — excluded from the default e2e suite unless PERF=1:
+ *   make e2e-perf-lighthouse APP_NAME=reporting-app
  *
- * NOTE: run this file on its own (workers=1) so the fixed CDP port does not
- * clash with parallel workers:
- *   make e2e-test-native APP_NAME=reporting-app \
- *     E2E_ARGS=reporting-app/tests/lighthouseBudget.spec.ts
+ * By default this is **capture-first**: HTML/JSON reports are written under
+ * e2e/perf-results/lighthouse/ without failing on placeholder budgets or
+ * category-score floors. Set PERF_ENFORCE_BUDGET=1 to enforce budget.json and
+ * score thresholds after baselines are calibrated.
+ *
+ * Lighthouse attaches to Playwright Chromium over CDP (fixed port below).
+ * Run with workers=1 / a single project so the port does not clash.
  */
 
 const LH_PORT = 9222;
@@ -33,50 +35,39 @@ const budgets = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, '../lighthouse/budget.json'), 'utf-8')
 );
 
-// Simulated Slow-3G-ish mobile throttling (matches the Track A "Slow 3G" intent).
-const THROTTLING = {
-  rttMs: 400,
-  throughputKbps: 400,
-  requestLatencyMs: 400 * 3.75,
-  downloadThroughputKbps: 400 * 0.9,
-  uploadThroughputKbps: 400 * 0.9,
-  cpuSlowdownMultiplier: 4,
-};
+const enforceBudget = process.env.PERF_ENFORCE_BUDGET === '1';
 
-test('member pages meet the performance budget under 3G', async ({ page, emailService }) => {
+test('member pages meet the performance budget under 3G', async ({
+  page,
+  emailService,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'chromium',
+    'Lighthouse requires a single Chromium CDP port; skip other projects.'
+  );
+
   test.setTimeout(10 * 60 * 1000);
 
-  const email = emailService.generateEmailAddress(emailService.generateUsername());
-  const password = 'testPassword';
+  await signInAsNewMember(page, emailService);
 
-  // Authenticate (same path as the other member specs).
-  const certPage = await new CertificationRequestPage(page).go();
-  await certPage.fillAndSubmit(email);
-  const signInPage = await new AccountCreationFlow(page, emailService).run(email, password);
-  const mfaPreferencePage = await signInPage.signIn(email, password);
-  await mfaPreferencePage.skipMFA();
-
-  // Reach the pages to audit and capture their URLs (capture before navigating on).
-  const dashboard = await new DashboardPage(page).go();
-  const dashboardUrl = page.url();
-  await dashboard.clickGetStarted();
-  const screenerUrl = page.url();
-
+  const { dashboard, screener } = await captureDashboardAndScreenerTargets(page);
   const targets = [
-    { name: 'dashboard', url: dashboardUrl },
-    { name: 'exemption-screener-index', url: screenerUrl },
+    { name: 'dashboard', url: dashboard.url },
+    { name: 'exemption-screener-index', url: screener.url },
   ];
 
   // `budgets` is a valid runtime lighthouse setting (settings.budgets) but is
   // absent from lighthouse's exported Config types, so cast the settings object.
+  // Track B uses Lighthouse *simulate* throttling derived from Slow 3G constants;
+  // it is not identical to CDP Network.emulateNetworkConditions (Track A).
   const lighthouseConfig: Config = {
     extends: 'lighthouse:default',
     settings: {
       formFactor: 'mobile',
       onlyCategories: ['performance', 'accessibility'],
       throttlingMethod: 'simulate',
-      throttling: THROTTLING,
-      budgets,
+      throttling: lighthouseSlow3gSimulatedThrottling(),
+      ...(enforceBudget ? { budgets } : {}),
     } as Config['settings'],
   };
 
@@ -85,8 +76,10 @@ test('member pages meet the performance budget under 3G', async ({ page, emailSe
     await playAudit({
       page,
       port: LH_PORT,
-      // Category-score floors; budget.json enforces size/timing budgets.
-      thresholds: { performance: 50, accessibility: 90 },
+      // Soft floors unless PERF_ENFORCE_BUDGET=1 (capture-first workflow).
+      thresholds: enforceBudget
+        ? { performance: 50, accessibility: 90 }
+        : { performance: 0, accessibility: 0 },
       config: lighthouseConfig,
       reports: {
         formats: { html: true, json: true },

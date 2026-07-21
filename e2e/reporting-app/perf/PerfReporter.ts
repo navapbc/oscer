@@ -18,6 +18,10 @@ export class PerfReporter {
     this.measurements.push(measurement);
   }
 
+  get size(): number {
+    return this.measurements.length;
+  }
+
   private outDir(): string {
     return process.env.PERF_OUT_DIR ?? path.resolve(__dirname, '../../perf-results');
   }
