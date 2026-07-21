@@ -181,6 +181,29 @@ RSpec.describe "/activities", type: :request do
         end
       end
 
+      context "without a name" do
+        let(:invalid_attributes) {
+          {
+            name: "",
+            activity_type: "income_activity",
+            income: "1500",
+            month: (Date.today - 2.months).beginning_of_month,
+            category: "employment"
+          }
+        }
+
+        it "does not persist a new Activity" do
+          expect {
+            post activity_report_application_form_activities_url(activity_report_application_form), params: { activity: invalid_attributes }
+          }.not_to change(IncomeActivity, :count)
+        end
+
+        it "renders a response with 422 status (unprocessable entity)" do
+          post activity_report_application_form_activities_url(activity_report_application_form), params: { activity: invalid_attributes }
+          expect(response).to have_http_status(:unprocessable_content)
+        end
+      end
+
       context "with valid activity parameters" do
         it "creates a new IncomeActivity when activity_type is income_activity" do
           valid_attributes = {
@@ -414,6 +437,33 @@ RSpec.describe "/activities", type: :request do
 
         income_activity.reload
         expect(income_activity.evidence_source).to eq("ai_assisted_with_member_edits")
+      end
+    end
+
+    context "with a blank organization name" do
+      it "re-renders the review page with a 422 instead of raising" do
+        patch activity_report_application_form_activity_url(activity_report_application_form, income_activity),
+          params: {
+            activity: { name: "", income: "1500", month: Date.new(2025, 1, 1) },
+            doc_ai_review: "true",
+            pending_review_ids: [ second_activity.id ]
+          }
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Name can&#39;t be blank")
+      end
+
+      it "does not overwrite the existing name with a blank value" do
+        income_activity.update_column(:name, "Acme Corp")
+
+        patch activity_report_application_form_activity_url(activity_report_application_form, income_activity),
+          params: {
+            activity: { name: "", income: "1500", month: Date.new(2025, 1, 1) },
+            doc_ai_review: "true"
+          }
+
+        income_activity.reload
+        expect(income_activity.name).to eq("Acme Corp")
       end
     end
 

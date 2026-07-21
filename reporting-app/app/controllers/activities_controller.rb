@@ -34,10 +34,7 @@ class ActivitiesController < ApplicationController
   # GET /activities/1/edit
   def edit
     authorize @activity_report_application_form, :edit?
-    if @doc_ai_review
-      @pending_review_ids = Array(params[:pending_review_ids])
-      @staged_document = StagedDocument.find_by(stageable: @activity)
-    end
+    set_doc_ai_review_form_data if @doc_ai_review
   end
 
   # GET /activities/1/documents
@@ -125,6 +122,7 @@ class ActivitiesController < ApplicationController
         end
         format.json { render :show, status: :ok, location: @activity.becomes(Activity) }
       else
+        set_doc_ai_review_form_data if @doc_ai_review
         format.html { render :edit, status: :unprocessable_content }
         format.json { render json: @activity.errors, status: :unprocessable_content }
       end
@@ -192,5 +190,12 @@ class ActivitiesController < ApplicationController
 
     def set_doc_ai_review
       @doc_ai_review = ActiveModel::Type::Boolean.new.cast(params[:doc_ai_review])
+    end
+
+    # Instance variables the doc-ai review page (edit view) needs. Set on GET edit
+    # and again when update fails validation and re-renders edit.
+    def set_doc_ai_review_form_data
+      @pending_review_ids = Array(params[:pending_review_ids])
+      @staged_document = StagedDocument.find_by(stageable: @activity)
     end
 end
