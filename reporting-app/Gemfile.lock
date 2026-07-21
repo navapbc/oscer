@@ -603,7 +603,7 @@ GEM
       rubyzip (>= 1.2.2, < 4.0)
       websocket (~> 1.0)
     shellany (0.0.1)
-    simplecov (1.0.0)
+    simplecov (1.0.2)
     simpleidn (0.2.3)
     sorbet-runtime (0.6.13312)
     sprockets (4.2.2)
