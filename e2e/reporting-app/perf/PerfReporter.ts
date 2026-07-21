@@ -23,7 +23,9 @@ export class PerfReporter {
   }
 
   private outDir(): string {
-    return process.env.PERF_OUT_DIR ?? path.resolve(__dirname, '../../perf-results');
+    // Make often exports PERF_OUT_DIR="" when unset; treat blank like missing.
+    const fromEnv = process.env.PERF_OUT_DIR?.trim();
+    return fromEnv || path.resolve(__dirname, '../../perf-results');
   }
 
   /** Write both perf-baseline.json and perf-baseline.md. Returns the directory. */
