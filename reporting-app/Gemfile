@@ -71,7 +71,7 @@ gem "ruby-vips", "~> 2.0"
 gem "image_processing", "~> 2.0"
 
 # Authentication and Authorization
-gem "aws-sdk-cognitoidentityprovider", "~> 1.147"
+gem "aws-sdk-cognitoidentityprovider", "~> 1.148"
 gem "devise", "~> 5.0"
 gem "jwt"
 gem "pundit"
