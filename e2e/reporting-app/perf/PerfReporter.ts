@@ -28,30 +28,41 @@ export class PerfReporter {
     return fromEnv || path.resolve(__dirname, '../../perf-results');
   }
 
-  /** Write both perf-baseline.json and perf-baseline.md. Returns the directory. */
-  flush(): string {
+  /**
+   * Write JSON + markdown. `basename` defaults to `perf-baseline`
+   * (e.g. pass `perf-baseline-flow` for multi-step flow runs).
+   */
+  flush(basename = 'perf-baseline'): string {
     const dir = this.outDir();
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(
-      path.join(dir, 'perf-baseline.json'),
+      path.join(dir, `${basename}.json`),
       JSON.stringify(this.measurements, null, 2)
     );
-    fs.writeFileSync(path.join(dir, 'perf-baseline.md'), this.toMarkdown());
+    fs.writeFileSync(path.join(dir, `${basename}.md`), this.toMarkdown(basename));
     return dir;
   }
 
-  private toMarkdown(): string {
+  private toMarkdown(basename: string): string {
+    const hasStep = this.measurements.some((m) => m.stepDurationMs != null);
     const header = [
-      '# Client-facing performance baseline',
+      `# Client-facing performance baseline (${basename})`,
       '',
       'Transfer sizes are bytes over the wire (cold cache). Timings in milliseconds.',
+      hasStep ? 'Step (ms) is wall-clock for measured actions (navigations / uploads).' : '',
       '',
-      '| Page | Profile | Transfer (KB) | Requests | JS (KB) | CSS (KB) | Img (KB) | TTFB | FCP | LCP | Load |',
-      '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
-    ];
+      hasStep
+        ? '| Page | Profile | Transfer (KB) | Requests | JS (KB) | CSS (KB) | Img (KB) | TTFB | FCP | LCP | Load | Step |'
+        : '| Page | Profile | Transfer (KB) | Requests | JS (KB) | CSS (KB) | Img (KB) | TTFB | FCP | LCP | Load |',
+      hasStep
+        ? '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |'
+        : '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
+    ].filter((line) => line !== undefined);
+
     const rows = this.measurements.map((m) => {
       const kb = (n: number) => (n / KB).toFixed(1);
-      return `| ${m.page} | ${m.profile} | ${kb(m.transferBytes)} | ${m.requestCount} | ${kb(m.resourceBytes.script)} | ${kb(m.resourceBytes.stylesheet)} | ${kb(m.resourceBytes.image)} | ${m.ttfbMs} | ${m.fcpMs} | ${m.lcpMs} | ${m.loadMs} |`;
+      const base = `| ${m.page} | ${m.profile} | ${kb(m.transferBytes)} | ${m.requestCount} | ${kb(m.resourceBytes.script)} | ${kb(m.resourceBytes.stylesheet)} | ${kb(m.resourceBytes.image)} | ${m.ttfbMs} | ${m.fcpMs} | ${m.lcpMs} | ${m.loadMs}`;
+      return hasStep ? `${base} | ${m.stepDurationMs ?? ''} |` : `${base} |`;
     });
     return [...header, ...rows, ''].join('\n');
   }

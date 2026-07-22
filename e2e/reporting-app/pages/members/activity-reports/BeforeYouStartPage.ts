@@ -17,8 +17,12 @@ export class BeforeYouStartPage extends BasePage {
   }
 
   async clickStart() {
-    // Skip DocAI for original document upload flow
-    await this.skipAiCheckbox.check();
+    // Skip DocAI when the checkbox is present (FEATURE_DOC_AI); otherwise Start goes
+    // straight to the classic months / supporting-documents path.
+    const skipInput = this.page.locator('.usa-checkbox__input');
+    if ((await skipInput.count()) > 0) {
+      await skipInput.check();
+    }
     await this.startButton.click();
 
     return new ChooseMonthsPage(this.page).waitForURLtoMatchPagePath();

@@ -158,6 +158,16 @@ e2e-perf-baseline: ## Capture client-facing perf baselines (opt-in; writes e2e/p
 	$(MAKE) e2e-test-native APP_NAME=$(APP_NAME) BASE_URL=$(BASE_URL) PERF=1 \
 		E2E_ARGS='reporting-app/tests/performanceBaseline.spec.ts --project=chromium'
 
+e2e-perf-baseline-flow: ## LONG-RUNNING opt-in flow baselines (NOT for CI; tens of min–1h+)
+	@:$(call check_defined, APP_NAME, You must pass in a specific APP_NAME)
+	@echo ""
+	@echo "WARNING: e2e-perf-baseline-flow is opt-in and NOT run in CI."
+	@echo "         Full Slow/Fast/Unthrottled sweeps can take tens of minutes to 1+ hour."
+	@echo "         Tip: PERF_PROFILES=\"Slow 3G\" for a shorter run."
+	@echo ""
+	$(MAKE) e2e-test-native APP_NAME=$(APP_NAME) BASE_URL=$(BASE_URL) PERF=1 \
+		E2E_ARGS='reporting-app/tests/performanceBaselineFlow.spec.ts --project=chromium --workers=1'
+
 e2e-perf-lighthouse: ## Run Lighthouse audits (opt-in reports; set PERF_ENFORCE_BUDGET=1 to fail on budgets)
 	@:$(call check_defined, APP_NAME, You must pass in a specific APP_NAME)
 	$(MAKE) e2e-test-native APP_NAME=$(APP_NAME) BASE_URL=$(BASE_URL) PERF=1 \

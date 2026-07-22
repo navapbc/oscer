@@ -23,7 +23,7 @@ export interface PageMeasurement {
   transferBytes: number;
   requestCount: number;
   resourceBytes: ResourceBreakdown;
-  /** Time to first byte (ms), from Navigation Timing. */
+  /** Time to first byte (ms), from Navigation Timing (0 if unavailable). */
   ttfbMs: number;
   /** First Contentful Paint (ms). */
   fcpMs: number;
@@ -33,6 +33,11 @@ export interface PageMeasurement {
   domContentLoadedMs: number;
   /** load event end (ms). */
   loadMs: number;
+  /**
+   * Wall-clock duration of a measured action (ms). Set by `measureAction` for
+   * multi-step flows; useful when Navigation Timing does not reflect POST/upload.
+   */
+  stepDurationMs?: number;
 }
 
 const CDP_TYPE_TO_BUCKET: Record<string, keyof ResourceBreakdown> = {
@@ -122,6 +127,36 @@ export class PerfCollector {
     // Let late resources (fonts, lazy assets, LCP candidates) settle.
     await this.page.waitForLoadState('networkidle').catch(() => undefined);
 
+    return this.buildMeasurement(pageName, profile, targetUrl);
+  }
+
+  /**
+   * Run `action` under the active profile and measure transfer + wall-clock time.
+   * Use for multi-step wizard navigations and document uploads (POST/redirect).
+   */
+  async measureAction(
+    stepName: string,
+    profile: NetworkProfile,
+    action: () => Promise<void>
+  ): Promise<PageMeasurement> {
+    this.resetCounters();
+    const startedAt = Date.now();
+    await action();
+    await this.page.waitForLoadState('networkidle').catch(() => undefined);
+    const stepDurationMs = Date.now() - startedAt;
+    const measurement = await this.buildMeasurement(stepName, profile, this.page.url());
+    measurement.stepDurationMs = stepDurationMs;
+    if (!measurement.loadMs) {
+      measurement.loadMs = stepDurationMs;
+    }
+    return measurement;
+  }
+
+  private async buildMeasurement(
+    pageName: string,
+    profile: NetworkProfile,
+    url: string
+  ): Promise<PageMeasurement> {
     const timing = await this.page.evaluate(() => {
       const nav = performance.getEntriesByType('navigation')[0] as
         PerformanceNavigationTiming | undefined;
@@ -139,7 +174,7 @@ export class PerfCollector {
 
     return {
       page: pageName,
-      url: targetUrl,
+      url,
       profile: profile.name,
       transferBytes: sumBreakdown(this.resourceBytes),
       requestCount: this.requestCount,

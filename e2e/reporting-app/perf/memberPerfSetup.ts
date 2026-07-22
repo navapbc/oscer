@@ -15,8 +15,14 @@ const DEFAULT_PASSWORD = 'testPassword';
 /**
  * Creates a new member account and signs in (skips MFA), matching the path used
  * by other member e2e specs. Shared by Track A (baseline) and Track B (Lighthouse).
+ *
+ * Clears cookies first so multi-profile loops (and re-entry) do not reuse an old
+ * Devise session — otherwise verify redirects to `/users/sign_in`, which bounces
+ * authenticated users to `/dashboard` ("You are already signed in") and hangs.
  */
 export async function signInAsNewMember(page: Page, emailService: EmailService): Promise<void> {
+  await page.context().clearCookies();
+
   const email = emailService.generateEmailAddress(emailService.generateUsername());
 
   const certPage = await new CertificationRequestPage(page).go();

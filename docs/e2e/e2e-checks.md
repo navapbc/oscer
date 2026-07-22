@@ -80,21 +80,28 @@ make e2e-test-native APP_NAME=reporting-app \
 
 ### Performance baselines (frontier / low-bandwidth)
 
-Client-facing performance harnesses for [OSCER-747](https://github.com/navapbc/oscer/issues/747) live under `e2e/reporting-app/perf/` and two opt-in specs:
+Client-facing performance harnesses for [OSCER-747](https://github.com/navapbc/oscer/issues/747) live under `e2e/reporting-app/perf/` and these opt-in specs:
 
 | Spec | Purpose |
 | --- | --- |
 | `performanceBaseline.spec.ts` (Track A) | CDP throttling (DevTools Slow/Fast 3G), writes `e2e/perf-results/perf-baseline.json` + `.md` |
+| `performanceBaselineFlow.spec.ts` | Multi-step flows under the same profiles: (1) all-No screener → 2 hours + income with supporting docs; (2) medical exemption Yes + upload. Writes `perf-baseline-flow-*.json/.md`. **Very slow** (tens of minutes–1h+ for all profiles). |
 | `lighthouseBudget.spec.ts` (Track B) | Lighthouse over CDP; writes reports under `e2e/perf-results/lighthouse/` |
 
-These specs are **excluded from the default e2e suite and CI** unless `PERF=1`. Run them explicitly (app must be up; same Cognito prerequisites as other member tests):
+These specs are **excluded from the default e2e suite and CI** unless `PERF=1`. The GitHub Actions e2e workflow does **not** set `PERF`, so they never run in CI. Run them **locally only** (app must be up; same Cognito prerequisites as other member tests):
 
 ```bash
-# Track A — capture baselines (chromium only)
+# Track A — capture page baselines (chromium only; minutes, not hours)
 make e2e-perf-baseline APP_NAME=reporting-app
 
 # Optional: subset of profiles / output dir
 PERF_PROFILES="Slow 3G" make e2e-perf-baseline APP_NAME=reporting-app
+
+# Multi-step flows — LONG-RUNNING; prefer one profile first
+# WARNING: all three profiles can take tens of minutes to 1+ hour. Not for CI.
+# Make forces --workers=1; each profile clears cookies before creating a new member.
+PERF_PROFILES="Slow 3G" make e2e-perf-baseline-flow APP_NAME=reporting-app
+make e2e-perf-baseline-flow APP_NAME=reporting-app
 
 # Track B — Lighthouse reports (chromium, workers=1 for fixed CDP port 9222)
 make e2e-perf-lighthouse APP_NAME=reporting-app
@@ -113,9 +120,12 @@ make e2e-test APP_NAME=reporting-app BASE_URL=http://host.docker.internal:3000 P
 **Notes**
 
 - Track A uses CDP `Network.emulateNetworkConditions` with Chrome DevTools Slow/Fast 3G constants.
+- Flow baselines sum per-step wall-clock (`stepDurationMs`) for multi-step member walks; prefer `PERF_PROFILES="Slow 3G"` first. Results are gitignored under `e2e/perf-results/`—copy elsewhere to retain.
 - Track B uses Lighthouse `throttlingMethod: 'simulate'` with settings *derived from* Slow 3G. Simulated timings are **not** 1:1 comparable to Track A / DevTools.
 - Default Track B is capture-first (reports only). `PERF_ENFORCE_BUDGET=1` turns on `lighthouse/budget.json` and category thresholds.
 - Env vars: `PERF`, `PERF_PROFILES`, `PERF_OUT_DIR`, `PERF_ENFORCE_BUDGET`.
+
+**Example local capture (illustrative; re-run for current numbers):** On Slow 3G, Track A cold FCP was ~7.5–10s on ~400 KB pages; the activities flow summed to ~7.7 minutes of measured steps and the medical exemption flow ~2.5 minutes (small fixture uploads ~20–23s).
 
 ### Run tests in UI mode (native)
 
