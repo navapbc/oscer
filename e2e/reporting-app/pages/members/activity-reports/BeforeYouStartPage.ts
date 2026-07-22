@@ -19,9 +19,10 @@ export class BeforeYouStartPage extends BasePage {
   async clickStart() {
     // Skip DocAI when the checkbox is present (FEATURE_DOC_AI); otherwise Start goes
     // straight to the classic months / supporting-documents path.
-    const skipInput = this.page.locator('.usa-checkbox__input');
-    if ((await skipInput.count()) > 0) {
-      await skipInput.check();
+    // Click the visible label — the USWDS tile input is off-viewport and
+    // `.check()` on `.usa-checkbox__input` times out in CI.
+    if ((await this.skipAiCheckbox.count()) > 0) {
+      await this.skipAiCheckbox.check();
     }
     await this.startButton.click();
 
