@@ -44,9 +44,19 @@ RSpec.describe PayslipToIncomeActivityCreateService do
         expect(activities.first.income).to eq(Strata::Money.new(cents: 150_000))
       end
 
-      it "leaves name blank" do
+      it "leaves name nil when companyname is absent" do
         activities = service.call([ staged_doc.id ])
         expect(activities.first.name).to be_nil
+      end
+
+      it "sets name from companyname when present" do
+        staged_doc.update!(
+          extracted_fields: staged_doc.extracted_fields.merge(
+            "companyname" => { "confidence" => 0.9, "value" => "  Acme Corp  " }
+          )
+        )
+        activities = service.call([ staged_doc.id ])
+        expect(activities.first.name).to eq("Acme Corp")
       end
 
       it "derives month from pay_period_start_date matching reporting period" do

@@ -47,6 +47,19 @@ class DocAiResult::Payslip < DocAiResult
   def employee_address_state   = field_for("employeeaddress.state")
   def employee_address_zipcode = field_for("employeeaddress.zipcode")
 
+  # --- Company ---
+  def company_name             = field_for("companyname")
+
+  # Returns a stripped employer/company string or nil — matches Activity#name normalization for attribution.
+  def self.normalize_company_name_string(value)
+    return nil if value.nil?
+
+    s = value.to_s.strip
+    s.empty? ? nil : s
+  end
+
+  def company_name_value = self.class.normalize_company_name_string(company_name&.value)
+
   # --- Company address ---
   def company_address_line1    = field_for("companyaddress.line1")
   def company_address_line2    = field_for("companyaddress.line2")
@@ -104,6 +117,7 @@ class DocAiResult::Payslip < DocAiResult
       employee_address_city:    employee_address_city&.value,
       employee_address_state:   employee_address_state&.value,
       employee_address_zipcode: employee_address_zipcode&.value,
+      company_name:             company_name_value,
       company_address_line1:    company_address_line1&.value,
       company_address_line2:    company_address_line2&.value,
       company_address_city:     company_address_city&.value,
