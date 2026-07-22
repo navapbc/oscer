@@ -44,8 +44,11 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   end
 
   # --- Transitions: External exclusion check ---
+  # DeterminedExcepted: a data source yielded an exception during the exclusion
+  # check (no exclusion applied), so the case ends as the exception check would.
   transition(EXTERNAL_EXCLUSION_CHECK_STEP, "DeterminedNotExcluded", EXTERNAL_EXCEPTION_CHECK_STEP)
   transition(EXTERNAL_EXCLUSION_CHECK_STEP, "DeterminedExcluded", END_STEP)
+  transition(EXTERNAL_EXCLUSION_CHECK_STEP, "DeterminedExcepted", END_STEP)
 
   # --- Transitions: External exception check ---
   # DeterminedExcepted: case ends (member need not report).

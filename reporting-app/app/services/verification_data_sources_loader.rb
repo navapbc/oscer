@@ -9,8 +9,10 @@ require_relative "config_loading"
 # A "data source" is an external verification adapter (a Verification::DataSource
 # subclass). Config owns enablement, wiring, and call order; the adapter class
 # owns which outcome symbols it may emit via {.declared_outcomes}. Boot
-# validation confirms those outcomes exist in the Exclusion / ExternalException
-# registries (CE membership lands with a CE registry later).
+# validation confirms those outcomes are known Determination::REASON_CODE_MAPPING
+# keys (the "emit the key" convention — a source emits the mapping key, which
+# resolves downstream to a reason code and, for exclusion facts, an Exclusion
+# priority).
 #
 # Call order among verification sources is configured here via the per-source
 # order integer. Exception and community-engagement sources may interleave in
@@ -26,9 +28,9 @@ require_relative "config_loading"
 #     order types + distinctness) and needs no application constants, so it runs
 #     in the initializer body and is unit-testable in isolation.
 #   * .validate_registry! constantizes adapter_class, requires .declared_outcomes,
-#     and checks each outcome against the known registries. That requires
-#     autoloadable app constants (and the sibling exclusion/exception
-#     initializers to have run), so the initializer defers it to a to_prepare hook.
+#     and checks each outcome against Determination::REASON_CODE_MAPPING keys.
+#     That requires autoloadable app constants, so the initializer defers it to a
+#     to_prepare hook.
 #
 # Mirrors ExclusionTypesLoader / ExemptionTypesLoader; the YAML load/parse/error
 # plumbing lives in the shared ConfigLoading module (extend below).
@@ -69,20 +71,17 @@ module VerificationDataSourcesLoader
   end
 
   # Application-constant-dependent validation. Must run after autoloading is
-  # ready and after the sibling registries are populated, so the initializer
-  # calls this from a to_prepare hook rather than the body.
+  # ready, so the initializer calls this from a to_prepare hook rather than the
+  # body.
   def validate_registry!(entries)
-    # Snapshot once per boot validation pass — outcome lookups reuse these sets
-    # instead of re-mapping Exclusion / ExternalException on every outcome.
-    registries = {
-      exclusion: Exclusion.valid_values.map(&:to_sym),
-      exception: ExternalException.all.map { |registry_entry| registry_entry[:id] }
-    }
+    # A data source emits Determination reason-code mapping keys (the "emit the
+    # key" convention). Snapshot the valid keys once per boot validation pass.
+    valid_outcomes = Determination::REASON_CODE_MAPPING.keys
 
     entries.each do |entry|
       klass = validate_adapter_class!(entry)
       outcomes = fetch_declared_outcomes!(entry, klass)
-      validate_outcome_ids!(entry, outcomes, registries)
+      validate_outcome_ids!(entry, outcomes, valid_outcomes)
     end
   end
 
@@ -174,27 +173,16 @@ module VerificationDataSourcesLoader
     declared
   end
 
-  # Every declared outcome must be a known exclusion or external-exception id.
-  # CE ids are not membership-checked yet (no CE registry); until that lands,
-  # outcomes that are neither exclusion nor exception raise so typos fail loudly
-  # rather than being silently treated as CE.
-  def validate_outcome_ids!(entry, outcomes, registries)
-    unknown = outcomes.reject { |outcome| outcome_category(outcome, registries) }
+  # Every declared outcome must be a known Determination reason-code key. A key
+  # resolves downstream to a reason code (via REASON_CODE_MAPPING) and, for
+  # exclusion facts, to an Exclusion priority; unknown keys raise so typos fail
+  # loudly at boot.
+  def validate_outcome_ids!(entry, outcomes, valid_outcomes)
+    unknown = outcomes - valid_outcomes
     return if unknown.empty?
 
-    known = registries[:exclusion] + registries[:exception]
     raise ConfigurationError,
       "verification_data_sources.#{entry[:id]}: .declared_outcomes references unknown id(s) #{unknown.map(&:to_s)}; " \
-      "valid ids are Exclusion.valid_values and ExternalException registry entries " \
-      "(#{known.map(&:to_s).sort})"
-  end
-
-  # The category an outcome belongs to, or nil when it is in neither registry.
-  # Exclusion takes precedence should an id ever appear in both (it should not).
-  def outcome_category(outcome, registries)
-    return :exclusion if registries[:exclusion].include?(outcome)
-    return :exception if registries[:exception].include?(outcome)
-
-    nil
+      "valid ids are Determination::REASON_CODE_MAPPING keys (#{valid_outcomes.map(&:to_s).sort})"
   end
 end
