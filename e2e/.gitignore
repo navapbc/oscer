@@ -2,6 +2,7 @@ node_modules/
 /test-results/
 /playwright-report/
 /blob-report/
+/perf-results/
 /playwright/.cache/
 *.png*
 .prettier-cache
