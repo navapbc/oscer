@@ -46,6 +46,7 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   # --- Transitions: External exclusion check ---
   transition(EXTERNAL_EXCLUSION_CHECK_STEP, "DeterminedNotExcluded", EXTERNAL_EXCEPTION_CHECK_STEP)
   transition(EXTERNAL_EXCLUSION_CHECK_STEP, "DeterminedExcluded", END_STEP)
+  transition(EXTERNAL_EXCLUSION_CHECK_STEP, "DeterminedExcepted", END_STEP)
 
   # --- Transitions: External exception check ---
   # DeterminedExcepted: case ends (member need not report).
