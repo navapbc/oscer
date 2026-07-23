@@ -39,9 +39,9 @@
 # The loader validates at boot and raises a ConfigurationError naming the
 # offending entry for: a missing/blank required key; an adapter_class that does
 # not constantize (or is not a Verification::DataSource subclass); a missing /
-# malformed .declared_outcomes; a declared outcome absent from Exclusion /
-# ExternalException registries; a non-Integer order; or two sources sharing an
-# order (call order must be unambiguous). Unknown keys are ignored.
+# malformed .declared_outcomes; a declared outcome that is not a
+# Determination::REASON_CODE_MAPPING key; a non-Integer order; or two sources
+# sharing an order (call order must be unambiguous). Unknown keys are ignored.
 #
 # ## Examples
 #
@@ -64,7 +64,11 @@
 #
 # ## Empty-file note
 #
-# If you want to ship no overrides, leave the empty hash below as-is, or delete
+# If you want to ship no overrides, leave an empty hash (`{}`) here, or delete
 # the file entirely — the loader treats a missing file as no overrides.
 
-{}
+# Mock data source for use by ExclusionDeterminationService.
+mock_drug_treatment:
+  enabled: true
+  adapter_class: "Verification::Adapters::MockDrugTreatment"
+  order: null

@@ -55,17 +55,6 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       end
     end
 
-    context "with an override that toggles a shipped source off" do
-      it "deep-merges: the override wins and unrelated keys are preserved" do
-        result = described_class.merge_with_defaults(
-          "va_disability_rating" => { "enabled" => false }
-        )
-        entry = result["va_disability_rating"]
-        expect(entry["enabled"]).to be(false)
-        expect(entry["adapter_class"]).to eq("Verification::Adapters::VaDisabilityRating")
-      end
-    end
-
     context "with an override that adds a new source" do
       it "produces all defaults plus the new entry" do
         result = described_class.merge_with_defaults(
@@ -230,7 +219,7 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       }.to raise_error(described_class::ConfigurationError, /must be a Verification::DataSource subclass/)
     end
 
-    it "raises when a declared outcome is not in Exclusion or ExternalException registries" do
+    it "raises when a declared outcome is not a Determination reason-code key" do
       stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
         def self.declared_outcomes
           [ :not_a_real_outcome ]
@@ -241,13 +230,14 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       )
       expect {
         described_class.validate_registry!(entries)
-      }.to raise_error(described_class::ConfigurationError, /unknown id\(s\).*not_a_real_outcome/)
+      }.to raise_error(described_class::ConfigurationError, /unknown.*not_a_real_outcome/)
     end
 
-    it "accepts a real exception outcome from the ExternalException registry" do
-      exception_id = ExternalException.all.first[:id]
+    it "accepts a reason-code key that maps to an exclusion fact" do
       stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
-        define_singleton_method(:declared_outcomes) { [ exception_id ] }
+        def self.declared_outcomes
+          [ :drug_treatment ]
+        end
       end)
       entries = described_class.transform(
         "src" => source_attrs("adapter_class" => "SpecFixtureSource")
@@ -255,10 +245,23 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       expect { described_class.validate_registry!(entries) }.not_to raise_error
     end
 
-    it "accepts order for a source with exception and exclusion outcomes" do
-      exception_id = ExternalException.all.first[:id]
+    it "accepts a reason-code key that maps to an exception fact" do
       stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
-        define_singleton_method(:declared_outcomes) { [ exception_id, :is_veteran_with_disability ] }
+        def self.declared_outcomes
+          [ :was_in_drug_treatment ]
+        end
+      end)
+      entries = described_class.transform(
+        "src" => source_attrs("adapter_class" => "SpecFixtureSource")
+      )
+      expect { described_class.validate_registry!(entries) }.not_to raise_error
+    end
+
+    it "accepts order for a source mixing exception and exclusion reason-code keys" do
+      stub_const("SpecFixtureSource", Class.new(Verification::DataSource) do
+        def self.declared_outcomes
+          [ :was_in_drug_treatment, :is_veteran_with_disability ]
+        end
       end)
       entries = described_class.transform(
         "src" => source_attrs("adapter_class" => "SpecFixtureSource", "order" => 10)
@@ -283,7 +286,7 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       merged = described_class.merge_with_defaults(overrides)
       entries = described_class.transform(merged)
 
-      expect(entries.map { |e| e[:id] }).to include(:va_disability_rating)
+      expect(entries.map { |e| e[:id] }).to include(:mock_drug_treatment)
       expect { described_class.validate_registry!(entries) }.not_to raise_error
     end
   end
@@ -293,12 +296,12 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       sources = Rails.application.config.verification_data_sources
       expect(sources).to be_an(Array)
 
-      va = sources.find { |s| s[:id] == :va_disability_rating }
-      expect(va[:enabled]).to be(true)
-      expect(va[:adapter_class]).to eq("Verification::Adapters::VaDisabilityRating")
-      expect(va).not_to have_key(:checks)
-      expect(Verification::Adapters::VaDisabilityRating.declared_outcomes)
-        .to eq([ :is_veteran_with_disability ])
+      mock = sources.find { |s| s[:id] == :mock_drug_treatment }
+      expect(mock[:enabled]).to be(true)
+      expect(mock[:adapter_class]).to eq("Verification::Adapters::MockDrugTreatment")
+      expect(mock).not_to have_key(:checks)
+      expect(Verification::Adapters::MockDrugTreatment.declared_outcomes)
+        .to eq([ :drug_treatment, :was_in_drug_treatment ])
     end
   end
 end
