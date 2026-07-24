@@ -76,6 +76,19 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         expect(certification_case).to be_open
       end
     end
+
+    context 'when a data source yields an exception during the exclusion check' do
+      it 'transitions to end' do
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::EXTERNAL_EXCLUSION_CHECK_STEP)
+
+        # ExclusionDeterminationService can now record an exception (rather than an exclusion)
+        # when the only surviving data-source outcome is an exception.
+        Strata::EventManager.publish("DeterminedExcepted", { case_id: certification_case.id, certification_id: certification_case.certification_id })
+        certification_case.reload
+
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
+      end
+    end
   end
 
   describe 'external_exception_check' do
