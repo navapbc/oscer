@@ -24,7 +24,7 @@ RSpec.describe ExclusionDeterminationService do
 
     # The single Determination recorded on the excluded path (nil when not excluded).
     def recorded_exclusion
-      Determination.where(subject: certification, outcome: "excluded").first
+      Determination.where(subject: certification, outcome: "excluded").order(created_at: :desc).first
     end
 
     context 'when a single exclusion applies' do
@@ -301,7 +301,7 @@ RSpec.describe ExclusionDeterminationService do
       end
 
       context 'without any matching condition' do
-        let(:member_data) { build(:certification_member_data, race_ethnicity: "white", cert_date:) }
+        let(:member_data) { build(:certification_member_data, cert_date:) }
 
         it 'publishes DeterminedNotExcluded and leaves the case open' do
           service.determine(kase)
@@ -343,6 +343,267 @@ RSpec.describe ExclusionDeterminationService do
 
       context 'when 65 or older with no other exclusion' do
         let(:member_data) { build(:certification_member_data, date_of_birth: cert_date - 65.years, race_ethnicity: "white", cert_date:) }
+
+        it 'publishes DeterminedNotExcluded' do
+          service.determine(kase)
+          expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExcluded', { case_id: kase.id, certification_id: kase.certification_id })
+        end
+      end
+    end
+  end
+
+  # After the rules engine runs, the service consults the registered verification
+  # data sources. A source is only called when the best exclusion it could emit
+  # (the highest-priority Exclusion among its declared reason-code keys) could
+  # outrank the exclusion the rules engine already found. When a called source
+  # emits a higher-priority exclusion it wins; when the only surviving outcome is
+  # an exception the service records it as an exception instead.
+  describe '#determine consulting verification data sources' do
+    let(:cert_date) { Date.new(2025, 7, 1) }
+    let(:certification) do
+      create(
+        :certification,
+        member_data: member_data,
+        certification_requirements: build(:certification_certification_requirements, certification_date: cert_date)
+      )
+    end
+    let(:kase) { create(:certification_case, certification_id: certification.id) }
+    # Records which fixture sources actually had #call invoked (used to assert gating).
+    let(:calls) { [] }
+
+    before do
+      allow(Strata::EventManager).to receive(:publish)
+      allow(NotificationService).to receive(:send_email_notification)
+    end
+
+    def recorded_exclusion
+      Determination.where(subject: certification, outcome: "excluded").order(created_at: :desc).first
+    end
+
+    def recorded_exception
+      Determination.where(subject: certification, outcome: "excepted").order(created_at: :desc).first
+    end
+
+    # Anonymous Verification::DataSource subclass: declares `declared` outcome
+    # keys and, when called, records the call and returns a success result
+    # emitting `emits`. #call is overridden directly so tests need not set up a
+    # precondition — the point under test is the service's call/gate decision.
+    def fixture_source(declared:, emits:)
+      recorder = calls
+      Class.new(Verification::DataSource) do
+        define_singleton_method(:declared_outcomes) { declared }
+        define_method(:call) do |certification:|
+          recorder << self.class.name
+          Verification::DataSourceResult.success(outcomes: emits, audit_data: { source: self.class.name })
+        end
+      end
+    end
+
+    # Registers `sources` (Array of [const_name, klass, opts]) as the verification
+    # data source registry for this example.
+    def register(*sources)
+      entries = sources.map do |name, klass, opts|
+        stub_const(name, klass)
+        { id: name.underscore.to_sym, enabled: opts.fetch(:enabled, true), adapter_class: name, order: opts[:order] }
+      end
+      allow(Rails.application.config).to receive(:verification_data_sources).and_return(entries)
+    end
+
+    context 'when a source cannot outrank the exclusion the rules engine found' do
+      # Rules engine finds AIAN (priority 10); the source could at best emit
+      # drug_treatment (priority 70), so it is never called.
+      let(:member_data) { build(:certification_member_data, race_ethnicity: "american_indian_or_alaska_native", cert_date:) }
+
+      before do
+        register([ "LowerPotentialSource", fixture_source(declared: [ :drug_treatment ], emits: [ :drug_treatment ]), {} ])
+      end
+
+      it 'does not call the source' do
+        service.determine(kase)
+        expect(calls).to be_empty
+      end
+
+      it 'records the rules-engine exclusion' do
+        service.determine(kase)
+        expect(recorded_exclusion.reasons).to eq([ "american_indian_alaska_native_excluded" ])
+      end
+    end
+
+    context 'when a source can outrank the rules-engine exclusion and emits it' do
+      # Rules engine finds pregnancy (80); the source's best declared exclusion, veteran-disability (30), outranks it.
+      let(:member_data) { build(:certification_member_data, pregnancy_due_or_parturition_date: cert_date, cert_date:) }
+
+      before do
+        register([ "VeteranSource", fixture_source(declared: [ :is_veteran_with_disability ], emits: [ :is_veteran_with_disability ]), {} ])
+      end
+
+      it 'calls the source and records its higher-priority exclusion' do
+        service.determine(kase)
+        expect(calls).to eq([ "VeteranSource" ])
+        expect(recorded_exclusion.reasons).to eq([ "veteran_disability_excluded" ])
+      end
+    end
+
+    context 'when a source is called but emits nothing that outranks the rules engine' do
+      let(:member_data) { build(:certification_member_data, pregnancy_due_or_parturition_date: cert_date, cert_date:) }
+
+      before do
+        register([ "VeteranSource", fixture_source(declared: [ :is_veteran_with_disability ], emits: []), {} ])
+      end
+
+      it 'keeps the rules-engine exclusion' do
+        service.determine(kase)
+        expect(calls).to eq([ "VeteranSource" ])
+        expect(recorded_exclusion.reasons).to eq([ "pregnancy_excluded" ])
+      end
+    end
+
+    context 'with two candidate sources' do
+      # No rules-engine exclusion (white, no signals), so both sources are candidates.
+      let(:member_data) { build(:certification_member_data, cert_date:) }
+
+      context 'when the stronger source emits an outcome weaker than the second source could emit' do
+        # source1 best declared AIAN (10) but emits medically_frail (40); source2 best declared veteran (30).
+        # 40 is weaker than 30, so source2 is called and wins.
+        before do
+          register(
+            [ "FirstSource", fixture_source(declared: [ :is_american_indian_or_alaska_native, :medically_frail ], emits: [ :medically_frail ]), {} ],
+            [ "SecondSource", fixture_source(declared: [ :is_veteran_with_disability ], emits: [ :is_veteran_with_disability ]), {} ]
+          )
+        end
+
+        it 'calls both sources and records the second source’s higher-priority exclusion' do
+          service.determine(kase)
+          expect(calls).to contain_exactly("FirstSource", "SecondSource")
+          expect(recorded_exclusion.reasons).to eq([ "veteran_disability_excluded" ])
+        end
+      end
+
+      context 'when the stronger source emits an outcome stronger than the second source could emit' do
+        # source1 best declared AIAN (10), emits veteran (30); source2 best declared medically_frail (40).
+        # 30 already beats 40, so source2 is never called.
+        before do
+          register(
+            [ "FirstSource", fixture_source(declared: [ :is_american_indian_or_alaska_native, :is_veteran_with_disability ], emits: [ :is_veteran_with_disability ]), {} ],
+            [ "SecondSource", fixture_source(declared: [ :medically_frail ], emits: [ :medically_frail ]), {} ]
+          )
+        end
+
+        it 'records the first source’s exclusion without calling the second' do
+          service.determine(kase)
+          expect(calls).to eq([ "FirstSource" ])
+          expect(recorded_exclusion.reasons).to eq([ "veteran_disability_excluded" ])
+        end
+      end
+    end
+
+    context 'when the only surviving outcome is an exception' do
+      # No rules-engine exclusion; the source could emit drug_treatment (70) so it is
+      # called, but it emits the exception outcome instead.
+      let(:member_data) { build(:certification_member_data, cert_date:) }
+
+      before do
+        register([ "DrugTreatmentSource", fixture_source(declared: [ :drug_treatment, :was_in_drug_treatment ], emits: [ :was_in_drug_treatment ]), {} ])
+      end
+
+      it 'records an exception rather than an exclusion' do
+        service.determine(kase)
+        expect(recorded_exclusion).to be_nil
+        expect(recorded_exception.reasons).to eq([ "drug_treatment_excepted" ])
+      end
+
+      it 'publishes DeterminedExcepted and closes the case' do
+        service.determine(kase)
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedExcepted', { case_id: kase.id, certification_id: kase.certification_id })
+        expect(kase.reload.status).to eq("closed")
+      end
+    end
+
+    context 'when a called source emits nothing at all' do
+      let(:member_data) { build(:certification_member_data, cert_date:) }
+
+      before do
+        register([ "DrugTreatmentSource", fixture_source(declared: [ :drug_treatment ], emits: []), {} ])
+      end
+
+      it 'publishes DeterminedNotExcluded and records nothing' do
+        service.determine(kase)
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExcluded', { case_id: kase.id, certification_id: kase.certification_id })
+        expect(recorded_exclusion).to be_nil
+        expect(recorded_exception).to be_nil
+      end
+    end
+
+    context 'when a source is disabled' do
+      let(:member_data) { build(:certification_member_data, cert_date:) }
+
+      before do
+        register([ "DisabledSource", fixture_source(declared: [ :is_veteran_with_disability ], emits: [ :is_veteran_with_disability ]), { enabled: false } ])
+      end
+
+      it 'is never called' do
+        service.determine(kase)
+        expect(calls).to be_empty
+        expect(recorded_exclusion).to be_nil
+      end
+    end
+
+    context 'when a source declares no exclusion outcomes' do
+      # An exception-only source declares no exclusion, so the exclusion check
+      # never calls it — its exception is left for the external exception check.
+      let(:member_data) { build(:certification_member_data, cert_date:) }
+
+      before do
+        register([ "ExceptionOnlySource", fixture_source(declared: [ :was_in_drug_treatment ], emits: [ :was_in_drug_treatment ]), {} ])
+      end
+
+      it 'is never called and yields no determination here' do
+        service.determine(kase)
+        expect(calls).to be_empty
+        expect(recorded_exclusion).to be_nil
+        expect(recorded_exception).to be_nil
+        expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExcluded', { case_id: kase.id, certification_id: kase.certification_id })
+      end
+    end
+
+    context 'with the real MockDrugTreatment data source' do
+      let(:member_data) { build(:certification_member_data, va_icn: va_icn, cert_date:) }
+
+      before do
+        allow(Rails.application.config).to receive(:verification_data_sources).and_return(
+          [ { id: :mock_drug_treatment, enabled: true, adapter_class: "Verification::Adapters::MockDrugTreatment", order: nil } ]
+        )
+      end
+
+      context 'when the ICN is divisible by 3' do
+        let(:va_icn) { "9" }
+
+        it 'records the drug_treatment exclusion' do
+          service.determine(kase)
+          expect(recorded_exclusion.reasons).to eq([ "drug_treatment_excluded" ])
+        end
+      end
+
+      context 'when the ICN is odd and not divisible by 3' do
+        let(:va_icn) { "7" }
+
+        it 'records the drug_treatment exception' do
+          service.determine(kase)
+          expect(recorded_exception.reasons).to eq([ "drug_treatment_excepted" ])
+        end
+      end
+
+      context 'when the ICN is even and not divisible by 3' do
+        let(:va_icn) { "8" }
+
+        it 'publishes DeterminedNotExcluded' do
+          service.determine(kase)
+          expect(Strata::EventManager).to have_received(:publish).with('DeterminedNotExcluded', { case_id: kase.id, certification_id: kase.certification_id })
+        end
+      end
+
+      context 'when the ICN is absent (source skipped)' do
+        let(:va_icn) { nil }
 
         it 'publishes DeterminedNotExcluded' do
           service.determine(kase)
