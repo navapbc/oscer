@@ -64,6 +64,7 @@ class ExclusionDeterminationService
         break unless outranks?(candidate, current_best)
 
         result = candidate[:source].new.call(certification: certification)
+        # TODO: Handle failure OSCAR-810
         emitted = best_exclusion(result.outcomes)
         current_best = emitted if emitted && outranks?(emitted, current_best)
         exception_keys.concat(exception_outcomes(result.outcomes))
