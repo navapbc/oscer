@@ -45,6 +45,7 @@ RSpec.describe Verification::DataSourceOrchestrator do
       end
 
       it "is satisfied and reports the producing source and its result" do
+        expect(evaluate).to be_satisfied
         expect(evaluate).to have_attributes(
           satisfied: true,
           source_id: :first
@@ -153,6 +154,7 @@ RSpec.describe Verification::DataSourceOrchestrator do
       it "reports not satisfied with no attempts" do
         stub_registry([])
 
+        expect(evaluate).not_to be_satisfied
         expect(evaluate).to have_attributes(satisfied: false, source_id: nil)
         expect(evaluate.attempted).to be_empty
       end

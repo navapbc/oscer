@@ -11,7 +11,10 @@ module Verification
   # called, each as +{ source_id:, result: }+ — so skipped/errored sources are
   # never silently dropped.
   #
-  # Value object in the style of {DataSourceResult}.
+  # A plain attribute-based value object. Unlike {DataSourceResult} it carries no
+  # status/outcome invariants of its own: {DataSourceOrchestrator} is its only
+  # constructor and populates it with an already-validated winning
+  # {DataSourceResult} and the ordered {#attempted} list.
   class OrchestrationResult < ValueObject
     attribute :satisfied, default: false
     attribute :source_id
