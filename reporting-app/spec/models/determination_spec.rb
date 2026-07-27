@@ -308,4 +308,22 @@ RSpec.describe Determination, type: :model do
       expect(described_class::CALCULATION_TYPE_EXTERNAL_CE_COMBINED_LEGACY).to eq('ex_parte_ce_combined')
     end
   end
+
+  describe '#source' do
+    it 'returns the matched verification data source when one was recorded' do
+      determination = build(:determination, decision_method: 'automated',
+                                            determination_data: { 'data_source' => 'mock_drug_treatment' })
+      expect(determination.source).to eq('mock_drug_treatment')
+    end
+
+    it "falls back to 'api' for an automated determination with no data source" do
+      determination = build(:determination, decision_method: 'automated', determination_data: {})
+      expect(determination.source).to eq('api')
+    end
+
+    it "falls back to 'member' for a manual determination" do
+      determination = build(:determination, decision_method: 'manual', determination_data: {})
+      expect(determination.source).to eq('member')
+    end
+  end
 end

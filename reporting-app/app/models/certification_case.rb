@@ -187,8 +187,18 @@ class CertificationCase < Strata::Case
   # Model only handles state changes - service handles selection and events
   # @param reason_codes [Array<String>] reason code(s) for the selected exclusion
   # @param actor [Strata::VirtualActor] recording the exclusion
-  def record_exclusion_determination(reason_codes, actor)
+  # @param data_source [String] origin of the exclusion — a verification data source id, or Determination::API_SOURCE
+  def record_exclusion_determination(reason_codes, actor, data_source)
     certification = Certification.find(certification_id)
+
+    # determination_data is a jsonb column holding a structured Hash (OSCER convention; see the
+    # Determination docs). For automated exclusions the type is carried by the reason codes, which
+    # the dashboard reads via decision_method branching, so we record those codes here. It must stay
+    # a Hash: writing a JSON String (e.g. reasons.to_json) double-encodes into the jsonb column and
+    # reads back as a String, which 500'd the member dashboard. See
+    # https://github.com/navapbc/oscer/issues/680. Api::Certifications::Outcome surfaces
+    # "data_source" as the outcome source.
+    determination_data = { "exclusion_reasons" => reason_codes, "data_source" => data_source }
 
     transaction do
       self.exemption_request_approval_status = "approved"
@@ -199,13 +209,7 @@ class CertificationCase < Strata::Case
         decision_method: :automated,
         reasons: reason_codes,
         outcome: :excluded,
-        # determination_data is a jsonb column holding a structured Hash (OSCER convention; see
-        # the Determination docs). For automated exclusions the type is carried by the reason
-        # codes, which the dashboard reads via decision_method branching, so we record those
-        # codes here. It must stay a Hash: writing a JSON String (e.g. reasons.to_json)
-        # double-encodes into the jsonb column and reads back as a String, which 500'd the
-        # member dashboard. See https://github.com/navapbc/oscer/issues/680.
-        determination_data: { "exclusion_reasons" => reason_codes },
+        determination_data: determination_data,
         determined_at: certification.certification_requirements.certification_date,
         actor:
       )
@@ -217,8 +221,15 @@ class CertificationCase < Strata::Case
   #
   # @param reason_codes [Array<String>] reason codes for the matched exception check(s)
   # @param actor [Strata::VirtualActor] recording the exception
-  def record_exception_determination(reason_codes, actor)
+  # @param data_source [String, nil] id of the verification data source, when available
+  def record_exception_determination(reason_codes, actor, data_source: nil)
     certification = Certification.find(certification_id)
+
+    # determination_data is a jsonb column holding a structured Hash (OSCER convention; must stay a
+    # Hash, not a JSON String — see record_exclusion_determination). The exception type is carried by
+    # the reason codes, recorded here.
+    determination_data = { "exception_reasons" => reason_codes }
+    determination_data["data_source"] = data_source if data_source.present?
 
     transaction do
       close!
@@ -227,10 +238,7 @@ class CertificationCase < Strata::Case
         decision_method: :automated,
         reasons: reason_codes,
         outcome: :excepted,
-        # determination_data is a jsonb column holding a structured Hash (OSCER convention; must
-        # stay a Hash, not a JSON String — see record_exclusion_determination). The exception type
-        # is carried by the reason codes, recorded here.
-        determination_data: { "exception_reasons" => reason_codes },
+        determination_data: determination_data,
         determined_at: certification.certification_requirements.certification_date,
         actor:
       )

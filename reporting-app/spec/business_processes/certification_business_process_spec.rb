@@ -46,7 +46,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         expect(certification_case).to be_open
 
         # Step 2: System process determines applicant is eligible for exclusion
-        certification_case.record_exclusion_determination([ "pregnancy_excluded" ], ExclusionDeterminationService)
+        certification_case.record_exclusion_determination([ "pregnancy_excluded" ], ExclusionDeterminationService, Determination::API_SOURCE)
         Strata::EventManager.publish("DeterminedExcluded", { case_id: certification_case.id, certification_id: certification_case.certification_id })
         certification_case.reload
 

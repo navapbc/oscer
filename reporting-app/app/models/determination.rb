@@ -61,6 +61,11 @@ class Determination < Strata::Determination
   SATISFIED_BY_NEITHER = "neither"
   CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE = "automated_income_intake"
 
+  # Values for +source+ naming an origin inside the system rather than an external verification
+  # data source: the API supplied the data, or a member or staff user entered it.
+  API_SOURCE = "api"
+  MEMBER_SOURCE = "member"
+
   REASON_CODE_MAPPING = {
     age_under_19: "age_under_19_excluded",
     age_over_65: "age_over_65_excluded",
@@ -138,5 +143,15 @@ class Determination < Strata::Determination
     return nil if determination_data.blank?
 
     determination_data.stringify_keys["calculation_type"].presence
+  end
+
+  # Origin of the determination, for reporting (e.g. the API outcome). Prefers the origin its writer
+  # named under +determination_data["data_source"]+ — a verification data source id, or +API_SOURCE+.
+  # Falls back to actor provenance for the writers that record no source
+  # (ExceptionDeterminationService, the CE compliance and exemption paths) and for legacy rows
+  # predating the key. Reads defensively since JSONB rows come back with string keys.
+  # @return [String]
+  def source
+    determination_data&.stringify_keys&.dig("data_source").presence || (automated? ? API_SOURCE : MEMBER_SOURCE)
   end
 end
