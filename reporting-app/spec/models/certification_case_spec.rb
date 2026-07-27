@@ -42,6 +42,20 @@ RSpec.describe CertificationCase, type: :model do
         Strata::AuditLine.where(action: 'case.exception.approved').count
       }.by(1)
     end
+
+    it 'records the matched data source in determination_data when one is given' do
+      certification_case.record_exception_determination(reason_codes, ExceptionDeterminationService, data_source: 'mock_drug_treatment')
+      determination = Determination.where(outcome: 'excepted').order(created_at: :desc).first
+      expect(determination.determination_data).to eq(
+        'exception_reasons' => reason_codes, 'data_source' => 'mock_drug_treatment'
+      )
+    end
+
+    it 'omits the data_source key when no source is given (member-data exception)' do
+      certification_case.record_exception_determination(reason_codes, ExceptionDeterminationService)
+      determination = Determination.where(outcome: 'excepted').order(created_at: :desc).first
+      expect(determination.determination_data).to eq('exception_reasons' => reason_codes)
+    end
   end
 
   describe '#accept_activity_report' do
@@ -70,7 +84,7 @@ RSpec.describe CertificationCase, type: :model do
     it 'records compliant determination' do
       certification_case.accept_activity_report(user, application_form)
 
-      determination = Determination.first
+      determination = Determination.sole
 
       expect(determination.decision_method).to eq("manual")
       expect(determination.reasons).to include("hours_reported_compliant")
@@ -148,7 +162,7 @@ RSpec.describe CertificationCase, type: :model do
     it 'records not_compliant determination' do
       certification_case.deny_activity_report(user, application_form)
 
-      determination = Determination.first
+      determination = Determination.sole
 
       expect(determination.decision_method).to eq("manual")
       expect(determination.reasons).to include("hours_reported_insufficient")
@@ -227,7 +241,7 @@ RSpec.describe CertificationCase, type: :model do
       expect(certification_case.exemption_request_approval_status_updated_at).to be_present
       expect(certification_case).to be_closed
 
-      determination = Determination.first
+      determination = Determination.sole
 
       expect(determination.decision_method).to eq("manual")
       expect(determination.reasons).to include("exemption_request_compliant")
@@ -241,7 +255,7 @@ RSpec.describe CertificationCase, type: :model do
 
       certification_case.accept_exemption_request(user, incarceration_form)
 
-      expect(Determination.first.determination_data).to eq({ "exemption_type" => "incarceration" })
+      expect(Determination.sole.determination_data).to eq({ "exemption_type" => "incarceration" })
     end
 
     it 'publishes DeterminedExempt event' do
@@ -306,7 +320,7 @@ RSpec.describe CertificationCase, type: :model do
     it 'records a compliant determination' do
       certification_case.accept_denial_response(user, application_form)
 
-      determination = Determination.first
+      determination = Determination.sole
 
       expect(determination.decision_method).to eq("manual")
       expect(determination.reasons).to include("denial_response_convincing")
@@ -348,7 +362,7 @@ RSpec.describe CertificationCase, type: :model do
     it 'records a not_compliant determination' do
       certification_case.deny_denial_response(user, application_form)
 
-      determination = Determination.first
+      determination = Determination.sole
 
       expect(determination.decision_method).to eq("manual")
       expect(determination.reasons).to include("denial_response_not_convincing")
@@ -413,7 +427,7 @@ RSpec.describe CertificationCase, type: :model do
     before { stub_const("MockSubmitter", Class.new { include Strata::VirtualActor }) }
 
     it 'sets approval status and closes case' do
-      certification_case.record_exclusion_determination([ "pregnancy_excluded" ], MockSubmitter)
+      certification_case.record_exclusion_determination([ "pregnancy_excluded" ], MockSubmitter, "api")
       certification_case.reload
 
       expect(certification_case.exemption_request_approval_status).to eq("approved")
@@ -424,14 +438,14 @@ RSpec.describe CertificationCase, type: :model do
     it "logs approved decision to audit log" do
       certification = Certification.find(certification_case.certification_id)
       expect do
-        certification_case.record_exclusion_determination([ "pregnancy_excluded" ], MockSubmitter)
+        certification_case.record_exclusion_determination([ "pregnancy_excluded" ], MockSubmitter, "api")
       end.to change { Strata::AuditLine.where(subject: certification, actor_type: MockSubmitter.name, action: "case.exclusion.approved").count }.by(1)
     end
 
     it 'creates a determination that records the given reason code' do
-      certification_case.record_exclusion_determination([ "pregnancy_excluded" ], MockSubmitter)
+      certification_case.record_exclusion_determination([ "pregnancy_excluded" ], MockSubmitter, "api")
 
-      determination = Determination.first
+      determination = Determination.sole
 
       expect(determination.decision_method).to eq("automated")
       expect(determination.reasons).to eq([ "pregnancy_excluded" ])
@@ -441,7 +455,15 @@ RSpec.describe CertificationCase, type: :model do
       # String (writing reasons.to_json double-encodes it into a String — see #680). For
       # automated exclusions it records the granting reason codes.
       expect(determination.determination_data).to be_a(Hash)
-      expect(determination.determination_data).to eq({ "exclusion_reasons" => [ "pregnancy_excluded" ] })
+      expect(determination.determination_data).to eq({ "exclusion_reasons" => [ "pregnancy_excluded" ], "data_source" => "api" })
+    end
+
+    it 'records the given data source in determination_data' do
+      certification_case.record_exclusion_determination([ "pregnancy_excluded" ], MockSubmitter, "va_disability_rating")
+
+      expect(Determination.sole.determination_data).to eq(
+        "exclusion_reasons" => [ "pregnancy_excluded" ], "data_source" => "va_disability_rating"
+      )
     end
   end
 
