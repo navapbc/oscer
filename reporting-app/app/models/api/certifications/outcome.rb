@@ -18,7 +18,7 @@ class Api::Certifications::Outcome < ValueObject
     else
       obj.status = determination.outcome
       obj.reason = determination.reasons.first
-      obj.source = determination.automated? ? "api" : "member"
+      obj.source = determination.source
     end
     obj
   end

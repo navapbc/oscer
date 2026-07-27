@@ -25,12 +25,30 @@ RSpec.describe Api::Certifications::Outcome, type: :model do
                reasons: [ "age_under_19_excluded" ])
       end
 
-      it "returns status 'excluded' sourced from the API" do
+      it "returns status 'excluded' sourced from the API when no data source is recorded" do
         outcome = described_class.from_certification(certification)
 
         expect(outcome.status).to eq("excluded")
         expect(outcome.reason).to eq("age_under_19_excluded")
         expect(outcome.source).to eq("api")
+      end
+    end
+
+    context "when the exclusion determination recorded a matched verification data source" do
+      before do
+        create(:determination,
+               subject: certification,
+               outcome: "excluded",
+               decision_method: "automated",
+               reasons: [ "drug_treatment_excluded" ],
+               determination_data: { "exclusion_reasons" => [ "drug_treatment_excluded" ], "data_source" => "mock_drug_treatment" })
+      end
+
+      it "reports the data source as the outcome source" do
+        outcome = described_class.from_certification(certification)
+
+        expect(outcome.status).to eq("excluded")
+        expect(outcome.source).to eq("mock_drug_treatment")
       end
     end
 

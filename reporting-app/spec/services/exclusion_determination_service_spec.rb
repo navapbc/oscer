@@ -427,6 +427,11 @@ RSpec.describe ExclusionDeterminationService do
         service.determine(kase)
         expect(recorded_exclusion.reasons).to eq([ "american_indian_alaska_native_excluded" ])
       end
+
+      it 'records the rules engine as the data source' do
+        service.determine(kase)
+        expect(recorded_exclusion.determination_data["data_source"]).to eq("api")
+      end
     end
 
     context 'when a source can outrank the rules-engine exclusion and emits it' do
@@ -441,6 +446,11 @@ RSpec.describe ExclusionDeterminationService do
         service.determine(kase)
         expect(calls).to eq([ "VeteranSource" ])
         expect(recorded_exclusion.reasons).to eq([ "veteran_disability_excluded" ])
+      end
+
+      it 'records the winning source in determination_data' do
+        service.determine(kase)
+        expect(recorded_exclusion.determination_data["data_source"]).to eq("VeteranSource")
       end
     end
 
@@ -510,6 +520,11 @@ RSpec.describe ExclusionDeterminationService do
         service.determine(kase)
         expect(recorded_exclusion).to be_nil
         expect(recorded_exception.reasons).to eq([ "drug_treatment_excepted" ])
+      end
+
+      it 'records the source that emitted the exception' do
+        service.determine(kase)
+        expect(recorded_exception.determination_data["data_source"]).to eq("DrugTreatmentSource")
       end
 
       it 'publishes DeterminedExcepted and closes the case' do
@@ -582,6 +597,11 @@ RSpec.describe ExclusionDeterminationService do
           service.determine(kase)
           expect(recorded_exclusion.reasons).to eq([ "drug_treatment_excluded" ])
         end
+
+        it 'records mock_drug_treatment as the exclusion data source' do
+          service.determine(kase)
+          expect(recorded_exclusion.determination_data["data_source"]).to eq("mock_drug_treatment")
+        end
       end
 
       context 'when the ICN is odd and not divisible by 3' do
@@ -590,6 +610,11 @@ RSpec.describe ExclusionDeterminationService do
         it 'records the drug_treatment exception' do
           service.determine(kase)
           expect(recorded_exception.reasons).to eq([ "drug_treatment_excepted" ])
+        end
+
+        it 'records mock_drug_treatment as the exception data source' do
+          service.determine(kase)
+          expect(recorded_exception.determination_data["data_source"]).to eq("mock_drug_treatment")
         end
       end
 

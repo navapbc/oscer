@@ -2,6 +2,7 @@
 
 class ExclusionDeterminationService
   include Strata::VirtualActor
+
   class << self
     # Called by CertificationBusinessProcess at EXTERNAL_EXCLUSION_CHECK_STEP.
     #
@@ -16,13 +17,14 @@ class ExclusionDeterminationService
       certification = Certification.find(kase.certification_id)
 
       current_best = rules_engine_best_exclusion(certification)
-      current_best, exception_keys = consult_data_sources(certification, current_best)
+      current_best, exceptions = consult_data_sources(certification, current_best)
 
       if current_best
-        kase.record_exclusion_determination([ reason_code(current_best[:key]) ], self)
+        kase.record_exclusion_determination([ reason_code(current_best[:key]) ], self, current_best[:source])
         publish(kase, "DeterminedExcluded")
-      elsif exception_keys.any?
-        kase.record_exception_determination([ reason_code(exception_keys.first) ], self)
+      elsif exceptions.any?
+        first = exceptions.first
+        kase.record_exception_determination([ reason_code(first[:key]) ], self, data_source: first[:source])
         publish(kase, "DeterminedExcepted")
       else
         Strata::AuditLog.write!(action: "case.exclusion.denied", actor: self, subject: certification)
@@ -37,7 +39,8 @@ class ExclusionDeterminationService
     end
 
     # The highest-priority exclusion (lowest priority number) the rules engine
-    # found, as { key:, priority: }, or nil when none applies.
+    # found, as { key:, priority:, source: }, or nil when none applies. Its facts
+    # come from API-supplied member data, so it names Determination::API_SOURCE.
     def rules_engine_best_exclusion(certification)
       eligibility_fact = evaluate_exclusion_eligibility(certification)
       return nil unless eligibility_fact.value
@@ -46,14 +49,16 @@ class ExclusionDeterminationService
         .select(&:value)
         .map { |fact| { key: fact.name, priority: exclusion_priority(fact.name) } }
         .min_by { |scored| scored[:priority] }
+        &.merge(source: Determination::API_SOURCE)
     end
 
     # Walks the enabled data sources by best declared priority first, calling one
     # only while the best exclusion it could emit could still outrank the running
     # best. Returns the (possibly improved) best exclusion and any exception
-    # outcomes emitted along the way. Exception-only sources are skipped here.
+    # outcomes emitted along the way, each tagged with the emitting source's id.
+    # Exception-only sources are skipped here.
     def consult_data_sources(certification, current_best)
-      exception_keys = []
+      exceptions = []
 
       candidates = data_sources
         .map { |source| { source: source, priority: best_declared_priority(source) } }
@@ -65,12 +70,14 @@ class ExclusionDeterminationService
 
         result = candidate[:source].new.call(certification: certification)
         # TODO: Handle failure OSCAR-810
+        source_id = result.audit_data[:source]
+
         emitted = best_exclusion(result.outcomes)
-        current_best = emitted if emitted && outranks?(emitted, current_best)
-        exception_keys.concat(exception_outcomes(result.outcomes))
+        current_best = emitted.merge(source: source_id) if emitted && outranks?(emitted, current_best)
+        exception_outcomes(result.outcomes).each { |key| exceptions << { key: key, source: source_id } }
       end
 
-      [ current_best, exception_keys ]
+      [ current_best, exceptions ]
     end
 
     def data_sources
