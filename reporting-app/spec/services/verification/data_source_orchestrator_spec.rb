@@ -167,4 +167,42 @@ RSpec.describe Verification::DataSourceOrchestrator do
       end
     end
   end
+
+  # Exercises the ACTUAL booted Rails.application.config.verification_data_sources
+  # rather than a stubbed registry, so Phase B's registration in
+  # config/custom/verification_data_sources.yml is proven end-to-end. The only
+  # order-bearing source shipped there is mock_emergency_county (mock_drug_treatment
+  # is order: nil and belongs to the exclusion path, so it is never in this pass).
+  describe "against the real registered configuration" do
+    let(:certification) do
+      build(:certification, member_data: build(:certification_member_data, va_icn: va_icn))
+    end
+
+    context "when the registered mock emits a matched outcome (even ICN last digit)" do
+      let(:va_icn) { "1012861229V078998" }
+
+      it "is satisfied by mock_emergency_county with the emergency-county outcome" do
+        expect(evaluate).to have_attributes(satisfied: true, source_id: :mock_emergency_county)
+        expect(evaluate.result.outcomes).to eq([ :resides_in_declared_emergency_county ])
+      end
+    end
+
+    context "when the registered mock returns no result (odd ICN last digit)" do
+      let(:va_icn) { "1012861229V078999" }
+
+      it "is not satisfied but records the attempt" do
+        expect(evaluate).to have_attributes(satisfied: false, source_id: nil)
+        expect(evaluate.attempted.map { |a| a[:source_id] }).to eq([ :mock_emergency_county ])
+      end
+    end
+
+    context "when the member has no ICN (precondition not met)" do
+      let(:va_icn) { nil }
+
+      it "is not satisfied; the source is attempted and skipped" do
+        expect(evaluate).to have_attributes(satisfied: false, source_id: nil)
+        expect(evaluate.attempted.map { |a| a[:result].status }).to eq(%i[skipped])
+      end
+    end
+  end
 end

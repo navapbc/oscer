@@ -286,8 +286,20 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       merged = described_class.merge_with_defaults(overrides)
       entries = described_class.transform(merged)
 
-      expect(entries.map { |e| e[:id] }).to include(:mock_drug_treatment)
+      expect(entries.map { |e| e[:id] }).to include(:mock_drug_treatment, :mock_emergency_county)
       expect { described_class.validate_registry!(entries) }.not_to raise_error
+    end
+
+    it "registers mock_emergency_county as an order-bearing non-exclusion source" do
+      override_path = Rails.root.join("config/custom/verification_data_sources.yml")
+      overrides = described_class.safe_load_optional(override_path)
+      entries = described_class.transform(described_class.merge_with_defaults(overrides))
+
+      entry = entries.find { |e| e[:id] == :mock_emergency_county }
+      expect(entry[:enabled]).to be(true)
+      expect(entry[:adapter_class]).to eq("Verification::Adapters::MockEmergencyCounty")
+      # An Integer order (not nil) is what makes it part of the orchestrator's pass.
+      expect(entry[:order]).to be_an(Integer)
     end
   end
 
@@ -302,6 +314,17 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       expect(mock).not_to have_key(:checks)
       expect(Verification::Adapters::MockDrugTreatment.declared_outcomes)
         .to eq([ :drug_treatment, :was_in_drug_treatment ])
+    end
+
+    it "wires mock_emergency_county with an Integer order for the orchestrator pass" do
+      sources = Rails.application.config.verification_data_sources
+
+      mock = sources.find { |s| s[:id] == :mock_emergency_county }
+      expect(mock[:enabled]).to be(true)
+      expect(mock[:adapter_class]).to eq("Verification::Adapters::MockEmergencyCounty")
+      expect(mock[:order]).to be_an(Integer)
+      expect(Verification::Adapters::MockEmergencyCounty.declared_outcomes)
+        .to eq([ :resides_in_declared_emergency_county ])
     end
   end
 end
