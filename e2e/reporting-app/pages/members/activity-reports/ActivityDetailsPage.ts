@@ -10,6 +10,7 @@ export class ActivityDetailsPage extends BasePage {
 
   readonly employerNameField: Locator;
   readonly hoursField: Locator;
+  readonly incomeField: Locator;
   readonly monthField: Locator;
   readonly submitButton: Locator;
 
@@ -17,6 +18,7 @@ export class ActivityDetailsPage extends BasePage {
     super(page);
     this.employerNameField = page.getByLabel('Organization name');
     this.hoursField = page.getByLabel('Hours');
+    this.incomeField = page.getByLabel('Income (in dollars)');
     this.monthField = page.getByLabel('Month');
     this.submitButton = page.getByRole('button', { name: /save and continue/i });
   }
@@ -25,6 +27,14 @@ export class ActivityDetailsPage extends BasePage {
     await this.employerNameField.fill(employerName);
     await this.monthField.selectOption({ index: 1 });
     await this.hoursField.fill(hours);
+    await this.submitButton.click();
+    return new SupportingDocumentsPage(this.page).waitForURLtoMatchPagePath();
+  }
+
+  async fillIncomeActivityDetails(employerName: string, incomeDollars: string) {
+    await this.employerNameField.fill(employerName);
+    await this.monthField.selectOption({ index: 1 });
+    await this.incomeField.fill(incomeDollars);
     await this.submitButton.click();
     return new SupportingDocumentsPage(this.page).waitForURLtoMatchPagePath();
   }
