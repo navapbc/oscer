@@ -12,3 +12,5 @@
 .graph-cache.json
 .ensure-applied
 .ensure-hinted
+*/.archived
+*/.write.lock
