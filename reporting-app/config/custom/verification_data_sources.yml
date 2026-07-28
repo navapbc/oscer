@@ -72,3 +72,11 @@ mock_drug_treatment:
   enabled: true
   adapter_class: "Verification::Adapters::MockDrugTreatment"
   order: null
+
+# Mock data source for use by Verification::DataSourceOrchestrator (OSCER-805).
+# order-bearing (non-exclusion), so the orchestrator consults it; it emits the
+# resides_in_declared_emergency_county exception outcome.
+mock_emergency_county:
+  enabled: true
+  adapter_class: "Verification::Adapters::MockEmergencyCounty"
+  order: 10
