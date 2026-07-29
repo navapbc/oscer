@@ -141,7 +141,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_29_133636) do
     t.jsonb "member_data"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "eis_client_id"
     t.date "application_date"
     t.jsonb "household_data"
     t.index ["case_number"], name: "index_certifications_on_case_number"
