@@ -12,7 +12,7 @@ gem "validates_timeliness", "~> 8.0"
 
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "rails", "~> 8.0.5", ">= 8.0.5"
+gem "rails", "~> 8.0.5", ">= 8.0.5.1"
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem "sprockets-rails"
@@ -71,7 +71,7 @@ gem "ruby-vips", "~> 2.0"
 gem "image_processing", "~> 2.0"
 
 # Authentication and Authorization
-gem "aws-sdk-cognitoidentityprovider", "~> 1.148"
+gem "aws-sdk-cognitoidentityprovider", "~> 1.149"
 gem "devise", "~> 5.0"
 gem "jwt"
 gem "pundit"
