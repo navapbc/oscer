@@ -309,6 +309,43 @@ RSpec.describe Determination, type: :model do
     end
   end
 
+  # VerificationDataSourcesLoader boot-validates against these, so the count canary below turns
+  # "added an exception check without categorizing it" into a test failure here rather than a boot
+  # error on the first deployment that registers a source declaring it.
+  describe 'non-exclusion outcome categories' do
+    it 'references only real REASON_CODE_MAPPING keys' do
+      expect(described_class::NON_EXCLUSION_OUTCOME_KEYS)
+        .to all(be_in(described_class::REASON_CODE_MAPPING.keys))
+    end
+
+    it 'keeps the exception and community-engagement categories disjoint' do
+      overlap = described_class::EXCEPTION_OUTCOME_KEYS & described_class::CE_OUTCOME_KEYS
+      expect(overlap).to be_empty
+    end
+
+    # ExceptionDeterminationService produces every exception reason code, so its checks bound the set.
+    it 'covers every exception reason code ExceptionDeterminationService can produce' do
+      in_hand_exception_codes = described_class::EXCEPTION_OUTCOME_KEYS
+        .map { |key| described_class::REASON_CODE_MAPPING.fetch(key) }
+
+      expect(in_hand_exception_codes).to include(
+        'pregnancy_excepted',
+        'was_former_foster_care',
+        'caretaker_excepted',
+        'drug_treatment_excepted',
+        'inmate_excepted',
+        'age_under_19_excepted',
+        'inpatient_medical_care_excepted',
+        'declared_emergency_county_excepted',
+        'high_unemployment_county_excepted',
+        'medical_travel_excepted',
+        'other_program_excepted'
+      )
+      expect(described_class::EXCEPTION_OUTCOME_KEYS.count)
+        .to eq(ExceptionDeterminationService::EXCEPTION_CHECKS.count)
+    end
+  end
+
   describe '#source' do
     it 'returns the matched verification data source when one was recorded' do
       determination = build(:determination, decision_method: 'automated',

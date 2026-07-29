@@ -103,6 +103,33 @@ class Determination < Strata::Determination
     participating_in_other_program: "other_program_excepted"
   }.freeze
 
+  # REASON_CODE_MAPPING is one flat namespace; these lists partition its non-exclusion keys so a
+  # consumer can tell which determination an outcome calls for. VerificationDataSourcesLoader
+  # boot-validates the partition against every order-bearing source's declared outcomes.
+
+  # Attests a non-exclusion exception applies. Recorded as +:excepted+.
+  EXCEPTION_OUTCOME_KEYS = %i[
+    was_pregnant
+    was_former_foster_care
+    was_caretaker
+    was_in_drug_treatment
+    was_inmate
+    age_was_under_19
+    receiving_inpatient_medical_care
+    resides_in_declared_emergency_county
+    resides_in_high_unemployment_county
+    traveling_for_medical_care
+    participating_in_other_program
+  ].freeze
+
+  # Attests the CE requirement is met. Recorded as +:compliant+.
+  CE_OUTCOME_KEYS = %i[
+    hours_reported_compliant
+    income_reported_compliant
+  ].freeze
+
+  NON_EXCLUSION_OUTCOME_KEYS = (EXCEPTION_OUTCOME_KEYS + CE_OUTCOME_KEYS).freeze
+
   # Reasons recorded when a staff reviewer approves or denies a member's denial response.
   DENIAL_RESPONSE_REASONS = REASON_CODE_MAPPING.values_at(
     :denial_response_convincing,
