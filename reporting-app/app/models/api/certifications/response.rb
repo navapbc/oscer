@@ -3,7 +3,6 @@
 class Api::Certifications::Response < ValueObject
   attribute :id, :string
   attribute :member_id, :string
-  attribute :eis_client_id, :string
   attribute :application_date, :date
   attribute :case_number, :string
 

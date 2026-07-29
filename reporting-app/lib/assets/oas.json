@@ -20,10 +20,6 @@
             "type": ["string", "null"],
             "description": "An identifier for the case associated with the certification"
           },
-          "eis_client_id": {
-            "type": ["string", "null"],
-            "description": "An additional identifier for the person receiving benefits"
-          },
           "application_date": {
             "type": ["string", "null"],
             "format": "date",
