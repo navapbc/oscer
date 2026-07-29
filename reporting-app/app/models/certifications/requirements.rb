@@ -5,9 +5,11 @@ require_relative "requirement_params"
 class Certifications::Requirements < ValueObject
   include ActiveModel::AsJsonAttributeType
 
-  CERTIFICATION_TYPE_OPTIONS = [ "new_application", "recertification" ].freeze
+  CERTIFICATION_TYPE_OPTIONS = [ "new_application", "recertification", "change_in_circumstances" ].freeze
 
   attribute :certification_date, :date
+  attribute :certification_period_start, :date
+  attribute :certification_period_end, :date
   attribute :certification_type, :enum, options: CERTIFICATION_TYPE_OPTIONS
   validates :certification_type, inclusion: { in: CERTIFICATION_TYPE_OPTIONS, message: "is not a valid option" }, allow_blank: true
 
@@ -18,17 +20,17 @@ class Certifications::Requirements < ValueObject
   # },
   # but a list of the months feels potentially more usable, alt name "months_to_consider"?
   attribute :months_that_can_be_certified, :array, of: ActiveModel::Type::Date.new
-  attribute :number_of_months_to_certify, :integer
+  attribute :number_of_months_to_certify, :integer, default: 1
   attribute :due_date, :date
   attribute :region, :string
+  attribute :seasonal_worker, :boolean, default: false
+  attribute :self_employed, :boolean, default: false
 
   # input params
   attribute :params, Certifications::RequirementParams.to_type
 
   validates :certification_date, presence: true
   validates :months_that_can_be_certified, presence: true
-  validates :number_of_months_to_certify, presence: true
-  validates :due_date, presence: true
 
   def continuous_lookback_period?
     months_that_can_be_certified = self.months_that_can_be_certified

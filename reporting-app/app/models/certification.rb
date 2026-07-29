@@ -2,6 +2,7 @@
 
 require_relative "certifications/member_data"
 require_relative "certifications/requirements"
+require_relative "certifications/household_data"
 
 class Certification < ApplicationRecord
   include Determinable

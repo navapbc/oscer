@@ -20,6 +20,15 @@
             "type": ["string", "null"],
             "description": "An identifier for the case associated with the certification"
           },
+          "eis_client_id": {
+            "type": ["string", "null"],
+            "description": "An additional identifier for the person receiving benefits"
+          },
+          "application_date": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "The date of the application"
+          },
           "certification_requirements": {
             "oneOf": [
               { "$ref": "#/components/schemas/CertificationRequirements" },
@@ -30,6 +39,12 @@
           "member_data": {
             "oneOf": [
               { "$ref": "#/components/schemas/CertificationMemberData" },
+              { "type": "null" }
+            ]
+          },
+          "household_data": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/CertificationHouseholdData" },
               { "type": "null" }
             ]
           }
@@ -140,7 +155,7 @@
       },
       "CertificationRequirements": {
         "type": "object",
-        "description": "Description of certification needs",
+        "description": "Descriptmion of certification needs",
         "properties": {
           "certification_date": {
             "type": "string",
@@ -149,10 +164,16 @@
           },
           "certification_type": {
             "type": ["string", "null"],
+	    "enum": [
+	      "new_application",
+	      "recertification",
+	      "change_in_circumstances",
+	      null
+	    ],
             "description": "The type of certification"
           },
           "months_that_can_be_certified": {
-            "type": "array",
+            "type": ["array", "null"],
             "items": {
               "type": "string",
               "format": "date"
@@ -160,20 +181,25 @@
             "description": "The list of months the Member can choose from"
           },
           "number_of_months_to_certify": {
-            "type": "integer",
+            "type": ["integer", "null"],
             "description": "The number of months the Member needs to certify"
           },
           "due_date": {
-            "type": "string",
+            "type": ["string", "null"],
             "format": "date",
             "description": "Date by which the Member must have submitted their evidence"
-          }
+          },
+	  "seasonal_worker": {
+	    "type": ["boolean", "null"],
+	    "description": "Whether the member is a seasonal worker"
+	  },
+	  "self_employed": {
+	    "type": ["boolean", "null"],
+	    "description": "Whether the member is self employed"
+	  }
         },
         "required": [
-          "certification_date",
-          "months_that_can_be_certified",
-          "number_of_months_to_certify",
-          "due_date"
+          "certification_date"
         ]
       },
       "CertificationRequirementParameters": {
@@ -213,6 +239,11 @@
           },
           "certification_type": {
             "type": "string",
+	    "enum": [
+	      "new_application",
+	      "recertification",
+	      "cahnge_in_circumstances"
+	    ],
             "description": "The type of certification"
           }
         },
@@ -262,6 +293,27 @@
               }
             }
           },
+          "address": {
+            "type": ["object", "null"],
+            "description": "The address of the member",
+            "properties": {
+	      "street_line_1": {
+		"type": "string"
+	      },
+              "street_line_2": {
+                "type": ["string", "null"]
+              },
+	      "city": {
+		"type": "string"
+	      },
+	      "state": {
+		"type": "string"
+	      },
+	      "zip_code": {
+		"type": "string"
+	      }
+            }
+          },
           "payroll_accounts": {
             "type": ["array", "null"],
             "items": {
@@ -274,6 +326,13 @@
               "$ref": "#/components/schemas/CertificationMemberDataActivity"
             },
             "description": "Community engagement activities performed by the member"
+          },
+          "exemptions": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/CertificationMemberDataExemption"
+            },
+            "description": "Exemption data for the member"
           },
           "date_of_birth": {
             "type": ["string", "null"],
@@ -347,14 +406,25 @@
           },
           "category": {
             "type": "string",
-            "enum": ["employment", "community_service", "education"],
+            "enum": ["employment", "community_service", "education", "unearned"],
             "description": "The category of activity"
           },
-          "hours": {
-            "type": "string",
-            "format": "decimal",
-            "description": "Number of hours for the activity"
-          },
+          "oneOf": [
+            {
+	      "hours": {
+		"type": "string",
+		"format": "decimal",
+		"description": "Number of hours for the activity"
+              }
+	    },
+            {
+	      "credit_hours": {
+		"type": "string",
+		"format": "decimal",
+		"description": "Number of credit hours for the educational activity"
+              }
+	    }
+	  ],
           "period_start": {
             "type": "string",
             "format": "date",
@@ -451,27 +521,125 @@
           }
         ]
       },
+      "CertificationMemberDataExemption": {
+        "type": {
+          "type": "string",
+          "enum": [
+	    "american_indian_or_alaska_native",
+	    "caregiver_child",
+	    "former_foster_care",
+	    "pregnancy",
+	    "postpartum",
+	    "incarceration",
+	    "caregiver_disability",
+	    "meeting_atap_work",
+	    "meeting_tanf_or_snap_work",
+	    "veteran_disability",
+	    "medical_condition",
+	    "substance_treatment",
+	    "travel_for_medical"
+	  ],
+          "description": "Exemption data type"
+        },
+	"value": {
+	  "type": "boolean",
+	  "description": "Whether the exemption applies to the member"
+	},
+	"periods": {
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "#/components/schemas/CertificationMemberDataExemptionPeriod"
+          }
+	},
+	"verification_status": {
+	  "type": "string",
+	  "enum": [
+	    "verified",
+	    "unverified",
+	    "pending"
+	  ],
+	  "description": "The verification status of the exemption"
+	},
+	"required": [
+	  "value",
+	  "verification_status"
+	]
+      },
+      "CertificationMemberDataExemptionPeriod": {
+        "period_start": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "Start date of the exemption period"
+        },
+        "period_end": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "End date of the exemption period"
+        }
+      },
+      "CertificationHouseholdData": {
+        "members": {
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "#/components/schemas/CertificationHoldDataMember"
+          }
+        }
+      },
+      "CertificationHouseholdDataMember": {
+        "name": {
+          "type": ["object", "null"],
+          "description": "The name of the household member",
+          "properties": {
+            "first": {
+              "type": ["string", "null"]
+            },
+            "middle": {
+              "type": ["string", "null"]
+            },
+            "last": {
+              "type": ["string", "null"]
+            },
+            "suffix": {
+              "type": ["string", "null"]
+            }
+          }
+        },
+        "ssn": {
+          "type": ["string", "null"],
+          "description": "The Social Security Number of the household member"
+        },
+        "date_of_birth": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "The date of birth of the household member"
+        },
+        "monthly_income_dollars_total": {
+          "type": "string",
+          "format": "decimal",
+          "description": "Monthly total income of the household member"
+        }
+      },
       "CertificationOutcome": {
         "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "enum": ["compliant", "excluded", "excepted", "exempt", "indeterminate", "not_compliant"],
-              "description": "Current status of community engagement requirement checks"
-            },
-            "reason": {
-              "type": ["string", "null"],
-              "description": "Which exclusion, exemption, or community engagement requirement led to the decision"
-            },
-            "source": {
-              "type": ["string", "null"],
-              "description": "Which source provided the reason"
-            },
-            "timestamp": {
-              "type": "string",
-              "format": "date-time",
-              "description": "When the status was set"
-            }
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["compliant", "excluded", "excepted", "exempt", "indeterminate", "not_compliant"],
+            "description": "Current status of community engagement requirement checks"
+          },
+          "reason": {
+            "type": ["string", "null"],
+            "description": "Which exclusion, exemption, or community engagement requirement led to the decision"
+          },
+          "source": {
+            "type": ["string", "null"],
+            "description": "Which source provided the reason"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the status was set"
+          }
         },
         "required": [
           "status",
@@ -520,10 +688,10 @@
             ]
           },
           "outcome": {
-                  "anyOf": [
-                    { "$ref": "#/components/schemas/CertificationOutcome" },
-                    { "type": "null" }
-                  ]
+            "anyOf": [
+              { "$ref": "#/components/schemas/CertificationOutcome" },
+              { "type": "null" }
+            ]
           },
           "created_at": {
             "type": "string",

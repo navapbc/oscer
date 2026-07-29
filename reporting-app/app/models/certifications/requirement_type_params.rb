@@ -35,6 +35,12 @@ class Certifications::RequirementTypeParams < ValueObject
         number_of_months_to_certify: 3,
         due_period_days: 30
       })
+    when "change_in_circumstances"
+      new({
+        lookback_period: 6,
+        number_of_months_to_certify: 3,
+        due_period_days: 30
+      })
     else
       nil
       # TODO: Or?

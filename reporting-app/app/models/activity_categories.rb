@@ -3,5 +3,5 @@
 # Shared activity categories used by both Activity (member-reported)
 # and ExternalHourlyActivity (state-reported) models.
 module ActivityCategories
-  ALL = %w[employment community_service education].freeze
+  ALL = %w[employment community_service education unearned].freeze
 end
