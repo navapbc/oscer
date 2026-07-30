@@ -17,22 +17,34 @@ module Rules
     # Incarceration excludes through this many months after the incarceration month
     INMATE_BUFFER_MONTHS = 3
 
-    def is_pregnant(pregnancy_due_or_parturition_date, certification_date)
-      return if pregnancy_due_or_parturition_date.nil?
+    def is_pregnant(pregnancy_due, parturition_date, certification_date)
+      return if pregnancy_due.nil? && parturition_date.nil?
       return if certification_date.nil?
 
-      exclusion_end = pregnancy_due_or_parturition_date + POSTPARTUM_EXCLUSION_MONTHS.months
+      exclusion_end = nil
+      [ pregnancy_due, parturition_date ].each do |data_point|
+        next unless data_point
+        data_end = data_point.periods.first.period_end
+        exclusion_end = data_end unless exclusion_end && exclusion_end > data_end
+      end
+
       certification_date.beginning_of_month <= exclusion_end
     end
 
-    def is_american_indian_or_alaska_native(race_ethnicity)
-      return if race_ethnicity.nil?
-
-      AMERICAN_INDIAN_OR_ALASKA_NATIVE.include?(race_ethnicity.downcase.gsub(/\s+/, "_"))
+    def is_american_indian_or_alaska_native(american_indian_or_alaska_native)
+      american_indian_or_alaska_native.present?
     end
 
-    def is_veteran_with_disability(veteran_with_disability)
-      veteran_with_disability
+    def is_veteran_with_disability(veteran_with_disability, certification_date)
+      return if veteran_with_disability.nil?
+
+      exclusion_end = nil
+      veteran_with_disability.periods&.each do |period|
+        data_end = period.period_end
+        exclusion_end = data_end unless exclusion_end && exclusion_end < data_end
+      end
+
+      exclusion_end && certification_date.beginning_of_month <= exclusion_end
     end
 
     # Former foster youth are excluded until age FORMER_FOSTER_CARE_AGE_CAP, evaluated against the
@@ -45,8 +57,16 @@ module Rules
     end
 
     # Members determined currently medically frail are excluded.
-    def medically_frail(currently_medically_frail)
-      currently_medically_frail
+    def medically_frail(medical_condition, certification_date)
+      return if medical_condition.nil?
+
+      exclusion_end = nil
+      medical_condition.periods&.each do |period|
+        data_end = period.period_end
+        exclusion_end = data_end unless exclusion_end && exclusion_end < data_end
+      end
+
+      exclusion_end && certification_date.beginning_of_month <= exclusion_end
     end
 
     # Caretakers are excluded if they are caretaking an infirm person during the certification month,
@@ -56,9 +76,11 @@ module Rules
       return if certification_date.nil?
 
       as_of = certification_date.beginning_of_month
-      caretaking_infirm = Array(dates_caretaking_infirm).any? { |date| date.beginning_of_month == as_of }
-      caring_for_child = Array(dependent_children_birth_dates).any? do |date_of_birth|
-        as_of < date_of_birth + CARETAKER_CHILD_AGE_THRESHOLD.years
+      caretaking_infirm = Array(dates_caretaking_infirm&.periods || []).any? do |period|
+        period.period_start.beginning_of_month <= as_of && as_of <= period.period_end.end_of_month
+      end
+      caring_for_child = Array(dependent_children_birth_dates&.periods || []).any? do |period|
+        as_of < period.period_start + CARETAKER_CHILD_AGE_THRESHOLD.years
       end
 
       caretaking_infirm || caring_for_child

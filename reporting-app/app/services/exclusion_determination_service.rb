@@ -119,15 +119,16 @@ class ExclusionDeterminationService
       engine = Strata::RulesEngine.new(ruleset)
 
       engine.set_facts(
-        pregnancy_due_or_parturition_date: extract_attribute(certification, :pregnancy_due_or_parturition_date),
+        pregnancy_due: extract_exemption(certification, :pregnancy),
+        parturition_date: extract_exemption(certification, :postpartum),
         certification_date: certification.certification_requirements.certification_date,
-        race_ethnicity: extract_attribute(certification, :race_ethnicity),
-        veteran_with_disability: extract_attribute(certification, :veteran_with_disability),
-        was_in_foster_care: extract_attribute(certification, :was_in_foster_care),
+        american_indian_or_alaska_native: extract_exemption(certification, :american_indian_or_alaska_native),
+        veteran_with_disability: extract_exemption(certification, :veteran_disability),
+        was_in_foster_care: extract_exemption(certification, :former_foster_care),
         date_of_birth: extract_attribute(certification, :date_of_birth),
-        currently_medically_frail: extract_attribute(certification, :currently_medically_frail),
-        dates_caretaking_infirm: extract_attribute(certification, :dates_caretaking_infirm),
-        dependent_children_birth_dates: extract_attribute(certification, :dependent_children_birth_dates),
+        medical_condition: extract_exemption(certification, :medical_condition),
+        dates_caretaking_infirm: extract_exemption(certification, :caregiver_disability),
+        dependent_children_birth_dates: extract_exemption(certification, :caregiver_child),
         meeting_tanf_or_snap_work: extract_attribute(certification, :meeting_tanf_or_snap_work),
         dates_in_drug_treatment: extract_attribute(certification, :dates_in_drug_treatment),
         dates_incarcerated: extract_attribute(certification, :dates_incarcerated)
@@ -154,6 +155,15 @@ class ExclusionDeterminationService
       return nil unless certification.member_data
 
       certification.member_data.send(attribute)
+    end
+
+    def extract_exemption(certification, attribute)
+      return nil unless certification.member_data&.exemptions.present?
+
+      exemption = certification.member_data.exemptions.select do |e|
+        e.value && e.verification_status == "verified" && e.type.to_sym == attribute
+      end.first
+      exemption
     end
   end
 end
