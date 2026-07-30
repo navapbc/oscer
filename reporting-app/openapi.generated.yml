@@ -132,7 +132,7 @@ components:
           enum:
           - new_application
           - recertification
-          - change_in_circumstances
+          - change_in_circumstance
           -
           description: The type of certification
         months_that_can_be_certified:
@@ -199,7 +199,7 @@ components:
           enum:
           - new_application
           - recertification
-          - change_in_circumstances
+          - change_in_circumstance
           description: The type of certification
       required:
       - certification_date
@@ -705,67 +705,67 @@ components:
       required:
       - status
   responses:
-    c886ec5dcb1292d2348fca617cc0105b:
+    6fbbb603dc4b4f2af65cf91db9cea495:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    a51313d38bdd7e2036bc9b1f5b42e54c:
+    07bb878a3d7ee592507b0c97d4594b2c:
       description: Accepted
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
-    7c2553e3d915acc94b344805a794a505:
+    9a2d522d414e20f3c2e8067241aa954b:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    baed57774ad1959fcc1e512cc85ac79d:
+    948c861f277674531e1b4d64d82356dc:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    fe5a0d1a9226784714180d8c70b408c5:
+    97de1c865ad7128485728320d3cf5b12:
       description: Accepted
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
-    1190ab2e3e6865b5ff0b3940f59ab85e:
+    931762810644ca073f16a21e16ae52c0:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    41f44fbb2fa2ec2e4bfbf5a8f746f5a1:
+    4e33c1c9863d5991585dad9862cb4dba:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    8b36e8b1eba3d9fc517b2accdd70a955:
+    8bfe0bf720923dba94fc09a99cdc66dd:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    dde90b3a00f147df70ed88e7c8c35f3c:
+    5510da8f8b637911a373bd57c8530692:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    4a86ce8bc828eb9f8f8d09284b30c4d3:
+    640395f72c4474e4d6b227ed202112eb:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    3606b2fedaa070aed26b8d30af6c0ec6:
+    cb9ecd1375e48152107622b3da8ff3d7:
       description: Response
       content:
         application/json:
@@ -797,7 +797,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    2dc967bc620936d4fd305081f6f9b7b8:
+    23e294ee8258c8ee361e5c7b1139dbdf:
       description: The Certification data.
       content:
         application/json:
@@ -890,11 +890,11 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/c886ec5dcb1292d2348fca617cc0105b"
+          "$ref": "#/components/responses/6fbbb603dc4b4f2af65cf91db9cea495"
         '202':
-          "$ref": "#/components/responses/a51313d38bdd7e2036bc9b1f5b42e54c"
+          "$ref": "#/components/responses/07bb878a3d7ee592507b0c97d4594b2c"
         '404':
-          "$ref": "#/components/responses/7c2553e3d915acc94b344805a794a505"
+          "$ref": "#/components/responses/9a2d522d414e20f3c2e8067241aa954b"
       security:
       - hmac: []
       deprecated: false
@@ -908,16 +908,16 @@ paths:
       parameters:
       - "$ref": "#/components/parameters/4f7cce241e43c9b4680b65e2612ab599"
       requestBody:
-        "$ref": "#/components/requestBodies/2dc967bc620936d4fd305081f6f9b7b8"
+        "$ref": "#/components/requestBodies/23e294ee8258c8ee361e5c7b1139dbdf"
       responses:
         '201':
-          "$ref": "#/components/responses/baed57774ad1959fcc1e512cc85ac79d"
+          "$ref": "#/components/responses/948c861f277674531e1b4d64d82356dc"
         '202':
-          "$ref": "#/components/responses/fe5a0d1a9226784714180d8c70b408c5"
+          "$ref": "#/components/responses/97de1c865ad7128485728320d3cf5b12"
         '400':
-          "$ref": "#/components/responses/1190ab2e3e6865b5ff0b3940f59ab85e"
+          "$ref": "#/components/responses/931762810644ca073f16a21e16ae52c0"
         '422':
-          "$ref": "#/components/responses/41f44fbb2fa2ec2e4bfbf5a8f746f5a1"
+          "$ref": "#/components/responses/4e33c1c9863d5991585dad9862cb4dba"
       security:
       - hmac: []
       deprecated: false
@@ -932,9 +932,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/8b36e8b1eba3d9fc517b2accdd70a955"
+          "$ref": "#/components/responses/8bfe0bf720923dba94fc09a99cdc66dd"
         '404':
-          "$ref": "#/components/responses/dde90b3a00f147df70ed88e7c8c35f3c"
+          "$ref": "#/components/responses/5510da8f8b637911a373bd57c8530692"
       security:
       - hmac: []
       deprecated: false
@@ -969,9 +969,9 @@ paths:
       operationId: GET_api_health
       responses:
         '200':
-          "$ref": "#/components/responses/4a86ce8bc828eb9f8f8d09284b30c4d3"
+          "$ref": "#/components/responses/640395f72c4474e4d6b227ed202112eb"
         '503':
-          "$ref": "#/components/responses/3606b2fedaa070aed26b8d30af6c0ec6"
+          "$ref": "#/components/responses/cb9ecd1375e48152107622b3da8ff3d7"
       security:
       - hmac: []
       deprecated: false

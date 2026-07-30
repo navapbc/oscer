@@ -5,7 +5,7 @@ require_relative "requirement_params"
 class Certifications::Requirements < ValueObject
   include ActiveModel::AsJsonAttributeType
 
-  CERTIFICATION_TYPE_OPTIONS = [ "new_application", "recertification", "change_in_circumstances" ].freeze
+  CERTIFICATION_TYPE_OPTIONS = [ "new_application", "recertification", "change_in_circumstance" ].freeze
 
   attribute :certification_date, :date
   attribute :certification_period_start, :date

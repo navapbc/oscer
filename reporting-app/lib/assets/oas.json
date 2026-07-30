@@ -163,7 +163,7 @@
 	    "enum": [
 	      "new_application",
 	      "recertification",
-	      "change_in_circumstances",
+	      "change_in_circumstance",
 	      null
 	    ],
             "description": "The type of certification"
@@ -238,7 +238,7 @@
 	    "enum": [
 	      "new_application",
 	      "recertification",
-	      "change_in_circumstances"
+	      "change_in_circumstance"
 	    ],
             "description": "The type of certification"
           }
