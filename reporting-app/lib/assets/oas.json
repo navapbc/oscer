@@ -151,7 +151,7 @@
       },
       "CertificationRequirements": {
         "type": "object",
-        "description": "Descriptmion of certification needs",
+        "description": "Description of certification needs",
         "properties": {
           "certification_date": {
             "type": "string",
