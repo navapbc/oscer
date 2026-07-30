@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_16_170507) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_29_133636) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -141,6 +141,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_16_170507) do
     t.jsonb "member_data"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.date "application_date"
+    t.jsonb "household_data"
     t.index ["case_number"], name: "index_certifications_on_case_number"
     t.index ["member_id"], name: "index_certifications_on_member_id"
   end
