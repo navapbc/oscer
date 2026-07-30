@@ -5,6 +5,8 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   EXTERNAL_EXCLUSION_CHECK_STEP = "external_exclusion_check"
   EXTERNAL_EXCEPTION_CHECK_STEP = "external_exception_check"
   EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP = "external_community_engagement_check"
+  # Trailing step: where OSCER calls OUT, after the preceding steps assess data in hand (OSCER-805).
+  VERIFICATION_DATA_SOURCE_CHECK_STEP = "verification_data_source_check"
 
   # User task steps
   REPORT_ACTIVITIES_STEP = "report_activities"
@@ -32,6 +34,11 @@ class CertificationBusinessProcess < Strata::BusinessProcess
     CommunityEngagementCheckService.determine(kase)
   })
 
+  # Verification data sources: see DataSourceCheckService. Owns the negative determination.
+  system_process(VERIFICATION_DATA_SOURCE_CHECK_STEP, ->(kase) {
+    DataSourceCheckService.determine(kase)
+  })
+
   # User tasks
   applicant_task(REPORT_ACTIVITIES_STEP)
   staff_task(REVIEW_ACTIVITY_REPORT_STEP, ReviewActivityReportTask)
@@ -54,13 +61,20 @@ class CertificationBusinessProcess < Strata::BusinessProcess
   transition(EXTERNAL_EXCEPTION_CHECK_STEP, "DeterminedExcepted", END_STEP)
   transition(EXTERNAL_EXCEPTION_CHECK_STEP, "DeterminedNotExcepted", EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP)
 
-  # --- Transitions: External CE check (combined hours/income; generic community-engagement event names) ---
-  # DeterminedCommunityEngagementMet: At least one CE track (hours or income) satisfied
-  # DeterminedCommunityEngagementActionRequired: Both tracks failed and no external hours on file
-  # DeterminedCommunityEngagementInsufficient: Both tracks failed but some external hours exist (+hours_data+, +income_data+)
+  # --- Transitions: External CE check (in-hand combined hours/income) ---
+  # DeterminedCommunityEngagementNotMet is an internal routing event with no
+  # NotificationsEventListener subscription, so the member is not told they fell short before the
+  # outbound data sources have been consulted.
   transition(EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementMet", END_STEP)
-  transition(EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementInsufficient", REPORT_ACTIVITIES_STEP)
-  transition(EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementActionRequired", REPORT_ACTIVITIES_STEP)
+  transition(EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP, "DeterminedCommunityEngagementNotMet", VERIFICATION_DATA_SOURCE_CHECK_STEP)
+
+  # --- Transitions: Verification data source check (trailing; OSCER-805) ---
+  # No source produced an outcome splits two ways: Insufficient when inbound-pushed hours exist,
+  # ActionRequired when none do.
+  transition(VERIFICATION_DATA_SOURCE_CHECK_STEP, "DeterminedExcepted", END_STEP)
+  transition(VERIFICATION_DATA_SOURCE_CHECK_STEP, "DeterminedCommunityEngagementMet", END_STEP)
+  transition(VERIFICATION_DATA_SOURCE_CHECK_STEP, "DeterminedCommunityEngagementInsufficient", REPORT_ACTIVITIES_STEP)
+  transition(VERIFICATION_DATA_SOURCE_CHECK_STEP, "DeterminedCommunityEngagementActionRequired", REPORT_ACTIVITIES_STEP)
 
   # --- Transitions: Activity report workflow ---
   # Reviewer determines compliance: approved = compliant, denied = not compliant.

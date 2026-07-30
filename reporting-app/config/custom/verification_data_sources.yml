@@ -73,17 +73,29 @@ mock_drug_treatment:
   adapter_class: "Verification::Adapters::MockDrugTreatment"
   order: null
 
-# Mock data source for use by Verification::DataSourceOrchestrator (OSCER-805).
-# order-bearing (non-exclusion), so the orchestrator consults it; it emits the
-# resides_in_declared_emergency_county exception outcome.
+# Mock data sources for Verification::DataSourceOrchestrator (OSCER-805). Both are
+# order-bearing, so the orchestrator consults them: no real non-exclusion source exists
+# yet, so these are what exercise the trailing verification_data_source_check step.
+#
+# ## How to exercise each path (verified 2026-07-29)
+#
+#   va_icn last char      email has "ce-met"   result
+#   -----------------------------------------------------------------------------------
+#   0, 3, 6, 9            any                  excluded      (mock_drug_treatment)
+#   1, 5, 7               any                  excepted      (mock_drug_treatment)
+#   2, 4, 8               any                  excepted      (mock_emergency_county)
+#   not a digit, or none  no                   not_compliant -> report_activities
+#   not a digit, or none  yes                  compliant     (mock_community_engagement)
+#
+# The first two rows never reach the orchestrator, because mock_drug_treatment runs at the
+# exclusion step. That is also why the CE source keys off email rather than va_icn: only
+# even digits survive to the orchestrator and those are mock_emergency_county's. Guarded by
+# spec/business_processes/certification_business_process_reachability_spec.rb.
 mock_emergency_county:
   enabled: true
   adapter_class: "Verification::Adapters::MockEmergencyCounty"
   order: 10
 
-# The community-engagement half of the same pass: attests the requirement is met rather
-# than reporting hours. Ordered after mock_emergency_county so the exception source is
-# consulted first. Keys off the member's email, not va_icn — see the adapter for why.
 mock_community_engagement:
   enabled: true
   adapter_class: "Verification::Adapters::MockCommunityEngagement"

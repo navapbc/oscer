@@ -6,16 +6,9 @@ RSpec.describe CertificationCase, type: :model do
   let(:certification_case) { create(:certification_case) }
   let(:user) { create(:user) }
 
-  # Prevent real external CE from recording a compliant determination during certification bootstrap
-  # (Income aggregate can meet threshold and close the case before examples run).
   before do
     allow(NotificationService).to receive(:send_email_notification)
-    allow(CommunityEngagementCheckService).to receive(:determine) do |kase|
-      Strata::EventManager.publish("DeterminedCommunityEngagementActionRequired", {
-        case_id: kase.id,
-        certification_id: kase.certification_id
-      })
-    end
+    stub_cascade_to_report_activities
   end
 
   describe '#record_exception_determination' do
@@ -467,12 +460,90 @@ RSpec.describe CertificationCase, type: :model do
     end
   end
 
+  # A community-engagement determination ATTESTED BY AN OUTBOUND DATA SOURCE
+  # (OSCER-805). Deliberately NOT recorded through
+  # +#record_external_ce_combined_assessment+: that shape is the record of the
+  # in-hand assessment (inbound-pushed + member-reported activity), and a source
+  # attests the requirement is met without reporting hours. Reusing it would
+  # persist an in-hand hours/income result the in-hand data does not support.
+  describe "#record_data_source_ce_determination" do
+    before { stub_const("MockSourceActor", Class.new { include Strata::VirtualActor }) }
+
+    let(:reason_codes) { [ "hours_reported_compliant" ] }
+
+    it "records an automated compliant determination under the data-source CE calculation type" do
+      certification_case.record_data_source_ce_determination(
+        reason_codes, MockSourceActor, data_source: "workforce_feed"
+      )
+
+      determination = latest_determination_for(certification_case.certification_id)
+      expect(determination.outcome).to eq("compliant")
+      expect(determination.decision_method).to eq("automated")
+      expect(determination.reasons).to eq(reason_codes)
+      expect(determination.determination_data["calculation_type"])
+        .to eq(Determination::CALCULATION_TYPE_DATA_SOURCE_CE)
+    end
+
+    it "records the attesting source so Determination#source resolves to it" do
+      certification_case.record_data_source_ce_determination(
+        reason_codes, MockSourceActor, data_source: "workforce_feed"
+      )
+
+      determination = latest_determination_for(certification_case.certification_id)
+      expect(determination.determination_data["data_source"]).to eq("workforce_feed")
+      expect(determination.source).to eq("workforce_feed")
+    end
+
+    it "stores a flat Hash payload, not the combined in-hand assessment shape" do
+      certification_case.record_data_source_ce_determination(
+        reason_codes, MockSourceActor, data_source: "workforce_feed"
+      )
+
+      data = latest_determination_for(certification_case.certification_id).determination_data
+      expect(data.keys).to contain_exactly("calculation_type", "data_source")
+    end
+
+    it "closes the case, as every compliant automated CE path does" do
+      certification_case.record_data_source_ce_determination(
+        reason_codes, MockSourceActor, data_source: "workforce_feed"
+      )
+
+      expect(certification_case.reload).to be_closed
+    end
+
+    it "accepts both community-engagement reason codes on one determination" do
+      certification_case.record_data_source_ce_determination(
+        [ "hours_reported_compliant", "income_reported_compliant" ],
+        MockSourceActor,
+        data_source: "workforce_feed"
+      )
+
+      determination = latest_determination_for(certification_case.certification_id)
+      expect(determination.reasons).to contain_exactly(
+        "hours_reported_compliant",
+        "income_reported_compliant"
+      )
+    end
+
+    # Derived by Determinable#record_determination! from the :compliant outcome plus
+    # non-exemption/non-denial reasons — no explicit audit write in this method.
+    it "writes the approved activity-report audit line" do
+      expect do
+        certification_case.record_data_source_ce_determination(
+          reason_codes, MockSourceActor, data_source: "workforce_feed"
+        )
+      end.to change {
+        Strata::AuditLine.where(
+          subject: Certification.find(certification_case.certification_id),
+          actor_type: "MockSourceActor",
+          action: "case.activity_report.approved"
+        ).count
+      }.by(1)
+    end
+  end
+
   describe "#record_external_ce_combined_assessment" do
     before { stub_const("MockSubmitter", Class.new { include Strata::VirtualActor }) }
-
-    def latest_determination_for(certification_id)
-      Determination.unscope(:order).where(subject_id: certification_id).order(created_at: :desc).first
-    end
 
     let(:certification) { Certification.find(certification_case.certification_id) }
 
