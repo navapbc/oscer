@@ -35,6 +35,36 @@ RSpec.describe CommunityEngagementCheckService do
     Determination.unscope(:order).where(subject_id: certification_id).order(created_at: :desc).first
   end
 
+  # .assess is the derivation .determine used to inline. It is public so a second step can reuse it
+  # rather than re-deriving the same four values and risking a different verdict.
+  describe ".assess" do
+    it "returns both aggregates and their per-track verdicts" do
+      create_external_hourly_activity_for(certification, hours: 85)
+
+      assessment = described_class.assess(certification)
+
+      expect(assessment.hours_data[:total_hours]).to be_positive
+      expect(assessment.income_data).to have_key(:total_income)
+      expect(assessment.hours_ok).to be(true)
+      expect(assessment.income_ok).to be(false)
+    end
+
+    it "reports met? when either track passes" do
+      create_external_hourly_activity_for(certification, hours: 85)
+
+      expect(described_class.assess(certification).met?).to be(true)
+    end
+
+    it "reports met? false when neither track passes" do
+      create_external_hourly_activity_for(certification, hours: 1)
+
+      assessment = described_class.assess(certification)
+      expect(assessment.hours_ok).to be(false)
+      expect(assessment.income_ok).to be(false)
+      expect(assessment.met?).to be(false)
+    end
+  end
+
   describe ".determine" do
     context "when hours meet target (hours-only pass)" do
       before do

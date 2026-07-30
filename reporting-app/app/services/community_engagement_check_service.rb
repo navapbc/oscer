@@ -6,43 +6,54 @@
 # see NotificationsEventListener).
 class CommunityEngagementCheckService
   include Strata::VirtualActor
+
+  # The in-hand assessment: both aggregates and their per-track verdicts. Extracted from #determine
+  # so a second step can reuse the derivation instead of repeating it, where the two could drift.
+  Assessment = Struct.new(:hours_data, :income_data, :hours_ok, :income_ok, keyword_init: true) do
+    def met?
+      hours_ok || income_ok
+    end
+  end
+
   class << self
     # @param kase [CertificationCase]
     def determine(kase)
       certification = Certification.find(kase.certification_id)
-      hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(
-        certification
-      )
-      income_data = IncomeComplianceDeterminationService.aggregate_income_for_certification(
-        certification
-      )
-
-      hours_ok = hours_compliant?(hours_data)
-      income_ok = IncomeComplianceDeterminationService.compliant_for_total_income?(income_data[:total_income])
+      assessment = assess(certification)
 
       kase.record_external_ce_combined_assessment(
         actor: self,
         certification: certification,
-        hours_data: hours_data,
-        income_data: income_data,
-        hours_ok: hours_ok,
-        income_ok: income_ok
+        hours_data: assessment.hours_data,
+        income_data: assessment.income_data,
+        hours_ok: assessment.hours_ok,
+        income_ok: assessment.income_ok
       )
 
       publish_workflow_events(
         kase: kase,
         certification: certification,
+        hours_data: assessment.hours_data,
+        income_data: assessment.income_data,
+        either_track_compliant: assessment.met?
+      )
+    end
+
+    # @param certification [Certification]
+    # @return [Assessment]
+    def assess(certification)
+      hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(certification)
+      income_data = IncomeComplianceDeterminationService.aggregate_income_for_certification(certification)
+
+      Assessment.new(
         hours_data: hours_data,
         income_data: income_data,
-        either_track_compliant: hours_ok || income_ok
+        hours_ok: HoursComplianceDeterminationService.compliant_for_total_hours?(hours_data[:total_hours]),
+        income_ok: IncomeComplianceDeterminationService.compliant_for_total_income?(income_data[:total_income])
       )
     end
 
     private
-
-    def hours_compliant?(hours_data)
-      HoursComplianceDeterminationService.compliant_for_total_hours?(hours_data[:total_hours])
-    end
 
     def publish_workflow_events(kase:, certification:, hours_data:, income_data:, either_track_compliant:)
       payload_base = {
