@@ -577,7 +577,7 @@
         "members": {
           "type": ["array", "null"],
           "items": {
-            "$ref": "#/components/schemas/CertificationHoldDataMember"
+            "$ref": "#/components/schemas/CertificationHouseholdDataMember"
           }
         }
       },
