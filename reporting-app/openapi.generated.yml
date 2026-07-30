@@ -199,7 +199,7 @@ components:
           enum:
           - new_application
           - recertification
-          - cahnge_in_circumstances
+          - change_in_circumstances
           description: The type of certification
       required:
       - certification_date
