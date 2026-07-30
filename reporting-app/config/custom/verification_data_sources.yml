@@ -80,3 +80,11 @@ mock_emergency_county:
   enabled: true
   adapter_class: "Verification::Adapters::MockEmergencyCounty"
   order: 10
+
+# The community-engagement half of the same pass: attests the requirement is met rather
+# than reporting hours. Ordered after mock_emergency_county so the exception source is
+# consulted first. Keys off the member's email, not va_icn — see the adapter for why.
+mock_community_engagement:
+  enabled: true
+  adapter_class: "Verification::Adapters::MockCommunityEngagement"
+  order: 20
