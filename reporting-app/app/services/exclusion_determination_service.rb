@@ -130,7 +130,7 @@ class ExclusionDeterminationService
         dates_caretaking_infirm: extract_exemption(certification, :caregiver_disability),
         dependent_children_birth_dates: extract_exemption(certification, :caregiver_child),
         meeting_tanf_or_snap_work: extract_attribute(certification, :meeting_tanf_or_snap_work),
-        dates_in_drug_treatment: extract_attribute(certification, :dates_in_drug_treatment),
+        dates_in_drug_treatment: extract_exemption(certification, :substance_treatment),
         dates_incarcerated: extract_attribute(certification, :dates_incarcerated)
       )
 

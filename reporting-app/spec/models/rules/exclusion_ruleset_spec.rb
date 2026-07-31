@@ -275,7 +275,6 @@ RSpec.describe Rules::ExclusionRuleset do
 
     context 'when no treatment dates are present' do
       it 'returns falsey' do
-        expect(ruleset.drug_treatment([], cert_date)).to be_falsey
         expect(ruleset.drug_treatment(nil, cert_date)).to be_falsey
       end
     end
@@ -288,13 +287,15 @@ RSpec.describe Rules::ExclusionRuleset do
 
     context 'when in treatment during the certification month' do
       it 'returns true' do
-        expect(ruleset.drug_treatment([ cert_date + 15.days ], cert_date)).to be true
+        drug_treatment = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
+        expect(ruleset.drug_treatment(drug_treatment, cert_date)).to be true
       end
     end
 
     context 'when in treatment only outside the certification month' do
       it 'returns falsey' do
-        expect(ruleset.drug_treatment([ cert_date - 1.month ], cert_date)).to be_falsey
+        drug_treatment = build(:certification_member_data_exemption, :period_end_invalid, cert_date:)
+        expect(ruleset.drug_treatment(drug_treatment, cert_date)).to be false
       end
     end
   end

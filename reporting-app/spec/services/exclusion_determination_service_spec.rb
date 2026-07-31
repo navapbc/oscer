@@ -199,7 +199,7 @@ RSpec.describe ExclusionDeterminationService do
               verification_status: :verified,
               periods: [
                 {
-                  period_start: cert_date - 5.years,
+                  period_start: cert_date - 5.years
                 }
               ]
             }
@@ -223,7 +223,22 @@ RSpec.describe ExclusionDeterminationService do
       end
 
       context 'when the member is in drug/alcohol treatment during the certification month' do
-        let(:member_data) { build(:certification_member_data, dates_in_drug_treatment: [ cert_date ], cert_date:) }
+        let(:exemptions) do
+          [
+            {
+              type: :substance_treatment,
+              value: true,
+              verification_status: :verified,
+              periods: [
+                {
+                  period_start: cert_date - 1.years,
+                  period_end: cert_date
+                }
+              ]
+            }
+          ]
+        end
+        let(:member_data) { build(:certification_member_data, exemptions:, cert_date:) }
 
         it 'records the drug_treatment reason code' do
           service.determine(kase)

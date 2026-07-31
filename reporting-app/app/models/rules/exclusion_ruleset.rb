@@ -94,9 +94,12 @@ module Rules
     # Members participating in a drug/alcohol treatment program during the certification month are
     # excluded (month granularity, consistent with the other date-based checks).
     def drug_treatment(dates_in_drug_treatment, certification_date)
+      return if dates_in_drug_treatment.nil?
       return if certification_date.nil?
 
-      Array(dates_in_drug_treatment).any? { |date| date.beginning_of_month == certification_date.beginning_of_month }
+      Array(dates_in_drug_treatment.periods).any? do |period|
+        period.period_start.beginning_of_month <= certification_date && certification_date <= period.period_end.end_of_month
+      end
     end
 
     # Incarcerated members are excluded while incarcerated and for INMATE_BUFFER_MONTHS afterward,
