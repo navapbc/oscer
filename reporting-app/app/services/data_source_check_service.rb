@@ -55,19 +55,14 @@ class DataSourceCheckService
 
       exception_keys = outcomes & Determination::EXCEPTION_OUTCOME_KEYS
 
-      # KNOWN GAP: no ExternalException.enabled? gate, so a source can attest an optional exception a
-      # deployment disabled, which the in-hand check honors (exception_determination_service.rb:151).
-      # Unreachable while external_exceptions.yml carries no overrides. Do NOT gate it here: the
-      # orchestrator already stopped at the first source to return anything, so dropping a disabled
-      # outcome would shadow a valid one from a higher-order source. Belongs in
-      # DataSourceOrchestrator#positive?, with an explicit outcome-key to ExternalException-id map
-      # (medical_travel vs traveling_for_medical_care).
-      #
       # An exception outranks a CE attestation from the same source, mirroring the flow's own order.
       if exception_keys.any?
-        kase.record_exception_determination(reason_codes(exception_keys), self, data_source: data_source)
+        # One reason, like ExclusionDeterminationService and ExceptionDeterminationService. The
+        # source's first emitted key wins, since Array#& above keeps the receiver's order.
+        kase.record_exception_determination(reason_codes(exception_keys.first(1)), self, data_source: data_source)
         publish(kase, "DeterminedExcepted")
       else
+        # All of them, unlike above: hours-met and income-met corroborate rather than compete.
         kase.record_data_source_ce_determination(reason_codes(outcomes), self, data_source: data_source)
         publish(kase, "DeterminedCommunityEngagementMet")
       end

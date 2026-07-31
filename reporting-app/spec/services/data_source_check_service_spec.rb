@@ -182,17 +182,15 @@ RSpec.describe DataSourceCheckService do
 
     context "when a source emits several exception outcomes" do
       before do
-        register_one(id: :multi_feed, outcomes: [ :was_inmate, :receiving_inpatient_medical_care ])
+        register_one(id: :multi_feed, outcomes: [ :receiving_inpatient_medical_care, :was_inmate ])
       end
 
-      # Guards against a regression that took only the first exception key.
-      it "records every matched exception reason code" do
+      # Registered in reverse of Determination::EXCEPTION_OUTCOME_KEYS order on purpose: only a
+      # reversed pair tells "the source's order decides" apart from "the canonical order decides".
+      it "records only the first exception reason code the source emitted" do
         described_class.determine(certification_case)
 
-        expect(latest_determination.reasons).to contain_exactly(
-          "inmate_excepted",
-          "inpatient_medical_care_excepted"
-        )
+        expect(latest_determination.reasons).to eq([ "inpatient_medical_care_excepted" ])
       end
     end
 
