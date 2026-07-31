@@ -309,38 +309,30 @@ RSpec.describe Determination, type: :model do
     end
   end
 
-  # VerificationDataSourcesLoader boot-validates against these, so the count canary below turns
-  # "added an exception check without categorizing it" into a test failure here rather than a boot
-  # error on the first deployment that registers a source declaring it.
-  describe 'non-exclusion outcome categories' do
-    it 'references only real REASON_CODE_MAPPING keys' do
-      expect(described_class::NON_EXCLUSION_OUTCOME_KEYS)
-        .to all(be_in(described_class::REASON_CODE_MAPPING.keys))
+  # Grouping makes a code's category structural, so every way it can go wrong is now silent.
+  describe 'reason code groups' do
+    it 'defines every reason code in exactly one group' do
+      expect(described_class::REASON_CODE_MAPPING.size)
+        .to eq(described_class::REASON_CODE_GROUPS.sum(&:size))
     end
 
-    it 'keeps the exception and community-engagement categories disjoint' do
-      overlap = described_class::EXCEPTION_OUTCOME_KEYS & described_class::CE_OUTCOME_KEYS
+    # A met code filed under CE_INSUFFICIENT_REASON_CODES, or the reverse, records :compliant for a
+    # member who reached neither threshold.
+    it 'keeps the community-engagement met and insufficient codes distinguishable' do
+      expect(described_class::CE_MET_REASON_CODES.values).to all(end_with('_compliant'))
+      expect(described_class::CE_INSUFFICIENT_REASON_CODES.values).to all(end_with('_insufficient'))
+    end
+
+    # An exclusion key here lets an order-bearing source emit an exclusion into a pass with no
+    # determination shape for one.
+    it 'keeps exclusion keys out of the non-exclusion partition' do
+      overlap = described_class::NON_EXCLUSION_OUTCOME_KEYS & described_class::EXCLUSION_REASON_CODES.keys
       expect(overlap).to be_empty
     end
 
-    # ExceptionDeterminationService produces every exception reason code, so its checks bound the set.
-    it 'covers every exception reason code ExceptionDeterminationService can produce' do
-      in_hand_exception_codes = described_class::EXCEPTION_OUTCOME_KEYS
-        .map { |key| described_class::REASON_CODE_MAPPING.fetch(key) }
-
-      expect(in_hand_exception_codes).to include(
-        'pregnancy_excepted',
-        'was_former_foster_care',
-        'caretaker_excepted',
-        'drug_treatment_excepted',
-        'inmate_excepted',
-        'age_under_19_excepted',
-        'inpatient_medical_care_excepted',
-        'declared_emergency_county_excepted',
-        'high_unemployment_county_excepted',
-        'medical_travel_excepted',
-        'other_program_excepted'
-      )
+    # Its checks bound the set, so a twelfth check with no reason code fails here rather than at boot
+    # on the first deployment that registers a source declaring it.
+    it 'keeps one exception reason code per ExceptionDeterminationService check' do
       expect(described_class::EXCEPTION_OUTCOME_KEYS.count)
         .to eq(ExceptionDeterminationService::EXCEPTION_CHECKS.count)
     end
