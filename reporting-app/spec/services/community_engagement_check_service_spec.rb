@@ -38,27 +38,46 @@ RSpec.describe CommunityEngagementCheckService do
   # .assess is the derivation .determine used to inline. It is public so a second step can reuse it
   # rather than re-deriving the same four values and risking a different verdict.
   describe ".assess" do
-    it "returns both aggregates and their per-track verdicts" do
-      create_external_hourly_activity_for(certification, hours: 85)
+    let(:over_hours) { HoursComplianceDeterminationService::TARGET_HOURS + 5 }
+    let(:under_hours) { HoursComplianceDeterminationService::TARGET_HOURS / 2 }
+    let(:over_income) { IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY + 20 }
+    let(:under_income) { IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY / 2 }
+
+    it "returns both aggregates and their per-track verdicts when only hours pass" do
+      create_external_hourly_activity_for(certification, hours: over_hours)
+
+      assessment = described_class.assess(certification)
+
+      expect(assessment.hours_data[:total_hours]).to eq(over_hours)
+      expect(assessment.income_data[:total_income]).to be_zero
+      expect(assessment.hours_ok).to be(true)
+      expect(assessment.income_ok).to be(false)
+      expect(assessment.met?).to be(true)
+    end
+
+    # met? is hours_ok || income_ok; without this the income side is never exercised.
+    it "reports met? when only the income track passes" do
+      create_external_hourly_activity_for(certification, hours: under_hours)
+      create_income_for(certification, gross_income: over_income)
+
+      assessment = described_class.assess(certification)
+
+      expect(assessment.income_data[:total_income]).to eq(over_income)
+      expect(assessment.hours_ok).to be(false)
+      expect(assessment.income_ok).to be(true)
+      expect(assessment.met?).to be(true)
+    end
+
+    # Both tracks carry below-threshold data, so a verdict derived from presence rather than amount
+    # fails here instead of passing on an empty aggregate.
+    it "reports met? false when neither track passes" do
+      create_external_hourly_activity_for(certification, hours: under_hours)
+      create_income_for(certification, gross_income: under_income)
 
       assessment = described_class.assess(certification)
 
       expect(assessment.hours_data[:total_hours]).to be_positive
-      expect(assessment.income_data).to have_key(:total_income)
-      expect(assessment.hours_ok).to be(true)
-      expect(assessment.income_ok).to be(false)
-    end
-
-    it "reports met? when either track passes" do
-      create_external_hourly_activity_for(certification, hours: 85)
-
-      expect(described_class.assess(certification).met?).to be(true)
-    end
-
-    it "reports met? false when neither track passes" do
-      create_external_hourly_activity_for(certification, hours: 1)
-
-      assessment = described_class.assess(certification)
+      expect(assessment.income_data[:total_income]).to be_positive
       expect(assessment.hours_ok).to be(false)
       expect(assessment.income_ok).to be(false)
       expect(assessment.met?).to be(false)
