@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 # Stubs Rails.application.config.verification_data_sources, the booted data source registry.
-# Extracted from data_source_orchestrator_spec so any spec exercising the pass can stub the
-# registry the same way.
+# Extracted from identical defs previously repeated in data_source_orchestrator_spec and
+# data_source_check_service_spec.
 module VerificationRegistryHelpers
   def stub_registry(entries)
     allow(Rails.application.config).to receive(:verification_data_sources).and_return(entries)

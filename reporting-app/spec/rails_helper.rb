@@ -48,6 +48,8 @@ require_relative 'support/env_helpers'
 require_relative 'support/yaml_config_helpers'
 require_relative 'support/verification/data_source_shared_examples'
 require_relative 'support/verification/registry_helpers'
+require_relative 'support/determination_helpers'
+require_relative 'support/certification_cascade_helpers'
 require "strata/testing/api_auth_helpers"
 
 # Requires supporting ruby files with custom matchers and macros, etc, in

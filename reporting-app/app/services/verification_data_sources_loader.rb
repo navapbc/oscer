@@ -173,10 +173,17 @@ module VerificationDataSourcesLoader
       "valid ids are Determination::REASON_CODE_MAPPING keys (#{valid_outcomes.map(&:to_s).sort})"
   end
 
-  # The non-exclusion pass records an outcome by CATEGORY (exception → :excepted, CE → :compliant),
-  # so an uncategorized outcome clears validate_outcome_ids! and fails only at determination time.
-  # Exclusion keys stay permitted: a hybrid source is registrable by design, its exclusion outcomes
-  # ranked by Exclusion.priority_order. Exclusion-only sources (order: nil) never enter the pass.
+  # The non-exclusion pass records each outcome BY CATEGORY (exception → :excepted, CE → :compliant).
+  # An uncategorized outcome clears validate_outcome_ids!, then raises mid-determination where Strata
+  # rescues and logs — stalling the case with no determination, notification or staff task. Catch it
+  # at boot instead. Exclusion-only sources (order: nil) never enter the pass.
+  #
+  # Exclusion keys stay permitted: a hybrid is registrable by design, its exclusion outcomes ranked by
+  # Exclusion.priority_order. KNOWN GAP, untracked and NOT covered by
+  # https://github.com/navapbc/oscer/issues/810 (scoped to ExclusionDeterminationService):
+  # ordered_sources selects on enabled and order alone, so hybrids are scoped out of the pass but not
+  # filtered from it, and an order-bearing hybrid emitting an exclusion outcome stalls the case the
+  # same silent way. Durable fix is filtering them in DataSourceOrchestrator#ordered_sources.
   def validate_non_exclusion_outcome_categories!(entry, outcomes)
     return if entry[:order].nil?
 

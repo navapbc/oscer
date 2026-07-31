@@ -282,6 +282,26 @@ class CertificationCase < Strata::Case
     )
   end
 
+  # Called by DataSourceCheckService when a data source attests community engagement is met. A source
+  # returns a verdict, not hours or income, so this cannot reuse
+  # +#record_external_ce_combined_assessment+, whose payload states figures we would have to invent.
+  def record_data_source_ce_determination(reason_codes, actor, data_source:)
+    # jsonb column; must stay a Hash, not a JSON String (see record_exclusion_determination).
+    determination_data = {
+      "calculation_type" => Determination::CALCULATION_TYPE_DATA_SOURCE_CE,
+      "data_source" => data_source
+    }
+
+    # Reused for its close_on_compliant default, so a source-attested compliant member leaves the
+    # open-case queues exactly as an in-hand compliant member does.
+    record_automated_ce_compliance(
+      :compliant,
+      determination_data,
+      reasons: reason_codes,
+      actor: actor
+    )
+  end
+
   # External CE check: one automated determination with both tracks in +determination_data+.
   # Member is compliant if either +hours_ok+ or +income_ok+; not compliant only when both are false.
   # Events/notifications are published by CommunityEngagementCheckService (via Strata).

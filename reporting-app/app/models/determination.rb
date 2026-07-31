@@ -54,6 +54,10 @@ class Determination < Strata::Determination
   CALCULATION_TYPE_EXTERNAL_CE_COMBINED = "external_ce_combined"
   # Historical +determination_data["calculation_type"]+ before +external_ce_combined+; use for BI/read filters on old rows.
   CALCULATION_TYPE_EXTERNAL_CE_COMBINED_LEGACY = "ex_parte_ce_combined"
+  # Community engagement attested by an outbound data source, unlike
+  # +CALCULATION_TYPE_EXTERNAL_CE_COMBINED+, which records the in-hand assessment. A source attests
+  # without reporting hours, so the payload is a flat Hash with no VO behind it.
+  CALCULATION_TYPE_DATA_SOURCE_CE = "data_source_ce"
   # Stored in +determination_data["satisfied_by"]+ when +calculation_type+ is +CALCULATION_TYPE_EXTERNAL_CE_COMBINED+ (or legacy).
   SATISFIED_BY_BOTH = "both"
   SATISFIED_BY_HOURS = "hours"
@@ -101,7 +105,8 @@ class Determination < Strata::Determination
     participating_in_other_program: "other_program_excepted"
   }.freeze
 
-  # A community-engagement track reached its threshold. Recorded as +:compliant+.
+  # A community-engagement track reached its threshold. Recorded as +:compliant+, with
+  # CALCULATION_TYPE_DATA_SOURCE_CE when a data source is what attested it.
   CE_MET_REASON_CODES = {
     hours_reported_compliant: "hours_reported_compliant",
     income_reported_compliant: "income_reported_compliant"
@@ -137,8 +142,8 @@ class Determination < Strata::Determination
   # size check.
   REASON_CODE_MAPPING = REASON_CODE_GROUPS.reduce(:merge).freeze
 
-  # Which determination a non-exclusion outcome calls for. VerificationDataSourcesLoader
-  # boot-validates every order-bearing source's declared outcomes against this partition.
+  # Which determination DataSourceCheckService records for a non-exclusion outcome.
+  # VerificationDataSourcesLoader boot-validates every order-bearing source's outcomes against it.
   EXCEPTION_OUTCOME_KEYS = EXCEPTION_REASON_CODES.keys.freeze
   CE_OUTCOME_KEYS = CE_MET_REASON_CODES.keys.freeze
   NON_EXCLUSION_OUTCOME_KEYS = (EXCEPTION_OUTCOME_KEYS + CE_OUTCOME_KEYS).freeze

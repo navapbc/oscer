@@ -12,14 +12,7 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
     allow(Strata::EventManager).to receive(:publish).and_call_original
     allow(NotificationService).to receive(:send_email_notification)
 
-    # Avoid persisting real external CE combined determinations during factory/BP bootstrap (would
-    # close the case / mark compliant when income aggregate meets threshold).
-    allow(CommunityEngagementCheckService).to receive(:determine) do |kase|
-      Strata::EventManager.publish("DeterminedCommunityEngagementActionRequired", {
-        case_id: kase.id,
-        certification_id: kase.certification_id
-      })
-    end
+    stub_cascade_to_report_activities
 
     # Stub aggregate_hours_for_certification for the model's accept/deny methods
     allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
@@ -119,6 +112,85 @@ RSpec.describe CertificationBusinessProcess, type: :business_process do
         # Case transitions to report_activities step is hardcoded in the business process
         expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::REPORT_ACTIVITIES_STEP)
         expect(certification_case.member_status).to eq(MemberStatus::AWAITING_REPORT)
+        expect(certification_case).to be_open
+      end
+    end
+  end
+
+  describe 'external_community_engagement_check' do
+    before do
+      certification_case.update!(
+        business_process_current_step: CertificationBusinessProcess::EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP
+      )
+    end
+
+    context 'when community engagement is met from in-hand data' do
+      it 'transitions to end without consulting data sources' do
+        Strata::EventManager.publish("DeterminedCommunityEngagementMet", { case_id: certification_case.id, certification_id: certification_case.certification_id })
+        certification_case.reload
+
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
+      end
+    end
+
+    context 'when community engagement is not met' do
+      # The re-point: not-met no longer routes straight to report_activities. Data sources
+      # are consulted BEFORE non-compliance is concluded, so the trailing step owns the
+      # negative determination and the report_activities handoff.
+      it 'transitions to the verification data source check, not report_activities' do
+        allow(DataSourceCheckService).to receive(:determine)
+
+        Strata::EventManager.publish("DeterminedCommunityEngagementNotMet", { case_id: certification_case.id, certification_id: certification_case.certification_id })
+        certification_case.reload
+
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::VERIFICATION_DATA_SOURCE_CHECK_STEP)
+        expect(certification_case).to be_open
+      end
+    end
+  end
+
+  describe 'verification_data_source_check' do
+    before do
+      certification_case.update!(
+        business_process_current_step: CertificationBusinessProcess::VERIFICATION_DATA_SOURCE_CHECK_STEP
+      )
+    end
+
+    context 'when a data source yields an exception' do
+      it 'transitions to end' do
+        Strata::EventManager.publish("DeterminedExcepted", { case_id: certification_case.id, certification_id: certification_case.certification_id })
+        certification_case.reload
+
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
+      end
+    end
+
+    context 'when a data source attests community engagement is met' do
+      it 'transitions to end' do
+        Strata::EventManager.publish("DeterminedCommunityEngagementMet", { case_id: certification_case.id, certification_id: certification_case.certification_id })
+        certification_case.reload
+
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::END_STEP)
+      end
+    end
+
+    context 'when no data source produces an outcome and external hours exist' do
+      it 'transitions to report_activities' do
+        Strata::EventManager.publish("DeterminedCommunityEngagementInsufficient", { case_id: certification_case.id, certification_id: certification_case.certification_id })
+        certification_case.reload
+
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::REPORT_ACTIVITIES_STEP)
+        expect(certification_case.member_status).to eq(MemberStatus::AWAITING_REPORT)
+        expect(certification_case).to be_open
+      end
+    end
+
+    context 'when no data source produces an outcome and there are no external hours' do
+      it 'transitions to report_activities' do
+        Strata::EventManager.publish("DeterminedCommunityEngagementActionRequired", { case_id: certification_case.id, certification_id: certification_case.certification_id })
+        certification_case.reload
+
+        expect(certification_case.business_process_instance.current_step).to eq(CertificationBusinessProcess::REPORT_ACTIVITIES_STEP)
         expect(certification_case).to be_open
       end
     end

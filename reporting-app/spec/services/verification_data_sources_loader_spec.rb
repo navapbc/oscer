@@ -279,7 +279,8 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
     end
   end
 
-  # These pin an uncategorized order-bearing outcome to a boot failure, not a determination-time one.
+  # These pin an uncategorized order-bearing outcome to a boot failure rather than the silent
+  # mid-determination stall described on validate_non_exclusion_outcome_categories!.
   describe "order-bearing outcome categorization" do
     def entry_for(outcomes, order:)
       klass = Class.new(Verification::DataSource) do

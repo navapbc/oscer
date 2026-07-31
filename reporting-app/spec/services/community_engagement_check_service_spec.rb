@@ -31,10 +31,6 @@ RSpec.describe CommunityEngagementCheckService do
            period_start: period_start, period_end: period_end, gross_income: gross_income, **attrs)
   end
 
-  def latest_determination_for(certification_id)
-    Determination.unscope(:order).where(subject_id: certification_id).order(created_at: :desc).first
-  end
-
   # .assess is the derivation .determine used to inline. It is public so a second step can reuse it
   # rather than re-deriving the same four values and risking a different verdict.
   describe ".assess" do
@@ -189,45 +185,48 @@ RSpec.describe CommunityEngagementCheckService do
       end
     end
 
+    # Not-met defers to the trailing step (OSCER-805), which owns the negative determination and
+    # the Insufficient/ActionRequired split, so this service records nothing here.
     context "when neither hours nor income meet targets with some external hours" do
       before do
         create_external_hourly_activity_for(certification, hours: 40)
         create_income_for(certification, gross_income: 400)
       end
 
-      it "records not_compliant with both insufficient reason codes when some external hours are present" do
-        described_class.determine(certification_case)
-
-        determination = latest_determination_for(certification.id)
-        expect(determination.outcome).to eq("not_compliant")
-        expect(determination.reasons).to contain_exactly(
-          "hours_reported_insufficient",
-          "income_reported_insufficient"
-        )
-        data = determination.determination_data
-        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED)
-        expect(data["satisfied_by"]).to eq(Determination::SATISFIED_BY_NEITHER)
-        expect(data["hours"]["compliant"]).to be false
-        expect(data["income"]["compliant"]).to be false
+      it "records no determination, deferring the negative to the data-source step" do
+        expect do
+          described_class.determine(certification_case)
+        end.not_to change { Determination.unscope(:order).where(subject_id: certification.id).count }
       end
 
-      it "publishes DeterminedCommunityEngagementInsufficient with hours and income payload" do
+      it "publishes DeterminedCommunityEngagementNotMet to route into the data-source step" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedCommunityEngagementInsufficient",
-          hash_including(
-            case_id: certification_case.id,
-            hours_data: kind_of(Hash),
-            income_data: kind_of(Hash)
-          )
+          "DeterminedCommunityEngagementNotMet",
+          hash_including(case_id: certification_case.id)
         )
       end
 
-      it 'logs denied event' do
+      # The member-facing negative events publish from the trailing step instead.
+      # NotificationsEventListener binds handlers to event NAMES with no step
+      # awareness, so publishing either one here would email the member before the
+      # data sources have been consulted.
+      it "publishes neither member-facing negative event" do
+        described_class.determine(certification_case)
+
+        expect(Strata::EventManager).not_to have_received(:publish).with(
+          "DeterminedCommunityEngagementInsufficient", anything
+        )
+        expect(Strata::EventManager).not_to have_received(:publish).with(
+          "DeterminedCommunityEngagementActionRequired", anything
+        )
+      end
+
+      it 'does not log the denied event (the data-source step does)' do
         expect do
           described_class.determine(certification_case)
-        end.to change { Strata::AuditLine.where(subject: certification, actor_type: described_class.name, action: 'case.activity_report.denied').count }.by(1)
+        end.not_to change { Strata::AuditLine.where(subject: certification, actor_type: described_class.name, action: 'case.activity_report.denied').count }
       end
     end
 
@@ -236,27 +235,19 @@ RSpec.describe CommunityEngagementCheckService do
         create_income_for(certification, gross_income: 100)
       end
 
-      it "records not_compliant with both insufficient reason codes when there are no external hours" do
-        described_class.determine(certification_case)
-
-        determination = latest_determination_for(certification.id)
-        expect(determination.outcome).to eq("not_compliant")
-        expect(determination.reasons).to contain_exactly(
-          "hours_reported_insufficient",
-          "income_reported_insufficient"
-        )
-        data = determination.determination_data
-        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED)
-        expect(data["satisfied_by"]).to eq(Determination::SATISFIED_BY_NEITHER)
-        expect(data["hours"]["compliant"]).to be false
-        expect(data["income"]["compliant"]).to be false
+      it "records no determination" do
+        expect do
+          described_class.determine(certification_case)
+        end.not_to change { Determination.unscope(:order).where(subject_id: certification.id).count }
       end
 
-      it "publishes DeterminedCommunityEngagementActionRequired" do
+      # The external-hours branching that chose Insufficient vs ActionRequired moves
+      # to the trailing step, so both not-met flavors leave here as the same event.
+      it "publishes DeterminedCommunityEngagementNotMet" do
         described_class.determine(certification_case)
 
         expect(Strata::EventManager).to have_received(:publish).with(
-          "DeterminedCommunityEngagementActionRequired",
+          "DeterminedCommunityEngagementNotMet",
           hash_including(case_id: certification_case.id)
         )
       end
