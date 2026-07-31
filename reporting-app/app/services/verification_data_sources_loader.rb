@@ -70,6 +70,7 @@ module VerificationDataSourcesLoader
       klass = validate_adapter_class!(entry)
       outcomes = fetch_declared_outcomes!(entry, klass)
       validate_outcome_ids!(entry, outcomes, valid_outcomes)
+      validate_non_exclusion_outcome_categories!(entry, outcomes)
     end
   end
 
@@ -170,5 +171,31 @@ module VerificationDataSourcesLoader
     raise ConfigurationError,
       "verification_data_sources.#{entry[:id]}: .declared_outcomes references unknown id(s) #{unknown.map(&:to_s)}; " \
       "valid ids are Determination::REASON_CODE_MAPPING keys (#{valid_outcomes.map(&:to_s).sort})"
+  end
+
+  # The non-exclusion pass records each outcome BY CATEGORY (exception → :excepted, CE → :compliant).
+  # An uncategorized outcome clears validate_outcome_ids!, then raises mid-determination where Strata
+  # rescues and logs — stalling the case with no determination, notification or staff task. Catch it
+  # at boot instead. Exclusion-only sources (order: nil) never enter the pass.
+  #
+  # Exclusion keys stay permitted: a hybrid is registrable by design, its exclusion outcomes ranked by
+  # Exclusion.priority_order. KNOWN GAP, untracked and NOT covered by
+  # https://github.com/navapbc/oscer/issues/810 (scoped to ExclusionDeterminationService):
+  # ordered_sources selects on enabled and order alone, so hybrids are scoped out of the pass but not
+  # filtered from it, and an order-bearing hybrid emitting an exclusion outcome stalls the case the
+  # same silent way. Durable fix is filtering them in DataSourceOrchestrator#ordered_sources.
+  def validate_non_exclusion_outcome_categories!(entry, outcomes)
+    return if entry[:order].nil?
+
+    uncategorized = outcomes.reject do |outcome|
+      Determination::NON_EXCLUSION_OUTCOME_KEYS.include?(outcome) || Exclusion.find(outcome).present?
+    end
+    return if uncategorized.empty?
+
+    raise ConfigurationError,
+      "verification_data_sources.#{entry[:id]}: order-bearing source declares uncategorized " \
+      "outcome(s) #{uncategorized.map(&:to_s)}; an order-bearing source joins the non-exclusion " \
+      "pass, so each declared outcome must be an exclusion id, or be in " \
+      "Determination::EXCEPTION_OUTCOME_KEYS or Determination::CE_OUTCOME_KEYS"
   end
 end

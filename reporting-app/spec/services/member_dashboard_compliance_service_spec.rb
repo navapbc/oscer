@@ -113,6 +113,34 @@ RSpec.describe MemberDashboardComplianceService do
       end
     end
 
+    # A community-engagement determination attested by an outbound data source
+    # (OSCER-805). income_summary_visible? allow-lists the types it surfaces, so this
+    # new type falls through to hidden. Pinned here so the behavior is a chosen
+    # default rather than an accident of the allow-list — if product wants these
+    # members to see income progress, add the constant at
+    # member_dashboard_compliance_service.rb and flip this example.
+    context "when latest determination is data_source_ce" do
+      before do
+        create_external_income_for(certification:, gross_income: 100)
+        create(:determination,
+               subject: certification,
+               outcome: "compliant",
+               decision_method: "automated",
+               reasons: [ "hours_reported_compliant" ],
+               determination_data: {
+                 "calculation_type" => Determination::CALCULATION_TYPE_DATA_SOURCE_CE,
+                 "data_source" => "workforce_feed"
+               })
+      end
+
+      let(:member_status) { MemberStatusService.determine(certification) }
+
+      it "hides income summary for a source-attested determination" do
+        expect(read_model.show_income_summary).to be false
+        expect(read_model.ce_calculation_type).to eq(Determination::CALCULATION_TYPE_DATA_SOURCE_CE)
+      end
+    end
+
     context "when latest determination is hours_based" do
       before do
         create(:determination,

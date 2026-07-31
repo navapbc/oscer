@@ -14,14 +14,7 @@ RSpec.describe "/review_activity_report_tasks", type: :request do
     login_as user
     allow(NotificationService).to receive(:send_email_notification)
 
-    # Keep the bootstrap community-engagement check from closing the factory-created case
-    # (the hours stub below would otherwise mark it compliant during certification setup).
-    allow(CommunityEngagementCheckService).to receive(:determine) do |bootstrap_case|
-      Strata::EventManager.publish("DeterminedCommunityEngagementActionRequired", {
-        case_id: bootstrap_case.id,
-        certification_id: bootstrap_case.certification_id
-      })
-    end
+    stub_cascade_to_report_activities
   end
 
   after do

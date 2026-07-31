@@ -151,7 +151,7 @@
       },
       "CertificationRequirements": {
         "type": "object",
-        "description": "Descriptmion of certification needs",
+        "description": "Description of certification needs",
         "properties": {
           "certification_date": {
             "type": "string",
@@ -163,7 +163,7 @@
 	    "enum": [
 	      "new_application",
 	      "recertification",
-	      "change_in_circumstances",
+	      "change_in_circumstance",
 	      null
 	    ],
             "description": "The type of certification"
@@ -238,7 +238,7 @@
 	    "enum": [
 	      "new_application",
 	      "recertification",
-	      "cahnge_in_circumstances"
+	      "change_in_circumstance"
 	    ],
             "description": "The type of certification"
           }
@@ -518,43 +518,47 @@
         ]
       },
       "CertificationMemberDataExemption": {
-        "type": {
-          "type": "string",
-          "enum": [
-	    "american_indian_or_alaska_native",
-	    "caregiver_child",
-	    "former_foster_care",
-	    "pregnancy",
-	    "postpartum",
-	    "incarceration",
-	    "caregiver_disability",
-	    "meeting_atap_work",
-	    "meeting_tanf_or_snap_work",
-	    "veteran_disability",
-	    "medical_condition",
-	    "substance_treatment",
-	    "travel_for_medical"
-	  ],
-          "description": "Exemption data type"
-        },
-	"value": {
-	  "type": "boolean",
-	  "description": "Whether the exemption applies to the member"
-	},
-	"periods": {
-          "type": ["array", "null"],
-          "items": {
-            "$ref": "#/components/schemas/CertificationMemberDataExemptionPeriod"
-          }
-	},
-	"verification_status": {
-	  "type": "string",
-	  "enum": [
-	    "verified",
-	    "unverified",
-	    "pending"
-	  ],
-	  "description": "The verification status of the exemption"
+        "type": "object",
+        "description": "Data point for assessing if an exemption applies",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+	      "american_indian_or_alaska_native",
+	      "caregiver_child",
+	      "former_foster_care",
+	      "pregnancy",
+	      "postpartum",
+	      "incarceration",
+	      "caregiver_disability",
+	      "meeting_atap_work",
+	      "meeting_tanf_or_snap_work",
+	      "veteran_disability",
+	      "medical_condition",
+	      "substance_treatment",
+	      "travel_for_medical"
+	    ],
+            "description": "Exemption data type"
+          },
+	  "value": {
+	    "type": "boolean",
+	    "description": "Whether the exemption applies to the member"
+	  },
+	  "periods": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/CertificationMemberDataExemptionPeriod"
+            }
+	  },
+	  "verification_status": {
+	    "type": "string",
+	    "enum": [
+	      "verified",
+	      "unverified",
+	      "pending"
+	    ],
+	    "description": "The verification status of the exemption"
+	  }
 	},
 	"required": [
 	  "value",
@@ -562,58 +566,70 @@
 	]
       },
       "CertificationMemberDataExemptionPeriod": {
-        "period_start": {
-          "type": ["string", "null"],
-          "format": "date",
-          "description": "Start date of the exemption period"
-        },
-        "period_end": {
-          "type": ["string", "null"],
-          "format": "date",
-          "description": "End date of the exemption period"
-        }
+        "type": "object",
+        "description": "Start and/or end of a period of time",
+        "properties": {
+          "period_start": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "Start date of the exemption period"
+          },
+          "period_end": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "End date of the exemption period"
+          }
+	}
       },
       "CertificationHouseholdData": {
-        "members": {
-          "type": ["array", "null"],
-          "items": {
-            "$ref": "#/components/schemas/CertificationHoldDataMember"
-          }
-        }
-      },
-      "CertificationHouseholdDataMember": {
-        "name": {
-          "type": ["object", "null"],
-          "description": "The name of the household member",
-          "properties": {
-            "first": {
-              "type": ["string", "null"]
-            },
-            "middle": {
-              "type": ["string", "null"]
-            },
-            "last": {
-              "type": ["string", "null"]
-            },
-            "suffix": {
-              "type": ["string", "null"]
+        "type": "object",
+        "description": "Data about members of a household",
+        "properties": {
+          "members": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/CertificationHouseholdDataMember"
             }
           }
-        },
-        "ssn": {
-          "type": ["string", "null"],
-          "description": "The Social Security Number of the household member"
-        },
-        "date_of_birth": {
-          "type": ["string", "null"],
-          "format": "date",
-          "description": "The date of birth of the household member"
-        },
-        "monthly_income_dollars_total": {
-          "type": "string",
-          "format": "decimal",
-          "description": "Monthly total income of the household member"
-        }
+	}
+      },
+      "CertificationHouseholdDataMember": {
+        "type": "object",
+        "description": "Data about a member of a household",
+        "properties": {
+          "name": {
+            "type": ["object", "null"],
+            "description": "The name of the household member",
+            "properties": {
+              "first": {
+		"type": ["string", "null"]
+              },
+              "middle": {
+		"type": ["string", "null"]
+              },
+              "last": {
+		"type": ["string", "null"]
+              },
+              "suffix": {
+		"type": ["string", "null"]
+              }
+            }
+          },
+          "ssn": {
+            "type": ["string", "null"],
+            "description": "The Social Security Number of the household member"
+          },
+          "date_of_birth": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "The date of birth of the household member"
+          },
+          "monthly_income_dollars_total": {
+            "type": "string",
+            "format": "decimal",
+            "description": "Monthly total income of the household member"
+          }
+	}
       },
       "CertificationOutcome": {
         "type": "object",

@@ -54,6 +54,10 @@ class Determination < Strata::Determination
   CALCULATION_TYPE_EXTERNAL_CE_COMBINED = "external_ce_combined"
   # Historical +determination_data["calculation_type"]+ before +external_ce_combined+; use for BI/read filters on old rows.
   CALCULATION_TYPE_EXTERNAL_CE_COMBINED_LEGACY = "ex_parte_ce_combined"
+  # Community engagement attested by an outbound data source, unlike
+  # +CALCULATION_TYPE_EXTERNAL_CE_COMBINED+, which records the in-hand assessment. A source attests
+  # without reporting hours, so the payload is a flat Hash with no VO behind it.
+  CALCULATION_TYPE_DATA_SOURCE_CE = "data_source_ce"
   # Stored in +determination_data["satisfied_by"]+ when +calculation_type+ is +CALCULATION_TYPE_EXTERNAL_CE_COMBINED+ (or legacy).
   SATISFIED_BY_BOTH = "both"
   SATISFIED_BY_HOURS = "hours"
@@ -66,7 +70,11 @@ class Determination < Strata::Determination
   API_SOURCE = "api"
   MEMBER_SOURCE = "member"
 
-  REASON_CODE_MAPPING = {
+  # REASON_CODE_MAPPING below merges these groups into the flat lookup every caller uses. A new code
+  # goes in one group and nowhere else; its category follows from where it is defined.
+
+  # Recorded as +:excluded+.
+  EXCLUSION_REASON_CODES = {
     age_under_19: "age_under_19_excluded",
     age_over_65: "age_over_65_excluded",
     is_pregnant: "pregnancy_excluded",
@@ -77,19 +85,13 @@ class Determination < Strata::Determination
     tanf_snap_work: "tanf_snap_work_excluded",
     drug_treatment: "drug_treatment_excluded",
     inmate: "inmate_excluded",
-    income_reported_compliant: "income_reported_compliant",
-    income_reported_insufficient: "income_reported_insufficient",
-    hours_reported_compliant: "hours_reported_compliant",
-    hours_reported_insufficient: "hours_reported_insufficient",
-    exemption_request_compliant: "exemption_request_compliant",
-    is_veteran_with_disability: "veteran_disability_excluded",
-    denial_response_convincing: "denial_response_convincing",
-    denial_response_not_convincing: "denial_response_not_convincing",
-    # External-exception reason codes (see ExceptionDeterminationService). "Excepted" is a
-    # distinct outcome from "excluded"/"exempt" — do not conflate the three.
-    #
-    # Mandatory exceptions migrated from the exclusion ruleset carry the exclusion's reason code with
-    # "excluded" replaced by "excepted" (e.g. pregnancy_excluded -> pregnancy_excepted).
+    is_veteran_with_disability: "veteran_disability_excluded"
+  }.freeze
+
+  # Recorded as +:excepted+ (see ExceptionDeterminationService). Distinct from "excluded"/"exempt" — do
+  # not conflate the three. Exceptions migrated from the exclusion ruleset reuse its reason code with
+  # "excluded" replaced by "excepted".
+  EXCEPTION_REASON_CODES = {
     was_pregnant: "pregnancy_excepted",
     was_former_foster_care: "was_former_foster_care",
     was_caretaker: "caretaker_excepted",
@@ -103,12 +105,52 @@ class Determination < Strata::Determination
     participating_in_other_program: "other_program_excepted"
   }.freeze
 
-  # Reasons recorded when a staff reviewer approves or denies a member's denial response.
-  DENIAL_RESPONSE_REASONS = REASON_CODE_MAPPING.values_at(
-    :denial_response_convincing,
-    :denial_response_not_convincing
-  ).freeze
+  # A community-engagement track reached its threshold. Recorded as +:compliant+, with
+  # CALCULATION_TYPE_DATA_SOURCE_CE when a data source is what attested it.
+  CE_MET_REASON_CODES = {
+    hours_reported_compliant: "hours_reported_compliant",
+    income_reported_compliant: "income_reported_compliant"
+  }.freeze
 
+  # Neither community-engagement track reached its threshold. Recorded as +:not_compliant+.
+  CE_INSUFFICIENT_REASON_CODES = {
+    hours_reported_insufficient: "hours_reported_insufficient",
+    income_reported_insufficient: "income_reported_insufficient"
+  }.freeze
+
+  # An approved exemption request. Recorded as +:exempt+.
+  EXEMPTION_REQUEST_REASON_CODES = {
+    exemption_request_compliant: "exemption_request_compliant"
+  }.freeze
+
+  # A staff reviewer's verdict on a member's response to a denial.
+  DENIAL_RESPONSE_REASON_CODES = {
+    denial_response_convincing: "denial_response_convincing",
+    denial_response_not_convincing: "denial_response_not_convincing"
+  }.freeze
+
+  REASON_CODE_GROUPS = [
+    EXCLUSION_REASON_CODES,
+    EXCEPTION_REASON_CODES,
+    CE_MET_REASON_CODES,
+    CE_INSUFFICIENT_REASON_CODES,
+    EXEMPTION_REQUEST_REASON_CODES,
+    DENIAL_RESPONSE_REASON_CODES
+  ].freeze
+
+  # A key defined in two groups is silently overwritten here; determination_spec catches that with a
+  # size check.
+  REASON_CODE_MAPPING = REASON_CODE_GROUPS.reduce(:merge).freeze
+
+  # Which determination DataSourceCheckService records for a non-exclusion outcome.
+  # VerificationDataSourcesLoader boot-validates every order-bearing source's outcomes against it.
+  EXCEPTION_OUTCOME_KEYS = EXCEPTION_REASON_CODES.keys.freeze
+  CE_OUTCOME_KEYS = CE_MET_REASON_CODES.keys.freeze
+  NON_EXCLUSION_OUTCOME_KEYS = (EXCEPTION_OUTCOME_KEYS + CE_OUTCOME_KEYS).freeze
+
+  DENIAL_RESPONSE_REASONS = DENIAL_RESPONSE_REASON_CODES.values.freeze
+
+  # Spans groups on purpose: three exclusion conditions also stand as exemption reasons.
   EXEMPTION_REASONS = REASON_CODE_MAPPING.values_at(
     :is_pregnant,
     :is_american_indian_or_alaska_native,
