@@ -55,7 +55,7 @@ RSpec.describe Verification::Adapters::MockCommunityEngagement do
     end
 
     context "when the email contains the trigger" do
-      let(:account_email) { "member+#{described_class::TRIGGER_EMAIL_SUBSTRING}@example.com" }
+      let(:account_email) { "member+#{trigger}@example.com" }
 
       it_behaves_like "a successful verification result"
 
@@ -68,16 +68,16 @@ RSpec.describe Verification::Adapters::MockCommunityEngagement do
       end
     end
 
-    context "when the trigger appears in the local part in mixed case" do
-      let(:account_email) { "Member.CE-Met@Example.com" }
+    context "when the trigger appears in the local part in a different case" do
+      let(:account_email) { "Member.#{trigger.upcase}@Example.com" }
 
-      it "matches case-insensitively so a capitalized demo email still fires" do
+      it "matches case-insensitively so a demo email typed in any case still fires" do
         expect(result.outcomes).to eq([ :hours_reported_compliant ])
       end
     end
 
     context "when the trigger is present only on the contact email" do
-      let(:member_data_attrs) { { contact: { email: "contact+#{described_class::TRIGGER_EMAIL_SUBSTRING}@example.com" } } }
+      let(:member_data_attrs) { { contact: { email: "contact+#{trigger}@example.com" } } }
 
       it "reads through Certification#member_email so either email field works" do
         expect(result.outcomes).to eq([ :hours_reported_compliant ])
@@ -94,7 +94,7 @@ RSpec.describe Verification::Adapters::MockCommunityEngagement do
         cert = build(:certification, member_data: build(
           :certification_member_data,
           va_icn: "10000000#{digit}",
-          account_email: "member+#{described_class::TRIGGER_EMAIL_SUBSTRING}@example.com"
+          account_email: "member+#{trigger}@example.com"
         ))
 
         expect(described_class.new.call(certification: cert).outcomes).to eq([ :hours_reported_compliant ])
