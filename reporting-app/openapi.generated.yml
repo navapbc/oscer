@@ -469,100 +469,112 @@ components:
       - "$ref": "#/components/schemas/CertificationMemberDataHourlyActivity"
       - "$ref": "#/components/schemas/CertificationMemberDataIncomeActivity"
     CertificationMemberDataExemption:
-      type:
-        type: string
-        enum:
-        - american_indian_or_alaska_native
-        - caregiver_child
-        - former_foster_care
-        - pregnancy
-        - postpartum
-        - incarceration
-        - caregiver_disability
-        - meeting_atap_work
-        - meeting_tanf_or_snap_work
-        - veteran_disability
-        - medical_condition
-        - substance_treatment
-        - travel_for_medical
-        description: Exemption data type
-      value:
-        type: boolean
-        description: Whether the exemption applies to the member
-      periods:
+      type: object
+      description: Data point for assessing if an exemption applies
+      properties:
         type:
-        - array
-        - 'null'
-        items:
-          "$ref": "#/components/schemas/CertificationMemberDataExemptionPeriod"
-      verification_status:
-        type: string
-        enum:
-        - verified
-        - unverified
-        - pending
-        description: The verification status of the exemption
+          type: string
+          enum:
+          - american_indian_or_alaska_native
+          - caregiver_child
+          - former_foster_care
+          - pregnancy
+          - postpartum
+          - incarceration
+          - caregiver_disability
+          - meeting_atap_work
+          - meeting_tanf_or_snap_work
+          - veteran_disability
+          - medical_condition
+          - substance_treatment
+          - travel_for_medical
+          description: Exemption data type
+        value:
+          type: boolean
+          description: Whether the exemption applies to the member
+        periods:
+          type:
+          - array
+          - 'null'
+          items:
+            "$ref": "#/components/schemas/CertificationMemberDataExemptionPeriod"
+        verification_status:
+          type: string
+          enum:
+          - verified
+          - unverified
+          - pending
+          description: The verification status of the exemption
       required:
       - value
       - verification_status
     CertificationMemberDataExemptionPeriod:
-      period_start:
-        type:
-        - string
-        - 'null'
-        format: date
-        description: Start date of the exemption period
-      period_end:
-        type:
-        - string
-        - 'null'
-        format: date
-        description: End date of the exemption period
+      type: object
+      description: Start and/or end of a period of time
+      properties:
+        period_start:
+          type:
+          - string
+          - 'null'
+          format: date
+          description: Start date of the exemption period
+        period_end:
+          type:
+          - string
+          - 'null'
+          format: date
+          description: End date of the exemption period
     CertificationHouseholdData:
-      members:
-        type:
-        - array
-        - 'null'
-        items:
-          "$ref": "#/components/schemas/CertificationHouseholdDataMember"
+      type: object
+      description: Data about members of a household
+      properties:
+        members:
+          type:
+          - array
+          - 'null'
+          items:
+            "$ref": "#/components/schemas/CertificationHouseholdDataMember"
     CertificationHouseholdDataMember:
-      name:
-        type:
-        - object
-        - 'null'
-        description: The name of the household member
-        properties:
-          first:
-            type:
-            - string
-            - 'null'
-          middle:
-            type:
-            - string
-            - 'null'
-          last:
-            type:
-            - string
-            - 'null'
-          suffix:
-            type:
-            - string
-            - 'null'
-      ssn:
-        type:
-        - string
-        - 'null'
-        description: The Social Security Number of the household member
-      date_of_birth:
-        type:
-        - string
-        - 'null'
-        format: date
-        description: The date of birth of the household member
-      monthly_income_dollars_total:
-        type: string
-        format: decimal
-        description: Monthly total income of the household member
+      type: object
+      description: Data about a member of a household
+      properties:
+        name:
+          type:
+          - object
+          - 'null'
+          description: The name of the household member
+          properties:
+            first:
+              type:
+              - string
+              - 'null'
+            middle:
+              type:
+              - string
+              - 'null'
+            last:
+              type:
+              - string
+              - 'null'
+            suffix:
+              type:
+              - string
+              - 'null'
+        ssn:
+          type:
+          - string
+          - 'null'
+          description: The Social Security Number of the household member
+        date_of_birth:
+          type:
+          - string
+          - 'null'
+          format: date
+          description: The date of birth of the household member
+        monthly_income_dollars_total:
+          type: string
+          format: decimal
+          description: Monthly total income of the household member
     CertificationOutcome:
       type: object
       properties:
@@ -705,67 +717,67 @@ components:
       required:
       - status
   responses:
-    9ca5089d7ecfcb62d33c2559f9d334da:
+    617d85a59f85e01ea419cd038d8bfc5b:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    470325f761084a84bb4c06e8ceabd0fd:
+    0ef675e8664ce77b3718577c5e3385aa:
       description: Accepted
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
-    02e69a2b917550a9cfa5b191e702d38e:
+    42475b8d9c06bd17b198296fe00197af:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    6d6e5f7d93896283821a40492fd889ad:
+    8d12ee965b7cf32aee79268bf57a3f14:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    2e2cd7b296bac17cf64a9cb28bcdb931:
+    9f62f734ccf0504f40df46c3ad72b635:
       description: Accepted
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
-    fc6df43a37ef6903f9fdb550577bb67d:
+    6d9cfcba45a567e75c677216dc41d74c:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    d820593ad931dbcf7b84761714503fcd:
+    335be0ced5e961bf78e7b5493efd9020:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    596f48a631f1dbf377d91386299b7dbf:
+    28308c3d15db6eb417b9900dbf8e69cb:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    69ee428dbc78bb73c6c34410654a2f1d:
+    23d3cdfef724b1d92fe65a9457038b77:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    13dd37d774e2b2c04f6482b1c54a7da1:
+    1a589bb0e8adb25fbcdc550a41db4ee9:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    ead0df9faed86c4545a72ce3d5b4d75c:
+    60f17775d39cbfc0cb4b778eb4ad56d9:
       description: Response
       content:
         application/json:
@@ -797,7 +809,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    31b7e6a9262996568de9f9b05c14d55a:
+    b3f8a9eaf6413d76863b8a602039963a:
       description: The Certification data.
       content:
         application/json:
@@ -890,11 +902,11 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/9ca5089d7ecfcb62d33c2559f9d334da"
+          "$ref": "#/components/responses/617d85a59f85e01ea419cd038d8bfc5b"
         '202':
-          "$ref": "#/components/responses/470325f761084a84bb4c06e8ceabd0fd"
+          "$ref": "#/components/responses/0ef675e8664ce77b3718577c5e3385aa"
         '404':
-          "$ref": "#/components/responses/02e69a2b917550a9cfa5b191e702d38e"
+          "$ref": "#/components/responses/42475b8d9c06bd17b198296fe00197af"
       security:
       - hmac: []
       deprecated: false
@@ -908,16 +920,16 @@ paths:
       parameters:
       - "$ref": "#/components/parameters/4f7cce241e43c9b4680b65e2612ab599"
       requestBody:
-        "$ref": "#/components/requestBodies/31b7e6a9262996568de9f9b05c14d55a"
+        "$ref": "#/components/requestBodies/b3f8a9eaf6413d76863b8a602039963a"
       responses:
         '201':
-          "$ref": "#/components/responses/6d6e5f7d93896283821a40492fd889ad"
+          "$ref": "#/components/responses/8d12ee965b7cf32aee79268bf57a3f14"
         '202':
-          "$ref": "#/components/responses/2e2cd7b296bac17cf64a9cb28bcdb931"
+          "$ref": "#/components/responses/9f62f734ccf0504f40df46c3ad72b635"
         '400':
-          "$ref": "#/components/responses/fc6df43a37ef6903f9fdb550577bb67d"
+          "$ref": "#/components/responses/6d9cfcba45a567e75c677216dc41d74c"
         '422':
-          "$ref": "#/components/responses/d820593ad931dbcf7b84761714503fcd"
+          "$ref": "#/components/responses/335be0ced5e961bf78e7b5493efd9020"
       security:
       - hmac: []
       deprecated: false
@@ -932,9 +944,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/596f48a631f1dbf377d91386299b7dbf"
+          "$ref": "#/components/responses/28308c3d15db6eb417b9900dbf8e69cb"
         '404':
-          "$ref": "#/components/responses/69ee428dbc78bb73c6c34410654a2f1d"
+          "$ref": "#/components/responses/23d3cdfef724b1d92fe65a9457038b77"
       security:
       - hmac: []
       deprecated: false
@@ -969,9 +981,9 @@ paths:
       operationId: GET_api_health
       responses:
         '200':
-          "$ref": "#/components/responses/13dd37d774e2b2c04f6482b1c54a7da1"
+          "$ref": "#/components/responses/1a589bb0e8adb25fbcdc550a41db4ee9"
         '503':
-          "$ref": "#/components/responses/ead0df9faed86c4545a72ce3d5b4d75c"
+          "$ref": "#/components/responses/60f17775d39cbfc0cb4b778eb4ad56d9"
       security:
       - hmac: []
       deprecated: false
