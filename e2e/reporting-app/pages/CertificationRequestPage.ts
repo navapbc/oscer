@@ -36,6 +36,6 @@ export class CertificationRequestPage extends BasePage {
     await this.lastNameField.fill('Doe');
     await this.caseNumberField.fill(caseNumber);
     await this.certificationDateField.fill(date);
-    await this.requestCertificationButton.click();
+    await this.requestCertificationButton.click({ force: true });
   }
 }

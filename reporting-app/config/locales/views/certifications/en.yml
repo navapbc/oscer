@@ -45,6 +45,7 @@ en:
       certification_type_options:
         new_application: "New application"
         recertification: "Recertification"
+        change_in_circumstance: "Change in Circumstance"
       exclusions_heading: "Exclusions"
       pregnancy_status: "Pregnancy Status"
       was_in_foster_care: "Was in Foster Care"
