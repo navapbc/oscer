@@ -334,20 +334,38 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       entries = described_class.transform(merged)
 
       expect(entries.map { |e| e[:id] })
-        .to include(:mock_drug_treatment, :mock_emergency_county)
+        .to include(:mock_drug_treatment, :mock_emergency_county, :mock_community_engagement)
       expect { described_class.validate_registry!(entries) }.not_to raise_error
     end
 
-    it "registers mock_emergency_county as an enabled order-bearing non-exclusion source" do
+    # Both orchestrator mocks ship enabled and order-bearing (Integer order, so they join the
+    # orchestrator's pass). No real non-exclusion source exists yet, so they are what exercises
+    # the trailing verification_data_source_check step in the test deployments.
+    [
+      [ :mock_emergency_county, "Verification::Adapters::MockEmergencyCounty" ],
+      [ :mock_community_engagement, "Verification::Adapters::MockCommunityEngagement" ]
+    ].each do |id, adapter_class|
+      it "registers #{id} as an enabled order-bearing non-exclusion source" do
+        override_path = Rails.root.join("config/custom/verification_data_sources.yml")
+        overrides = described_class.safe_load_optional(override_path)
+        entries = described_class.transform(described_class.merge_with_defaults(overrides))
+
+        entry = entries.find { |e| e[:id] == id }
+        expect(entry[:adapter_class]).to eq(adapter_class)
+        # An Integer order (not nil) is what makes it part of the orchestrator's pass.
+        expect(entry[:order]).to be_an(Integer)
+        expect(entry[:enabled]).to be(true)
+      end
+    end
+
+    it "orders the exception mock ahead of the community-engagement mock" do
       override_path = Rails.root.join("config/custom/verification_data_sources.yml")
       overrides = described_class.safe_load_optional(override_path)
       entries = described_class.transform(described_class.merge_with_defaults(overrides))
 
-      entry = entries.find { |e| e[:id] == :mock_emergency_county }
-      expect(entry[:adapter_class]).to eq("Verification::Adapters::MockEmergencyCounty")
-      # An Integer order (not nil) is what makes it part of the orchestrator's pass.
-      expect(entry[:order]).to be_an(Integer)
-      expect(entry[:enabled]).to be(true)
+      order_bearing = entries.select { |e| !e[:order].nil? }.sort_by { |e| e[:order] }
+      expect(order_bearing.map { |e| e[:id] })
+        .to eq([ :mock_emergency_county, :mock_community_engagement ])
     end
   end
 
@@ -373,6 +391,18 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       expect(mock[:enabled]).to be(true)
       expect(Verification::Adapters::MockEmergencyCounty.declared_outcomes)
         .to eq([ :resides_in_declared_emergency_county ])
+    end
+
+    it "wires mock_community_engagement order-bearing and enabled, after emergency_county" do
+      sources = Rails.application.config.verification_data_sources
+
+      emergency = sources.find { |s| s[:id] == :mock_emergency_county }
+      mock = sources.find { |s| s[:id] == :mock_community_engagement }
+      expect(mock[:adapter_class]).to eq("Verification::Adapters::MockCommunityEngagement")
+      expect(mock[:order]).to be > emergency[:order]
+      expect(mock[:enabled]).to be(true)
+      expect(Verification::Adapters::MockCommunityEngagement.declared_outcomes)
+        .to eq([ :hours_reported_compliant ])
     end
   end
 end
