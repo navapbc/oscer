@@ -279,6 +279,53 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
     end
   end
 
+  # These pin an uncategorized order-bearing outcome to a boot failure, not a determination-time one.
+  describe "order-bearing outcome categorization" do
+    def entry_for(outcomes, order:)
+      klass = Class.new(Verification::DataSource) do
+        define_singleton_method(:declared_outcomes) { outcomes }
+      end
+      stub_const("CategorizationTestSource", klass)
+      [ { id: :probe, enabled: true, adapter_class: "CategorizationTestSource", order: order } ]
+    end
+
+    it "rejects an order-bearing source declaring a known but uncategorized outcome" do
+      # A real REASON_CODE_MAPPING key, so validate_outcome_ids! passes; just uncategorized.
+      entries = entry_for([ :exemption_request_compliant ], order: 10)
+
+      expect { described_class.validate_registry!(entries) }.to raise_error(
+        described_class::ConfigurationError,
+        /uncategorized outcome\(s\) \["exemption_request_compliant"\]/
+      )
+    end
+
+    it "accepts an order-bearing source declaring an exception outcome" do
+      entries = entry_for([ :resides_in_declared_emergency_county ], order: 10)
+
+      expect { described_class.validate_registry!(entries) }.not_to raise_error
+    end
+
+    it "accepts an order-bearing source declaring a community-engagement outcome" do
+      entries = entry_for([ :hours_reported_compliant ], order: 10)
+
+      expect { described_class.validate_registry!(entries) }.not_to raise_error
+    end
+
+    # ExclusionDeterminationService ranks by Exclusion.priority_order, not by category.
+    it "does not category-check an exclusion-only source (order: nil)" do
+      entries = entry_for([ :is_veteran_with_disability ], order: nil)
+
+      expect { described_class.validate_registry!(entries) }.not_to raise_error
+    end
+
+    # A hybrid stays registrable; the Exclusion registry categorizes its exclusion outcomes.
+    it "permits an exclusion outcome on an order-bearing source" do
+      entries = entry_for([ :resides_in_declared_emergency_county, :is_veteran_with_disability ], order: 10)
+
+      expect { described_class.validate_registry!(entries) }.not_to raise_error
+    end
+  end
+
   describe "full pipeline against the shipped defaults + override file" do
     it "loads, merges, transforms, and passes registry validation" do
       override_path = Rails.root.join("config/custom/verification_data_sources.yml")
@@ -286,20 +333,21 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
       merged = described_class.merge_with_defaults(overrides)
       entries = described_class.transform(merged)
 
-      expect(entries.map { |e| e[:id] }).to include(:mock_drug_treatment, :mock_emergency_county)
+      expect(entries.map { |e| e[:id] })
+        .to include(:mock_drug_treatment, :mock_emergency_county)
       expect { described_class.validate_registry!(entries) }.not_to raise_error
     end
 
-    it "registers mock_emergency_county as an order-bearing non-exclusion source" do
+    it "registers mock_emergency_county as an enabled order-bearing non-exclusion source" do
       override_path = Rails.root.join("config/custom/verification_data_sources.yml")
       overrides = described_class.safe_load_optional(override_path)
       entries = described_class.transform(described_class.merge_with_defaults(overrides))
 
       entry = entries.find { |e| e[:id] == :mock_emergency_county }
-      expect(entry[:enabled]).to be(true)
       expect(entry[:adapter_class]).to eq("Verification::Adapters::MockEmergencyCounty")
       # An Integer order (not nil) is what makes it part of the orchestrator's pass.
       expect(entry[:order]).to be_an(Integer)
+      expect(entry[:enabled]).to be(true)
     end
   end
 
@@ -316,13 +364,13 @@ RSpec.describe VerificationDataSourcesLoader, type: :service do
         .to eq([ :drug_treatment, :was_in_drug_treatment ])
     end
 
-    it "wires mock_emergency_county with an Integer order for the orchestrator pass" do
+    it "wires mock_emergency_county order-bearing and enabled" do
       sources = Rails.application.config.verification_data_sources
 
       mock = sources.find { |s| s[:id] == :mock_emergency_county }
-      expect(mock[:enabled]).to be(true)
       expect(mock[:adapter_class]).to eq("Verification::Adapters::MockEmergencyCounty")
       expect(mock[:order]).to be_an(Integer)
+      expect(mock[:enabled]).to be(true)
       expect(Verification::Adapters::MockEmergencyCounty.declared_outcomes)
         .to eq([ :resides_in_declared_emergency_county ])
     end

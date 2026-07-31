@@ -309,6 +309,35 @@ RSpec.describe Determination, type: :model do
     end
   end
 
+  # Grouping makes a code's category structural, so every way it can go wrong is now silent.
+  describe 'reason code groups' do
+    it 'defines every reason code in exactly one group' do
+      expect(described_class::REASON_CODE_MAPPING.size)
+        .to eq(described_class::REASON_CODE_GROUPS.sum(&:size))
+    end
+
+    # A met code filed under CE_INSUFFICIENT_REASON_CODES, or the reverse, records :compliant for a
+    # member who reached neither threshold.
+    it 'keeps the community-engagement met and insufficient codes distinguishable' do
+      expect(described_class::CE_MET_REASON_CODES.values).to all(end_with('_compliant'))
+      expect(described_class::CE_INSUFFICIENT_REASON_CODES.values).to all(end_with('_insufficient'))
+    end
+
+    # An exclusion key here lets an order-bearing source emit an exclusion into a pass with no
+    # determination shape for one.
+    it 'keeps exclusion keys out of the non-exclusion partition' do
+      overlap = described_class::NON_EXCLUSION_OUTCOME_KEYS & described_class::EXCLUSION_REASON_CODES.keys
+      expect(overlap).to be_empty
+    end
+
+    # Its checks bound the set, so a twelfth check with no reason code fails here rather than at boot
+    # on the first deployment that registers a source declaring it.
+    it 'keeps one exception reason code per ExceptionDeterminationService check' do
+      expect(described_class::EXCEPTION_OUTCOME_KEYS.count)
+        .to eq(ExceptionDeterminationService::EXCEPTION_CHECKS.count)
+    end
+  end
+
   describe '#source' do
     it 'returns the matched verification data source when one was recorded' do
       determination = build(:determination, decision_method: 'automated',
