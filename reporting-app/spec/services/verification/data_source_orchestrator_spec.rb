@@ -25,13 +25,7 @@ RSpec.describe Verification::DataSourceOrchestrator do
     const_name
   end
 
-  def registry_entry(id:, adapter_class:, order:, enabled: true)
-    { id: id, enabled: enabled, adapter_class: adapter_class, order: order }
-  end
-
-  def stub_registry(entries)
-    allow(Rails.application.config).to receive(:verification_data_sources).and_return(entries)
-  end
+  # stub_registry / registry_entry come from VerificationRegistryHelpers.
 
   def success(outcomes:, audit_data: {})
     Verification::DataSourceResult.success(outcomes: outcomes, audit_data: audit_data)
@@ -171,39 +165,78 @@ RSpec.describe Verification::DataSourceOrchestrator do
   end
 
   # Exercises the ACTUAL booted Rails.application.config.verification_data_sources
-  # rather than a stubbed registry, so Phase B's registration in
-  # config/custom/verification_data_sources.yml is proven end-to-end. The only
-  # order-bearing source shipped there is mock_emergency_county (mock_drug_treatment
-  # is order: nil and belongs to the exclusion path, so it is never in this pass).
+  # rather than a stubbed registry, so the registration in
+  # config/custom/verification_data_sources.yml is proven end-to-end.
   describe "against the real registered configuration" do
     let(:certification) do
-      build(:certification, member_data: build(:certification_member_data, va_icn: va_icn))
+      build(:certification, member_data: build(
+        :certification_member_data, va_icn: va_icn, account_email: account_email
+      ))
+    end
+    let(:va_icn) { "1012861229V078998" }
+    # Non-triggering by default; mock_community_engagement keys off the email, not the ICN.
+    let(:account_email) { "member@example.com" }
+    let(:ce_trigger_email) { "member+#{Verification::Adapters::MockCommunityEngagement::TRIGGER_EMAIL_SUBSTRING}@example.com" }
+
+    # The shipped config ENABLES both demo mocks: no real non-exclusion source exists yet, so
+    # they are what exercises this pass end to end in the test deployments. Both are
+    # order-bearing; mock_drug_treatment is order: nil and belongs to the exclusion path, so it
+    # is never part of this pass regardless.
+    it "registers exactly the two demo mocks as the order-bearing pass, in order" do
+      enabled_order_bearing = Rails.application.config.verification_data_sources
+        .select { |e| e[:enabled] && !e[:order].nil? }
+        .sort_by { |e| e[:order] }
+
+      expect(enabled_order_bearing.map { |e| e[:id] })
+        .to eq([ :mock_emergency_county, :mock_community_engagement ])
     end
 
-    context "when the registered mock emits a matched outcome (even ICN last digit)" do
-      let(:va_icn) { "1012861229V078998" }
+    describe "the shipped demo mocks" do
+      context "when the ICN's last digit is even" do
+        let(:va_icn) { "1012861229V078998" }
 
-      it "is satisfied by mock_emergency_county with the emergency-county outcome" do
-        expect(evaluate).to have_attributes(satisfied: true, source_id: :mock_emergency_county)
-        expect(evaluate.result.outcomes).to eq([ :resides_in_declared_emergency_county ])
+        it "is satisfied by mock_emergency_county (order 10) with the exception outcome" do
+          expect(evaluate).to have_attributes(satisfied: true, source_id: :mock_emergency_county)
+          expect(evaluate.result.outcomes).to eq([ :resides_in_declared_emergency_county ])
+        end
       end
-    end
 
-    context "when the registered mock returns no result (odd ICN last digit)" do
-      let(:va_icn) { "1012861229V078999" }
+      context "when the email carries the CE trigger and the ICN's last digit is not even" do
+        let(:va_icn) { "1012861229V078999" }
+        let(:account_email) { ce_trigger_email }
 
-      it "is not satisfied but records the attempt" do
-        expect(evaluate).to have_attributes(satisfied: false, source_id: nil)
-        expect(evaluate.attempted.map { |a| a[:source_id] }).to eq([ :mock_emergency_county ])
+        # emergency-county returns no result for an odd digit, so the pass continues past it
+        # to the community-engagement mock at order 20.
+        it "falls through to mock_community_engagement with the CE-met outcome" do
+          expect(evaluate).to have_attributes(satisfied: true, source_id: :mock_community_engagement)
+          expect(evaluate.result.outcomes).to eq([ :hours_reported_compliant ])
+          expect(evaluate.attempted.map { |a| a[:source_id] })
+            .to eq([ :mock_emergency_county, :mock_community_engagement ])
+        end
       end
-    end
 
-    context "when the member has no ICN (precondition not met)" do
-      let(:va_icn) { nil }
+      # The two shipped mocks read DIFFERENT fields, so an even digit reaches
+      # mock_emergency_county first and stop-on-first ends the pass there — the CE trigger
+      # in the email is never consulted. Locks in the precedence rather than leaving it to
+      # registry order alone.
+      context "when the email carries the CE trigger but the ICN's last digit is even" do
+        let(:va_icn) { "1012861229V078998" }
+        let(:account_email) { ce_trigger_email }
 
-      it "is not satisfied; the source is attempted and skipped" do
-        expect(evaluate).to have_attributes(satisfied: false, source_id: nil)
-        expect(evaluate.attempted.map { |a| a[:result].status }).to eq(%i[skipped])
+        it "stops at mock_emergency_county (order 10) without attempting the CE source" do
+          expect(evaluate).to have_attributes(satisfied: true, source_id: :mock_emergency_county)
+          expect(evaluate.attempted.map { |a| a[:source_id] }).to eq([ :mock_emergency_county ])
+        end
+      end
+
+      context "when the member has neither an ICN nor an email (preconditions not met)" do
+        let(:va_icn) { nil }
+        let(:account_email) { nil }
+
+        it "is not satisfied; every order-bearing source is attempted and skipped" do
+          expect(evaluate).to have_attributes(satisfied: false, source_id: nil)
+          expect(evaluate.attempted.map { |a| a[:result].status }).to all(eq(:skipped))
+        end
       end
     end
   end

@@ -19,6 +19,7 @@ RSpec.describe "activities/new", type: :view do
       assert_select "input[value=?]", "employment"
       assert_select "input[value=?]", "education"
       assert_select "input[value=?]", "community_service"
+      assert_select "input[value=?]", "unearned"
     end
   end
 
@@ -39,7 +40,7 @@ RSpec.describe "activities/new", type: :view do
 
   it "renders category radio buttons with tile styling" do
     assert_select "form" do
-      assert_select "input[type=radio][name=?]", "category", count: 3
+      assert_select "input[type=radio][name=?]", "category", count: 4
       assert_select "input[type=radio][name=?]", "activity_type", count: 2
     end
   end

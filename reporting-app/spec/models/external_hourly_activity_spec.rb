@@ -136,7 +136,7 @@ RSpec.describe ExternalHourlyActivity, type: :model do
 
   describe 'constants' do
     it 'defines ALLOWED_CATEGORIES' do
-      expect(ExternalHourlyActivity::ALLOWED_CATEGORIES).to eq(%w[employment community_service education])
+      expect(ExternalHourlyActivity::ALLOWED_CATEGORIES).to eq(%w[employment community_service education unearned])
     end
 
     it 'defines source type constants' do

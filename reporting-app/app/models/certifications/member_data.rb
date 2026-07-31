@@ -35,12 +35,14 @@ class Certifications::MemberData < ValueObject
     attribute :type, :string
     attribute :category, :string
     attribute :hours, :decimal
+    attribute :credit_hours, :decimal
     attribute :gross_income, :decimal
     attribute :period_start, :date
     attribute :period_end, :date
     attribute :source, :string
     attribute :reported_at, :datetime
     attribute :employer, :string
+    attribute :name, :string
     attribute :verification_status, :string
 
     validates :type, presence: true, inclusion: { in: ACTIVITY_TYPES }
@@ -65,14 +67,31 @@ class Certifications::MemberData < ValueObject
     attribute :paychecks, :array, of: Paycheck.to_type
   end
 
+  class Period < ValueObject
+    include ActiveModel::AsJsonAttributeType
+    attribute :period_start, :date
+    attribute :period_end, :date
+  end
+  class Exemption < ValueObject
+    include ActiveModel::AsJsonAttributeType
+
+    attribute :type, :string
+    attribute :value, :boolean
+    attribute :periods, :array, of: Period.to_type
+    attribute :verification_status, :string
+  end
+
   attribute :account_email, :string
   attribute :va_icn, :string
+  attribute :ssn, ActiveModel::Type::Json.new(Strata::TaxId)
   attribute :contact, ContactData.to_type
   attribute :name, ActiveModel::Type::Json.new(Strata::Name)
+  attribute :address, ActiveModel::Type::Json.new(Strata::Address)
   attribute :date_of_birth, :date
 
   attribute :payroll_accounts, :array, of: PayrollAccount.to_type
   attribute :activities, :array, of: Activity.to_type
+  attribute :exemptions, :array, of: Exemption.to_type
 
   # Exclusion signals evaluated by ExclusionDeterminationService
   attribute :pregnancy_due_or_parturition_date, :date
