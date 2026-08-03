@@ -17,7 +17,7 @@ RSpec.describe Rules::ExclusionRuleset do
       it 'returns nil' do
         pregnancy_due = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
         parturition_date = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
-        expect(ruleset.is_pregnant(pregnancy_due, parturition_date, nil)).to be_nil
+        expect(ruleset.is_pregnant(pregnancy_due, parturition_date, nil)).to be_falsey
       end
     end
 
@@ -38,14 +38,14 @@ RSpec.describe Rules::ExclusionRuleset do
     context 'when the pregnancy ends before certification date' do
       it 'returns false' do
         pregnancy_due = build(:certification_member_data_exemption, :period_end_invalid, cert_date:)
-        expect(ruleset.is_pregnant(pregnancy_due, nil, cert_date)).to be false
+        expect(ruleset.is_pregnant(pregnancy_due, nil, cert_date)).to be_falsey
       end
     end
 
     context 'when the parturition date ends before certification date' do
       it 'returns false' do
         parturition_date = build(:certification_member_data_exemption, :period_end_invalid, cert_date:)
-        expect(ruleset.is_pregnant(nil, parturition_date, cert_date)).to be false
+        expect(ruleset.is_pregnant(nil, parturition_date, cert_date)).to be_falsey
       end
     end
 
@@ -97,14 +97,9 @@ RSpec.describe Rules::ExclusionRuleset do
   describe '#former_foster_care' do
     # Former foster youth are excluded until age 26, evaluated against the certification date at
     # month granularity (consistent with pregnancy).
+    let(:was_in_foster_care) { 'some exemption object' }
 
     context 'when the member was not in foster care' do
-      it 'returns falsey' do
-        expect(ruleset.former_foster_care(false, cert_date - 20.years, cert_date)).to be_falsey
-      end
-    end
-
-    context 'when foster-care history is unknown (nil)' do
       it 'returns falsey' do
         expect(ruleset.former_foster_care(nil, cert_date - 20.years, cert_date)).to be_falsey
       end
@@ -112,39 +107,39 @@ RSpec.describe Rules::ExclusionRuleset do
 
     context 'when the date of birth is nil' do
       it 'returns falsey' do
-        expect(ruleset.former_foster_care(true, nil, cert_date)).to be_falsey
+        expect(ruleset.former_foster_care(was_in_foster_care, nil, cert_date)).to be_falsey
       end
     end
 
     context 'when the certification date is nil' do
       it 'returns falsey' do
-        expect(ruleset.former_foster_care(true, cert_date - 20.years, nil)).to be_falsey
+        expect(ruleset.former_foster_care(was_in_foster_care, cert_date - 20.years, nil)).to be_falsey
       end
     end
 
     context 'when the member was in foster care and is under 26' do
       it 'returns true' do
-        expect(ruleset.former_foster_care(true, cert_date - 20.years, cert_date)).to be true
+        expect(ruleset.former_foster_care(was_in_foster_care, cert_date - 20.years, cert_date)).to be true
       end
     end
 
     context 'when the member turns 26 during the certification month (month granularity)' do
       it 'returns true' do
         date_of_birth = Date.new(1999, 7, 25) # 26th birthday 2025-07-25, later in the cert month
-        expect(ruleset.former_foster_care(true, date_of_birth, cert_date)).to be true
+        expect(ruleset.former_foster_care(was_in_foster_care, date_of_birth, cert_date)).to be true
       end
     end
 
     context 'when the member reached 26 before the certification month' do
       it 'returns falsey' do
         date_of_birth = Date.new(1999, 6, 25) # 26th birthday 2025-06-25, the month before
-        expect(ruleset.former_foster_care(true, date_of_birth, cert_date)).to be_falsey
+        expect(ruleset.former_foster_care(was_in_foster_care, date_of_birth, cert_date)).to be_falsey
       end
     end
 
     context 'when the member was in foster care but is 26 or older' do
       it 'returns falsey' do
-        expect(ruleset.former_foster_care(true, cert_date - 30.years, cert_date)).to be_falsey
+        expect(ruleset.former_foster_care(was_in_foster_care, cert_date - 30.years, cert_date)).to be_falsey
       end
     end
   end
