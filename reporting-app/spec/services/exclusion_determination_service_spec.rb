@@ -214,7 +214,22 @@ RSpec.describe ExclusionDeterminationService do
       end
 
       context 'when the member is meeting SNAP/TANF work requirements' do
-        let(:member_data) { build(:certification_member_data, meeting_tanf_or_snap_work: true, cert_date:) }
+        let(:exemptions) do
+          [
+            {
+              type: :meeting_tanf_or_snap_work,
+              value: true,
+              verification_status: :verified,
+              periods: [
+                {
+                  period_start: cert_date - 1.years,
+                  period_end: cert_date
+                }
+              ]
+            }
+          ]
+        end
+        let(:member_data) { build(:certification_member_data, exemptions:, cert_date:) }
 
         it 'records the tanf_snap_work reason code' do
           service.determine(kase)
@@ -247,7 +262,22 @@ RSpec.describe ExclusionDeterminationService do
       end
 
       context 'when the member is incarcerated during the certification month' do
-        let(:member_data) { build(:certification_member_data, dates_incarcerated: [ cert_date ], cert_date:) }
+        let(:exemptions) do
+          [
+            {
+              type: :incarceration,
+              value: true,
+              verification_status: :verified,
+              periods: [
+                {
+                  period_start: cert_date - 1.years,
+                  period_end: cert_date
+                }
+              ]
+            }
+          ]
+        end
+        let(:member_data) { build(:certification_member_data, exemptions:, cert_date:) }
 
         it 'records the inmate reason code' do
           service.determine(kase)

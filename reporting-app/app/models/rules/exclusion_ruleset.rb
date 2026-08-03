@@ -87,8 +87,13 @@ module Rules
     end
 
     # Members already meeting SNAP/TANF work requirements are excluded.
-    def tanf_snap_work(meeting_tanf_or_snap_work)
-      meeting_tanf_or_snap_work
+    def tanf_snap_work(meeting_tanf_or_snap_work, certification_date)
+      return if meeting_tanf_or_snap_work.nil?
+      return if certification_date.nil?
+
+      Array(meeting_tanf_or_snap_work.periods).any? do |period|
+        period.period_start.beginning_of_month <= certification_date && certification_date <= period.period_end.end_of_month
+      end
     end
 
     # Members participating in a drug/alcohol treatment program during the certification month are
@@ -104,13 +109,14 @@ module Rules
 
     # Incarcerated members are excluded while incarcerated and for INMATE_BUFFER_MONTHS afterward,
     # evaluated against the certification date at month granularity.
-    def inmate(dates_incarcerated, certification_date)
+    def inmate(incarceration, certification_date)
       return if certification_date.nil?
+      return if incarceration.nil?
 
       cert_month = certification_date.beginning_of_month
-      Array(dates_incarcerated).any? do |date|
-        window_start = date.beginning_of_month
-        window_start <= cert_month && cert_month <= window_start + INMATE_BUFFER_MONTHS.months
+      Array(incarceration.periods).any? do |period|
+        next unless period.period_end
+        cert_month <= period.period_end.end_of_month + INMATE_BUFFER_MONTHS.months
       end
     end
 

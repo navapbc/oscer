@@ -253,19 +253,28 @@ RSpec.describe Rules::ExclusionRuleset do
   describe '#tanf_snap_work' do
     context 'when the meeting-SNAP/TANF-work flag is unknown (nil)' do
       it 'returns falsey' do
-        expect(ruleset.tanf_snap_work(nil)).to be_falsey
+        expect(ruleset.tanf_snap_work(nil, cert_date)).to be_falsey
+      end
+    end
+
+    context 'when certification date is nil' do
+      it 'returns falsey' do
+        tanf = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
+        expect(ruleset.tanf_snap_work(tanf, nil)).to be_falsey
       end
     end
 
     context 'when the member is not meeting SNAP/TANF work requirements' do
       it 'returns falsey' do
-        expect(ruleset.tanf_snap_work(false)).to be_falsey
+        tanf = build(:certification_member_data_exemption, :period_end_invalid, cert_date:)
+        expect(ruleset.tanf_snap_work(tanf, cert_date)).to be_falsey
       end
     end
 
     context 'when the member is meeting SNAP/TANF work requirements' do
       it 'returns true' do
-        expect(ruleset.tanf_snap_work(true)).to be true
+        tanf = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
+        expect(ruleset.tanf_snap_work(tanf, cert_date)).to be true
       end
     end
   end
@@ -306,32 +315,64 @@ RSpec.describe Rules::ExclusionRuleset do
 
     context 'when no incarceration dates are present' do
       it 'returns falsey' do
-        expect(ruleset.inmate([], cert_date)).to be_falsey
         expect(ruleset.inmate(nil, cert_date)).to be_falsey
+      end
+    end
+
+    context 'when no incarceration periods are present' do
+      it 'returns falsey' do
+        incarceration = build(:certification_member_data_exemption, :valid, cert_date:)
+        expect(ruleset.inmate(incarceration, cert_date)).to be_falsey
+      end
+    end
+
+    context 'when no incarceration end dates are present' do
+      it 'returns falsey' do
+        incarceration = build(:certification_member_data_exemption, :valid, cert_date:)
+        period = Certifications::MemberData::Period.new(period_start: cert_date - 3.months)
+        expect(ruleset.inmate(incarceration, cert_date)).to be_falsey
       end
     end
 
     context 'when the certification date is nil' do
       it 'returns falsey' do
-        expect(ruleset.inmate([ cert_date ], nil)).to be_falsey
+        incarceration = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
+        expect(ruleset.inmate(incarceration, nil)).to be_falsey
       end
     end
 
     context 'when incarcerated during the certification month' do
       it 'returns true' do
-        expect(ruleset.inmate([ cert_date + 10.days ], cert_date)).to be true
+        incarceration = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
+        expect(ruleset.inmate(incarceration, cert_date)).to be true
       end
     end
 
     context 'when incarcerated within the 3-month buffer before the certification month' do
       it 'returns true' do
-        expect(ruleset.inmate([ cert_date - 3.months ], cert_date)).to be true
+        incarceration = build(:certification_member_data_exemption, :valid, cert_date:)
+        period = Certifications::MemberData::Period.new(period_end: cert_date - 3.months)
+        incarceration.periods = [ period ]
+        expect(ruleset.inmate(incarceration, cert_date)).to be true
       end
     end
 
     context 'when incarceration ended more than 3 months before the certification month' do
       it 'returns falsey' do
-        expect(ruleset.inmate([ cert_date - 4.months ], cert_date)).to be_falsey
+        incarceration = build(:certification_member_data_exemption, :valid, cert_date:)
+        period = Certifications::MemberData::Period.new(period_end: cert_date - 4.months)
+        incarceration.periods = [ period ]
+        expect(ruleset.inmate(incarceration, cert_date)).to be_falsey
+      end
+    end
+
+    context 'when more than one and one is within the 3-month buffer before the certification month' do
+      it 'returns true' do
+        incarceration = build(:certification_member_data_exemption, :valid, cert_date:)
+        period_a = Certifications::MemberData::Period.new(period_end: cert_date - 4.months)
+        period_b = Certifications::MemberData::Period.new(period_end: cert_date - 3.months)
+        incarceration.periods = [ period_a, period_b ]
+        expect(ruleset.inmate(incarceration, cert_date)).to be true
       end
     end
   end
