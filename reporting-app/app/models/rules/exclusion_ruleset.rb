@@ -17,12 +17,12 @@ module Rules
     # Incarceration excludes through this many months after the incarceration month
     INMATE_BUFFER_MONTHS = 3
 
-    def is_pregnant(pregnancy_due, parturition_date, certification_date)
-      return if pregnancy_due.nil? && parturition_date.nil?
+    def is_pregnant(pregnancy, postpartum, certification_date)
+      return if pregnancy.nil? && postpartum.nil?
       return if certification_date.nil?
 
       exclusion_end = nil
-      [ pregnancy_due, parturition_date ].each do |data_point|
+      [ pregnancy, postpartum ].each do |data_point|
         next unless data_point
         data_end = data_point.periods.first.period_end
         exclusion_end = data_end unless exclusion_end && exclusion_end > data_end
@@ -35,11 +35,11 @@ module Rules
       american_indian_or_alaska_native.present?
     end
 
-    def is_veteran_with_disability(veteran_with_disability, certification_date)
-      return if veteran_with_disability.nil?
+    def is_veteran_with_disability(veteran_disability, certification_date)
+      return if veteran_disability.nil?
 
       exclusion_end = nil
-      veteran_with_disability.periods&.each do |period|
+      veteran_disability.periods&.each do |period|
         data_end = period.period_end
         exclusion_end = data_end unless exclusion_end && exclusion_end < data_end
       end
@@ -72,14 +72,14 @@ module Rules
     # Caretakers are excluded if they are caretaking an infirm person during the certification month,
     # or caring for a dependent child under CARETAKER_CHILD_AGE_THRESHOLD. Both windows are evaluated
     # against the certification date at month granularity (consistent with the other date-based checks).
-    def caretaker(dates_caretaking_infirm, dependent_children_birth_dates, certification_date)
+    def caretaker(caregiver_disability, caregiver_child, certification_date)
       return if certification_date.nil?
 
       as_of = certification_date.beginning_of_month
-      caretaking_infirm = Array(dates_caretaking_infirm&.periods || []).any? do |period|
+      caretaking_infirm = Array(caregiver_disability&.periods || []).any? do |period|
         period.period_start.beginning_of_month <= as_of && as_of <= period.period_end.end_of_month
       end
-      caring_for_child = Array(dependent_children_birth_dates&.periods || []).any? do |period|
+      caring_for_child = Array(caregiver_child&.periods || []).any? do |period|
         as_of < period.period_start + CARETAKER_CHILD_AGE_THRESHOLD.years
       end
 
@@ -98,11 +98,11 @@ module Rules
 
     # Members participating in a drug/alcohol treatment program during the certification month are
     # excluded (month granularity, consistent with the other date-based checks).
-    def drug_treatment(dates_in_drug_treatment, certification_date)
-      return if dates_in_drug_treatment.nil?
+    def drug_treatment(substance_treatment, certification_date)
+      return if substance_treatment.nil?
       return if certification_date.nil?
 
-      Array(dates_in_drug_treatment.periods).any? do |period|
+      Array(substance_treatment.periods).any? do |period|
         period.period_start.beginning_of_month <= certification_date && certification_date <= period.period_end.end_of_month
       end
     end

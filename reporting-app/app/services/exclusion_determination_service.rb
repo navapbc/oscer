@@ -119,18 +119,18 @@ class ExclusionDeterminationService
       engine = Strata::RulesEngine.new(ruleset)
 
       engine.set_facts(
-        pregnancy_due: extract_exemption(certification, :pregnancy),
-        parturition_date: extract_exemption(certification, :postpartum),
+        pregnancy: extract_exemption(certification, :pregnancy),
+        postpartum: extract_exemption(certification, :postpartum),
         certification_date: certification.certification_requirements.certification_date,
         american_indian_or_alaska_native: extract_exemption(certification, :american_indian_or_alaska_native),
-        veteran_with_disability: extract_exemption(certification, :veteran_disability),
+        veteran_disability: extract_exemption(certification, :veteran_disability),
         was_in_foster_care: extract_exemption(certification, :former_foster_care),
         date_of_birth: extract_attribute(certification, :date_of_birth),
         medical_condition: extract_exemption(certification, :medical_condition),
-        dates_caretaking_infirm: extract_exemption(certification, :caregiver_disability),
-        dependent_children_birth_dates: extract_exemption(certification, :caregiver_child),
+        caregiver_disability: extract_exemption(certification, :caregiver_disability),
+        caregiver_child: extract_exemption(certification, :caregiver_child),
         meeting_tanf_or_snap_work: extract_exemption(certification, :meeting_tanf_or_snap_work),
-        dates_in_drug_treatment: extract_exemption(certification, :substance_treatment),
+        substance_treatment: extract_exemption(certification, :substance_treatment),
         incarceration: extract_exemption(certification, :incarceration)
       )
 
@@ -160,10 +160,9 @@ class ExclusionDeterminationService
     def extract_exemption(certification, attribute)
       return nil unless certification.member_data&.exemptions.present?
 
-      exemption = certification.member_data.exemptions.select do |e|
+      certification.member_data.exemptions.select do |e|
         e.value && e.verification_status == "verified" && e.type.to_sym == attribute
       end.first
-      exemption
     end
   end
 end
