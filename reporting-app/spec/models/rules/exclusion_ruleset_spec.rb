@@ -7,7 +7,7 @@ RSpec.describe Rules::ExclusionRuleset do
   let(:cert_date) { Date.new(2025, 7, 20) }
 
   describe '#is_pregnant' do
-    context 'when the pregnancy_due and parturition_date both nil' do
+    context 'when the pregnancy and postpartum both nil' do
       it 'returns nil' do
         expect(ruleset.is_pregnant(nil, nil, cert_date)).to be_nil
       end
@@ -15,45 +15,45 @@ RSpec.describe Rules::ExclusionRuleset do
 
     context 'when the certification date is nil' do
       it 'returns nil' do
-        pregnancy_due = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
-        parturition_date = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
-        expect(ruleset.is_pregnant(pregnancy_due, parturition_date, nil)).to be_falsey
+        pregnancy = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
+        postpartum = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
+        expect(ruleset.is_pregnant(pregnancy, postpartum, nil)).to be_falsey
       end
     end
 
     context 'when the due date is in the future (member is currently expecting)' do
       it 'returns true' do
-        pregnancy_due = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
-        expect(ruleset.is_pregnant(pregnancy_due, nil, cert_date)).to be true
+        pregnancy = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
+        expect(ruleset.is_pregnant(pregnancy, nil, cert_date)).to be true
       end
     end
 
     context 'when the parturition date ends in future' do
       it 'returns true' do
-        parturition_date = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
-        expect(ruleset.is_pregnant(nil, parturition_date, cert_date)).to be true
+        postpartum = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
+        expect(ruleset.is_pregnant(nil, postpartum, cert_date)).to be true
       end
     end
 
     context 'when the pregnancy ends before certification date' do
       it 'returns false' do
-        pregnancy_due = build(:certification_member_data_exemption, :period_end_invalid, cert_date:)
-        expect(ruleset.is_pregnant(pregnancy_due, nil, cert_date)).to be_falsey
+        pregnancy = build(:certification_member_data_exemption, :period_end_invalid, cert_date:)
+        expect(ruleset.is_pregnant(pregnancy, nil, cert_date)).to be_falsey
       end
     end
 
     context 'when the parturition date ends before certification date' do
       it 'returns false' do
-        parturition_date = build(:certification_member_data_exemption, :period_end_invalid, cert_date:)
-        expect(ruleset.is_pregnant(nil, parturition_date, cert_date)).to be_falsey
+        postpartum = build(:certification_member_data_exemption, :period_end_invalid, cert_date:)
+        expect(ruleset.is_pregnant(nil, postpartum, cert_date)).to be_falsey
       end
     end
 
     context 'when the pregnancy in past and partirution in future' do
       it 'returns false' do
-        pregnancy_due = build(:certification_member_data_exemption, :period_end_invalid, cert_date:)
-        parturition_date = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
-        expect(ruleset.is_pregnant(pregnancy_due, parturition_date, cert_date)).to be true
+        pregnancy = build(:certification_member_data_exemption, :period_end_invalid, cert_date:)
+        postpartum = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
+        expect(ruleset.is_pregnant(pregnancy, postpartum, cert_date)).to be true
       end
     end
   end

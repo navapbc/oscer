@@ -66,6 +66,21 @@ module Demo
           )
         end
 
+        exemptions = []
+
+        exemptions << end_exemption(:pregnancy, certification_date) if pregnancy_status
+        exemptions << end_exemption(:former_foster_care, certification_date) if was_in_foster_care
+        exemptions << end_exemption(:medical_condition, certification_date) if currently_medically_frail
+        exemptions << end_exemption(:veteran_disability, certification_date) if veteran_with_disability
+        exemptions << end_exemption(:caregiver_disability, certification_date) if caretaker
+        exemptions << end_exemption(:meeting_tanf_or_snap_work, certification_date) if tanf_snap_work
+        exemptions << end_exemption(:substance_treatment, certification_date) if drug_treatment
+        exemptions << end_exemption(:incarceration, certification_date) if inmate
+        if race_ethnicity == "american_indian_or_alaska_native"
+          exemptions << end_exemption(:american_indian_or_alaska_native, certification_date)
+        end
+
+        member_data[:exemptions] = exemptions
         member_data = ::Certifications::MemberData.new(member_data).tap do |md|
           md.name = member_name if member_name.present?
           md.date_of_birth = date_of_birth if date_of_birth.present?
@@ -113,6 +128,19 @@ module Demo
         when "other_program"
           member_data.dates_participating_in_other_program = months
         end
+      end
+      def end_exemption(exemption_type, cert_date)
+        {
+          type: exemption_type,
+          valye: true,
+          verification_status: :verified,
+          periods: [
+            {
+              period_start: cert_date - 4.months,
+              period_end: cert_date
+            }
+          ]
+        }
       end
     end
   end
