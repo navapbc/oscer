@@ -56,6 +56,7 @@ class PayslipToIncomeActivityCreateService
       category: "employment",
       evidence_source: ActivityAttributions::AI_ASSISTED,
       month: month,
+      name: payslip.company_name_value,
       income: income_cents(payslip)
     )
   end
