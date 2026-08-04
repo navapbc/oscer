@@ -8,7 +8,7 @@ Create a new directory for your application in the root of the repository. The a
 
 ## 2. Add infrastructure code for the new application
 
-[Use the platform CLI to add a new application to the repository](https://github.com/navapbc/platform-cli/blob/main/docs/adding-an-app.md)
+[Use the platform CLI to add a new application to the repository](https://github.com/navapbc/platform-cli/blob/main/docs/guides/adding-an-app.md)
 
 ## 3. Set up the application infrastructure
 

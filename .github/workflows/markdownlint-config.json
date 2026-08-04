@@ -8,6 +8,18 @@
     },
     {
       "pattern": "127.0.0.1"
+    },
+    {
+      "pattern": "www.cbpp.org" // cloudflare blocks
+    },
+    {
+      "pattern": "medium.com" // cloudflare blocks
+    },
+    {
+      "pattern": "copilot-instructions.md" // in infra template documentation
+    },
+    {
+      "pattern": "strata-service-document-ai" // private
     }
   ],
   "replacementPatterns": [
