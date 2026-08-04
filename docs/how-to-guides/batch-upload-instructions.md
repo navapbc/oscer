@@ -47,7 +47,7 @@ Processing begins automatically when a file is uploaded — there is no manual "
 
 ### Template and Example CSV
 
-- [Download CSV template](/certification_batch_upload_template.csv) — also available on the upload page
+- [Download CSV template](/reporting-app/public/certification_batch_upload_template.csv) — also available on the upload page
 - [Download sample CSV with test data](/docs/assets/test_data.csv)
 
 > **Note:** If you want to receive email notifications, change the emails in the sample CSV to real email addresses.
