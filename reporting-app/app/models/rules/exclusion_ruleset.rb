@@ -3,8 +3,6 @@
 module Rules
   # Eligibility rules for the community-engagement exclusions.
   class ExclusionRuleset < Strata::Rules::MedicaidRuleset
-    AMERICAN_INDIAN_OR_ALASKA_NATIVE = [ "american_indian_or_alaska_native", "american_indian", "alaska_native" ].freeze
-
     # Pregnancy excludes from the due/parturition date through the following 12 months
     POSTPARTUM_EXCLUSION_MONTHS = 12
 
@@ -76,8 +74,8 @@ module Rules
 
       cert_month = certification_date.beginning_of_month
       Array(incarceration.periods).any? do |period|
-        next unless period.period_end
-        cert_month <= period.period_end.end_of_month + INMATE_BUFFER_MONTHS.months
+        next unless period.period_start && period.period_end
+        period.period_start.beginning_of_month <= cert_month && cert_month <= period.period_end.end_of_month + INMATE_BUFFER_MONTHS.months
       end
     end
 
@@ -96,8 +94,8 @@ module Rules
 
       cert_month = certification_date.beginning_of_month
       Array(member_data_exemption.periods).any? do |period|
-        next unless period.period_end
-        cert_month <= period.period_end.end_of_month
+        next unless period.period_start && period.period_end
+        period.period_start.beginning_of_month <= cert_month && cert_month <= period.period_end.end_of_month
       end
     end
   end

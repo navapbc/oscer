@@ -158,6 +158,15 @@ RSpec.describe Rules::ExclusionRuleset do
       end
     end
 
+    context 'when the member became medically frail after certification date' do
+      it 'returns falsey' do
+        medicall_condition = build(:certification_member_data_exemption, :valid, cert_date:)
+        period = Certifications::MemberData::Period.new(period_start: cert_date + 1.month, period_end: cert_date + 2.months)
+        medicall_condition.periods = [ period ]
+        expect(ruleset.inmate(medicall_condition, cert_date)).to be_falsey
+      end
+    end
+
     context 'when the member is currently medically frail' do
       it 'returns true' do
         medical_condition = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
@@ -346,7 +355,7 @@ RSpec.describe Rules::ExclusionRuleset do
     context 'when incarcerated within the 3-month buffer before the certification month' do
       it 'returns true' do
         incarceration = build(:certification_member_data_exemption, :valid, cert_date:)
-        period = Certifications::MemberData::Period.new(period_end: cert_date - 3.months)
+        period = Certifications::MemberData::Period.new(period_start: cert_date - 1.year, period_end: cert_date - 3.months)
         incarceration.periods = [ period ]
         expect(ruleset.inmate(incarceration, cert_date)).to be true
       end
@@ -355,7 +364,16 @@ RSpec.describe Rules::ExclusionRuleset do
     context 'when incarceration ended more than 3 months before the certification month' do
       it 'returns falsey' do
         incarceration = build(:certification_member_data_exemption, :valid, cert_date:)
-        period = Certifications::MemberData::Period.new(period_end: cert_date - 4.months)
+        period = Certifications::MemberData::Period.new(period_start: cert_date - 1.year, period_end: cert_date - 4.months)
+        incarceration.periods = [ period ]
+        expect(ruleset.inmate(incarceration, cert_date)).to be_falsey
+      end
+    end
+
+    context 'when incarceration began after the certification month' do
+      it 'returns falsey' do
+        incarceration = build(:certification_member_data_exemption, :valid, cert_date:)
+        period = Certifications::MemberData::Period.new(period_start: cert_date + 1.month, period_end: cert_date + 2.months)
         incarceration.periods = [ period ]
         expect(ruleset.inmate(incarceration, cert_date)).to be_falsey
       end
@@ -364,8 +382,8 @@ RSpec.describe Rules::ExclusionRuleset do
     context 'when more than one and one is within the 3-month buffer before the certification month' do
       it 'returns true' do
         incarceration = build(:certification_member_data_exemption, :valid, cert_date:)
-        period_a = Certifications::MemberData::Period.new(period_end: cert_date - 4.months)
-        period_b = Certifications::MemberData::Period.new(period_end: cert_date - 3.months)
+        period_a = Certifications::MemberData::Period.new(period_start: cert_date - 1.year, period_end: cert_date - 4.months)
+        period_b = Certifications::MemberData::Period.new(period_start: cert_date - 1.year, period_end: cert_date - 3.months)
         incarceration.periods = [ period_a, period_b ]
         expect(ruleset.inmate(incarceration, cert_date)).to be true
       end

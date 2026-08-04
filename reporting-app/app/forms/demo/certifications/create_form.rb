@@ -132,7 +132,7 @@ module Demo
       def end_exemption(exemption_type, cert_date)
         {
           type: exemption_type,
-          valye: true,
+          value: true,
           verification_status: :verified,
           periods: [
             {
