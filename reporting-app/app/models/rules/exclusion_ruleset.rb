@@ -3,9 +3,6 @@
 module Rules
   # Eligibility rules for the community-engagement exclusions.
   class ExclusionRuleset < Strata::Rules::MedicaidRuleset
-    # Pregnancy excludes from the due/parturition date through the following 12 months
-    POSTPARTUM_EXCLUSION_MONTHS = 12
-
     # Former foster youth are excluded until this age
     FORMER_FOSTER_CARE_AGE_CAP = 26
 
@@ -44,12 +41,16 @@ module Rules
     # Caretakers are excluded if they are caretaking an infirm person during the certification month,
     # or caring for a dependent child under CARETAKER_CHILD_AGE_THRESHOLD. Both windows are evaluated
     # against the certification date at month granularity (consistent with the other date-based checks).
+    # A caregiver_child period starts on the child's date of birth, one period per child.
     def caretaker(caregiver_disability, caregiver_child, certification_date)
       return if certification_date.nil?
 
       cert_month = certification_date.beginning_of_month
-      caring_for_child = Array(caregiver_child&.periods || []).any? do |period|
-        cert_month < period.period_start + CARETAKER_CHILD_AGE_THRESHOLD.years
+      caring_for_child = Array(caregiver_child&.periods).any? do |period|
+        next unless period.period_start
+
+        period.period_start.beginning_of_month <= cert_month &&
+          cert_month < period.period_start + CARETAKER_CHILD_AGE_THRESHOLD.years
       end
 
       caring_for_child || meets_end_condition(caregiver_disability, certification_date)

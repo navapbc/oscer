@@ -93,8 +93,11 @@ class Determination < Strata::Determination
   # "excluded" replaced by "excepted".
   EXCEPTION_REASON_CODES = {
     was_pregnant: "pregnancy_excepted",
-    was_former_foster_care: "was_former_foster_care",
+    was_veteran_with_disability: "veteran_disability_excepted",
+    was_former_foster_care: "former_foster_care_excepted",
+    was_medically_frail: "medically_frail_excepted",
     was_caretaker: "caretaker_excepted",
+    was_meeting_tanf_snap_work: "tanf_snap_work_excepted",
     was_in_drug_treatment: "drug_treatment_excepted",
     was_inmate: "inmate_excepted",
     age_was_under_19: "age_under_19_excepted",

@@ -47,8 +47,11 @@ RSpec.describe Determination, type: :model do
           denial_response_convincing
           denial_response_not_convincing
           pregnancy_excepted
-          was_former_foster_care
+          veteran_disability_excepted
+          former_foster_care_excepted
+          medically_frail_excepted
           caretaker_excepted
+          tanf_snap_work_excepted
           drug_treatment_excepted
           inmate_excepted
           age_under_19_excepted

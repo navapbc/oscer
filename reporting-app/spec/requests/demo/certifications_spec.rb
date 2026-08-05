@@ -412,7 +412,7 @@ RSpec.describe "/demo/certifications", type: :request do
         }.to change(Certification, :count).by(1)
 
         cert = Certification.order(created_at: :desc).last
-        expect(cert.member_data.dates_receiving_inpatient_medical_care).to eq cert.certification_requirements.months_that_can_be_certified
+        expect(cert.member_data.verified_exemption(:inpatient_medical_care)).to be_present
       end
 
       it "creates a new Certification with race_ethnicity selected" do

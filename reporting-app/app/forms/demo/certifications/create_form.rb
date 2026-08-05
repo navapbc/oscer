@@ -9,6 +9,16 @@ module Demo
         "Fully met income requirement"
       ].freeze
 
+      # The exemption type the API uses for each selectable external exception. The exception ids and
+      # the API's type names are owned separately, hence medical_travel -> travel_for_medical.
+      EXTERNAL_EXCEPTION_EXEMPTION_TYPES = {
+        "inpatient_medical_care" => :inpatient_medical_care,
+        "declared_emergency_county" => :declared_emergency_county,
+        "high_unemployment_county" => :high_unemployment_county,
+        "medical_travel" => :travel_for_medical,
+        "other_program" => :other_program
+      }.freeze
+
       attribute :external_exception, :string
       attribute :external_scenario, :enum, options: EXTERNAL_SCENARIO_OPTIONS
 
@@ -113,22 +123,22 @@ module Demo
 
       private
 
-      # Sets the MemberData signal that triggers the selected external exception, so the check fires
-      # downstream in ExceptionDeterminationService. A blank selection leaves member data unchanged.
+      # Adds the exemption that triggers the selected external exception, over a period spanning the
+      # certifiable months, so the check fires downstream in ExceptionDeterminationService.
       def apply_external_exception(member_data, months)
-        case external_exception
-        when "inpatient_medical_care"
-          member_data.dates_receiving_inpatient_medical_care = months
-        when "declared_emergency_county"
-          member_data.dates_in_declared_emergency_county = months
-        when "high_unemployment_county"
-          member_data.dates_in_high_unemployment_county = months
-        when "medical_travel"
-          member_data.dates_traveling_for_medical_care = months
-        when "other_program"
-          member_data.dates_participating_in_other_program = months
-        end
+        exemption_type = EXTERNAL_EXCEPTION_EXEMPTION_TYPES[external_exception]
+        return if exemption_type.nil?
+
+        member_data.exemptions += [
+          {
+            type: exemption_type,
+            value: true,
+            verification_status: :verified,
+            periods: [ { period_start: months.min, period_end: months.max.end_of_month } ]
+          }
+        ]
       end
+
       def end_exemption(exemption_type, cert_date)
         {
           type: exemption_type,

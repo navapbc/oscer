@@ -233,6 +233,24 @@ RSpec.describe Rules::ExclusionRuleset do
       end
     end
 
+    context 'when a dependent child is born after the certification month' do
+      it 'returns falsey' do
+        dependent = build(:certification_member_data_exemption, :valid, cert_date:)
+        period = Certifications::MemberData::Period.new(period_start: cert_date + 1.month)
+        dependent.periods = [ period ]
+        expect(ruleset.caretaker(nil, dependent, cert_date)).to be_falsey
+      end
+    end
+
+    context 'when a dependent child period carries no birth date' do
+      it 'returns falsey' do
+        dependent = build(:certification_member_data_exemption, :valid, cert_date:)
+        period = Certifications::MemberData::Period.new(period_end: cert_date)
+        dependent.periods = [ period ]
+        expect(ruleset.caretaker(nil, dependent, cert_date)).to be_falsey
+      end
+    end
+
     context 'when all dependent children are 14 or older' do
       it 'returns falsey' do
         dependent = build(:certification_member_data_exemption, :valid, cert_date:)
