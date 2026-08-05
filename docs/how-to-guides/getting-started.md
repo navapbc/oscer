@@ -56,7 +56,7 @@ OSCER is designed to be cloud-agnostic. We provide infrastructure templates for 
 **AWS Deployment:**
 
 - **Reference implementation** using our [AWS infrastructure template](https://github.com/navapbc/template-infra)
-- See our [AWS implementation as a reference.](docs/infra/)
+- See our [AWS implementation as a reference.](/docs/infra/)
 
 **Azure Deployment:**
 

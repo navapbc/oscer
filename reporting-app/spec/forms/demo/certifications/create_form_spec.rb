@@ -60,6 +60,109 @@ RSpec.describe Demo::Certifications::CreateForm do
         expect(member_data.dates_traveling_for_medical_care).to be_blank
         expect(member_data.dates_participating_in_other_program).to be_blank
       end
+
+      it "does not add exemptions" do
+        expect(member_data.exemptions.length).to be_zero
+      end
+    end
+
+    context "when pregnancy is selected" do
+      let(:form) { described_class.new(certification_date: Date.current, pregnancy_status: true) }
+
+      it "Adds exemption to member data" do
+        expect(member_data.exemptions.length).to eq 1
+        exemption = member_data.exemptions.first
+        expect(exemption.type).to eq 'pregnancy'
+        expect(exemption.periods.first.period_end).to eq form.certification_date
+      end
+    end
+
+    context "when was_in_foster_care is selected" do
+      let(:form) { described_class.new(certification_date: Date.current, was_in_foster_care: true) }
+
+      it "Adds exemption to member data" do
+        expect(member_data.exemptions.length).to eq 1
+        exemption = member_data.exemptions.first
+        expect(exemption.type).to eq 'former_foster_care'
+        expect(exemption.periods.first.period_end).to eq form.certification_date
+      end
+    end
+
+    context "when currently_medically_frail is selected" do
+      let(:form) { described_class.new(certification_date: Date.current, currently_medically_frail: true) }
+
+      it "Adds exemption to member data" do
+        expect(member_data.exemptions.length).to eq 1
+        exemption = member_data.exemptions.first
+        expect(exemption.type).to eq 'medical_condition'
+        expect(exemption.periods.first.period_end).to eq form.certification_date
+      end
+    end
+
+    context "when veteran_with_disability is selected" do
+      let(:form) { described_class.new(certification_date: Date.current, veteran_with_disability: true) }
+
+      it "Adds exemption to member data" do
+        expect(member_data.exemptions.length).to eq 1
+        exemption = member_data.exemptions.first
+        expect(exemption.type).to eq 'veteran_disability'
+        expect(exemption.periods.first.period_end).to eq form.certification_date
+      end
+    end
+
+    context "when caretaker is selected" do
+      let(:form) { described_class.new(certification_date: Date.current, caretaker: true) }
+
+      it "Adds exemption to member data" do
+        expect(member_data.exemptions.length).to eq 1
+        exemption = member_data.exemptions.first
+        expect(exemption.type).to eq 'caregiver_disability'
+        expect(exemption.periods.first.period_end).to eq form.certification_date
+      end
+    end
+
+    context "when tanf_snap_work is selected" do
+      let(:form) { described_class.new(certification_date: Date.current, tanf_snap_work: true) }
+
+      it "Adds exemption to member data" do
+        expect(member_data.exemptions.length).to eq 1
+        exemption = member_data.exemptions.first
+        expect(exemption.type).to eq 'meeting_tanf_or_snap_work'
+        expect(exemption.periods.first.period_end).to eq form.certification_date
+      end
+    end
+
+    context "when drug_treatment is selected" do
+      let(:form) { described_class.new(certification_date: Date.current, drug_treatment: true) }
+
+      it "Adds exemption to member data" do
+        expect(member_data.exemptions.length).to eq 1
+        exemption = member_data.exemptions.first
+        expect(exemption.type).to eq 'substance_treatment'
+        expect(exemption.periods.first.period_end).to eq form.certification_date
+      end
+    end
+
+    context "when inmate is selected" do
+      let(:form) { described_class.new(certification_date: Date.current, inmate: true) }
+
+      it "Adds exemption to member data" do
+        expect(member_data.exemptions.length).to eq 1
+        exemption = member_data.exemptions.first
+        expect(exemption.type).to eq 'incarceration'
+        expect(exemption.periods.first.period_end).to eq form.certification_date
+      end
+    end
+
+    context "when race_ethnicity is american_indian_or_alaska_native" do
+      let(:form) { described_class.new(certification_date: Date.current, race_ethnicity: 'american_indian_or_alaska_native') }
+
+      it "Adds exemption to member data" do
+        expect(member_data.exemptions.length).to eq 1
+        exemption = member_data.exemptions.first
+        expect(exemption.type).to eq 'american_indian_or_alaska_native'
+        expect(exemption.periods.first.period_end).to eq form.certification_date
+      end
     end
   end
 end
