@@ -158,11 +158,7 @@ class ExclusionDeterminationService
     end
 
     def extract_exemption(certification, attribute)
-      return nil unless certification.member_data&.exemptions.present?
-
-      certification.member_data.exemptions.find do |e|
-        e.value && e.verification_status == "verified" && e.type.to_sym == attribute
-      end
+      certification.member_data&.verified_exemption(attribute)
     end
   end
 end

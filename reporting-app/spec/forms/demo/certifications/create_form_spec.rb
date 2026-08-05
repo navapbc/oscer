@@ -10,56 +10,52 @@ RSpec.describe Demo::Certifications::CreateForm do
     let(:certification) { form.to_certification }
     let(:months) { certification.certification_requirements.months_that_can_be_certified }
 
+    # The added exemption spans the certifiable months, so ExceptionDeterminationService finds it
+    # covering one of them.
+    shared_examples "an external exception exemption" do |exemption_type|
+      it "adds a verified #{exemption_type} exemption spanning the certifiable months" do
+        expect(member_data.exemptions.length).to eq 1
+        exemption = member_data.exemptions.first
+        expect(exemption.type).to eq exemption_type
+        expect(exemption.value).to be true
+        expect(exemption.verification_status).to eq "verified"
+        expect(exemption.periods.first.period_start).to eq months.min
+        expect(exemption.periods.first.period_end).to eq months.max.end_of_month
+      end
+    end
+
     context "when inpatient medical care is selected" do
       let(:selected) { "inpatient_medical_care" }
 
-      it "sets the matching member-data signal so the exception can eq triggered" do
-        expect(member_data.dates_receiving_inpatient_medical_care).to eq months
-      end
+      it_behaves_like "an external exception exemption", "inpatient_medical_care"
     end
 
     context "when declared-emergency county is selected" do
       let(:selected) { "declared_emergency_county" }
 
-      it "sets the matching member-data signal" do
-        expect(member_data.dates_in_declared_emergency_county).to eq months
-      end
+      it_behaves_like "an external exception exemption", "declared_emergency_county"
     end
 
     context "when high-unemployment county is selected" do
       let(:selected) { "high_unemployment_county" }
 
-      it "sets the matching member-data signal" do
-        expect(member_data.dates_in_high_unemployment_county).to eq months
-      end
+      it_behaves_like "an external exception exemption", "high_unemployment_county"
     end
 
     context "when medical travel is selected" do
       let(:selected) { "medical_travel" }
 
-      it "sets the matching member-data signal" do
-        expect(member_data.dates_traveling_for_medical_care).to eq months
-      end
+      it_behaves_like "an external exception exemption", "travel_for_medical"
     end
 
     context "when other program is selected" do
       let(:selected) { "other_program" }
 
-      it "sets the matching member-data signal" do
-        expect(member_data.dates_participating_in_other_program).to eq months
-      end
+      it_behaves_like "an external exception exemption", "other_program"
     end
 
     context "when no external exception is selected" do
       let(:selected) { nil }
-
-      it "leaves the exception signals at their defaults" do
-        expect(member_data.dates_receiving_inpatient_medical_care).to be_blank
-        expect(member_data.dates_in_declared_emergency_county).to be_blank
-        expect(member_data.dates_in_high_unemployment_county).to be_blank
-        expect(member_data.dates_traveling_for_medical_care).to be_blank
-        expect(member_data.dates_participating_in_other_program).to be_blank
-      end
 
       it "does not add exemptions" do
         expect(member_data.exemptions.length).to be_zero

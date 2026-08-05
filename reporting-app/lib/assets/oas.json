@@ -536,7 +536,11 @@
 	      "veteran_disability",
 	      "medical_condition",
 	      "substance_treatment",
-	      "travel_for_medical"
+	      "travel_for_medical",
+	      "inpatient_medical_care",
+	      "declared_emergency_county",
+	      "high_unemployment_county",
+	      "other_program"
 	    ],
             "description": "Exemption data type"
           },
