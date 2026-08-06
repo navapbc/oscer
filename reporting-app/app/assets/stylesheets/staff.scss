@@ -1,0 +1,9 @@
+// =========================================================
+// Staff-surface stylesheet entry point — builds into
+// "staff.css". Loaded by oscer_staff.html.erb AFTER the
+// shared "application" bundle, so its rules win the cascade
+// for the staff UI only.
+//
+// Put staff-only styles in ./_staff_overrides.scss.
+// =========================================================
+@forward "staff_overrides";
