@@ -24,6 +24,10 @@ RSpec.describe Certifications::CreationService, type: :service do
 
   describe "#call" do
     context "with hourly activities" do
+      let(:verification_status) { "verified" }
+      let(:category) { "employment" }
+      let(:hours) { 40 }
+      let(:credit_hours) { nil }
       let(:member_data) do
         build(:certification_member_data,
           :with_full_name,
@@ -31,12 +35,13 @@ RSpec.describe Certifications::CreationService, type: :service do
           activities: [
             {
               "type" => "hourly",
-              "category" => "employment",
-              "hours" => 40,
+              "category" => category,
+              "hours" => hours,
+              "credit_hours" => credit_hours,
               "period_start" => certification_date.beginning_of_month,
               "period_end" => certification_date.end_of_month,
-              "employer" => "Acme Corp",
-              "verification_status" => "verified"
+              "name" => "Acme Corp",
+              "verification_status" => verification_status
             }
           ]
         )
@@ -88,6 +93,57 @@ RSpec.describe Certifications::CreationService, type: :service do
         activity = ExternalHourlyActivity.last
         expect(activity).not_to respond_to(:verification_status)
       end
+
+      context "when verification status is not verified" do
+        let(:verification_status) { "self_attested" }
+
+        it "does not create ExternalHourlyActivity" do
+          expect {
+            service.call
+          }.not_to change(ExternalHourlyActivity, :count)
+        end
+      end
+
+      context "when education category and credit hours" do
+        let(:credit_hours) { 9 }
+        let(:category) { "education" }
+        let(:hours) { nil }
+
+        it "counts education hours at 13 to 1" do
+          expect {
+            service.call
+          }.to change(ExternalHourlyActivity, :count).from(0).to(1)
+
+          activity = ExternalHourlyActivity.last
+          expect(activity.category).to eq("education")
+          expect(activity.hours).to eq(credit_hours * Certifications::CreationService::CREDIT_HOURS_MULTIPLIER)
+        end
+      end
+
+      context "when education category and credit hours and hours" do
+        let(:category) { "education" }
+        let(:credit_hours) { 9 }
+        let(:hours) { 25 }
+
+        it "ignores credit hours" do
+          expect {
+            service.call
+          }.to change(ExternalHourlyActivity, :count).from(0).to(1)
+
+          activity = ExternalHourlyActivity.last
+          expect(activity.category).to eq("education")
+          expect(activity.hours).to eq(hours)
+        end
+      end
+
+      context "when employment category and credit hours and nil hours" do
+        let(:category) { "employment" }
+        let(:hours) { nil }
+
+        it "raises ActiveRecord::RecordInvalid" do
+          expect { service.call }.to raise_error(ActiveRecord::RecordInvalid)
+        end
+      end
     end
 
     context "with multiple hourly activities" do
@@ -101,14 +157,16 @@ RSpec.describe Certifications::CreationService, type: :service do
               "category" => "employment",
               "hours" => 40,
               "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month
+              "period_end" => certification_date.end_of_month,
+              "verification_status" => "verified"
             },
             {
               "type" => "hourly",
               "category" => "community_service",
               "hours" => 10,
               "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month
+              "period_end" => certification_date.end_of_month,
+              "verification_status" => "verified"
             }
           ]
         )
@@ -126,6 +184,7 @@ RSpec.describe Certifications::CreationService, type: :service do
     end
 
     context "with income activities" do
+      let(:verification_status) { "verified" }
       let(:member_data) do
         build(:certification_member_data,
           :with_full_name,
@@ -138,7 +197,8 @@ RSpec.describe Certifications::CreationService, type: :service do
               "period_start" => certification_date.beginning_of_month,
               "period_end" => certification_date.end_of_month,
               "source" => "api",
-              "employer" => "Acme Corp"
+              "name" => "Acme Corp",
+              "verification_status" => verification_status
             }
           ]
         )
@@ -168,6 +228,16 @@ RSpec.describe Certifications::CreationService, type: :service do
           service.call
         }.to change(Certification, :count).from(0).to(1)
       end
+
+      context "when verification status is not verified" do
+        let(:verification_status) { "pending" }
+
+        it "does not create ExternalIncomeActivity" do
+          expect {
+            service.call
+          }.not_to change(ExternalIncomeActivity, :count)
+        end
+      end
     end
 
     context "with mixed hourly and income activities" do
@@ -181,7 +251,8 @@ RSpec.describe Certifications::CreationService, type: :service do
               "category" => "employment",
               "hours" => 40,
               "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month
+              "period_end" => certification_date.end_of_month,
+              "verification_status" => "verified"
             },
             {
               "type" => "income",
@@ -189,7 +260,8 @@ RSpec.describe Certifications::CreationService, type: :service do
               "gross_income" => 580,
               "period_start" => certification_date.beginning_of_month,
               "period_end" => certification_date.end_of_month,
-              "source" => "api"
+              "source" => "api",
+              "verification_status" => "verified"
             }
           ]
         )
@@ -265,7 +337,8 @@ RSpec.describe Certifications::CreationService, type: :service do
               "category" => "employment",
               "hours" => -10, # Invalid: negative hours
               "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month
+              "period_end" => certification_date.end_of_month,
+              "verification_status" => "verified"
             }
           ]
         )
@@ -293,7 +366,8 @@ RSpec.describe Certifications::CreationService, type: :service do
               "gross_income" => 500,
               "period_start" => certification_date.beginning_of_month,
               "period_end" => certification_date.end_of_month,
-              "source" => "api"
+              "source" => "api",
+              "verification_status" => "verified"
             },
             {
               "type" => "income",
@@ -301,7 +375,8 @@ RSpec.describe Certifications::CreationService, type: :service do
               "gross_income" => 500,
               "period_start" => certification_date.beginning_of_month,
               "period_end" => certification_date.end_of_month,
-              "source" => "api"
+              "source" => "api",
+              "verification_status" => "verified"
             }
           ]
         )

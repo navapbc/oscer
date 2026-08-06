@@ -5,6 +5,10 @@
 class Certifications::CreationService
   attr_reader :create_request, :certification
 
+  # One credit hour is 12.99 clock hours per month (3 hours per week over a 4.33 week month)
+  # per the Federal Register.
+  CREDIT_HOURS_MULTIPLIER = BigDecimal("12.99")
+
   def initialize(certification)
     @certification = certification
   end
@@ -46,10 +50,18 @@ class Certifications::CreationService
     hourly_activities = certification.member_data.activities.select { |a| a.type == "hourly" }
 
     hourly_activities.each do |activity_data|
-      result = ExternalHourlyActivityService.create_entry(
+      next unless activity_data.verified?
+
+      hours = if activity_data.hours.nil? && activity_data.education_credit_hours?
+                activity_data.credit_hours * CREDIT_HOURS_MULTIPLIER
+      else
+                activity_data.hours
+      end
+
+      ExternalHourlyActivityService.create_entry(
         member_id: certification.member_id,
         category: activity_data.category,
-        hours: activity_data.hours,
+        hours: hours,
         period_start: activity_data.period_start,
         period_end: activity_data.period_end,
         source_type: ExternalHourlyActivity::SOURCE_TYPES[:api],
@@ -64,7 +76,9 @@ class Certifications::CreationService
     income_activities = certification.member_data.activities.select { |a| a.type == "income" }
 
     income_activities.each do |activity_data|
-      result = ExternalIncomeActivityService.create_entry(
+      next unless activity_data.verified?
+
+      ExternalIncomeActivityService.create_entry(
         member_id: certification.member_id,
         category: activity_data.category,
         gross_income: activity_data.gross_income,
@@ -73,7 +87,7 @@ class Certifications::CreationService
         source_type: activity_data.source,
         source_id: nil,
         reported_at: activity_data.reported_at || Time.current,
-        employer: activity_data.employer,
+        employer: activity_data.employer || activity_data.name,
         recalculate_income_compliance: false
       )
     end
