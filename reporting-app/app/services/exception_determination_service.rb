@@ -12,14 +12,16 @@ class ExceptionDeterminationService
   # code, or nil. Order is evaluation order; the first applicable check wins. Mandatory checks run
   # first and are ungated; optional checks gate on ExternalException.enabled?.
   #
-  # The mandatory checks migrated from the exclusion ruleset (pregnancy through inmate) except a
-  # member when the corresponding exclusion would have been valid in any certifiable month
-  # (certification_date is not consulted); for those monotonic in time, the earliest certifiable
-  # month suffices (as in age_under_19).
+  # Every check but age_under_19 reads an API-supplied Certifications::MemberData::Exemption. Where
+  # the exclusion check asks whether an exemption covers the certification month, the exception check
+  # asks whether it covers any certifiable month (certification_date is not consulted).
   EXCEPTION_CHECKS = %i[
     pregnancy
+    veteran_disability
     former_foster_care
+    medically_frail
     caretaker
+    tanf_snap_work
     drug_treatment
     inmate
     age_under_19
@@ -64,144 +66,138 @@ class ExceptionDeterminationService
       reason_code ? [ reason_code ] : []
     end
 
-    # Migrated from the pregnancy exclusion. The postpartum window (due/parturition date +
-    # POSTPARTUM_EXCLUSION_MONTHS) has no lower bound, so the earliest certifiable month decides.
+    # Migrated from the pregnancy exclusion, which treats pregnancy and postpartum as two exemptions
+    # carrying their own periods.
     def pregnancy(member_data, certifiable_months)
-      due_or_parturition_date = member_data.pregnancy_due_or_parturition_date
-      return unless due_or_parturition_date
-
-      postpartum_end = due_or_parturition_date + Rules::ExclusionRuleset::POSTPARTUM_EXCLUSION_MONTHS.months
-      earliest_month = certifiable_months.sort.first
-      return unless earliest_month <= postpartum_end
+      return unless covers_certifiable_month?(member_data, :pregnancy, certifiable_months) ||
+                    covers_certifiable_month?(member_data, :postpartum, certifiable_months)
 
       Determination::REASON_CODE_MAPPING.fetch(:was_pregnant)
     end
 
+    def veteran_disability(member_data, certifiable_months)
+      return unless covers_certifiable_month?(member_data, :veteran_disability, certifiable_months)
+
+      Determination::REASON_CODE_MAPPING.fetch(:was_veteran_with_disability)
+    end
+
+    def medically_frail(member_data, certifiable_months)
+      return unless covers_certifiable_month?(member_data, :medical_condition, certifiable_months)
+
+      Determination::REASON_CODE_MAPPING.fetch(:was_medically_frail)
+    end
+
+    def tanf_snap_work(member_data, certifiable_months)
+      return unless covers_certifiable_month?(member_data, :meeting_tanf_or_snap_work, certifiable_months)
+
+      Determination::REASON_CODE_MAPPING.fetch(:was_meeting_tanf_snap_work)
+    end
+
     # Migrated from the former-foster-care exclusion: in foster care and under the age cap
-    # (FORMER_FOSTER_CARE_AGE_CAP) during a certifiable month.
+    # (FORMER_FOSTER_CARE_AGE_CAP) during a certifiable month. The exemption's periods are not
+    # consulted, matching the exclusion.
     def former_foster_care(member_data, certifiable_months)
-      return unless member_data.was_in_foster_care
+      return unless member_data.verified_exemption(:former_foster_care)
       dob = member_data.date_of_birth
       return unless dob
 
       age_cap_date = dob + Rules::ExclusionRuleset::FORMER_FOSTER_CARE_AGE_CAP.years
-      earliest_month = certifiable_months.sort.first
-      return unless earliest_month < age_cap_date
+      return unless certifiable_months.min < age_cap_date
 
       Determination::REASON_CODE_MAPPING.fetch(:was_former_foster_care)
     end
 
-    # Migrated from the caretaker exclusion: caretaking an infirm person during a certifiable month
-    # (month-specific), or caring for a dependent child under CARETAKER_CHILD_AGE_THRESHOLD.
+    # Caring for a disabled person during a certifiable month, or for a dependent child who was
+    # already born and still under CARETAKER_CHILD_AGE_THRESHOLD in one of them.
     def caretaker(member_data, certifiable_months)
-      infirm_months = Array(member_data.dates_caretaking_infirm).compact.map(&:beginning_of_month)
-      caretaking_infirm = (certifiable_months & infirm_months).present?
-
       threshold = Rules::ExclusionRuleset::CARETAKER_CHILD_AGE_THRESHOLD
-      earliest_month = certifiable_months.sort.first
-      caring_for_child = Array(member_data.dependent_children_birth_dates).compact.any? do |date_of_birth|
-        earliest_month < date_of_birth + threshold.years
+      caring_for_child = periods(member_data, :caregiver_child).any? do |period|
+        next unless period.period_start
+
+        born = period.period_start.beginning_of_month
+        turns_threshold = period.period_start + threshold.years
+        certifiable_months.any? { |month| born <= month && month < turns_threshold }
       end
 
-      return unless caretaking_infirm || caring_for_child
+      return unless caring_for_child || covers_certifiable_month?(member_data, :caregiver_disability, certifiable_months)
 
       Determination::REASON_CODE_MAPPING.fetch(:was_caretaker)
     end
 
-    # Migrated from the drug-treatment exclusion: in a drug/alcohol treatment program during a
-    # certifiable month (month intersection).
     def drug_treatment(member_data, certifiable_months)
-      return unless member_data.dates_in_drug_treatment.present?
-
-      treatment_months = member_data.dates_in_drug_treatment.compact.map(&:beginning_of_month)
-      return unless (certifiable_months & treatment_months).present?
+      return unless covers_certifiable_month?(member_data, :substance_treatment, certifiable_months)
 
       Determination::REASON_CODE_MAPPING.fetch(:was_in_drug_treatment)
     end
 
-    # Migrated from the inmate exclusion: each incarceration opens a bounded window [incarceration
-    # month, +INMATE_BUFFER_MONTHS], so every certifiable month is tested against every window.
+    # Migrated from the inmate exclusion, which extends each incarceration period by
+    # INMATE_BUFFER_MONTHS.
     def inmate(member_data, certifiable_months)
-      return unless member_data.dates_incarcerated.present?
-
       buffer = Rules::ExclusionRuleset::INMATE_BUFFER_MONTHS
-      incarceration_starts = member_data.dates_incarcerated.compact.map(&:beginning_of_month)
-      excepted = certifiable_months.any? do |month|
-        incarceration_starts.any? { |start| start <= month && month <= start + buffer.months }
-      end
-      return unless excepted
+      return unless covers_certifiable_month?(member_data, :incarceration, certifiable_months, buffer_months: buffer)
 
       Determination::REASON_CODE_MAPPING.fetch(:was_inmate)
     end
 
-    # @return [String, nil] the reason code when the member was less than 19 in lookback period,
-    #   otherwise nil.
     def age_under_19(member_data, certifiable_months)
       dob = member_data.date_of_birth
       return unless dob
-      earliest_month = certifiable_months.sort.first
-      return unless earliest_month - 19.years < dob
+      return unless certifiable_months.min - 19.years < dob
 
       Determination::REASON_CODE_MAPPING.fetch(:age_was_under_19)
     end
 
-    # @return [String, nil] the reason code when the member was receiving inpatient medical care and
-    #   the exception is enabled, otherwise nil.
     def inpatient_medical_care(member_data, certifiable_months)
       return unless ExternalException.enabled?(:inpatient_medical_care)
-      return unless member_data.dates_receiving_inpatient_medical_care.present?
-
-      inpatient_months = member_data.dates_receiving_inpatient_medical_care.compact.map(&:beginning_of_month)
-      return unless (certifiable_months & inpatient_months).present?
+      return unless covers_certifiable_month?(member_data, :inpatient_medical_care, certifiable_months)
 
       Determination::REASON_CODE_MAPPING.fetch(:receiving_inpatient_medical_care)
     end
 
-    # @return [String, nil] the reason code when the member resided in a declared-emergency county
-    #   and the exception is enabled, otherwise nil.
     def declared_emergency_county(member_data, certifiable_months)
       return unless ExternalException.enabled?(:declared_emergency_county)
-      return unless member_data.dates_in_declared_emergency_county.present?
-
-      emergency_months = member_data.dates_in_declared_emergency_county.compact.map(&:beginning_of_month)
-      return unless (certifiable_months & emergency_months).present?
+      return unless covers_certifiable_month?(member_data, :declared_emergency_county, certifiable_months)
 
       Determination::REASON_CODE_MAPPING.fetch(:resides_in_declared_emergency_county)
     end
 
-    # @return [String, nil] the reason code when the member resided in a high-unemployment county and
-    #   the exception is enabled, otherwise nil.
     def high_unemployment_county(member_data, certifiable_months)
       return unless ExternalException.enabled?(:high_unemployment_county)
-      return unless member_data.dates_in_high_unemployment_county.present?
-
-      high_unemployment_months = member_data.dates_in_high_unemployment_county.compact.map(&:beginning_of_month)
-      return unless (certifiable_months & high_unemployment_months).present?
+      return unless covers_certifiable_month?(member_data, :high_unemployment_county, certifiable_months)
 
       Determination::REASON_CODE_MAPPING.fetch(:resides_in_high_unemployment_county)
     end
 
-    # @return [String, nil] the reason code when the member was travelling for medical care (for
-    #   themselves or a dependent) and the exception is enabled, otherwise nil.
+    # Covers travel for the member's own medical care or a dependent's.
     def medical_travel(member_data, certifiable_months)
       return unless ExternalException.enabled?(:medical_travel)
-      return unless member_data.dates_traveling_for_medical_care.present?
-
-      medical_travel_months = member_data.dates_traveling_for_medical_care.compact.map(&:beginning_of_month)
-      return unless (certifiable_months & medical_travel_months).present?
+      return unless covers_certifiable_month?(member_data, :travel_for_medical, certifiable_months)
 
       Determination::REASON_CODE_MAPPING.fetch(:traveling_for_medical_care)
     end
 
-    # @return [String, nil] the reason code when the member participated in either
-    #   Medicare or Medicaid plans A or B, otherwise nil.
+    # The other program is Medicare or Medicaid plan A or B.
     def other_program(member_data, certifiable_months)
-      return unless member_data.dates_participating_in_other_program.present?
-
-      other_program_months = member_data.dates_participating_in_other_program.compact.map(&:beginning_of_month)
-      return unless (certifiable_months & other_program_months).present?
+      return unless covers_certifiable_month?(member_data, :other_program, certifiable_months)
 
       Determination::REASON_CODE_MAPPING.fetch(:participating_in_other_program)
+    end
+
+    # True when any certifiable month falls inside a period of the verified +type+ exemption,
+    # optionally extended by +buffer_months+ past the period end. Month granularity and the
+    # both-bounds-required rule match Rules::ExclusionRuleset#meets_end_condition.
+    def covers_certifiable_month?(member_data, type, certifiable_months, buffer_months: 0)
+      periods(member_data, type).any? do |period|
+        next unless period.period_start && period.period_end
+
+        window_start = period.period_start.beginning_of_month
+        window_end = period.period_end.end_of_month + buffer_months.months
+        certifiable_months.any? { |month| window_start <= month && month <= window_end }
+      end
+    end
+
+    def periods(member_data, type)
+      Array(member_data.verified_exemption(type)&.periods)
     end
   end
 end

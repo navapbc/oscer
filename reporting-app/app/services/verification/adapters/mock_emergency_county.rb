@@ -14,8 +14,8 @@ module Verification
     # va_icn is an unrelated identity field, chosen (as in MockDrugTreatment) so the
     # outcome is a deterministic function of a single always-present scalar, letting
     # specs drive every branch. Keying off an unrelated field also keeps the demo
-    # honest: it does NOT re-read dates_in_declared_emergency_county, the in-hand
-    # field ExceptionDeterminationService already evaluates, so it stands in for an
+    # honest: it does NOT re-read the declared_emergency_county exemption, the in-hand
+    # data ExceptionDeterminationService already evaluates, so it stands in for an
     # *external* source rather than duplicating the in-hand check.
     #
     # Outcome: :resides_in_declared_emergency_county (a non-exclusion exception key).

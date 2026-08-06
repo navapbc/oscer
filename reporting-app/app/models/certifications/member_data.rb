@@ -112,4 +112,13 @@ class Certifications::MemberData < ValueObject
   attribute :dates_in_high_unemployment_county, :array, of: ActiveModel::Type::Date.new
   attribute :dates_traveling_for_medical_care, :array, of: ActiveModel::Type::Date.new
   attribute :dates_participating_in_other_program, :array, of: ActiveModel::Type::Date.new
+
+  # The API-supplied exemption of +type+ that both applies and has been verified, or nil.
+  # ExclusionDeterminationService and ExceptionDeterminationService read exemptions through here, so
+  # the applies/verified filter lives in one place.
+  def verified_exemption(type)
+    Array(exemptions).find do |exemption|
+      exemption.value && exemption.verification_status == "verified" && exemption.type&.to_sym == type.to_sym
+    end
+  end
 end
