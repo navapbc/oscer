@@ -55,7 +55,7 @@ class Certifications::MemberData < ValueObject
     validates :category, presence: true, inclusion: { in: ::Activity::ALLOWED_CATEGORIES }
     validates :hours, presence: true, if: -> { type == TYPE_HOURLY && !education_credit_hours? }
     validates :credit_hours, numericality: { greater_than: 0 }, allow_nil: true
-    validates :credit_hours, absence: true, unless: -> { category == CATEGORY_EDUCATION }
+    validates :credit_hours, absence: true, unless: -> { type == TYPE_HOURLY && category == CATEGORY_EDUCATION }
     validates :gross_income, presence: true,
                              numericality: { greater_than: 0 },
                              if: -> { type == TYPE_INCOME }
