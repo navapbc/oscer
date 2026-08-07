@@ -1,0 +1,12 @@
+// =========================================================
+// CLIENT-ONLY overrides — builds into "client.css", loaded
+// only by the member/client-facing layout (application_base).
+//
+// Styles placed here affect the client UI and NOT the staff UI.
+// For branding that should apply to BOTH surfaces, use
+// ./_overrides.scss instead. For staff-only styling, use
+// ./_staff_overrides.scss.
+//
+// To use USWDS functions/mixins/tokens (color(), units(), etc.)
+// add `@use "uswds-core" as *;` as the first line below.
+// =========================================================

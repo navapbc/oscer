@@ -16,4 +16,6 @@
 // Compiled CSS and JS
 //= link_tree ../builds
 //= link application.css
+//= link client.css
+//= link staff.css
 //= link custom.css

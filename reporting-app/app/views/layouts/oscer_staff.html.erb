@@ -1,4 +1,8 @@
 <% content_for :head do %>
+  <%# Staff-surface overrides; the strata staff layout renders :head after its
+      "application" link, so these win the cascade for the staff UI only
+      (client UI loads "client" instead). %>
+  <%= stylesheet_link_tag "staff", "data-turbo-track": "reload" %>
   <%= javascript_importmap_tags %>
 <% end %>
 <%= render template: "layouts/strata/staff" %>
