@@ -1,0 +1,9 @@
+// =========================================================
+// Client-surface stylesheet entry point — builds into
+// "client.css". Loaded by application_base.html.erb AFTER
+// the shared "application" bundle, so its rules win the
+// cascade for the client/member UI only.
+//
+// Put client-only styles in ./_client_overrides.scss.
+// =========================================================
+@forward "client_overrides";

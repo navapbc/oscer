@@ -1,4 +1,8 @@
 // =========================================================
 // Custom base scss file builds to "custom.css"
 // Use when ./_overrides.scss is not enough.
+// This full-reskin hatch is shared by client and staff unless
+// you override each layout and keep surface bundles (client.css /
+// staff.css) linked after it. Prefer _client_overrides.scss /
+// _staff_overrides.scss for surface-scoped branding.
 // =========================================================

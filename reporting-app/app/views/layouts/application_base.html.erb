@@ -12,6 +12,9 @@
     <%= favicon_link_tag asset_path('@uswds/uswds/dist/img/us_flag_small.png') %>
 
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%# Client-surface overrides; loaded after "application" so they win the
+        cascade for the client UI only (staff UI loads "staff" instead). %>
+    <%= stylesheet_link_tag "client", "data-turbo-track": "reload" %>
     <%= yield :head %>
 
     <%= javascript_importmap_tags %>
