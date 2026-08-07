@@ -72,6 +72,13 @@ components:
                 period_end: '2025-09-30'
                 employer: Community Center
                 verification_status: verified
+              - type: hourly
+                category: education
+                credit_hours: '9'
+                period_start: '2025-09-01'
+                period_end: '2025-09-30'
+                name: State University
+                verification_status: verified
               date_of_birth: '1980-01-01'
               race_ethnicity: Hispanic
               pregnancy_status: false
@@ -364,15 +371,21 @@ components:
           - education
           - unearned
           description: The category of activity
-        oneOf:
-        - hours:
-            type: string
-            format: decimal
-            description: Number of hours for the activity
-        - credit_hours:
-            type: string
-            format: decimal
-            description: Number of credit hours for the educational activity
+        hours:
+          type:
+          - string
+          - 'null'
+          format: decimal
+          description: Number of hours for the activity; required unless the activity
+            is an education activity reporting credit_hours
+        credit_hours:
+          type:
+          - string
+          - 'null'
+          format: decimal
+          description: Number of credit hours for an education activity, converted
+            to hours on intake. Permitted only on education activities, and ignored
+            when hours is also supplied
         period_start:
           type: string
           format: date
@@ -386,22 +399,34 @@ components:
           - string
           - 'null'
           description: Employer or organization associated with the activity
-        verification_status:
+        name:
           type:
           - string
           - 'null'
+          description: Name of the school or organization associated with the activity,
+            where employer does not apply
+        verification_status:
+          type: string
           enum:
           - verified
           - self_attested
           - pending
-          -
-          description: Verification status of the activity
+          description: Verification status of the activity; only verified activities
+            count toward the certification
       required:
       - type
       - category
-      - hours
       - period_start
       - period_end
+      - verification_status
+      anyOf:
+      - required:
+        - hours
+      - properties:
+          category:
+            const: education
+        required:
+        - credit_hours
     CertificationMemberDataIncomeActivity:
       type: object
       description: Income-based community engagement activity
@@ -447,16 +472,21 @@ components:
           - string
           - 'null'
           description: Employer or organization associated with the activity
-        verification_status:
+        name:
           type:
           - string
           - 'null'
+          description: Name of the school or organization associated with the activity,
+            where employer does not apply. Recorded as the employer when employer
+            is not supplied
+        verification_status:
+          type: string
           enum:
           - verified
           - self_attested
           - pending
-          -
-          description: Verification status of the activity
+          description: Verification status of the activity; only verified activities
+            count toward the certification
       required:
       - type
       - category
@@ -464,6 +494,7 @@ components:
       - period_start
       - period_end
       - source
+      - verification_status
     CertificationMemberDataActivity:
       oneOf:
       - "$ref": "#/components/schemas/CertificationMemberDataHourlyActivity"
@@ -721,67 +752,67 @@ components:
       required:
       - status
   responses:
-    eed80766c4e7638604355de711286cd1:
+    92b867c7bd7710a190d49f556523432e:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    aa4e7eb889f98373dfd78e6608895b17:
+    84de618d106cfb28cb206e386b02308b:
       description: Accepted
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
-    d4d03d0242e6f29275bab7e96c8f9d78:
+    16d508648743b65df08644f70d98f653:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    97c1c43d73d325b22ed61e20992b3b69:
+    f254a5555e78e1eb8959045c99f6bc05:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    '090e751cce74d60b12094cb20365132d':
+    47caa76d260b12b1202ff7a40f810ffe:
       description: Accepted
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
-    ef385539c18c5109da1050ae9954577d:
+    6896680c4d444791570b1ca22a8caea4:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    a73160450ba6b1d88f90787cb2645869:
+    5741b9b03a686f8044536adad009d864:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    508e983ec0f7e2fb34f5498de98106c1:
+    bb4cae093af9929cfa7dc58d58aa8ef3:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    8322b8e1650193a41f4254fe2edc0ec7:
+    77dc4daafcdf5907bdbed4bd69410c25:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    27d17ea1573ae6ccb888f55bf3172c37:
+    45892ef2d6d8cac7e489dd65c55158c5:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    e40161e7e1ed2b2c81b7c23b00a9597e:
+    51dfcfc07c920f9d9f37a09083494608:
       description: Response
       content:
         application/json:
@@ -813,7 +844,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    27b0db527c903c3959ca8869c5d3fcaa:
+    d3b71db4b808315111933b8eb20bdd27:
       description: The Certification data.
       content:
         application/json:
@@ -906,11 +937,11 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/eed80766c4e7638604355de711286cd1"
+          "$ref": "#/components/responses/92b867c7bd7710a190d49f556523432e"
         '202':
-          "$ref": "#/components/responses/aa4e7eb889f98373dfd78e6608895b17"
+          "$ref": "#/components/responses/84de618d106cfb28cb206e386b02308b"
         '404':
-          "$ref": "#/components/responses/d4d03d0242e6f29275bab7e96c8f9d78"
+          "$ref": "#/components/responses/16d508648743b65df08644f70d98f653"
       security:
       - hmac: []
       deprecated: false
@@ -924,16 +955,16 @@ paths:
       parameters:
       - "$ref": "#/components/parameters/4f7cce241e43c9b4680b65e2612ab599"
       requestBody:
-        "$ref": "#/components/requestBodies/27b0db527c903c3959ca8869c5d3fcaa"
+        "$ref": "#/components/requestBodies/d3b71db4b808315111933b8eb20bdd27"
       responses:
         '201':
-          "$ref": "#/components/responses/97c1c43d73d325b22ed61e20992b3b69"
+          "$ref": "#/components/responses/f254a5555e78e1eb8959045c99f6bc05"
         '202':
-          "$ref": "#/components/responses/090e751cce74d60b12094cb20365132d"
+          "$ref": "#/components/responses/47caa76d260b12b1202ff7a40f810ffe"
         '400':
-          "$ref": "#/components/responses/ef385539c18c5109da1050ae9954577d"
+          "$ref": "#/components/responses/6896680c4d444791570b1ca22a8caea4"
         '422':
-          "$ref": "#/components/responses/a73160450ba6b1d88f90787cb2645869"
+          "$ref": "#/components/responses/5741b9b03a686f8044536adad009d864"
       security:
       - hmac: []
       deprecated: false
@@ -948,9 +979,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/508e983ec0f7e2fb34f5498de98106c1"
+          "$ref": "#/components/responses/bb4cae093af9929cfa7dc58d58aa8ef3"
         '404':
-          "$ref": "#/components/responses/8322b8e1650193a41f4254fe2edc0ec7"
+          "$ref": "#/components/responses/77dc4daafcdf5907bdbed4bd69410c25"
       security:
       - hmac: []
       deprecated: false
@@ -985,9 +1016,9 @@ paths:
       operationId: GET_api_health
       responses:
         '200':
-          "$ref": "#/components/responses/27d17ea1573ae6ccb888f55bf3172c37"
+          "$ref": "#/components/responses/45892ef2d6d8cac7e489dd65c55158c5"
         '503':
-          "$ref": "#/components/responses/e40161e7e1ed2b2c81b7c23b00a9597e"
+          "$ref": "#/components/responses/51dfcfc07c920f9d9f37a09083494608"
       security:
       - hmac: []
       deprecated: false

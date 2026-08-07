@@ -85,6 +85,15 @@
                     "period_end": "2025-09-30",
                     "employer": "Community Center",
                     "verification_status": "verified"
+                  },
+                  {
+                    "type": "hourly",
+                    "category": "education",
+                    "credit_hours": "9",
+                    "period_start": "2025-09-01",
+                    "period_end": "2025-09-30",
+                    "name": "State University",
+                    "verification_status": "verified"
                   }
                 ],
                 "date_of_birth": "1980-01-01",
@@ -405,22 +414,16 @@
             "enum": ["employment", "community_service", "education", "unearned"],
             "description": "The category of activity"
           },
-          "oneOf": [
-            {
-	      "hours": {
-		"type": "string",
-		"format": "decimal",
-		"description": "Number of hours for the activity"
-              }
-	    },
-            {
-	      "credit_hours": {
-		"type": "string",
-		"format": "decimal",
-		"description": "Number of credit hours for the educational activity"
-              }
-	    }
-	  ],
+          "hours": {
+            "type": ["string", "null"],
+            "format": "decimal",
+            "description": "Number of hours for the activity; required unless the activity is an education activity reporting credit_hours"
+          },
+          "credit_hours": {
+            "type": ["string", "null"],
+            "format": "decimal",
+            "description": "Number of credit hours for an education activity, converted to hours on intake. Permitted only on education activities, and ignored when hours is also supplied"
+          },
           "period_start": {
             "type": "string",
             "format": "date",
@@ -435,18 +438,35 @@
             "type": ["string", "null"],
             "description": "Employer or organization associated with the activity"
           },
-          "verification_status": {
+          "name": {
             "type": ["string", "null"],
-            "enum": ["verified", "self_attested", "pending", null],
-            "description": "Verification status of the activity"
+            "description": "Name of the school or organization associated with the activity, where employer does not apply"
+          },
+          "verification_status": {
+            "type": "string",
+            "enum": ["verified", "self_attested", "pending"],
+            "description": "Verification status of the activity; only verified activities count toward the certification"
           }
         },
         "required": [
           "type",
           "category",
-          "hours",
           "period_start",
-          "period_end"
+          "period_end",
+          "verification_status"
+        ],
+        "anyOf": [
+          {
+            "required": ["hours"]
+          },
+          {
+            "properties": {
+              "category": {
+                "const": "education"
+              }
+            },
+            "required": ["credit_hours"]
+          }
         ]
       },
       "CertificationMemberDataIncomeActivity": {
@@ -492,10 +512,14 @@
             "type": ["string", "null"],
             "description": "Employer or organization associated with the activity"
           },
-          "verification_status": {
+          "name": {
             "type": ["string", "null"],
-            "enum": ["verified", "self_attested", "pending", null],
-            "description": "Verification status of the activity"
+            "description": "Name of the school or organization associated with the activity, where employer does not apply. Recorded as the employer when employer is not supplied"
+          },
+          "verification_status": {
+            "type": "string",
+            "enum": ["verified", "self_attested", "pending"],
+            "description": "Verification status of the activity; only verified activities count toward the certification"
           }
         },
         "required": [
@@ -504,7 +528,8 @@
           "gross_income",
           "period_start",
           "period_end",
-          "source"
+          "source",
+          "verification_status"
         ]
       },
       "CertificationMemberDataActivity": {

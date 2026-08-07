@@ -30,7 +30,13 @@ class Certifications::MemberData < ValueObject
     TYPE_HOURLY = "hourly"
     TYPE_INCOME = "income"
     ACTIVITY_TYPES = [ TYPE_HOURLY, TYPE_INCOME ].freeze
-    VERIFICATION_STATUSES = %w[verified self_attested pending].freeze
+    CATEGORY_EDUCATION = "education"
+    VERIFIED = "verified"
+    VERIFICATION_STATUSES = [ VERIFIED, "self_attested", "pending" ].freeze
+
+    # One credit hour is 12.99 clock hours per month (3 hours per week over a 4.33 week month)
+    # per the Federal Register.
+    CREDIT_HOURS_MULTIPLIER = BigDecimal("12.99")
 
     attribute :type, :string
     attribute :category, :string
@@ -47,7 +53,9 @@ class Certifications::MemberData < ValueObject
 
     validates :type, presence: true, inclusion: { in: ACTIVITY_TYPES }
     validates :category, presence: true, inclusion: { in: ::Activity::ALLOWED_CATEGORIES }
-    validates :hours, presence: true, if: -> { type == TYPE_HOURLY }
+    validates :hours, presence: true, if: -> { type == TYPE_HOURLY && !education_credit_hours? }
+    validates :credit_hours, numericality: { greater_than: 0 }, allow_nil: true
+    validates :credit_hours, absence: true, unless: -> { type == TYPE_HOURLY && category == CATEGORY_EDUCATION }
     validates :gross_income, presence: true,
                              numericality: { greater_than: 0 },
                              if: -> { type == TYPE_INCOME }
@@ -57,7 +65,24 @@ class Certifications::MemberData < ValueObject
               if: -> { type == TYPE_INCOME }
     validates :period_start, presence: true
     validates :period_end, presence: true
-    validates :verification_status, inclusion: { in: VERIFICATION_STATUSES }, allow_nil: true
+    validates :verification_status, presence: true, inclusion: { in: VERIFICATION_STATUSES }
+
+    # Only verified activities count toward a certification.
+    def verified?
+      verification_status == VERIFIED
+    end
+
+    # Education activities may report credit hours in place of clock hours.
+    def education_credit_hours?
+      category == CATEGORY_EDUCATION && credit_hours.present?
+    end
+
+    # Reported hours, or their credit-hour equivalent when hours were omitted.
+    def clock_hours
+      return hours if hours.present?
+
+      credit_hours * CREDIT_HOURS_MULTIPLIER if education_credit_hours?
+    end
   end
 
   class PayrollAccount < ValueObject

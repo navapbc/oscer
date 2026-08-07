@@ -318,6 +318,40 @@ RSpec.describe "/api/certifications", type: :request do
         expect(activity.source_id).to be_nil
       end
 
+      it "creates ExternalHourlyActivity records for education activities reporting credit hours" do
+        member_data = build(:certification_member_data,
+          :with_full_name,
+          :with_account_email,
+          activities: [
+            {
+              "type" => "hourly",
+              "category" => "education",
+              "credit_hours" => 9,
+              "period_start" => certification_date.beginning_of_month,
+              "period_end" => certification_date.end_of_month,
+              "verification_status" => "verified"
+            }
+          ]
+        )
+        params = valid_json_request_attributes.merge({
+          member_id: member_id,
+          member_data: member_data.as_json
+        })
+
+        expect {
+          post api_certifications_url,
+            params: params,
+            headers: auth_headers(params),
+            as: :json
+        }.to change(ExternalHourlyActivity, :count).from(0).to(1)
+
+        expect(response).to have_http_status(:created)
+
+        activity = ExternalHourlyActivity.last
+        expect(activity.category).to eq("education")
+        expect(activity.hours).to eq(9 * Certifications::MemberData::Activity::CREDIT_HOURS_MULTIPLIER)
+      end
+
       it "creates ExternalIncomeActivity records for income activities and not ExternalHourlyActivity" do
         member_data = build(:certification_member_data,
           :with_full_name,
@@ -330,7 +364,8 @@ RSpec.describe "/api/certifications", type: :request do
               "period_start" => certification_date.beginning_of_month,
               "period_end" => certification_date.end_of_month,
               "source" => "api",
-              "employer" => "Acme Corp"
+              "employer" => "Acme Corp",
+              "verification_status" => "verified"
             }
           ]
         )
@@ -368,7 +403,8 @@ RSpec.describe "/api/certifications", type: :request do
               "category" => "employment",
               "hours" => 40,
               "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month
+              "period_end" => certification_date.end_of_month,
+              "verification_status" => "verified"
             },
             {
               "type" => "income",
@@ -376,7 +412,8 @@ RSpec.describe "/api/certifications", type: :request do
               "gross_income" => 580,
               "period_start" => certification_date.beginning_of_month,
               "period_end" => certification_date.end_of_month,
-              "source" => "api"
+              "source" => "api",
+              "verification_status" => "verified"
             }
           ]
         )
@@ -410,7 +447,8 @@ RSpec.describe "/api/certifications", type: :request do
               "category" => "employment",
               "hours" => 40,
               "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month
+              "period_end" => certification_date.end_of_month,
+              "verification_status" => "verified"
             }
           ]
         )
@@ -443,7 +481,8 @@ RSpec.describe "/api/certifications", type: :request do
               "category" => "employment",
               "hours" => -10, # Invalid: negative hours
               "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month
+              "period_end" => certification_date.end_of_month,
+              "verification_status" => "verified"
             }
           ]
         )
@@ -476,7 +515,8 @@ RSpec.describe "/api/certifications", type: :request do
               "gross_income" => 500,
               "period_start" => certification_date.beginning_of_month,
               "period_end" => certification_date.end_of_month,
-              "source" => "api"
+              "source" => "api",
+              "verification_status" => "verified"
             },
             {
               "type" => "income",
@@ -484,7 +524,8 @@ RSpec.describe "/api/certifications", type: :request do
               "gross_income" => 500,
               "period_start" => certification_date.beginning_of_month,
               "period_end" => certification_date.end_of_month,
-              "source" => "api"
+              "source" => "api",
+              "verification_status" => "verified"
             }
           ]
         )
@@ -515,14 +556,16 @@ RSpec.describe "/api/certifications", type: :request do
               "category" => "employment",
               "hours" => 40,
               "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month
+              "period_end" => certification_date.end_of_month,
+              "verification_status" => "verified"
             },
             {
               "type" => "hourly",
               "category" => "community_service",
               "hours" => 10,
               "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month
+              "period_end" => certification_date.end_of_month,
+              "verification_status" => "verified"
             }
           ]
         )
@@ -612,6 +655,81 @@ RSpec.describe "/api/certifications", type: :request do
         expect(response).to match_openapi_doc(OPENAPI_DOC)
       end
 
+      it "invalid activities - credit hours outside the education category" do
+        params = valid_json_request_attributes.merge({
+          member_data: {
+            activities: [
+              {
+                "type": "hourly",
+                "category": "employment",
+                "credit_hours": 9, # only education activities may report credit hours instead of hours
+                "period_start": Date.today.to_s,
+                "period_end": Date.today.to_s,
+                "verification_status" => "verified"
+              }
+            ]
+          }
+        })
+        post api_certifications_url,
+             params: params,
+             headers: auth_headers(params),
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.content_type).to match(a_string_including("application/json"))
+        expect(response.parsed_body["errors"]).to include(a_hash_including("field" => "member_data.activities[0].credit_hours"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "invalid activities - credit hours not greater than zero" do
+        params = valid_json_request_attributes.merge({
+          member_data: {
+            activities: [
+              {
+                "type": "hourly",
+                "category": "education",
+                "credit_hours": 0,
+                "period_start": Date.today.to_s,
+                "period_end": Date.today.to_s,
+                "verification_status": "verified"
+              }
+            ]
+          }
+        })
+        post api_certifications_url,
+             params: params,
+             headers: auth_headers(params),
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.parsed_body["errors"]).to include(a_hash_including("field" => "member_data.activities[0].credit_hours"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "invalid activities - missing verification_status" do
+        params = valid_json_request_attributes.merge({
+          member_data: {
+            activities: [
+              {
+                "type": "hourly",
+                "category": "employment",
+                "hours": 20,
+                "period_start": Date.today.to_s,
+                "period_end": Date.today.to_s
+              }
+            ]
+          }
+        })
+        post api_certifications_url,
+             params: params,
+             headers: auth_headers(params),
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.parsed_body["errors"]).to include(a_hash_including("field" => "member_data.activities[0].verification_status"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
       it "invalid activities - invalid verification_status" do
         params = valid_json_request_attributes.merge({
           member_data: {
@@ -670,7 +788,8 @@ RSpec.describe "/api/certifications", type: :request do
                 "category": "invalid_category",
                 "hours": 20,
                 "period_start": Date.today.to_s,
-                "period_end": Date.today.to_s
+                "period_end": Date.today.to_s,
+                "verification_status" => "verified"
               }
             ]
           }
@@ -693,7 +812,8 @@ RSpec.describe "/api/certifications", type: :request do
                 "type": "income",
                 "category": "employment",
                 "period_start": Date.today.to_s,
-                "period_end": Date.today.to_s
+                "period_end": Date.today.to_s,
+                "verification_status" => "verified"
               }
             ]
           }
