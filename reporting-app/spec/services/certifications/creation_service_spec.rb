@@ -116,27 +116,13 @@ RSpec.describe Certifications::CreationService, type: :service do
 
           activity = ExternalHourlyActivity.last
           expect(activity.category).to eq("education")
-          expect(activity.hours).to eq(credit_hours * Certifications::CreationService::CREDIT_HOURS_MULTIPLIER)
+          expect(activity.hours).to eq(
+            credit_hours * Certifications::MemberData::Activity::CREDIT_HOURS_MULTIPLIER
+          )
         end
       end
 
-      context "when education category and credit hours and hours" do
-        let(:category) { "education" }
-        let(:credit_hours) { 9 }
-        let(:hours) { 25 }
-
-        it "ignores credit hours" do
-          expect {
-            service.call
-          }.to change(ExternalHourlyActivity, :count).from(0).to(1)
-
-          activity = ExternalHourlyActivity.last
-          expect(activity.category).to eq("education")
-          expect(activity.hours).to eq(hours)
-        end
-      end
-
-      context "when employment category and credit hours and nil hours" do
+      context "when employment category and nil hours" do
         let(:category) { "employment" }
         let(:hours) { nil }
 

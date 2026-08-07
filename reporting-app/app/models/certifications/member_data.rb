@@ -34,6 +34,10 @@ class Certifications::MemberData < ValueObject
     VERIFIED = "verified"
     VERIFICATION_STATUSES = [ VERIFIED, "self_attested", "pending" ].freeze
 
+    # One credit hour is 12.99 clock hours per month (3 hours per week over a 4.33 week month)
+    # per the Federal Register.
+    CREDIT_HOURS_MULTIPLIER = BigDecimal("12.99")
+
     attribute :type, :string
     attribute :category, :string
     attribute :hours, :decimal
@@ -51,6 +55,7 @@ class Certifications::MemberData < ValueObject
     validates :category, presence: true, inclusion: { in: ::Activity::ALLOWED_CATEGORIES }
     validates :hours, presence: true, if: -> { type == TYPE_HOURLY && !education_credit_hours? }
     validates :credit_hours, numericality: { greater_than: 0 }, allow_nil: true
+    validates :credit_hours, absence: true, unless: -> { category == CATEGORY_EDUCATION }
     validates :gross_income, presence: true,
                              numericality: { greater_than: 0 },
                              if: -> { type == TYPE_INCOME }
@@ -67,10 +72,16 @@ class Certifications::MemberData < ValueObject
       verification_status == VERIFIED
     end
 
-    # Education activities may report credit hours in place of clock hours;
-    # Certifications::CreationService converts them.
+    # Education activities may report credit hours in place of clock hours.
     def education_credit_hours?
       category == CATEGORY_EDUCATION && credit_hours.present?
+    end
+
+    # Reported hours, or their credit-hour equivalent when hours were omitted.
+    def clock_hours
+      return hours if hours.present?
+
+      credit_hours * CREDIT_HOURS_MULTIPLIER if education_credit_hours?
     end
   end
 

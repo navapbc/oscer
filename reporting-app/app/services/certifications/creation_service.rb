@@ -5,10 +5,6 @@
 class Certifications::CreationService
   attr_reader :create_request, :certification
 
-  # One credit hour is 12.99 clock hours per month (3 hours per week over a 4.33 week month)
-  # per the Federal Register.
-  CREDIT_HOURS_MULTIPLIER = BigDecimal("12.99")
-
   def initialize(certification)
     @certification = certification
   end
@@ -52,16 +48,10 @@ class Certifications::CreationService
     hourly_activities.each do |activity_data|
       next unless activity_data.verified?
 
-      hours = if activity_data.hours.nil? && activity_data.education_credit_hours?
-                activity_data.credit_hours * CREDIT_HOURS_MULTIPLIER
-      else
-                activity_data.hours
-      end
-
       ExternalHourlyActivityService.create_entry(
         member_id: certification.member_id,
         category: activity_data.category,
-        hours: hours,
+        hours: activity_data.clock_hours,
         period_start: activity_data.period_start,
         period_end: activity_data.period_end,
         source_type: ExternalHourlyActivity::SOURCE_TYPES[:api],

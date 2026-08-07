@@ -349,7 +349,7 @@ RSpec.describe "/api/certifications", type: :request do
 
         activity = ExternalHourlyActivity.last
         expect(activity.category).to eq("education")
-        expect(activity.hours).to eq(9 * Certifications::CreationService::CREDIT_HOURS_MULTIPLIER)
+        expect(activity.hours).to eq(9 * Certifications::MemberData::Activity::CREDIT_HOURS_MULTIPLIER)
       end
 
       it "creates ExternalIncomeActivity records for income activities and not ExternalHourlyActivity" do
@@ -677,6 +677,7 @@ RSpec.describe "/api/certifications", type: :request do
 
         expect(response).to be_client_error
         expect(response.content_type).to match(a_string_including("application/json"))
+        expect(response.parsed_body["errors"]).to include(a_hash_including("field" => "member_data.activities[0].credit_hours"))
         expect(response).to match_openapi_doc(OPENAPI_DOC)
       end
 

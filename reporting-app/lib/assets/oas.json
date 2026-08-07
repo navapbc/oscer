@@ -422,7 +422,7 @@
           "credit_hours": {
             "type": ["string", "null"],
             "format": "decimal",
-            "description": "Number of credit hours for an education activity, converted to hours on intake. Ignored when hours is also supplied"
+            "description": "Number of credit hours for an education activity, converted to hours on intake. Permitted only on education activities, and ignored when hours is also supplied"
           },
           "period_start": {
             "type": "string",
