@@ -590,6 +590,95 @@ RSpec.describe "/api/certifications", type: :request do
       end
     end
 
+    context "when a duplicate request is submitted" do
+      let(:application_date) { Date.new(2025, 10, 16) }
+      let(:duplicate_attributes) {
+        valid_json_request_attributes.merge(
+          member_id: "dup-member",
+          case_number: "C-DUP-1",
+          application_date: application_date.to_s
+        )
+      }
+
+      it "returns the existing certification instead of creating another" do
+        post api_certifications_url,
+             params: duplicate_attributes,
+             headers: auth_headers(duplicate_attributes),
+             as: :json
+        expect(response).to have_http_status(:created)
+        existing_id = response.parsed_body[:id]
+        expect(Certification.find(existing_id).application_date).to eq(application_date)
+
+        expect {
+          post api_certifications_url,
+               params: duplicate_attributes,
+               headers: auth_headers(duplicate_attributes),
+               as: :json
+        }.not_to change(Certification, :count)
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body[:id]).to eq(existing_id)
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "returns the existing certification even when respond-async is requested" do
+        post api_certifications_url,
+             params: duplicate_attributes,
+             headers: auth_headers(duplicate_attributes),
+             as: :json
+        existing_id = response.parsed_body[:id]
+
+        expect {
+          post api_certifications_url,
+               params: duplicate_attributes,
+               headers: auth_headers(duplicate_attributes).merge({ 'prefer': 'respond-async' }),
+               as: :json
+        }.not_to change(Certification, :count)
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body[:id]).to eq(existing_id)
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "creates a new certification when the application_date differs" do
+        post api_certifications_url,
+             params: duplicate_attributes,
+             headers: auth_headers(duplicate_attributes),
+             as: :json
+        expect(response).to have_http_status(:created)
+
+        differing_attributes = duplicate_attributes.merge(application_date: (application_date + 1).to_s)
+        expect {
+          post api_certifications_url,
+               params: differing_attributes,
+               headers: auth_headers(differing_attributes),
+               as: :json
+        }.to change(Certification, :count).by(1)
+
+        expect(response).to have_http_status(:created)
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "creates a new certification when no application_date is provided" do
+        params = valid_json_request_attributes.merge(member_id: "no-app-date", case_number: "C-NAD")
+
+        post api_certifications_url,
+             params: params,
+             headers: auth_headers(params),
+             as: :json
+        expect(response).to have_http_status(:created)
+
+        expect {
+          post api_certifications_url,
+               params: params,
+               headers: auth_headers(params),
+               as: :json
+        }.to change(Certification, :count).by(1)
+
+        expect(response).to have_http_status(:created)
+      end
+    end
+
     context "with invalid parameters" do
       it "does not create a new Certification and renders response" do
         params = invalid_request_attributes

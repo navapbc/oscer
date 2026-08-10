@@ -60,6 +60,17 @@ class Certification < ApplicationRecord
     ).where("certification_requirements->>'certification_date' = ?", certification_date.to_s).exists?
   end
 
+  # Find an existing certification matching the API duplicate key
+  # (member_id + case_number + application_date). Used to make
+  # POST /api/certifications idempotent for state-system integrations.
+  # Returns nil if any key component is blank so unrelated records with
+  # missing values are never treated as duplicates.
+  def self.find_duplicate(member_id:, case_number:, application_date:)
+    return nil if member_id.blank? || case_number.blank? || application_date.blank?
+
+    where(member_id:, case_number:, application_date:).order(:created_at).first
+  end
+
   # Find certifications created via batch upload
   def self.from_batch_upload(batch_upload_id)
     joins("INNER JOIN certification_origins ON certifications.id = certification_origins.certification_id")

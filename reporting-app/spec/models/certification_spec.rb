@@ -107,6 +107,59 @@ RSpec.describe Certification, type: :model do
     end
   end
 
+  describe '.find_duplicate' do
+    let(:application_date) { Date.new(2025, 3, 1) }
+    let!(:certification) do
+      create(:certification,
+        member_id: "M123",
+        case_number: "C-123",
+        application_date: application_date
+      )
+    end
+
+    it 'returns the matching certification for the full compound key' do
+      result = described_class.find_duplicate(
+        member_id: "M123",
+        case_number: "C-123",
+        application_date: application_date
+      )
+
+      expect(result).to eq(certification)
+    end
+
+    it 'returns nil when the application_date does not match' do
+      result = described_class.find_duplicate(
+        member_id: "M123",
+        case_number: "C-123",
+        application_date: application_date + 1
+      )
+
+      expect(result).to be_nil
+    end
+
+    it 'returns nil when member_id does not match' do
+      result = described_class.find_duplicate(
+        member_id: "M000",
+        case_number: "C-123",
+        application_date: application_date
+      )
+
+      expect(result).to be_nil
+    end
+
+    it 'returns nil when any key component is blank' do
+      expect(
+        described_class.find_duplicate(member_id: "M123", case_number: "C-123", application_date: nil)
+      ).to be_nil
+      expect(
+        described_class.find_duplicate(member_id: nil, case_number: "C-123", application_date: application_date)
+      ).to be_nil
+      expect(
+        described_class.find_duplicate(member_id: "M123", case_number: "", application_date: application_date)
+      ).to be_nil
+    end
+  end
+
   describe '.from_batch_upload' do
     let(:user) { create(:user) }
     let(:batch_upload) { create(:certification_batch_upload, uploader: user) }
