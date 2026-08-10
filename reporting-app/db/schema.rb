@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_29_133636) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_10_164108) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -144,6 +144,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_29_133636) do
     t.date "application_date"
     t.jsonb "household_data"
     t.index ["case_number"], name: "index_certifications_on_case_number"
+    t.index ["member_id", "case_number", "application_date"], name: "index_certifications_on_member_case_application_date", unique: true, where: "((member_id IS NOT NULL) AND (case_number IS NOT NULL) AND (application_date IS NOT NULL))"
     t.index ["member_id"], name: "index_certifications_on_member_id"
   end
 
