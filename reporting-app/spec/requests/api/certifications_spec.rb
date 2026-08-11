@@ -692,7 +692,7 @@ RSpec.describe "/api/certifications", type: :request do
         expect(response).to match_openapi_doc(OPENAPI_DOC)
       end
 
-      it "returns the existing certification when both requests omit application_date" do
+      it "creates a new certification when no application_date is provided" do
         params = valid_json_request_attributes.except(:application_date).merge(
           member_id: "no-app-date",
           case_number: "C-NAD"
@@ -703,17 +703,15 @@ RSpec.describe "/api/certifications", type: :request do
              headers: auth_headers(params),
              as: :json
         expect(response).to have_http_status(:created)
-        existing_id = response.parsed_body[:id]
 
         expect {
           post api_certifications_url,
                params: params,
                headers: auth_headers(params),
                as: :json
-        }.not_to change(Certification, :count)
+        }.to change(Certification, :count).by(1)
 
-        expect(response).to have_http_status(:ok)
-        expect(response.parsed_body[:id]).to eq(existing_id)
+        expect(response).to have_http_status(:created)
         expect(response).to match_openapi_doc(OPENAPI_DOC)
       end
 
