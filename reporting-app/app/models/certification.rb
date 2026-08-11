@@ -12,6 +12,7 @@ class Certification < ApplicationRecord
 
   attribute :certification_requirements, Certifications::Requirements.to_type
   attribute :member_data, Certifications::MemberData.to_type
+  attribute :household_data, Certifications::HouseholdData.to_type
 
   # TODO: some of this should be required, but leaving it open at the moment
   # validates :member_id, presence: true

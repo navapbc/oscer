@@ -590,6 +590,59 @@ RSpec.describe "/api/certifications", type: :request do
       end
     end
 
+    context "with household data that create ExternalHourlyActivity records" do
+      let(:member_id) { "member-789" }
+      let(:certification_date) { Date.new(2025, 12, 25) }
+
+      it "creates ExternalIncomeActivity records for income activities and not ExternalHourlyActivity" do
+        member_data = build(:certification_member_data,
+          :with_full_name,
+          :with_account_email
+        )
+        household_data = {
+          members: [
+            {
+              name: {
+                first: "Elizabeth",
+                middle: "Frances",
+                last: "Doe",
+                suffix: ""
+              },
+              ssn: 'not-member-1',
+              date_of_birth: "1979-09-01",
+              gross_incomes: [
+                "gross_income" => 620,
+                "period_start" => certification_date.beginning_of_month,
+                "period_end" => certification_date.end_of_month
+              ]
+            }
+          ]
+        }
+        params = valid_json_request_attributes.merge({
+          member_id: member_id,
+          member_data: member_data.as_json,
+          household_data: household_data
+        })
+
+        expect {
+          post api_certifications_url,
+            params: params,
+            headers: auth_headers(params),
+            as: :json
+        }.to change(ExternalIncomeActivity, :count).from(0).to(1)
+          .and(change(Certification, :count).from(0).to(1))
+
+        expect(response).to have_http_status(:created)
+        expect(ExternalHourlyActivity.where(member_id: member_id)).to be_empty
+
+        expect(ExternalIncomeActivity.pluck(:member_id, :category, :gross_income, :source_type, :period_start, :period_end)).to eq(
+          [
+            [ member_id, "employment", 620, "api", certification_date.beginning_of_month, certification_date.end_of_month ]
+          ]
+        )
+      end
+    end
+
     context "with invalid parameters" do
       it "does not create a new Certification and renders response" do
         params = invalid_request_attributes

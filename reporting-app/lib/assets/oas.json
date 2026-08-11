@@ -653,12 +653,34 @@
             "format": "date",
             "description": "The date of birth of the household member"
           },
-          "monthly_income_dollars_total": {
-            "type": "string",
-            "format": "decimal",
-            "description": "Monthly total income of the household member"
+          "gross_incomes": {
+            "type": ["array", "null"],
+	    "items": {
+	      "$ref": "#/components/schemas/CertificationHouseholdDataMemberIncome"
+	    }
           }
 	}
+      },
+      "CertificationHouseholdDataMemberIncome": {
+        "type": "object",
+        "description": "Data about a member of a household",
+        "properties": {
+	  "gross_income": {
+	    "type": "string",
+	    "format": "decimal"
+	  },
+	  "period_start": {
+	    "type": "string",
+            "format": "date"
+	  },
+	  "period_end": {
+	    "type": "string",
+            "format": "date"
+	  }
+	},
+	"required": [
+	  "gross_income"
+	]
       },
       "CertificationOutcome": {
         "type": "object",

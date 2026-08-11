@@ -229,12 +229,12 @@ RSpec.describe Certifications::CreationService, type: :service do
     end
 
     context "with household data" do
-      let(:member_ssn) { 'member-ssn' }
+      let(:member_ssn) { "987654321" }
       let(:member_data) do
         build(:certification_member_data,
           :with_full_name,
           :with_account_email,
-          ssn: member_ssn)
+          ssn: Strata::TaxId.new(member_ssn))
       end
       let(:household_data) do
         {
@@ -248,7 +248,13 @@ RSpec.describe Certifications::CreationService, type: :service do
               },
               ssn: 'not-member-1',
               date_of_birth: "1979-09-01",
-              monthly_income_dollars_total: "350.00"
+              gross_incomes: [
+                {
+                  gross_income:  "250.00",
+                  period_start: "2025-11-01",
+                  period_end: "2025-11-30"
+                }
+              ]
             },
             {
               name: {
@@ -259,7 +265,18 @@ RSpec.describe Certifications::CreationService, type: :service do
               },
               ssn: 'not-member-2',
               date_of_birth: "1983-10-02",
-              monthly_income_dollars_total: "450.00"
+              gross_incomes: [
+                {
+                  gross_income:  "450.00",
+                  period_start: "2025-10-01",
+                  period_end: "2025-10-31"
+                },
+                {
+                  gross_income:  "350.00",
+                  period_start: "2025-11-01",
+                  period_end: "2025-11-30"
+                }
+              ]
             }
           ]
         }
@@ -274,16 +291,28 @@ RSpec.describe Certifications::CreationService, type: :service do
           },
           ssn: member_ssn,
           date_of_birth: "1967-01-22",
-          monthly_income_dollars_total: "150.00"
+          gross_incomes: [
+            {
+              gross_income:  "150.00",
+              period_start: "2025-11-01",
+              period_end: "2025-11-30"
+            }
+          ]
         }
       end
 
-      it "creates ExternalIncomeActivity for each hosehould member" do
+      it "creates ExternalIncomeActivity for each hosehould member's gross monthly income" do
         expect {
           service.call
-        }.to change(ExternalHourlyActivity, :count).from(0).to(2)
+        }.to change(ExternalIncomeActivity, :count).from(0).to(3)
       end
-      it "does not create ExternalIncomeActivity for applicant"
+
+      it "does not create ExternalIncomeActivity for applicant" do
+        household_data[:members] << applicant_block
+        expect {
+          service.call
+        }.to change(ExternalIncomeActivity, :count).from(0).to(3)
+      end
     end
 
     context "with mixed hourly and income activities" do
