@@ -140,7 +140,8 @@ FactoryBot.define do
             "period_start": cert_date.beginning_of_month,
             "period_end": cert_date.end_of_month,
             "source": "api",
-            "employer": "Acme Corp"
+            "employer": "Acme Corp",
+            "verification_status": "verified"
           }
         ]
       }

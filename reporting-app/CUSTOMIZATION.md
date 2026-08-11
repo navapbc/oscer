@@ -97,10 +97,24 @@ en:
 See [`config/locales/overrides/README.md`](config/locales/overrides/README.md)
 for layout conventions.
 
-**Visual theming.** Add styles to `app/assets/stylesheets/_overrides.scss`
-(cascades after USWDS, so it wins) for most branding: colors, fonts, logo,
-spacing. Use `app/assets/stylesheets/custom.scss` only when you need to replace
-the whole stylesheet. Full how-to (CSS, view, and mailer branding):
+**Visual theming.** Branding cascades after USWDS, so your rules win. Three
+SCSS hooks let you scope a change to one surface or both:
+
+| Hook | Applies to | Builds into | Loaded by |
+|---|---|---|---|
+| `app/assets/stylesheets/_overrides.scss` | **Both** client and staff | `application.css` | every layout |
+| `app/assets/stylesheets/_client_overrides.scss` | **Client only** (member-facing) | `client.css` | `layouts/application_base` |
+| `app/assets/stylesheets/_staff_overrides.scss` | **Staff only** | `staff.css` | `layouts/oscer_staff` |
+
+Both `client.css` and `staff.css` load *after* the shared `application.css`, so
+a surface hook always wins over a shared rule for that surface. Use the
+narrowest hook that expresses the change: this is what guarantees a client-only
+restyle can't bleed into the staff UI and vice versa. Reserve `_overrides.scss`
+for branding that is genuinely app-wide (a shared brand color, the logo).
+
+Use `app/assets/stylesheets/custom.scss` only when you need to replace the whole
+stylesheet; note this full-reskin hatch is currently **shared** across both
+surfaces. Full how-to (CSS, view, and mailer branding):
 [`docs/how-to-guides/branding.md`](https://github.com/navapbc/oscer/blob/main/docs/how-to-guides/branding.md).
 
 ## Extension points
@@ -186,7 +200,8 @@ New models exposed to controllers also need a Pundit policy
 
 | I want to… | Mechanism | Where |
 |---|---|---|
-| Change logo, colors, fonts | Locales + branding | `app/assets/stylesheets/_overrides.scss` (or `custom.scss`) |
+| Change logo, colors, fonts (both surfaces) | Locales + branding | `app/assets/stylesheets/_overrides.scss` (or `custom.scss`) |
+| Restyle only the client UI / only the staff UI | Locales + branding | `_client_overrides.scss` / `_staff_overrides.scss` |
 | Rename the program / change member-facing copy | Locales + branding | `config/locales/overrides/` |
 | Override an email template | Branding / extension points | `branding.md` (mailer view) or `app/views/overrides/member_mailer/` |
 | Adjust the exemption list | Config | `config/custom/exemption_types.yml` |
@@ -209,8 +224,9 @@ categories of files determine whether that stays clean:
    `config/locales/overrides/`. These are new files OSCER never ships, so a sync
    never overwrites them. Always clean.
 2. **Deployment-owned config and branding hooks**: `config/custom/*.yml` and
-   the SCSS hooks (`_overrides.scss`, `custom.scss`). OSCER ships these as empty
-   or starter files and rarely edits them, so your edits survive a sync in
+   the SCSS hooks (`_overrides.scss`, `_client_overrides.scss`,
+   `_staff_overrides.scss`, `custom.scss`). OSCER ships these as empty or
+   starter files and rarely edits them, so your edits survive a sync in
    practice. If a future upstream change does touch one, you re-apply your edit
    the next time you sync.
 3. **OSCER-owned files everywhere else**: base views, models, services, and the
