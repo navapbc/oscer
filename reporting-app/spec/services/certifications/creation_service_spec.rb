@@ -6,12 +6,14 @@ RSpec.describe Certifications::CreationService, type: :service do
   let(:member_id) { "member-123" }
   let(:case_number) { "case-456" }
   let(:certification_date) { Date.new(2025, 12, 25) }
+  let(:household_data) { {} }
 
   let(:base_params) do
     {
       member_id: member_id,
       case_number: case_number,
       member_data: member_data.as_json,
+      household_data: household_data.as_json,
       certification_requirements: build(:certification_certification_requirement_params,
         :with_direct_params,
         certification_date: certification_date
@@ -224,6 +226,64 @@ RSpec.describe Certifications::CreationService, type: :service do
           }.not_to change(ExternalIncomeActivity, :count)
         end
       end
+    end
+
+    context "with household data" do
+      let(:member_ssn) { 'member-ssn' }
+      let(:member_data) do
+        build(:certification_member_data,
+          :with_full_name,
+          :with_account_email,
+          ssn: member_ssn)
+      end
+      let(:household_data) do
+        {
+          members: [
+            {
+              name: {
+                first: "Elizabeth",
+                middle: "Frances",
+                last: "Doe",
+                suffix: ""
+              },
+              ssn: 'not-member-1',
+              date_of_birth: "1979-09-01",
+              monthly_income_dollars_total: "350.00"
+            },
+            {
+              name: {
+                first: "Richard",
+                middle: "Marcus",
+                last: "Doe",
+                suffix: ""
+              },
+              ssn: 'not-member-2',
+              date_of_birth: "1983-10-02",
+              monthly_income_dollars_total: "450.00"
+            }
+          ]
+        }
+      end
+      let(:applicant_block) do
+        {
+          name: {
+            first: "Kitty",
+            middle: "Gwendolyn",
+            last: "Doe",
+            suffix: ""
+          },
+          ssn: member_ssn,
+          date_of_birth: "1967-01-22",
+          monthly_income_dollars_total: "150.00"
+        }
+      end
+
+      it "creates ExternalIncomeActivity for each hosehould member" do
+        expect {
+          service.call
+        }.to change(ExternalHourlyActivity, :count).from(0).to(2)
+      end
+      it "does not create ExternalIncomeActivity for applicant"
     end
 
     context "with mixed hourly and income activities" do
