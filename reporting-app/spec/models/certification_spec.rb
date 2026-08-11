@@ -147,10 +147,33 @@ RSpec.describe Certification, type: :model do
       expect(result).to be_nil
     end
 
-    it 'returns nil when any key component is blank' do
-      expect(
-        described_class.find_duplicate(member_id: "M123", case_number: "C-123", application_date: nil)
-      ).to be_nil
+    it 'returns the matching certification when both application_dates are blank' do
+      blank_date_cert = create(:certification,
+        member_id: "M456",
+        case_number: "C-456",
+        application_date: nil
+      )
+
+      result = described_class.find_duplicate(
+        member_id: "M456",
+        case_number: "C-456",
+        application_date: nil
+      )
+
+      expect(result).to eq(blank_date_cert)
+    end
+
+    it 'does not treat a blank application_date as a match for a dated certification' do
+      result = described_class.find_duplicate(
+        member_id: "M123",
+        case_number: "C-123",
+        application_date: nil
+      )
+
+      expect(result).to be_nil
+    end
+
+    it 'returns nil when member_id or case_number is blank' do
       expect(
         described_class.find_duplicate(member_id: nil, case_number: "C-123", application_date: application_date)
       ).to be_nil

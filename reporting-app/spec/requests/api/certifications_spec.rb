@@ -9,6 +9,7 @@ RSpec.describe "/api/certifications", type: :request do
   let(:valid_json_request_attributes) {
     {
       member_id: "foobar",
+      application_date: "2025-10-16",
       member_data: {
         account_email: member_user.email,
         name: {
@@ -621,6 +622,38 @@ RSpec.describe "/api/certifications", type: :request do
         expect(response).to match_openapi_doc(OPENAPI_DOC)
       end
 
+      it "returns the existing certification's outcome status" do
+        allow(Strata::EventManager).to receive(:publish)
+
+        post api_certifications_url,
+             params: duplicate_attributes,
+             headers: auth_headers(duplicate_attributes),
+             as: :json
+        expect(response).to have_http_status(:created)
+        existing_id = response.parsed_body[:id]
+
+        create(:determination,
+               subject: Certification.find(existing_id),
+               outcome: "compliant",
+               decision_method: "automated",
+               reasons: [ "hours_reported_compliant" ])
+
+        expect {
+          post api_certifications_url,
+               params: duplicate_attributes,
+               headers: auth_headers(duplicate_attributes),
+               as: :json
+        }.not_to change(Certification, :count)
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body[:id]).to eq(existing_id)
+        expect(response.parsed_body[:outcome]).to include(
+          "status" => "compliant",
+          "reason" => "hours_reported_compliant"
+        )
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
       it "returns the existing certification even when respond-async is requested" do
         post api_certifications_url,
              params: duplicate_attributes,
@@ -659,23 +692,48 @@ RSpec.describe "/api/certifications", type: :request do
         expect(response).to match_openapi_doc(OPENAPI_DOC)
       end
 
-      it "creates a new certification when no application_date is provided" do
-        params = valid_json_request_attributes.merge(member_id: "no-app-date", case_number: "C-NAD")
+      it "returns the existing certification when both requests omit application_date" do
+        params = valid_json_request_attributes.except(:application_date).merge(
+          member_id: "no-app-date",
+          case_number: "C-NAD"
+        )
 
         post api_certifications_url,
              params: params,
              headers: auth_headers(params),
              as: :json
         expect(response).to have_http_status(:created)
+        existing_id = response.parsed_body[:id]
 
         expect {
           post api_certifications_url,
                params: params,
                headers: auth_headers(params),
                as: :json
+        }.not_to change(Certification, :count)
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body[:id]).to eq(existing_id)
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "creates a new certification when a dated request is replayed without application_date" do
+        post api_certifications_url,
+             params: duplicate_attributes,
+             headers: auth_headers(duplicate_attributes),
+             as: :json
+        expect(response).to have_http_status(:created)
+
+        undated_attributes = duplicate_attributes.except(:application_date)
+        expect {
+          post api_certifications_url,
+               params: undated_attributes,
+               headers: auth_headers(undated_attributes),
+               as: :json
         }.to change(Certification, :count).by(1)
 
         expect(response).to have_http_status(:created)
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
       end
     end
 

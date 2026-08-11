@@ -63,10 +63,10 @@ class Certification < ApplicationRecord
   # Find an existing certification matching the API duplicate key
   # (member_id + case_number + application_date). Used to make
   # POST /api/certifications idempotent for state-system integrations.
-  # Returns nil if any key component is blank so unrelated records with
-  # missing values are never treated as duplicates.
+  # A blank application_date matches other rows that also have a blank
+  # application_date. member_id and case_number are required.
   def self.find_duplicate(member_id:, case_number:, application_date:)
-    return nil if member_id.blank? || case_number.blank? || application_date.blank?
+    return nil if member_id.blank? || case_number.blank?
 
     where(member_id:, case_number:, application_date:).order(:created_at).first
   end
