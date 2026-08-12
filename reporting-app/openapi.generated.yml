@@ -599,7 +599,8 @@ components:
           type:
           - string
           - 'null'
-          description: The Social Security Number of the household member
+          description: The nine-digit Social Security Number of the household member.
+            Dashes are accepted and stripped.
         date_of_birth:
           type:
           - string
@@ -610,23 +611,30 @@ components:
           type:
           - array
           - 'null'
+          description: The gross income reported for the household member, one entry
+            per period
           items:
             "$ref": "#/components/schemas/CertificationHouseholdDataMemberIncome"
     CertificationHouseholdDataMemberIncome:
       type: object
-      description: Data about a member of a household
+      description: Gross income reported for a household member over a single period
       properties:
         gross_income:
           type: string
           format: decimal
+          description: Gross income for the period, greater than zero
         period_start:
           type: string
           format: date
+          description: The first day of the period the income covers
         period_end:
           type: string
           format: date
+          description: The last day of the period the income covers
       required:
       - gross_income
+      - period_start
+      - period_end
     CertificationOutcome:
       type: object
       properties:
@@ -769,67 +777,67 @@ components:
       required:
       - status
   responses:
-    d9ae02283babead5b4bb36b016fd7344:
+    214332e7bca4a6651db6409970a6c604:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    72b587ff3405c12505a24566b8016f05:
+    07b265af10c68d7d0bab3a962b244d06:
       description: Accepted
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
-    b19198b8b0d5e0254e49b549e2643ffa:
+    1e037e490291e7f9bc9eb2b14651d110:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    6520138f5a49db71136d370095fbb054:
+    6f5496e4e5dabe264cb583310dda9867:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    e4faae37ebd1a026c714f5111fd8dc0c:
+    2c776ce5a653fb96fea7456c7137c9cf:
       description: Accepted
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
-    43696478b60fd0c04ae2a3098655deca:
+    04fa18fcb54aa36af1a1665e9fb32e3d:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    fad5d4658a37840b3a9a240edfa789c5:
+    1d4a4d4b22ab18e0213d3d8889ee65d0:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    15bc8e52db53aa12149692bf6f70bc3f:
+    459c15474cb276217fa84f7746f998ba:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    72ead65c0e91fdc92b5f4666d8fc90ba:
+    d149539305497cd7c66f5bf80778aa99:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    3bb387521d0b212234d7c12785ed4164:
+    e20b35600b576a5ab041797433b78ebb:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    0e9dc8b5b5a0a9a4a61640a3d137a8f4:
+    18c0e6be431681bc602cca444b2185a5:
       description: Response
       content:
         application/json:
@@ -861,7 +869,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    75bb25e0c924754fed98bfe4e266d917:
+    4eac23432dfedf31e2f2a1bc82b525fd:
       description: The Certification data.
       content:
         application/json:
@@ -954,11 +962,11 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/d9ae02283babead5b4bb36b016fd7344"
+          "$ref": "#/components/responses/214332e7bca4a6651db6409970a6c604"
         '202':
-          "$ref": "#/components/responses/72b587ff3405c12505a24566b8016f05"
+          "$ref": "#/components/responses/07b265af10c68d7d0bab3a962b244d06"
         '404':
-          "$ref": "#/components/responses/b19198b8b0d5e0254e49b549e2643ffa"
+          "$ref": "#/components/responses/1e037e490291e7f9bc9eb2b14651d110"
       security:
       - hmac: []
       deprecated: false
@@ -972,16 +980,16 @@ paths:
       parameters:
       - "$ref": "#/components/parameters/4f7cce241e43c9b4680b65e2612ab599"
       requestBody:
-        "$ref": "#/components/requestBodies/75bb25e0c924754fed98bfe4e266d917"
+        "$ref": "#/components/requestBodies/4eac23432dfedf31e2f2a1bc82b525fd"
       responses:
         '201':
-          "$ref": "#/components/responses/6520138f5a49db71136d370095fbb054"
+          "$ref": "#/components/responses/6f5496e4e5dabe264cb583310dda9867"
         '202':
-          "$ref": "#/components/responses/e4faae37ebd1a026c714f5111fd8dc0c"
+          "$ref": "#/components/responses/2c776ce5a653fb96fea7456c7137c9cf"
         '400':
-          "$ref": "#/components/responses/43696478b60fd0c04ae2a3098655deca"
+          "$ref": "#/components/responses/04fa18fcb54aa36af1a1665e9fb32e3d"
         '422':
-          "$ref": "#/components/responses/fad5d4658a37840b3a9a240edfa789c5"
+          "$ref": "#/components/responses/1d4a4d4b22ab18e0213d3d8889ee65d0"
       security:
       - hmac: []
       deprecated: false
@@ -996,9 +1004,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/15bc8e52db53aa12149692bf6f70bc3f"
+          "$ref": "#/components/responses/459c15474cb276217fa84f7746f998ba"
         '404':
-          "$ref": "#/components/responses/72ead65c0e91fdc92b5f4666d8fc90ba"
+          "$ref": "#/components/responses/d149539305497cd7c66f5bf80778aa99"
       security:
       - hmac: []
       deprecated: false
@@ -1033,9 +1041,9 @@ paths:
       operationId: GET_api_health
       responses:
         '200':
-          "$ref": "#/components/responses/3bb387521d0b212234d7c12785ed4164"
+          "$ref": "#/components/responses/e20b35600b576a5ab041797433b78ebb"
         '503':
-          "$ref": "#/components/responses/0e9dc8b5b5a0a9a4a61640a3d137a8f4"
+          "$ref": "#/components/responses/18c0e6be431681bc602cca444b2185a5"
       security:
       - hmac: []
       deprecated: false

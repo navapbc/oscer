@@ -229,12 +229,15 @@ RSpec.describe Certifications::CreationService, type: :service do
     end
 
     context "with household data" do
-      let(:member_ssn) { "987654321" }
+      let(:member_ssn) { "000000001" }
+      let(:member_name) { { first: "Kitty", middle: "Gwendolyn", last: "Doe", suffix: "" } }
+      let(:member_date_of_birth) { "1967-01-22" }
       let(:member_data) do
         build(:certification_member_data,
-          :with_full_name,
           :with_account_email,
-          ssn: Strata::TaxId.new(member_ssn))
+          ssn: member_ssn,
+          name: member_name,
+          date_of_birth: member_date_of_birth)
       end
       let(:household_data) do
         {
@@ -246,7 +249,7 @@ RSpec.describe Certifications::CreationService, type: :service do
                 last: "Doe",
                 suffix: ""
               },
-              ssn: 'not-member-1',
+              ssn: "000000002",
               date_of_birth: "1979-09-01",
               gross_incomes: [
                 {
@@ -263,7 +266,7 @@ RSpec.describe Certifications::CreationService, type: :service do
                 last: "Doe",
                 suffix: ""
               },
-              ssn: 'not-member-2',
+              ssn: "000000003",
               date_of_birth: "1983-10-02",
               gross_incomes: [
                 {
@@ -281,16 +284,12 @@ RSpec.describe Certifications::CreationService, type: :service do
           ]
         }
       end
+      let(:applicant_ssn) { member_ssn }
       let(:applicant_block) do
         {
-          name: {
-            first: "Kitty",
-            middle: "Gwendolyn",
-            last: "Doe",
-            suffix: ""
-          },
-          ssn: member_ssn,
-          date_of_birth: "1967-01-22",
+          name: member_name,
+          ssn: applicant_ssn,
+          date_of_birth: member_date_of_birth,
           gross_incomes: [
             {
               gross_income:  "150.00",
@@ -301,17 +300,40 @@ RSpec.describe Certifications::CreationService, type: :service do
         }
       end
 
-      it "creates ExternalIncomeActivity for each hosehould member's gross monthly income" do
+      it "creates an ExternalIncomeActivity for each household member's gross income" do
         expect {
           service.call
         }.to change(ExternalIncomeActivity, :count).from(0).to(3)
+
+        expect(ExternalIncomeActivity.pluck(:gross_income)).to contain_exactly(250, 350, 450)
       end
 
-      it "does not create ExternalIncomeActivity for applicant" do
-        household_data[:members] << applicant_block
-        expect {
-          service.call
-        }.to change(ExternalIncomeActivity, :count).from(0).to(3)
+      shared_examples "skips the applicant" do
+        before { household_data[:members] << applicant_block }
+
+        it "does not create an ExternalIncomeActivity for the applicant" do
+          expect {
+            service.call
+          }.to change(ExternalIncomeActivity, :count).from(0).to(3)
+
+          expect(ExternalIncomeActivity.pluck(:gross_income)).to contain_exactly(250, 350, 450)
+        end
+      end
+
+      context "when the applicant is also listed as a household member" do
+        it_behaves_like "skips the applicant"
+      end
+
+      context "when the applicant is listed with a dash-formatted tax ID" do
+        let(:applicant_ssn) { "000-00-0001" }
+
+        it_behaves_like "skips the applicant"
+      end
+
+      context "when the applicant is listed without a tax ID" do
+        let(:applicant_ssn) { nil }
+
+        it_behaves_like "skips the applicant"
       end
     end
 

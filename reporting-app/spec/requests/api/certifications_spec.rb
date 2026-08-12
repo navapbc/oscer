@@ -590,11 +590,11 @@ RSpec.describe "/api/certifications", type: :request do
       end
     end
 
-    context "with household data that create ExternalHourlyActivity records" do
+    context "with household data that creates ExternalIncomeActivity records" do
       let(:member_id) { "member-789" }
       let(:certification_date) { Date.new(2025, 12, 25) }
 
-      it "creates ExternalIncomeActivity records for income activities and not ExternalHourlyActivity" do
+      it "creates ExternalIncomeActivity records for household income and not ExternalHourlyActivity" do
         member_data = build(:certification_member_data,
           :with_full_name,
           :with_account_email
@@ -608,12 +608,14 @@ RSpec.describe "/api/certifications", type: :request do
                 last: "Doe",
                 suffix: ""
               },
-              ssn: 'not-member-1',
+              ssn: "000000002",
               date_of_birth: "1979-09-01",
               gross_incomes: [
-                "gross_income" => 620,
-                "period_start" => certification_date.beginning_of_month,
-                "period_end" => certification_date.end_of_month
+                {
+                  "gross_income" => 620,
+                  "period_start" => certification_date.beginning_of_month,
+                  "period_end" => certification_date.end_of_month
+                }
               ]
             }
           ]
@@ -878,6 +880,60 @@ RSpec.describe "/api/certifications", type: :request do
 
         expect(response).to be_client_error
         expect(response.content_type).to match(a_string_including("application/json"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "invalid household data - gross income without a period" do
+        params = valid_json_request_attributes.merge({
+          household_data: {
+            members: [
+              {
+                "ssn" => "000000002",
+                "gross_incomes" => [ { "gross_income" => 620 } ]
+              }
+            ]
+          }
+        })
+        expect {
+          post api_certifications_url,
+               params: params,
+               headers: auth_headers(params),
+               as: :json
+        }.not_to change(ExternalIncomeActivity, :count)
+
+        expect(response).to be_client_error
+        expect(response.parsed_body["errors"]).to include(
+          a_hash_including("field" => "household_data.members[0].gross_incomes[0].period_start")
+        )
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "invalid household data - malformed ssn" do
+        params = valid_json_request_attributes.merge({
+          household_data: {
+            members: [
+              {
+                "ssn" => "not-a-tax-id",
+                "gross_incomes" => [
+                  {
+                    "gross_income" => 620,
+                    "period_start" => Date.today.beginning_of_month.to_s,
+                    "period_end" => Date.today.end_of_month.to_s
+                  }
+                ]
+              }
+            ]
+          }
+        })
+        post api_certifications_url,
+             params: params,
+             headers: auth_headers(params),
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.parsed_body["errors"]).to include(
+          a_hash_including("field" => "household_data.members[0].ssn")
+        )
         expect(response).to match_openapi_doc(OPENAPI_DOC)
       end
     end

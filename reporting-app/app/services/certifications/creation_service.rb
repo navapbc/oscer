@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 # Service for creating certifications
-# Handles creation of ExternalHourlyActivity records and CertificationOrigin tracking
+# Handles creation of ExternalHourlyActivity and ExternalIncomeActivity records
+# (from member and household data) and CertificationOrigin tracking
 class Certifications::CreationService
   attr_reader :create_request, :certification
 
@@ -85,7 +86,7 @@ class Certifications::CreationService
 
     if certification.household_data&.members.present?
       certification.household_data.members.each do |household_member|
-        next if household_member.ssn && household_member.ssn == certification.member_data&.ssn
+        next if household_member.same_person_as?(certification.member_data)
         if household_member.gross_incomes.present?
           household_member.gross_incomes.each do |gross_income|
             ExternalIncomeActivityService.create_entry(
@@ -94,7 +95,7 @@ class Certifications::CreationService
               gross_income: gross_income.gross_income,
               period_start: gross_income.period_start,
               period_end: gross_income.period_end,
-              source_type: CertificationOrigin::SOURCE_TYPE_API,
+              source_type: ExternalIncomeActivity::SOURCE_TYPES[:api],
               source_id: nil,
               reported_at: Time.current,
               recalculate_income_compliance: false

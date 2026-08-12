@@ -108,7 +108,7 @@ class Certifications::MemberData < ValueObject
 
   attribute :account_email, :string
   attribute :va_icn, :string
-  attribute :ssn, ActiveModel::Type::Json.new(Strata::TaxId)
+  strata_attribute :ssn, :tax_id
   attribute :contact, ContactData.to_type
   attribute :name, ActiveModel::Type::Json.new(Strata::Name)
   attribute :address, ActiveModel::Type::Json.new(Strata::Address)
