@@ -36,6 +36,7 @@ class Api::CertificationsController < ApiController
   # @request_body_example Without explicit months and due date [Reference:#/components/schemas/CertificationCreateRequestBody/examples/without_explicit_months_that_can_be_certified_and_due_date]
   # @request_body_example Certification type [Reference:#/components/schemas/CertificationCreateRequestBody/examples/certification_type]
   # @response Created Certification.(201) [Reference:#/components/schemas/CertificationResponseBody]
+  # @response Existing Certification returned for a duplicate request.(200) [Reference:#/components/schemas/CertificationResponseBody]
   # @response Accepted(202) []
   # @response User error.(400) [Reference:#/components/schemas/ErrorResponseBody]
   # @response User error.(422) [Reference:#/components/schemas/ErrorResponseBody]
@@ -49,6 +50,17 @@ class Api::CertificationsController < ApiController
     # Build certification from request
     certification = create_request.to_certification
     authorize certification
+
+    # Idempotency: if a certification already exists for this duplicate key,
+    # return its status instead of creating another row.
+    existing = Certification.find_duplicate(
+      member_id: certification.member_id,
+      case_number: certification.case_number,
+      application_date: certification.application_date
+    )
+    if existing
+      return render_data(Api::Certifications::Response.from_certification(existing))
+    end
 
     begin
       service = Certifications::CreationService.new(certification)
