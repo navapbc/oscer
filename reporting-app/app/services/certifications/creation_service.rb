@@ -96,7 +96,7 @@ class Certifications::CreationService
       Array(household_member.gross_incomes).each do |gross_income|
         ExternalIncomeActivityService.create_entry(
           member_id: certification.member_id,
-          category: ExternalIncomeActivity::CATEGORY_HOUSEHOLD
+          category: ExternalIncomeActivity::CATEGORY_HOUSEHOLD,
           gross_income: gross_income.gross_income,
           period_start: gross_income.period_start,
           period_end: gross_income.period_end,
