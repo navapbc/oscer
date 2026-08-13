@@ -14,7 +14,7 @@
 class ExternalIncomeActivity < ApplicationRecord
   include Strata::Attributes
 
-  ALLOWED_CATEGORIES = ActivityCategories::ALL
+  ALLOWED_CATEGORIES = ActivityCategories::ALL + %w[household]
 
   SOURCE_TYPES = {
     api: "api"

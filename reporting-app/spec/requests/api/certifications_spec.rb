@@ -640,7 +640,7 @@ RSpec.describe "/api/certifications", type: :request do
 
         expect(ExternalIncomeActivity.pluck(:member_id, :category, :gross_income, :source_type, :period_start, :period_end)).to eq(
           [
-            [ member_id, "employment", 620, "api", certification_date.beginning_of_month, certification_date.end_of_month ]
+            [ member_id, "household", 620, "api", certification_date.beginning_of_month, certification_date.end_of_month ]
           ]
         )
       end

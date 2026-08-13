@@ -273,5 +273,21 @@ RSpec.describe ExternalIncomeActivityService do
         expect(result).to be false
       end
     end
+
+    context "when both are household" do
+      let(:existing_entry) { create(:external_income_activity, category: :household) }
+
+      it "returns falsey" do
+        result = duplicate_entry?(
+          member_id: existing_entry.member_id,
+          category: existing_entry.category,
+          gross_income: existing_entry.gross_income,
+          period_start: existing_entry.period_start,
+          period_end: existing_entry.period_end
+        )
+
+        expect(result).to be_falsey
+      end
+    end
   end
 end
