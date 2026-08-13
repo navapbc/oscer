@@ -6,12 +6,14 @@ RSpec.describe Certifications::CreationService, type: :service do
   let(:member_id) { "member-123" }
   let(:case_number) { "case-456" }
   let(:certification_date) { Date.new(2025, 12, 25) }
+  let(:household_data) { {} }
 
   let(:base_params) do
     {
       member_id: member_id,
       case_number: case_number,
       member_data: member_data.as_json,
+      household_data: household_data.as_json,
       certification_requirements: build(:certification_certification_requirement_params,
         :with_direct_params,
         certification_date: certification_date
@@ -223,6 +225,115 @@ RSpec.describe Certifications::CreationService, type: :service do
             service.call
           }.not_to change(ExternalIncomeActivity, :count)
         end
+      end
+    end
+
+    context "with household data" do
+      let(:member_ssn) { "000000001" }
+      let(:member_name) { { first: "Kitty", middle: "Gwendolyn", last: "Doe", suffix: "" } }
+      let(:member_date_of_birth) { "1967-01-22" }
+      let(:member_data) do
+        build(:certification_member_data,
+          :with_account_email,
+          ssn: member_ssn,
+          name: member_name,
+          date_of_birth: member_date_of_birth)
+      end
+      let(:household_data) do
+        {
+          members: [
+            {
+              name: {
+                first: "Elizabeth",
+                middle: "Frances",
+                last: "Doe",
+                suffix: ""
+              },
+              ssn: "000000002",
+              date_of_birth: "1979-09-01",
+              gross_incomes: [
+                {
+                  gross_income:  "250.00",
+                  period_start: "2025-11-01",
+                  period_end: "2025-11-30"
+                }
+              ]
+            },
+            {
+              name: {
+                first: "Richard",
+                middle: "Marcus",
+                last: "Doe",
+                suffix: ""
+              },
+              ssn: "000000003",
+              date_of_birth: "1983-10-02",
+              gross_incomes: [
+                {
+                  gross_income:  "450.00",
+                  period_start: "2025-10-01",
+                  period_end: "2025-10-31"
+                },
+                {
+                  gross_income:  "350.00",
+                  period_start: "2025-11-01",
+                  period_end: "2025-11-30"
+                }
+              ]
+            }
+          ]
+        }
+      end
+      let(:applicant_ssn) { member_ssn }
+      let(:applicant_block) do
+        {
+          name: member_name,
+          ssn: applicant_ssn,
+          date_of_birth: member_date_of_birth,
+          gross_incomes: [
+            {
+              gross_income:  "150.00",
+              period_start: "2025-11-01",
+              period_end: "2025-11-30"
+            }
+          ]
+        }
+      end
+
+      it "creates an ExternalIncomeActivity for each household member's gross income" do
+        expect {
+          service.call
+        }.to change(ExternalIncomeActivity, :count).from(0).to(3)
+
+        expect(ExternalIncomeActivity.pluck(:gross_income)).to contain_exactly(250, 350, 450)
+      end
+
+      shared_examples "skips the applicant" do
+        before { household_data[:members] << applicant_block }
+
+        it "does not create an ExternalIncomeActivity for the applicant" do
+          expect {
+            service.call
+          }.to change(ExternalIncomeActivity, :count).from(0).to(3)
+
+          expect(ExternalIncomeActivity.pluck(:gross_income)).to contain_exactly(250, 350, 450)
+        end
+      end
+
+      context "when the applicant is also listed as a household member" do
+        it_behaves_like "skips the applicant"
+      end
+
+      context "when the applicant is listed with a dash-formatted tax ID" do
+        let(:applicant_ssn) { "000-00-0001" }
+
+        it_behaves_like "skips the applicant"
+      end
+
+      context "when the applicant is listed without a tax ID" do
+        let(:applicant_ssn) { nil }
+
+        it_behaves_like "skips the applicant"
       end
     end
 

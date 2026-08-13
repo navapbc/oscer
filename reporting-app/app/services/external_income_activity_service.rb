@@ -77,6 +77,8 @@ class ExternalIncomeActivityService
 
     # Same dimensions as ExternalHourlyActivityService duplicate check; source_type is not part of the key.
     def duplicate_entry?(member_id:, category:, gross_income:, period_start:, period_end:)
+      return if category == ExternalIncomeActivity::CATEGORY_HOUSEHOLD
+
       ExternalIncomeActivity.exists?(
         member_id: member_id,
         category: category,

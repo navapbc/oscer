@@ -646,19 +646,47 @@
           },
           "ssn": {
             "type": ["string", "null"],
-            "description": "The Social Security Number of the household member"
+            "description": "The nine-digit Social Security Number of the household member. Dashes are accepted and stripped."
           },
           "date_of_birth": {
             "type": ["string", "null"],
             "format": "date",
             "description": "The date of birth of the household member"
           },
-          "monthly_income_dollars_total": {
-            "type": "string",
-            "format": "decimal",
-            "description": "Monthly total income of the household member"
+          "gross_incomes": {
+            "type": ["array", "null"],
+            "description": "The gross income reported for the household member, one entry per period",
+            "items": {
+              "$ref": "#/components/schemas/CertificationHouseholdDataMemberIncome"
+            }
           }
 	}
+      },
+      "CertificationHouseholdDataMemberIncome": {
+        "type": "object",
+        "description": "Gross income reported for a household member over a single period",
+        "properties": {
+          "gross_income": {
+            "type": "string",
+            "format": "decimal",
+            "description": "Gross income for the period, greater than zero"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date",
+            "description": "The first day of the period the income covers"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date",
+            "description": "The last day of the period the income covers"
+          }
+        },
+        "required": [
+          "gross_income",
+          "period_start",
+          "period_end"
+        ]
       },
       "CertificationOutcome": {
         "type": "object",

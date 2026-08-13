@@ -14,7 +14,8 @@
 class ExternalIncomeActivity < ApplicationRecord
   include Strata::Attributes
 
-  ALLOWED_CATEGORIES = ActivityCategories::ALL
+  CATEGORY_HOUSEHOLD = "household"
+  ALLOWED_CATEGORIES = (ActivityCategories::ALL + [ CATEGORY_HOUSEHOLD ]).freeze
 
   SOURCE_TYPES = {
     api: "api"
