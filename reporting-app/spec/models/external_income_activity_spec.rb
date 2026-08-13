@@ -177,7 +177,7 @@ RSpec.describe ExternalIncomeActivity, type: :model do
 
   describe 'constants' do
     it 'defines ALLOWED_CATEGORIES' do
-      expect(ExternalIncomeActivity::ALLOWED_CATEGORIES).to eq(%w[employment community_service education unearned])
+      expect(ExternalIncomeActivity::ALLOWED_CATEGORIES).to eq(%w[employment community_service education unearned household])
     end
 
     it 'defines MVP source type strings' do

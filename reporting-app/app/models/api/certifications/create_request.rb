@@ -7,6 +7,7 @@ class Api::Certifications::CreateRequest < ValueObject
 
   attribute :certification_requirements, Api::Certifications::RequirementsOrParamsInput.to_type
   attribute :member_data, Certifications::MemberData.to_type
+  attribute :household_data, Certifications::HouseholdData.to_type
 
   validates :certification_requirements, presence: true
 
