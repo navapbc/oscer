@@ -948,7 +948,7 @@ RSpec.describe "/api/certifications", type: :request do
                 type: "hourly",
                 category: "employment",
                 hours: 20,
-                enrollment_status: "full_time", # only education activities report enrollment
+                enrollment_status: "full_time",
                 period_start: Date.today.to_s,
                 period_end: Date.today.to_s,
                 verification_status: "verified"

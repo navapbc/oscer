@@ -36,6 +36,7 @@ class Certifications::MemberData < ValueObject
 
     ENROLLMENT_FULL_TIME = "full_time"
     ENROLLMENT_HALF_TIME = "half_time"
+    # Ordered best first: HoursComplianceDeterminationService ranks reported enrollments by this order.
     ENROLLMENT_STATUSES = [ ENROLLMENT_FULL_TIME, ENROLLMENT_HALF_TIME, "less_than_half_time" ].freeze
     QUALIFYING_ENROLLMENT_STATUSES = [ ENROLLMENT_FULL_TIME, ENROLLMENT_HALF_TIME ].freeze
 

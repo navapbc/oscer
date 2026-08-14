@@ -401,6 +401,94 @@ RSpec.describe HoursComplianceDeterminationService do
       expect(summary[:hours_by_source][:activity]).to eq(rows.sum { |r| r.hours.to_f })
       expect(summary[:activity_ids]).to match_array(rows.map(&:id))
     end
+
+    describe "[:enrollment_status]" do
+      subject(:enrollment_status) do
+        described_class.aggregate_hours_for_certification(enrolled_certification)[:enrollment_status]
+      end
+
+      let(:certification_requirements) { build(:certification_certification_requirements) }
+      let(:lookback) { certification_requirements.continuous_lookback_period }
+      let(:enrolled_certification) do
+        build(:certification,
+          certification_requirements: certification_requirements,
+          member_data: build(:certification_member_data, activities: activities))
+      end
+
+      def enrollment(status, verification_status: "verified", period_start: nil, period_end: nil)
+        {
+          type: "hourly",
+          category: "education",
+          enrollment_status: status,
+          period_start: period_start || lookback.start.to_date,
+          period_end: period_end || lookback.start.to_date.end_of_month,
+          verification_status: verification_status
+        }
+      end
+
+      context "when several enrollments were reported" do
+        let(:activities) do
+          [ enrollment("less_than_half_time"), enrollment("full_time"), enrollment("half_time") ]
+        end
+
+        it { is_expected.to eq("full_time") }
+      end
+
+      context "when the best reported enrollment is half time" do
+        let(:activities) { [ enrollment("less_than_half_time"), enrollment("half_time") ] }
+
+        it { is_expected.to eq("half_time") }
+      end
+
+      context "when the only enrollment is less than half time" do
+        let(:activities) { [ enrollment("less_than_half_time") ] }
+
+        it { is_expected.to eq("less_than_half_time") }
+      end
+
+      context "when a better enrollment is not verified" do
+        let(:activities) do
+          [ enrollment("full_time", verification_status: "self_attested"), enrollment("half_time") ]
+        end
+
+        it { is_expected.to eq("half_time") }
+      end
+
+      context "when the only enrollment is not verified" do
+        let(:activities) { [ enrollment("full_time", verification_status: "self_attested") ] }
+
+        it { is_expected.to be_nil }
+      end
+
+      context "when a better enrollment falls outside the lookback period" do
+        let(:activities) do
+          [
+            enrollment("full_time",
+              period_start: lookback.start.to_date - 1.month,
+              period_end: lookback.start.to_date - 1.day),
+            enrollment("half_time")
+          ]
+        end
+
+        it { is_expected.to eq("half_time") }
+      end
+
+      context "when the member reported hours but no enrollment" do
+        let(:activities) do
+          [ { type: "hourly", category: "education", hours: 40,
+              period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month,
+              verification_status: "verified" } ]
+        end
+
+        it { is_expected.to be_nil }
+      end
+
+      context "when the member reported no activities" do
+        let(:activities) { [] }
+
+        it { is_expected.to be_nil }
+      end
+    end
   end
 
   describe "TARGET_HOURS" do

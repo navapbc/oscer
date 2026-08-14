@@ -49,8 +49,7 @@ class Certifications::CreationService
 
     hourly_activities.each do |activity_data|
       next unless activity_data.verified?
-      # An education activity may report enrollment alone, with no hours to import. Any other hourless
-      # activity still falls through to ExternalHourlyActivityService, which rejects it.
+      # Any other hourless activity still falls through to ExternalHourlyActivityService, which rejects it.
       next if activity_data.education_enrollment? && activity_data.clock_hours.blank?
 
       ExternalHourlyActivityService.create_entry(

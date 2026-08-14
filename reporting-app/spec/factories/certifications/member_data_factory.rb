@@ -72,7 +72,6 @@ FactoryBot.define do
       }
     end
 
-    # Enrollment reports no hours, so these traits produce no ExternalHourlyActivity on intake.
     trait :half_time_education_enrollment do
       with_no_exemptions
       activities {

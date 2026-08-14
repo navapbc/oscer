@@ -126,7 +126,7 @@ RSpec.describe Certifications::CreationService, type: :service do
         end
       end
 
-      # Below half time imports nothing either, making it a no-op rather than a rejected request.
+      # Below half time is accepted as a no-op too, not rejected for the missing hours.
       %w[full_time less_than_half_time].each do |status|
         context "when education category reports #{status} enrollment without hours" do
           let(:category) { "education" }
