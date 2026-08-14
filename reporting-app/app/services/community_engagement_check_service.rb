@@ -55,7 +55,10 @@ class CommunityEngagementCheckService
       Assessment.new(
         hours_data: hours_data,
         income_data: income_data,
-        hours_ok: HoursComplianceDeterminationService.compliant_for_total_hours?(hours_data[:total_hours]),
+        # A qualifying education enrollment meets the hours requirement outright, so it passes the
+        # hours track instead of standing up a third one the determination payload has no shape for.
+        hours_ok: HoursComplianceDeterminationService.compliant_for_total_hours?(hours_data[:total_hours]) ||
+          HoursComplianceDeterminationService.education_enrollment_compliant?(certification),
         income_ok: IncomeComplianceDeterminationService.compliant_for_total_income?(income_data[:total_income])
       )
     end

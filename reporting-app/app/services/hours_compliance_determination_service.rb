@@ -82,7 +82,27 @@ class HoursComplianceDeterminationService
       total_hours.to_f >= TARGET_HOURS
     end
 
+    # Whether a verified education enrollment satisfies the hours requirement on its own.
+    #
+    # @param certification [Certification]
+    # @return [Boolean]
+    def education_enrollment_compliant?(certification)
+      lookback = certification&.certification_requirements&.continuous_lookback_period
+
+      Array(certification&.member_data&.activities).any? do |activity|
+        activity.verified? && activity.qualifying_enrollment? && overlaps_lookback?(activity, lookback)
+      end
+    end
+
     private
+
+    # Different logic than +ExternalHourlyActivity.within_period+.
+    def overlaps_lookback?(activity, lookback)
+      return true if lookback&.start.blank? || lookback.end.blank?
+      return false if activity.period_start.blank? || activity.period_end.blank?
+
+      activity.period_start <= lookback.end.to_date.end_of_month && activity.period_end >= lookback.start.to_date
+    end
 
     def determine_outcome(total_hours)
       compliant_for_total_hours?(total_hours) ? :compliant : :not_compliant

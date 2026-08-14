@@ -353,6 +353,40 @@ RSpec.describe "/api/certifications", type: :request do
         expect(activity.hours).to eq(9 * Certifications::MemberData::Activity::CREDIT_HOURS_MULTIPLIER)
       end
 
+      it "accepts education activities reporting enrollment status in place of hours" do
+        member_data = build(:certification_member_data,
+          :with_full_name,
+          :with_account_email,
+          activities: [
+            {
+              "type" => "hourly",
+              "category" => "education",
+              "enrollment_status" => "full_time",
+              "period_start" => certification_date.beginning_of_month,
+              "period_end" => certification_date.end_of_month,
+              "verification_status" => "verified"
+            }
+          ]
+        )
+        params = valid_json_request_attributes.merge({
+          member_id: member_id,
+          member_data: member_data.as_json
+        })
+
+        expect {
+          post api_certifications_url,
+            params: params,
+            headers: auth_headers(params),
+            as: :json
+        }.to change(Certification, :count).from(0).to(1)
+
+        expect(response).to have_http_status(:created)
+        expect(ExternalHourlyActivity.count).to be_zero
+
+        activity = Certification.find(response.parsed_body[:id]).member_data.activities.first
+        expect(activity.enrollment_status).to eq("full_time")
+      end
+
       it "creates ExternalIncomeActivity records for income activities and not ExternalHourlyActivity" do
         member_data = build(:certification_member_data,
           :with_full_name,
@@ -903,6 +937,57 @@ RSpec.describe "/api/certifications", type: :request do
 
         expect(response).to be_client_error
         expect(response.parsed_body["errors"]).to include(a_hash_including("field" => "member_data.activities[0].credit_hours"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "rejects an enrollment status outside the education category" do
+        params = valid_json_request_attributes.merge({
+          member_data: {
+            activities: [
+              {
+                "type": "hourly",
+                "category": "employment",
+                "hours": 20,
+                "enrollment_status": "full_time", # only education activities report enrollment
+                "period_start": Date.today.to_s,
+                "period_end": Date.today.to_s,
+                "verification_status": "verified"
+              }
+            ]
+          }
+        })
+        post api_certifications_url,
+             params: params,
+             headers: auth_headers(params),
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.parsed_body["errors"]).to include(a_hash_including("field" => "member_data.activities[0].enrollment_status"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "rejects an unrecognized enrollment status" do
+        params = valid_json_request_attributes.merge({
+          member_data: {
+            activities: [
+              {
+                "type": "hourly",
+                "category": "education",
+                "enrollment_status": "part_time",
+                "period_start": Date.today.to_s,
+                "period_end": Date.today.to_s,
+                "verification_status": "verified"
+              }
+            ]
+          }
+        })
+        post api_certifications_url,
+             params: params,
+             headers: auth_headers(params),
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.parsed_body["errors"]).to include(a_hash_including("field" => "member_data.activities[0].enrollment_status"))
         expect(response).to match_openapi_doc(OPENAPI_DOC)
       end
 

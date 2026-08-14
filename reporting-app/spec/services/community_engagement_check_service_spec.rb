@@ -22,6 +22,27 @@ RSpec.describe CommunityEngagementCheckService do
            period_start: period_start, period_end: period_end, **attrs)
   end
 
+  # A certification whose only community engagement is an education enrollment.
+  def certification_enrolled(enrollment_status)
+    requirements = build(:certification_certification_requirements)
+    lookback = requirements.continuous_lookback_period
+
+    # Symbol keys, but the values stay strings: matched against string constants on Activity, and
+    # supplied as strings by the API.
+    create(:certification,
+      certification_requirements: requirements,
+      member_data: build(:certification_member_data, activities: [
+        {
+          type: "hourly",
+          category: "education",
+          enrollment_status: enrollment_status,
+          period_start: lookback.start.to_date,
+          period_end: lookback.start.to_date.end_of_month,
+          verification_status: "verified"
+        }
+      ]))
+  end
+
   def create_income_for(certification, gross_income:, **attrs)
     lookback = certification.certification_requirements.continuous_lookback_period
     period_start = lookback.start.to_date
@@ -74,6 +95,31 @@ RSpec.describe CommunityEngagementCheckService do
 
       expect(assessment.hours_data[:total_hours]).to be_positive
       expect(assessment.income_data[:total_income]).to be_positive
+      expect(assessment.hours_ok).to be(false)
+      expect(assessment.income_ok).to be(false)
+      expect(assessment.met?).to be(false)
+    end
+
+    # Passes on the hours track, which is why hours_ok is true against a zero total.
+    it "reports met? when only a qualifying education enrollment passes" do
+      certification = certification_enrolled("full_time")
+
+      assessment = described_class.assess(certification)
+
+      expect(assessment.hours_data[:total_hours]).to be_zero
+      expect(assessment.income_data[:total_income]).to be_zero
+      expect(assessment.hours_ok).to be(true)
+      expect(assessment.income_ok).to be(false)
+      expect(assessment.met?).to be(true)
+    end
+
+    it "reports met? false when the education enrollment is below half time" do
+      certification = certification_enrolled("less_than_half_time")
+
+      assessment = described_class.assess(certification)
+
+      expect(assessment.hours_data[:total_hours]).to be_zero
+      expect(assessment.income_data[:total_income]).to be_zero
       expect(assessment.hours_ok).to be(false)
       expect(assessment.income_ok).to be(false)
       expect(assessment.met?).to be(false)
@@ -155,6 +201,31 @@ RSpec.describe CommunityEngagementCheckService do
         expect do
           described_class.determine(certification_case)
         end.to change { Strata::AuditLine.where(subject: certification, actor_type: described_class.name, action: 'case.activity_report.approved').count }.by(1)
+      end
+    end
+
+    context "when a qualifying education enrollment stands in for hours" do
+      let(:certification) { certification_enrolled("full_time") }
+
+      it "records the hours track satisfied despite no reported hours" do
+        described_class.determine(certification_case)
+
+        determination = latest_determination_for(certification.id)
+        expect(determination.outcome).to eq("compliant")
+        expect(determination.reasons).to eq([ "hours_reported_compliant" ])
+        data = determination.determination_data
+        expect(data["satisfied_by"]).to eq(Determination::SATISFIED_BY_HOURS)
+        expect(data["hours"]["compliant"]).to be true
+        expect(data["hours"]["total_hours"]).to eq(0.0)
+      end
+
+      it "publishes DeterminedCommunityEngagementMet" do
+        described_class.determine(certification_case)
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DeterminedCommunityEngagementMet",
+          hash_including(case_id: certification_case.id)
+        )
       end
     end
 

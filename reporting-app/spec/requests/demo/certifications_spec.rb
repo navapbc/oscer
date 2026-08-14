@@ -289,6 +289,48 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(activity.source_id).to be_nil
       end
 
+      # Enrollment reports no hours, so unlike every hours scenario above it imports no
+      # ExternalHourlyActivity; compliance reads the enrollment off member_data instead.
+      it "creates Certification with 'Half-time education enrollment'" do
+        create_attrs = valid_request_attributes.merge({ external_scenario: "Half-time education enrollment" })
+
+        expect {
+          post demo_certifications_url,
+              params: { demo_certifications_create_form: create_attrs }
+        }.to change(Certification, :count).by(1)
+
+        expect(ExternalHourlyActivity.count).to be_zero
+
+        cert = Certification.order(created_at: :desc).last
+        expect(cert.member_data.activities.length).to eq(1)
+
+        activity = cert.member_data.activities.first
+        expect(activity.category).to eq("education")
+        expect(activity.enrollment_status).to eq("half_time")
+        expect(activity.hours).to be_nil
+        expect(activity.period_start).to eq(cert.certification_requirements.certification_date.beginning_of_month)
+        expect(activity.period_end).to eq(cert.certification_requirements.certification_date.end_of_month)
+      end
+
+      it "creates Certification with 'Less than half-time education enrollment'" do
+        create_attrs = valid_request_attributes.merge({ external_scenario: "Less than half-time education enrollment" })
+
+        expect {
+          post demo_certifications_url,
+              params: { demo_certifications_create_form: create_attrs }
+        }.to change(Certification, :count).by(1)
+
+        expect(ExternalHourlyActivity.count).to be_zero
+
+        cert = Certification.order(created_at: :desc).last
+        expect(cert.member_data.activities.length).to eq(1)
+
+        activity = cert.member_data.activities.first
+        expect(activity.category).to eq("education")
+        expect(activity.enrollment_status).to eq("less_than_half_time")
+        expect(activity.hours).to be_nil
+      end
+
       it "creates a new Certification with 'Meets age-based exemption requirement' scenario and uses form DOB over scenario DOB" do
         create_attrs = valid_request_attributes.merge({ external_scenario: "Meets age-based exemption requirement" })
 

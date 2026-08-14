@@ -72,6 +72,41 @@ FactoryBot.define do
       }
     end
 
+    # Enrollment reports no hours, so these traits produce no ExternalHourlyActivity on intake.
+    trait :half_time_education_enrollment do
+      with_no_exemptions
+      activities {
+        [
+          {
+            "type": "hourly",
+            "category": "education",
+            "enrollment_status": "half_time",
+            "period_start": cert_date.beginning_of_month,
+            "period_end": cert_date.end_of_month,
+            "name": "State University",
+            "verification_status": "verified"
+          }
+        ]
+      }
+    end
+
+    trait :less_than_half_time_education_enrollment do
+      with_no_exemptions
+      activities {
+        [
+          {
+            "type": "hourly",
+            "category": "education",
+            "enrollment_status": "less_than_half_time",
+            "period_start": cert_date.beginning_of_month,
+            "period_end": cert_date.end_of_month,
+            "name": "State University",
+            "verification_status": "verified"
+          }
+        ]
+      }
+    end
+
     trait :meets_age_based_exemption_requirement do
       with_no_exemptions
       date_of_birth { cert_date - rand(1..18).years } # random age between 1 and 18 years old (eligible for age exemption)

@@ -186,6 +186,99 @@ RSpec.describe HoursComplianceDeterminationService do
     end
   end
 
+  describe ".education_enrollment_compliant?" do
+    subject(:compliant) { described_class.education_enrollment_compliant?(certification) }
+
+    let(:certification_requirements) { build(:certification_certification_requirements) }
+    let(:lookback) { certification_requirements.continuous_lookback_period }
+    let(:certification) do
+      build(:certification,
+        certification_requirements: certification_requirements,
+        member_data: build(:certification_member_data, activities: [ activity ]))
+    end
+    let(:enrollment_status) { "full_time" }
+    let(:verification_status) { "verified" }
+    let(:period_start) { lookback.start.to_date }
+    let(:period_end) { lookback.start.to_date.end_of_month }
+
+    # Symbol keys, but the values stay strings: matched against string constants on Activity, and
+    # supplied as strings by the API.
+    let(:activity) do
+      {
+        type: "hourly",
+        category: "education",
+        enrollment_status: enrollment_status,
+        period_start: period_start,
+        period_end: period_end,
+        verification_status: verification_status
+      }
+    end
+
+    %w[full_time half_time].each do |status|
+      context "when a verified education activity reports #{status} enrollment" do
+        let(:enrollment_status) { status }
+
+        it { is_expected.to be(true) }
+      end
+    end
+
+    context "when enrollment is less than half time" do
+      let(:enrollment_status) { "less_than_half_time" }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when no enrollment status is reported" do
+      let(:enrollment_status) { nil }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when the enrolled activity is not 'verified'" do
+      let(:verification_status) { "self_attested" }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when the enrolled activity ends before the lookback period" do
+      let(:period_start) { lookback.start.to_date - 1.month }
+      let(:period_end) { lookback.start.to_date - 1.day }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when the enrolled activity starts after the lookback period" do
+      let(:period_start) { lookback.end.to_date.end_of_month + 1.day }
+      let(:period_end) { period_start.end_of_month }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when the enrolled activity straddles the start of the lookback period" do
+      let(:period_start) { lookback.start.to_date - 1.month }
+      let(:period_end) { lookback.start.to_date.end_of_month }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when the enrolled activity straddles the end of the lookback period" do
+      let(:period_start) { lookback.end.to_date }
+      let(:period_end) { lookback.end.to_date.end_of_month + 2.months }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when the member reported no activities" do
+      let(:certification) do
+        build(:certification,
+          certification_requirements: certification_requirements,
+          member_data: build(:certification_member_data))
+      end
+
+      it { is_expected.to be(false) }
+    end
+  end
+
   describe ".summarize_hours" do
     context "when activities are blank" do
       it "returns a summary with zeroed values" do

@@ -90,6 +90,7 @@
                     "type": "hourly",
                     "category": "education",
                     "credit_hours": "9",
+                    "enrollment_status": "full_time",
                     "period_start": "2025-09-01",
                     "period_end": "2025-09-30",
                     "name": "State University",
@@ -417,12 +418,17 @@
           "hours": {
             "type": ["string", "null"],
             "format": "decimal",
-            "description": "Number of hours for the activity; required unless the activity is an education activity reporting credit_hours"
+            "description": "Number of hours for the activity; required unless the activity is an education activity reporting credit_hours or enrollment_status"
           },
           "credit_hours": {
             "type": ["string", "null"],
             "format": "decimal",
             "description": "Number of credit hours for an education activity, converted to hours on intake. Permitted only on education activities, and ignored when hours is also supplied"
+          },
+          "enrollment_status": {
+            "type": ["string", "null"],
+            "enum": ["full_time", "half_time", "less_than_half_time", null],
+            "description": "Enrollment status for an education activity. Permitted only on education activities. Enrollment of full_time or half_time meets the community engagement requirement on its own, whatever hours are reported"
           },
           "period_start": {
             "type": "string",
@@ -466,6 +472,14 @@
               }
             },
             "required": ["credit_hours"]
+          },
+          {
+            "properties": {
+              "category": {
+                "const": "education"
+              }
+            },
+            "required": ["enrollment_status"]
           }
         ]
       },
