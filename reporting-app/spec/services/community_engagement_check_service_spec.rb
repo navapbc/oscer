@@ -217,6 +217,7 @@ RSpec.describe CommunityEngagementCheckService do
         expect(data["satisfied_by"]).to eq(Determination::SATISFIED_BY_HOURS)
         expect(data["hours"]["compliant"]).to be true
         expect(data["hours"]["total_hours"]).to eq(0.0)
+        expect(data["hours"]["enrollment_status"]).to eq("full_time")
       end
 
       it "publishes DeterminedCommunityEngagementMet" do

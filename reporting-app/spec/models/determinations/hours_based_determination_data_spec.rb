@@ -27,9 +27,23 @@ RSpec.describe Determinations::HoursBasedDeterminationData do
         "hours_by_source" => { "external" => 85.0, "activity" => 0.0 },
         "external_hourly_activity_ids" => [ "11111111-1111-4111-8111-111111111111" ],
         "activity_ids" => [],
+        "enrollment_status" => nil,
         "calculated_at" => expected_calculated_at
       }
     )
+  end
+
+  it "carries the reported enrollment status through to the payload" do
+    hours_data = {
+      total_hours: 0,
+      hours_by_category: {},
+      hours_by_source: { external: 0.0, activity: 0.0 },
+      external_hourly_activity_ids: [],
+      activity_ids: [],
+      enrollment_status: "full_time"
+    }
+
+    expect(described_class.from_aggregate(hours_data).to_h["enrollment_status"]).to eq("full_time")
   end
 
   it "includes compliant in the hash when provided for combined CE nesting" do

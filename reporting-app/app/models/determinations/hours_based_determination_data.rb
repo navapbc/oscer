@@ -14,6 +14,7 @@ module Determinations
     attribute :hours_by_source, default: -> { {} }
     attribute :external_hourly_activity_ids, default: -> { [] }
     attribute :activity_ids, default: -> { [] }
+    attribute :enrollment_status, :string
     attribute :calculated_at, :string
     # When set (nested +hours+ payload under +Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED+), included in {#to_h}.
     attribute :compliant, :boolean
@@ -24,7 +25,7 @@ module Determinations
     validate :hours_by_source_is_hash
 
     # @param hours_data [Hash] +:total_hours+, +:hours_by_category+, +:hours_by_source+,
-    #   +:external_hourly_activity_ids+, +:activity_ids+ (see aggregate service). Keys may be
+    #   +:external_hourly_activity_ids+, +:activity_ids+, +:enrollment_status+ (see aggregate service). Keys may be
     #   strings or symbols (+with_indifferent_access+ is applied internally).
     # @param compliant [Boolean, nil] omit for standalone hours CE; set for combined nested +hours+
     # @return [self]
@@ -36,6 +37,7 @@ module Determinations
         hours_by_source: hours_data[:hours_by_source] || {},
         external_hourly_activity_ids: Array(hours_data[:external_hourly_activity_ids]),
         activity_ids: Array(hours_data[:activity_ids]),
+        enrollment_status: hours_data[:enrollment_status],
         calculated_at: Time.current.iso8601,
         compliant: compliant
       ).tap(&:validate!)
@@ -54,6 +56,7 @@ module Determinations
         "hours_by_source" => by_source,
         "external_hourly_activity_ids" => external_hourly_activity_ids.map(&:to_s),
         "activity_ids" => activity_ids.map(&:to_s),
+        "enrollment_status" => enrollment_status,
         "calculated_at" => calculated_at
       }.tap do |h|
         h["compliant"] = compliant unless compliant.nil?
