@@ -112,7 +112,7 @@ RSpec.describe Certifications::MemberData do
       it "is valid for each enrollment status" do
         described_class::ENROLLMENT_STATUSES.each do |status|
           expect(described_class.new(
-            type: "hourly", category: "education", hours: 40, enrollment_status: status,
+            type:, category:, hours:, enrollment_status: status,
             period_start: Date.new(2025, 12, 1), period_end: Date.new(2025, 12, 31),
             verification_status: "verified"
           )).to be_valid

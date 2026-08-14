@@ -945,13 +945,13 @@ RSpec.describe "/api/certifications", type: :request do
           member_data: {
             activities: [
               {
-                "type": "hourly",
-                "category": "employment",
-                "hours": 20,
-                "enrollment_status": "full_time", # only education activities report enrollment
-                "period_start": Date.today.to_s,
-                "period_end": Date.today.to_s,
-                "verification_status": "verified"
+                type: "hourly",
+                category: "employment",
+                hours: 20,
+                enrollment_status: "full_time", # only education activities report enrollment
+                period_start: Date.today.to_s,
+                period_end: Date.today.to_s,
+                verification_status: "verified"
               }
             ]
           }
@@ -971,12 +971,12 @@ RSpec.describe "/api/certifications", type: :request do
           member_data: {
             activities: [
               {
-                "type": "hourly",
-                "category": "education",
-                "enrollment_status": "part_time",
-                "period_start": Date.today.to_s,
-                "period_end": Date.today.to_s,
-                "verification_status": "verified"
+                type: "hourly",
+                category: "education",
+                enrollment_status: "part_time",
+                period_start: Date.today.to_s,
+                period_end: Date.today.to_s,
+                verification_status: "verified"
               }
             ]
           }
