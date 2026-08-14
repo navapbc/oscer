@@ -34,6 +34,12 @@ class Certifications::MemberData < ValueObject
     VERIFIED = "verified"
     VERIFICATION_STATUSES = [ VERIFIED, "self_attested", "pending" ].freeze
 
+    ENROLLMENT_FULL_TIME = "full_time"
+    ENROLLMENT_HALF_TIME = "half_time"
+    # Ordered best first: HoursComplianceDeterminationService ranks reported enrollments by this order.
+    ENROLLMENT_STATUSES = [ ENROLLMENT_FULL_TIME, ENROLLMENT_HALF_TIME, "less_than_half_time" ].freeze
+    QUALIFYING_ENROLLMENT_STATUSES = [ ENROLLMENT_FULL_TIME, ENROLLMENT_HALF_TIME ].freeze
+
     # One credit hour is 12.99 clock hours per month (3 hours per week over a 4.33 week month)
     # per the Federal Register.
     CREDIT_HOURS_MULTIPLIER = BigDecimal("12.99")
@@ -50,10 +56,12 @@ class Certifications::MemberData < ValueObject
     attribute :employer, :string
     attribute :name, :string
     attribute :verification_status, :string
+    attribute :enrollment_status, :string
 
     validates :type, presence: true, inclusion: { in: ACTIVITY_TYPES }
     validates :category, presence: true, inclusion: { in: ::Activity::ALLOWED_CATEGORIES }
-    validates :hours, presence: true, if: -> { type == TYPE_HOURLY && !education_credit_hours? }
+    validates :hours, presence: true,
+                      if: -> { type == TYPE_HOURLY && !education_credit_hours? && !education_enrollment? }
     validates :credit_hours, numericality: { greater_than: 0 }, allow_nil: true
     validates :credit_hours, absence: true, unless: -> { type == TYPE_HOURLY && category == CATEGORY_EDUCATION }
     validates :gross_income, presence: true,
@@ -66,6 +74,8 @@ class Certifications::MemberData < ValueObject
     validates :period_start, presence: true
     validates :period_end, presence: true
     validates :verification_status, presence: true, inclusion: { in: VERIFICATION_STATUSES }
+    validates :enrollment_status, inclusion: { in: ENROLLMENT_STATUSES }, allow_nil: true
+    validates :enrollment_status, absence: true, unless: -> { type == TYPE_HOURLY && category == CATEGORY_EDUCATION }
 
     # Only verified activities count toward a certification.
     def verified?
@@ -75,6 +85,15 @@ class Certifications::MemberData < ValueObject
     # Education activities may report credit hours in place of clock hours.
     def education_credit_hours?
       category == CATEGORY_EDUCATION && credit_hours.present?
+    end
+
+    # Enrollment stands in for hours the same way credit hours do.
+    def education_enrollment?
+      category == CATEGORY_EDUCATION && enrollment_status.present?
+    end
+
+    def qualifying_enrollment?
+      QUALIFYING_ENROLLMENT_STATUSES.include?(enrollment_status)
     end
 
     # Reported hours, or their credit-hour equivalent when hours were omitted.

@@ -30,6 +30,7 @@ RSpec.describe Certifications::CreationService, type: :service do
       let(:category) { "employment" }
       let(:hours) { 40 }
       let(:credit_hours) { nil }
+      let(:enrollment_status) { nil }
       let(:member_data) do
         build(:certification_member_data,
           :with_full_name,
@@ -40,6 +41,7 @@ RSpec.describe Certifications::CreationService, type: :service do
               "category" => category,
               "hours" => hours,
               "credit_hours" => credit_hours,
+              "enrollment_status" => enrollment_status,
               "period_start" => certification_date.beginning_of_month,
               "period_end" => certification_date.end_of_month,
               "name" => "Acme Corp",
@@ -121,6 +123,42 @@ RSpec.describe Certifications::CreationService, type: :service do
           expect(activity.hours).to eq(
             credit_hours * Certifications::MemberData::Activity::CREDIT_HOURS_MULTIPLIER
           )
+        end
+      end
+
+      # Below half time is accepted as a no-op too, not rejected for the missing hours.
+      %w[full_time less_than_half_time].each do |status|
+        context "when education category reports #{status} enrollment without hours" do
+          let(:category) { "education" }
+          let(:hours) { nil }
+          let(:enrollment_status) { status }
+
+          it "creates the certification without an ExternalHourlyActivity" do
+            expect { service.call }.to change(Certification, :count).from(0).to(1)
+
+            expect(ExternalHourlyActivity.count).to be_zero
+          end
+
+          it "records the enrollment status on the certification's member data" do
+            service.call
+
+            activity = service.certification.member_data.activities.first
+            expect(activity.enrollment_status).to eq(status)
+          end
+        end
+      end
+
+      context "when education category reports both enrollment and hours" do
+        let(:category) { "education" }
+        let(:hours) { 40 }
+        let(:enrollment_status) { "full_time" }
+
+        it "still imports the reported hours" do
+          expect {
+            service.call
+          }.to change(ExternalHourlyActivity, :count).from(0).to(1)
+
+          expect(ExternalHourlyActivity.last.hours).to eq(40)
         end
       end
 
