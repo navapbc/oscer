@@ -58,7 +58,8 @@ class HoursComplianceDeterminationService
           activity: member_hours[:total]
         },
         external_hourly_activity_ids: external_hours[:ids],
-        activity_ids: member_hours[:ids]
+        activity_ids: member_hours[:ids],
+        enrollment_status: best_enrollment_status(certification)
       }
     end
 
@@ -82,7 +83,41 @@ class HoursComplianceDeterminationService
       total_hours.to_f >= TARGET_HOURS
     end
 
+    # Whether a verified education enrollment satisfies the hours requirement on its own.
+    #
+    # @param certification [Certification]
+    # @return [Boolean]
+    def education_enrollment_compliant?(certification)
+      relevant_enrollments(certification).any?(&:qualifying_enrollment?)
+    end
+
     private
+
+    # The only enrollments that count toward the hours requirement.
+    def relevant_enrollments(certification)
+      lookback = certification&.certification_requirements&.continuous_lookback_period
+
+      Array(certification&.member_data&.activities).select do |activity|
+        activity.verified? && activity.education_enrollment? && overlaps_lookback?(activity, lookback)
+      end
+    end
+
+    # Highest-ranked relevant enrollment, or nil.
+    def best_enrollment_status(certification)
+      statuses = Certifications::MemberData::Activity::ENROLLMENT_STATUSES
+
+      relevant_enrollments(certification)
+        .map(&:enrollment_status)
+        .min_by { |status| statuses.index(status) || statuses.length }
+    end
+
+    # Different logic than +ExternalHourlyActivity.within_period+.
+    def overlaps_lookback?(activity, lookback)
+      return true if lookback&.start.blank? || lookback.end.blank?
+      return false if activity.period_start.blank? || activity.period_end.blank?
+
+      activity.period_start <= lookback.end.to_date.end_of_month && activity.period_end >= lookback.start.to_date
+    end
 
     def determine_outcome(total_hours)
       compliant_for_total_hours?(total_hours) ? :compliant : :not_compliant

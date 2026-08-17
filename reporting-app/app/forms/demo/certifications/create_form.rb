@@ -6,7 +6,8 @@ module Demo
       EXTERNAL_SCENARIO_OPTIONS = [
         "No data", "Partially met work hours requirement", "Fully met work hours requirement",
         "Meets age-based exemption requirement", "Partially met income requirement",
-        "Fully met income requirement"
+        "Fully met income requirement", "Half-time education enrollment",
+        "Less than half-time education enrollment"
       ].freeze
 
       # The exemption type the API uses for each selectable external exception. The exception ids and
@@ -72,6 +73,18 @@ module Demo
           member_data.merge!(
             FactoryBot.build(
               :certification_member_data, :fully_met_income_requirement, cert_date: certification_date
+            ).attributes.compact
+          )
+        when "Half-time education enrollment"
+          member_data.merge!(
+            FactoryBot.build(
+              :certification_member_data, :half_time_education_enrollment, cert_date: certification_date
+            ).attributes.compact
+          )
+        when "Less than half-time education enrollment"
+          member_data.merge!(
+            FactoryBot.build(
+              :certification_member_data, :less_than_half_time_education_enrollment, cert_date: certification_date
             ).attributes.compact
           )
         end
