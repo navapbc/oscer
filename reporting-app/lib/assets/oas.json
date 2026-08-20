@@ -59,9 +59,9 @@
                 "number_of_months_to_certify": 1,
                 "due_date": "2025-10-26",
                 "months_that_can_be_certified": [
+                  "2025-06-01",
                   "2025-07-01",
-                  "2025-08-01",
-                  "2025-09-01"
+                  "2025-08-01"
                 ]
               },
               "member_data": {
@@ -81,8 +81,8 @@
                     "type": "hourly",
                     "category": "community_service",
                     "hours": "20",
-                    "period_start": "2025-09-01",
-                    "period_end": "2025-09-30",
+                    "period_start": "2025-08-01",
+                    "period_end": "2025-08-31",
                     "employer": "Community Center",
                     "verification_status": "verified"
                   },
@@ -91,8 +91,8 @@
                     "category": "education",
                     "credit_hours": "9",
                     "enrollment_status": "full_time",
-                    "period_start": "2025-09-01",
-                    "period_end": "2025-09-30",
+                    "period_start": "2025-08-01",
+                    "period_end": "2025-08-31",
                     "name": "State University",
                     "verification_status": "verified"
                   }
@@ -798,9 +798,9 @@
           "certification_requirements": {
             "certification_date": "2025-09-26",
             "months_that_can_be_certified": [
+              "2025-06-01",
               "2025-07-01",
-              "2025-08-01",
-              "2025-09-01"
+              "2025-08-01"
             ],
             "number_of_months_to_certify": 1,
             "due_date": "2025-10-26",
@@ -827,8 +827,8 @@
                 "type": "hourly",
                 "category": "community_service",
                 "hours": "80",
-                "period_start": "2025-09-01",
-                "period_end": "2025-09-30",
+                "period_start": "2025-08-01",
+                "period_end": "2025-08-31",
                 "employer": "Community Center",
                 "verification_status": "verified"
               }

@@ -161,4 +161,83 @@ RSpec.describe Demo::Certifications::CreateForm do
       end
     end
   end
+
+  # Scenario activities have to land inside the lookback, since that is all the compliance services
+  # count, so the scenarios keep reaching the determinations they name.
+  describe "#to_certification external scenario months" do
+    subject(:activities) { certification.member_data.activities }
+
+    let(:certification) { form.to_certification }
+    let(:form) do
+      described_class.new(
+        certification_date: Date.new(2026, 8, 20),
+        external_scenario: scenario,
+        lookback_period: 3,
+        number_of_months_to_certify: 3
+      )
+    end
+    let(:months) { certification.certification_requirements.months_that_can_be_certified }
+    let(:latest_certifiable_month) { Date.new(2026, 7, 1) }
+
+    shared_examples "activities reported in the certifiable months" do |expected_months_count|
+      it "reports #{expected_months_count} month(s) of activity" do
+        expect(activities.length).to eq expected_months_count
+      end
+
+      it "reports activity only in certifiable months" do
+        expect(activities.map(&:period_start)).to match_array(months.first(expected_months_count))
+        activities.each do |activity|
+          expect(activity.period_end).to eq activity.period_start.end_of_month
+        end
+      end
+
+      it "reports the most recent activity in the month before the certification month" do
+        expect(activities.map(&:period_start).max).to eq latest_certifiable_month
+      end
+    end
+
+    context "when the partially met work hours scenario is selected" do
+      let(:scenario) { "Partially met work hours requirement" }
+
+      it_behaves_like "activities reported in the certifiable months", 1
+    end
+
+    context "when the fully met work hours scenario is selected" do
+      let(:scenario) { "Fully met work hours requirement" }
+
+      it_behaves_like "activities reported in the certifiable months", 3
+    end
+
+    context "when the partially met income scenario is selected" do
+      let(:scenario) { "Partially met income requirement" }
+
+      it_behaves_like "activities reported in the certifiable months", 1
+    end
+
+    context "when the fully met income scenario is selected" do
+      let(:scenario) { "Fully met income requirement" }
+
+      it_behaves_like "activities reported in the certifiable months", 1
+    end
+
+    context "when the half-time education enrollment scenario is selected" do
+      let(:scenario) { "Half-time education enrollment" }
+
+      it_behaves_like "activities reported in the certifiable months", 1
+    end
+
+    context "when the less than half-time education enrollment scenario is selected" do
+      let(:scenario) { "Less than half-time education enrollment" }
+
+      it_behaves_like "activities reported in the certifiable months", 1
+    end
+
+    context "when the age-based exemption scenario is selected" do
+      let(:scenario) { "Meets age-based exemption requirement" }
+
+      it "sets a date of birth that is still under 19 in every certifiable month" do
+        expect(certification.member_data.date_of_birth).to be > months.min - 19.years
+      end
+    end
+  end
 end

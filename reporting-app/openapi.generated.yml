@@ -51,9 +51,9 @@ components:
               number_of_months_to_certify: 1
               due_date: '2025-10-26'
               months_that_can_be_certified:
+              - '2025-06-01'
               - '2025-07-01'
               - '2025-08-01'
-              - '2025-09-01'
             member_data:
               account_email: john@doe.com
               contact:
@@ -68,16 +68,16 @@ components:
               - type: hourly
                 category: community_service
                 hours: '20'
-                period_start: '2025-09-01'
-                period_end: '2025-09-30'
+                period_start: '2025-08-01'
+                period_end: '2025-08-31'
                 employer: Community Center
                 verification_status: verified
               - type: hourly
                 category: education
                 credit_hours: '9'
                 enrollment_status: full_time
-                period_start: '2025-09-01'
-                period_end: '2025-09-30'
+                period_start: '2025-08-01'
+                period_end: '2025-08-31'
                 name: State University
                 verification_status: verified
               date_of_birth: '1980-01-01'
@@ -737,9 +737,9 @@ components:
         certification_requirements:
           certification_date: '2025-09-26'
           months_that_can_be_certified:
+          - '2025-06-01'
           - '2025-07-01'
           - '2025-08-01'
-          - '2025-09-01'
           number_of_months_to_certify: 1
           due_date: '2025-10-26'
           params:
@@ -760,8 +760,8 @@ components:
           - type: hourly
             category: community_service
             hours: '80'
-            period_start: '2025-09-01'
-            period_end: '2025-09-30'
+            period_start: '2025-08-01'
+            period_end: '2025-08-31'
             employer: Community Center
             verification_status: verified
           date_of_birth: '1980-01-01'
@@ -795,73 +795,73 @@ components:
       required:
       - status
   responses:
-    77b9592b378bfa9f37a8424bf24955cc:
+    97b7961e71e50273645f83deb9a36c61:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    87ccaaab551aa9d024f26343cb8099f8:
+    46a16e2accf3afd8af454e34d75b8ff5:
       description: Accepted
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
-    c6906c6c9f4d833648b5e341cbfd2577:
+    a0cd30798b6f58a5b8383ac34e9b046c:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    19e257c5a603bb56e8fa480fdc871db7:
+    a83413b9d41e58b4134b113b5fbf9796:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    6c9a88c7631125095db78e1fbdf2c203:
+    1ecceed86c18b203880874495cd64043:
       description: Existing Certification returned for a duplicate request.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    5c084620db1afad26fa27720198dd054:
+    9059d8b7005896da239ea7f4a22f0d47:
       description: Accepted
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
-    240073189eed343e15ff71063ec9d26b:
+    c1dd4c539de38facb9f3e04263c9b3f3:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    a8d4323c1612eff3030eff101b4d3115:
+    ff2485bd417055ab349e909c601c2708:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    26843a11fc653f7a83a5f429d9983197:
+    '080c214d3aa3c1240f1851360f3cf3db':
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    c9bb2496eda87e91f3b13673fb02a43b:
+    26003162718b460a46d1682738e2c795:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    5e3e5feb102cb7990513c05b736d552f:
+    6cca329dabea9581b6ae2f0a3c893e38:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    131ea2b125eefa635d6a9726bb53c2c3:
+    a5bd9a84fef503c6d49680f7838ee7b8:
       description: Response
       content:
         application/json:
@@ -893,7 +893,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    8c862da4c6d88c18f05f0d2ac7893a9e:
+    0cb88fb096fd80d410d5b2e432ff47e1:
       description: The Certification data.
       content:
         application/json:
@@ -986,11 +986,11 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/77b9592b378bfa9f37a8424bf24955cc"
+          "$ref": "#/components/responses/97b7961e71e50273645f83deb9a36c61"
         '202':
-          "$ref": "#/components/responses/87ccaaab551aa9d024f26343cb8099f8"
+          "$ref": "#/components/responses/46a16e2accf3afd8af454e34d75b8ff5"
         '404':
-          "$ref": "#/components/responses/c6906c6c9f4d833648b5e341cbfd2577"
+          "$ref": "#/components/responses/a0cd30798b6f58a5b8383ac34e9b046c"
       security:
       - hmac: []
       deprecated: false
@@ -1004,18 +1004,18 @@ paths:
       parameters:
       - "$ref": "#/components/parameters/4f7cce241e43c9b4680b65e2612ab599"
       requestBody:
-        "$ref": "#/components/requestBodies/8c862da4c6d88c18f05f0d2ac7893a9e"
+        "$ref": "#/components/requestBodies/0cb88fb096fd80d410d5b2e432ff47e1"
       responses:
         '201':
-          "$ref": "#/components/responses/19e257c5a603bb56e8fa480fdc871db7"
+          "$ref": "#/components/responses/a83413b9d41e58b4134b113b5fbf9796"
         '200':
-          "$ref": "#/components/responses/6c9a88c7631125095db78e1fbdf2c203"
+          "$ref": "#/components/responses/1ecceed86c18b203880874495cd64043"
         '202':
-          "$ref": "#/components/responses/5c084620db1afad26fa27720198dd054"
+          "$ref": "#/components/responses/9059d8b7005896da239ea7f4a22f0d47"
         '400':
-          "$ref": "#/components/responses/240073189eed343e15ff71063ec9d26b"
+          "$ref": "#/components/responses/c1dd4c539de38facb9f3e04263c9b3f3"
         '422':
-          "$ref": "#/components/responses/a8d4323c1612eff3030eff101b4d3115"
+          "$ref": "#/components/responses/ff2485bd417055ab349e909c601c2708"
       security:
       - hmac: []
       deprecated: false
@@ -1030,9 +1030,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/26843a11fc653f7a83a5f429d9983197"
+          "$ref": "#/components/responses/080c214d3aa3c1240f1851360f3cf3db"
         '404':
-          "$ref": "#/components/responses/c9bb2496eda87e91f3b13673fb02a43b"
+          "$ref": "#/components/responses/26003162718b460a46d1682738e2c795"
       security:
       - hmac: []
       deprecated: false
@@ -1067,9 +1067,9 @@ paths:
       operationId: GET_api_health
       responses:
         '200':
-          "$ref": "#/components/responses/5e3e5feb102cb7990513c05b736d552f"
+          "$ref": "#/components/responses/6cca329dabea9581b6ae2f0a3c893e38"
         '503':
-          "$ref": "#/components/responses/131ea2b125eefa635d6a9726bb53c2c3"
+          "$ref": "#/components/responses/a5bd9a84fef503c6d49680f7838ee7b8"
       security:
       - hmac: []
       deprecated: false

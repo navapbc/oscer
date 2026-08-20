@@ -15,11 +15,10 @@ test('member can upload a payslip via DocAI and land on activity review', async 
   const password = 'testPassword';
   const fixturePath = path.join(__dirname, '../fixtures/paystub_test_feb_2026_paydate.pdf');
 
-  // 1. Create a certification case with a February 2026 certification date so the
-  //    reporting period shown on ChooseMonthsPage is "February 2026", matching
-  //    the pay date on the fixture paystub.
+  // 1. Create a certification case dated March 2026. The lookback ends the month before, so the
+  //    reporting period is "February 2026", matching the pay date on the fixture paystub.
   const certPage = await new CertificationRequestPage(page).go();
-  await certPage.fillAndSubmit(email, '02/28/2026');
+  await certPage.fillAndSubmit(email, '03/15/2026');
 
   // 2. Register account + verify email
   const accountCreationFlow = new AccountCreationFlow(page, emailService);
