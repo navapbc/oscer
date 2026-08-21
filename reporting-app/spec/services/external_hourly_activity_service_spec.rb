@@ -100,6 +100,166 @@ RSpec.describe ExternalHourlyActivityService do
     end
   end
 
+  describe ".create_entries" do
+    let(:hours) { period_end - period_start + 1 } # 1 hour per day
+    let(:valid_params) do
+      {
+        member_id: "123456789",
+        category: "employment",
+        hours:,
+        period_start:,
+        period_end:,
+        source_type: ExternalHourlyActivity::SOURCE_TYPES[:api]
+      }
+    end
+
+    context "with 3 full months" do
+      let(:period_start) { 3.months.ago.beginning_of_month.to_date }
+      let(:period_end) { 1.month.ago.end_of_month.to_date }
+
+      it "has three months" do
+        results = described_class.create_entries(**valid_params)
+
+        expect(results.size).to eq 3
+      end
+
+      it "apportions hours by number of days in month" do
+        described_class.create_entries(**valid_params).each do |result|
+          days_in_month = result.period_end - result.period_start + 1
+          expect(result.hours).to eq days_in_month
+        end
+      end
+    end
+
+    context "with partial months" do
+      let(:days_in_start_month) { 10 }
+      let(:days_in_end_month) { 15 }
+      let(:period_start) { (3.months.ago.end_of_month - days_in_start_month.days + 1).to_date }
+      let(:period_end) { (2.months.ago.end_of_month + days_in_end_month.days).to_date }
+
+      it "has 3 months" do
+        results = described_class.create_entries(**valid_params)
+
+        expect(results.size).to eq 3
+      end
+
+      it "apportions hours by number of days in period in month" do
+        results = described_class.create_entries(**valid_params)
+
+        expect(results.first.hours).to eq days_in_start_month
+        expect(results.last.hours).to eq days_in_end_month
+
+        days_in_middle_month = results[1].period_end - results[1].period_start + 1
+        expect(results[1].hours).to eq days_in_middle_month
+      end
+    end
+
+    context "when spans year boundary" do
+      let(:period_start) { 20.months.ago.beginning_of_month.to_date }
+      let(:period_end) { 1.month.ago.end_of_month.to_date }
+
+      it "has twenty months" do
+        results = described_class.create_entries(**valid_params)
+
+        expect(results.size).to eq 20
+      end
+
+      it "apportions hours by number of days in month" do
+        described_class.create_entries(**valid_params).each do |result|
+          days_in_month = result.period_end - result.period_start + 1
+          expect(result.hours).to eq days_in_month
+        end
+      end
+    end
+
+    context "when not 1 hour per day" do
+      let(:days_in_start_month) { 10 }
+      let(:days_in_end_month) { 18 }
+      let(:hours) { (days_in_start_month + days_in_end_month) / 2 }
+      let(:period_start) { (3.months.ago.end_of_month - days_in_start_month.days + 1).to_date }
+      let(:period_end) { (3.months.ago.end_of_month + days_in_end_month.days).to_date }
+
+      it "apportions hours by number of days in period in month" do
+        results = described_class.create_entries(**valid_params)
+
+        expect(results.first.hours).to eq days_in_start_month / 2
+        expect(results.last.hours).to eq days_in_end_month / 2
+      end
+    end
+
+    # The API supplies hours as a BigDecimal, which rarely divides evenly across months.
+    context "when hours do not divide evenly" do
+      let(:hours) { BigDecimal("100") }
+      let(:period_start) { Date.new(2026, 5, 1) }
+      let(:period_end) { Date.new(2026, 7, 31) }
+
+      it "apportions the full total without rounding drift" do
+        results = described_class.create_entries(**valid_params)
+
+        expect(results.sum(&:hours)).to eq hours
+      end
+
+      it "keeps each entry within a hundredth of an hour of its exact share" do
+        results = described_class.create_entries(**valid_params)
+        total_days = period_end - period_start + 1
+
+        results.each do |result|
+          days = result.period_end - result.period_start + 1
+          expect(result.hours).to be_within(0.01).of(days * hours / total_days)
+        end
+      end
+    end
+
+    context "with a source_id" do
+      let(:period_start) { 3.months.ago.beginning_of_month.to_date }
+      let(:period_end) { 1.month.ago.end_of_month.to_date }
+
+      it "sets it on every entry" do
+        results = described_class.create_entries(**valid_params, source_id: "batch-123")
+
+        expect(results.size).to be > 1
+        expect(results.map(&:source_id)).to all eq "batch-123"
+      end
+
+      it "sets it on a single-month period" do
+        results = described_class.create_entries(
+          **valid_params.merge(period_end: period_start.end_of_month), source_id: "batch-123"
+        )
+
+        expect(results.map(&:source_id)).to eq [ "batch-123" ]
+      end
+    end
+
+    # Malformed input must still be rejected by the model rather than failing in the
+    # apportioning arithmetic.
+    context "with blank hours" do
+      let(:hours) { nil }
+      let(:period_start) { 3.months.ago.beginning_of_month.to_date }
+      let(:period_end) { 1.month.ago.end_of_month.to_date }
+
+      it "raises a validation error" do
+        expect { described_class.create_entries(**valid_params) }
+          .to raise_error(ActiveRecord::RecordInvalid, /Hours/)
+      end
+    end
+
+    context "when the period is reversed" do
+      let(:hours) { BigDecimal("40") }
+      let(:period_start) { 1.month.ago.end_of_month.to_date }
+      let(:period_end) { 3.months.ago.beginning_of_month.to_date }
+
+      it "raises a validation error" do
+        expect { described_class.create_entries(**valid_params) }
+          .to raise_error(ActiveRecord::RecordInvalid, /cannot be after end date/)
+      end
+
+      it "creates no entries" do
+        expect { described_class.create_entries(**valid_params) rescue nil }
+          .not_to change(ExternalHourlyActivity, :count)
+      end
+    end
+  end
+
   describe ".duplicate_entry?" do
     let(:existing_entry) { create(:external_hourly_activity, :employment) }
 
