@@ -177,7 +177,7 @@ RSpec.describe Demo::Certifications::CreateForm do
       )
     end
     let(:months) { certification.certification_requirements.months_that_can_be_certified }
-    let(:latest_certifiable_month) { Date.new(2026, 7, 1) }
+    let(:latest_certifiable_month) { months.max }
 
     shared_examples "activities reported in the certifiable months" do |expected_months_count|
       it "reports #{expected_months_count} month(s) of activity" do
