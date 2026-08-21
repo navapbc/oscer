@@ -20,7 +20,7 @@ class HoursComplianceDeterminationService
       # TODO: the logic behind which forms are updated tbd
       application_form = ActivityReportApplicationForm.where(certification_case_id: kase.id).first
       hours_data = aggregate_hours_for_certification(certification, application_form:)
-      outcome = determine_outcome(hours_data[:total_hours])
+      outcome = determine_outcome(hours_data[:hours_by_month]&.values)
 
       kase.record_hours_compliance(outcome, hours_data)
     end
@@ -57,6 +57,7 @@ class HoursComplianceDeterminationService
           external: external_hours[:total],
           activity: member_hours[:total]
         },
+        hours_by_month: merge_category_hours(external_hours[:by_month], member_hours[:by_month]),
         external_hourly_activity_ids: external_hours[:ids],
         activity_ids: member_hours[:ids],
         enrollment_status: best_enrollment_status(certification)
@@ -81,6 +82,10 @@ class HoursComplianceDeterminationService
     # @return [Boolean]
     def compliant_for_total_hours?(total_hours)
       total_hours.to_f >= TARGET_HOURS
+    end
+
+    def compliant_for_monthly_hours?(by_month)
+      by_month.any? { |monthly_total| monthly_total.to_f >= TARGET_HOURS }
     end
 
     # Whether a verified education enrollment satisfies the hours requirement on its own.
@@ -119,8 +124,8 @@ class HoursComplianceDeterminationService
       activity.period_start <= lookback.end.to_date.end_of_month && activity.period_end >= lookback.start.to_date
     end
 
-    def determine_outcome(total_hours)
-      compliant_for_total_hours?(total_hours) ? :compliant : :not_compliant
+    def determine_outcome(by_month)
+      compliant_for_monthly_hours?(by_month) ? :compliant : :not_compliant
     end
 
     def merge_category_hours(external, member)

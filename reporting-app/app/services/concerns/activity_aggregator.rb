@@ -53,10 +53,16 @@ module ActivityAggregator
   end
 
   def summarize_hours(activities)
+    by_month = activities.group_by do |activity|
+      activity.month
+    end.transform_values do |monthly_activities|
+      monthly_activities.sum { |activity| activity.hours }
+    end
     if activities.is_a?(ActiveRecord::Relation)
       {
         total: activities.sum(:hours).to_f,
         by_category: activities.group(:category).sum(:hours).transform_values(&:to_f),
+        by_month:,
         ids: activities.pluck(:id)
       }
     else
@@ -64,6 +70,7 @@ module ActivityAggregator
       {
         total: rows.sum { |row| row.hours.to_f },
         by_category: rows.group_by(&:category).transform_values { |group| group.sum { |row| row.hours.to_f } },
+        by_month:,
         ids: rows.map(&:id)
       }
     end
