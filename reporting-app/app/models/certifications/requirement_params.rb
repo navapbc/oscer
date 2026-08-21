@@ -40,8 +40,9 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
     })
   end
 
+  # Excludes the certification month, which is still in progress.
   def months_that_can_be_certified
-    lookback_period.times.map { |i| certification_date.beginning_of_month << i }
+    lookback_period.times.map { |i| certification_date.beginning_of_month << (i + 1) }
   end
 
   private
