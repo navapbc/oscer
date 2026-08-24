@@ -6,7 +6,8 @@ RSpec.describe Certifications::RequirementParams do
   describe "#months_that_can_be_certified" do
     subject(:months) { params.months_that_can_be_certified }
 
-    let(:certification_date) {  Date.new(2026, 8, 20) }
+    let(:certification_date) { Date.new(2026, 8, 20) }
+
     let(:cert_date_start) { certification_date.beginning_of_month }
     let(:params) do
       build(
@@ -54,8 +55,8 @@ RSpec.describe Certifications::RequirementParams do
 
     let(:lookback_period) { 6 }
     let(:certification_date) { Date.new(2026, 8, 20) }
-    let(:expected_start) { (certification_date << lookback_period).beginning_of_month }
-    let(:expected_end) { (certification_date << 1).beginning_of_month }
+    let(:expected_start) { certification_date.beginning_of_month << lookback_period }
+    let(:expected_end) { certification_date.beginning_of_month << 1 }
 
     let(:params) do
       build(

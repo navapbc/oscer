@@ -278,7 +278,7 @@ RSpec.describe "/api/certifications", type: :request do
 
     context "with activities that create ExternalHourlyActivity records" do
       let(:member_id) { "member-789" }
-      let(:certification_date) { Date.new(2025, 12, 25) }
+      let(:latest_certifiable_month) { Date.new(2025, 12, 25) }
 
       it "creates ExternalHourlyActivity records for hourly activities" do
         member_data = build(:certification_member_data,
@@ -289,8 +289,8 @@ RSpec.describe "/api/certifications", type: :request do
               "type" => "hourly",
               "category" => "employment",
               "hours" => 40,
-              "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month,
+              "period_start" => latest_certifiable_month.beginning_of_month,
+              "period_end" => latest_certifiable_month.end_of_month,
               "employer" => "Acme Corp",
               "verification_status" => "verified"
             }
@@ -328,8 +328,8 @@ RSpec.describe "/api/certifications", type: :request do
               "type" => "hourly",
               "category" => "education",
               "credit_hours" => 9,
-              "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month,
+              "period_start" => latest_certifiable_month.beginning_of_month,
+              "period_end" => latest_certifiable_month.end_of_month,
               "verification_status" => "verified"
             }
           ]
@@ -362,8 +362,8 @@ RSpec.describe "/api/certifications", type: :request do
               "type" => "hourly",
               "category" => "education",
               "enrollment_status" => "full_time",
-              "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month,
+              "period_start" => latest_certifiable_month.beginning_of_month,
+              "period_end" => latest_certifiable_month.end_of_month,
               "verification_status" => "verified"
             }
           ]
@@ -396,8 +396,8 @@ RSpec.describe "/api/certifications", type: :request do
               "type" => "income",
               "category" => "employment",
               "gross_income" => 620,
-              "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month,
+              "period_start" => latest_certifiable_month.beginning_of_month,
+              "period_end" => latest_certifiable_month.end_of_month,
               "source" => "api",
               "employer" => "Acme Corp",
               "verification_status" => "verified"
@@ -422,7 +422,7 @@ RSpec.describe "/api/certifications", type: :request do
 
         expect(ExternalIncomeActivity.pluck(:member_id, :category, :gross_income, :source_type, :period_start, :period_end)).to eq(
           [
-            [ member_id, "employment", 620, "api", certification_date.beginning_of_month, certification_date.end_of_month ]
+            [ member_id, "employment", 620, "api", latest_certifiable_month.beginning_of_month, latest_certifiable_month.end_of_month ]
           ]
         )
         expect(ExternalIncomeActivity.pick(:metadata)).to include("employer" => "Acme Corp")
@@ -437,16 +437,16 @@ RSpec.describe "/api/certifications", type: :request do
               "type" => "hourly",
               "category" => "employment",
               "hours" => 40,
-              "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month,
+              "period_start" => latest_certifiable_month.beginning_of_month,
+              "period_end" => latest_certifiable_month.end_of_month,
               "verification_status" => "verified"
             },
             {
               "type" => "income",
               "category" => "employment",
               "gross_income" => 580,
-              "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month,
+              "period_start" => latest_certifiable_month.beginning_of_month,
+              "period_end" => latest_certifiable_month.end_of_month,
               "source" => "api",
               "verification_status" => "verified"
             }
@@ -481,8 +481,8 @@ RSpec.describe "/api/certifications", type: :request do
               "type" => "hourly",
               "category" => "employment",
               "hours" => 40,
-              "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month,
+              "period_start" => latest_certifiable_month.beginning_of_month,
+              "period_end" => latest_certifiable_month.end_of_month,
               "verification_status" => "verified"
             }
           ]
@@ -515,8 +515,8 @@ RSpec.describe "/api/certifications", type: :request do
               "type" => "hourly",
               "category" => "employment",
               "hours" => -10, # Invalid: negative hours
-              "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month,
+              "period_start" => latest_certifiable_month.beginning_of_month,
+              "period_end" => latest_certifiable_month.end_of_month,
               "verification_status" => "verified"
             }
           ]
@@ -548,8 +548,8 @@ RSpec.describe "/api/certifications", type: :request do
               "type" => "income",
               "category" => "employment",
               "gross_income" => 500,
-              "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month,
+              "period_start" => latest_certifiable_month.beginning_of_month,
+              "period_end" => latest_certifiable_month.end_of_month,
               "source" => "api",
               "verification_status" => "verified"
             },
@@ -557,8 +557,8 @@ RSpec.describe "/api/certifications", type: :request do
               "type" => "income",
               "category" => "employment",
               "gross_income" => 500,
-              "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month,
+              "period_start" => latest_certifiable_month.beginning_of_month,
+              "period_end" => latest_certifiable_month.end_of_month,
               "source" => "api",
               "verification_status" => "verified"
             }
@@ -590,16 +590,16 @@ RSpec.describe "/api/certifications", type: :request do
               "type" => "hourly",
               "category" => "employment",
               "hours" => 40,
-              "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month,
+              "period_start" => latest_certifiable_month.beginning_of_month,
+              "period_end" => latest_certifiable_month.end_of_month,
               "verification_status" => "verified"
             },
             {
               "type" => "hourly",
               "category" => "community_service",
               "hours" => 10,
-              "period_start" => certification_date.beginning_of_month,
-              "period_end" => certification_date.end_of_month,
+              "period_start" => latest_certifiable_month.beginning_of_month,
+              "period_end" => latest_certifiable_month.end_of_month,
               "verification_status" => "verified"
             }
           ]
@@ -627,7 +627,7 @@ RSpec.describe "/api/certifications", type: :request do
 
     context "with household data that creates ExternalIncomeActivity records" do
       let(:member_id) { "member-789" }
-      let(:certification_date) { Date.new(2025, 12, 25) }
+      let(:latest_certifiable_month) { Date.new(2025, 12, 25) }
 
       it "creates ExternalIncomeActivity records for household income and not ExternalHourlyActivity" do
         member_data = build(:certification_member_data,
@@ -648,8 +648,8 @@ RSpec.describe "/api/certifications", type: :request do
               gross_incomes: [
                 {
                   "gross_income" => 620,
-                  "period_start" => certification_date.beginning_of_month,
-                  "period_end" => certification_date.end_of_month
+                  "period_start" => latest_certifiable_month.beginning_of_month,
+                  "period_end" => latest_certifiable_month.end_of_month
                 }
               ]
             }
@@ -674,7 +674,7 @@ RSpec.describe "/api/certifications", type: :request do
 
         expect(ExternalIncomeActivity.pluck(:member_id, :category, :gross_income, :source_type, :period_start, :period_end)).to eq(
           [
-            [ member_id, "household", 620, "api", certification_date.beginning_of_month, certification_date.end_of_month ]
+            [ member_id, "household", 620, "api", latest_certifiable_month.beginning_of_month, latest_certifiable_month.end_of_month ]
           ]
         )
       end
