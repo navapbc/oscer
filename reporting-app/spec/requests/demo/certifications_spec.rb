@@ -174,8 +174,9 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(activity.member_id).to eq(cert.member_id)
         expect(activity.category).to eq("employment")
         expect(activity.hours).to eq(10)
-        expect(activity.period_start).to eq(cert.certification_requirements.certification_date.beginning_of_month)
-        expect(activity.period_end).to eq(cert.certification_requirements.certification_date.end_of_month)
+        certifiable_month = cert.certification_requirements.months_that_can_be_certified.max
+        expect(activity.period_start).to eq(certifiable_month)
+        expect(activity.period_end).to eq(certifiable_month.end_of_month)
         expect(activity.source_type).to eq("api")
         expect(activity.source_id).to be_nil
       end
@@ -254,8 +255,9 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(activity.category).to eq("employment")
         expect(activity.gross_income).to eq(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY / 2.0)
         expect(activity.source_type).to eq("api")
-        expect(activity.period_start).to eq(cert.certification_requirements.certification_date.beginning_of_month)
-        expect(activity.period_end).to eq(cert.certification_requirements.certification_date.end_of_month)
+        certifiable_month = cert.certification_requirements.months_that_can_be_certified.max
+        expect(activity.period_start).to eq(certifiable_month)
+        expect(activity.period_end).to eq(certifiable_month.end_of_month)
         expect(activity.source_id).to be_nil
       end
 
@@ -284,8 +286,9 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(activity.category).to eq("employment")
         expect(activity.gross_income).to eq(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY)
         expect(activity.source_type).to eq("api")
-        expect(activity.period_start).to eq(cert.certification_requirements.certification_date.beginning_of_month)
-        expect(activity.period_end).to eq(cert.certification_requirements.certification_date.end_of_month)
+        certifiable_month = cert.certification_requirements.months_that_can_be_certified.max
+        expect(activity.period_start).to eq(certifiable_month)
+        expect(activity.period_end).to eq(certifiable_month.end_of_month)
         expect(activity.source_id).to be_nil
       end
 
@@ -308,8 +311,9 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(activity.category).to eq("education")
         expect(activity.enrollment_status).to eq("half_time")
         expect(activity.hours).to be_nil
-        expect(activity.period_start).to eq(cert.certification_requirements.certification_date.beginning_of_month)
-        expect(activity.period_end).to eq(cert.certification_requirements.certification_date.end_of_month)
+        certifiable_month = cert.certification_requirements.months_that_can_be_certified.max
+        expect(activity.period_start).to eq(certifiable_month)
+        expect(activity.period_end).to eq(certifiable_month.end_of_month)
       end
 
       it "creates Certification with 'Less than half-time education enrollment'" do

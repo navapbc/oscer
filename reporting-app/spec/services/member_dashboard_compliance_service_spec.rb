@@ -441,7 +441,8 @@ RSpec.describe MemberDashboardComplianceService do
       let(:activity_report_application_form) { create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
 
       before do
-        create(:income_activity, activity_report_application_form_id: activity_report_application_form.id, income: 30_00, month: certification_date)
+        create(:income_activity, activity_report_application_form_id: activity_report_application_form.id, income: 30_00,
+               month: certification.certification_requirements.months_that_can_be_certified.max)
         activity_report_application_form.reload
       end
 

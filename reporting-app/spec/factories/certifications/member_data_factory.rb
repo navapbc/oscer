@@ -7,6 +7,8 @@ FactoryBot.define do
     transient do
       cert_date { Date.today }
       num_months { 1 }
+      # Reported activity lands in the certifiable months, which end the month before cert_date.
+      latest_certifiable_month { cert_date.beginning_of_month << 1 }
     end
 
     trait :with_full_name do
@@ -46,8 +48,8 @@ FactoryBot.define do
             "type": "hourly",
             "category": "employment",
             "hours": 10,
-            "period_start": cert_date.beginning_of_month,
-            "period_end": cert_date.end_of_month,
+            "period_start": latest_certifiable_month,
+            "period_end": latest_certifiable_month.end_of_month,
             "employer": "Acme",
             "verification_status": "verified"
           }
@@ -63,8 +65,8 @@ FactoryBot.define do
             "type": "hourly",
             "category": "employment",
             "hours": 80,
-            "period_start": cert_date.beginning_of_month << i,
-            "period_end": cert_date.end_of_month << i,
+            "period_start": latest_certifiable_month << i,
+            "period_end": latest_certifiable_month.end_of_month << i,
             "employer": "Acme",
             "verification_status": "verified"
           }
@@ -80,8 +82,8 @@ FactoryBot.define do
             "type": "hourly",
             "category": "education",
             "enrollment_status": "half_time",
-            "period_start": cert_date.beginning_of_month,
-            "period_end": cert_date.end_of_month,
+            "period_start": latest_certifiable_month,
+            "period_end": latest_certifiable_month.end_of_month,
             "name": "State University",
             "verification_status": "verified"
           }
@@ -97,8 +99,8 @@ FactoryBot.define do
             "type": "hourly",
             "category": "education",
             "enrollment_status": "less_than_half_time",
-            "period_start": cert_date.beginning_of_month,
-            "period_end": cert_date.end_of_month,
+            "period_start": latest_certifiable_month,
+            "period_end": latest_certifiable_month.end_of_month,
             "name": "State University",
             "verification_status": "verified"
           }
@@ -119,8 +121,8 @@ FactoryBot.define do
             "type": "income",
             "category": "employment",
             "gross_income": IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY / 2.0,
-            "period_start": cert_date.beginning_of_month,
-            "period_end": cert_date.end_of_month,
+            "period_start": latest_certifiable_month,
+            "period_end": latest_certifiable_month.end_of_month,
             "source": "api",
             "employer": "Acme Corp",
             "verification_status": "verified"
@@ -137,8 +139,8 @@ FactoryBot.define do
             "type": "income",
             "category": "employment",
             "gross_income": IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY,
-            "period_start": cert_date.beginning_of_month,
-            "period_end": cert_date.end_of_month,
+            "period_start": latest_certifiable_month,
+            "period_end": latest_certifiable_month.end_of_month,
             "source": "api",
             "employer": "Acme Corp",
             "verification_status": "verified"
@@ -154,8 +156,8 @@ FactoryBot.define do
             "type": "hourly",
             "category": "community_service",
             "hours": 20,
-            "period_start": cert_date.beginning_of_month,
-            "period_end": cert_date.end_of_month,
+            "period_start": latest_certifiable_month,
+            "period_end": latest_certifiable_month.end_of_month,
             "employer": "Community Center",
             "verification_status": "verified"
           }
@@ -171,8 +173,8 @@ FactoryBot.define do
             "type": "income",
             "category": "employment",
             "gross_income": 620.0,
-            "period_start": cert_date.beginning_of_month,
-            "period_end": cert_date.end_of_month,
+            "period_start": latest_certifiable_month,
+            "period_end": latest_certifiable_month.end_of_month,
             "source": "api",
             "employer": "Acme Corp",
             "verification_status": "verified"

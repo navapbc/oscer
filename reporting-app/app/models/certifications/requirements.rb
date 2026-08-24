@@ -13,12 +13,6 @@ class Certifications::Requirements < ValueObject
   attribute :certification_type, :enum, options: CERTIFICATION_TYPE_OPTIONS
   validates :certification_type, inclusion: { in: CERTIFICATION_TYPE_OPTIONS, message: "is not a valid option" }, allow_blank: true
 
-  # TODO: could do something like
-  # "lookback": {
-  #   "start": requirement_params.certification_date.beginning_of_month << requirement_params.lookback_period,
-  #   "end": requirement_params.certification_date.beginning_of_month << 1
-  # },
-  # but a list of the months feels potentially more usable, alt name "months_to_consider"?
   attribute :months_that_can_be_certified, :array, of: ActiveModel::Type::Date.new
   attribute :number_of_months_to_certify, :integer, default: 1
   attribute :due_date, :date
