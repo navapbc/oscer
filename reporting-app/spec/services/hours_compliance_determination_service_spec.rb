@@ -80,13 +80,12 @@ RSpec.describe HoursComplianceDeterminationService do
 
     context "when monthly hours are below target" do
       before do
-        first_month = certification.certification_requirements.continuous_lookback_period.start 
-        last_month = certification.certification_requirements.continuous_lookback_period.end
-        create_external_hourly_activity_for(certification, hours: 40, period_start: first_month.beginning_of_month,
-                                            period_end: first_month.end_of_month)
-        create_external_hourly_activity_for(certification, hours: 40, period_start: last_month.beginning_of_month,
-                                            period_end: last_month.end_of_month)
+        certification.certification_requirements.months_that_can_be_certified.each do |month|
+        create_external_hourly_activity_for(certification, hours: 40, period_start: month.beginning_of_month,
+                                            period_end: month.end_of_month)
+        end
       end
+
       it "creates a not_compliant determination" do
         described_class.calculate(certification.id)
         determination = Determination.where(subject_id: certification.id).last
@@ -376,13 +375,15 @@ RSpec.describe HoursComplianceDeterminationService do
     let(:reportable_month) { certification.certification_requirements.continuous_lookback_period.start.to_date }
 
     it "splits hours by month" do
-      create_external_hourly_activity_for(certification, category: "employment", hours: 40, period_start: 2.months.ago.to_date, period_end: 2.months.ago.end_of_month.to_date)
-      create_external_hourly_activity_for(certification, category: "employment", hours: 40, period_start: 1.months.ago.to_date, period_end: 1.months.ago.end_of_month.to_date)
+      certification.certification_requirements.months_that_can_be_certified.each do |month|
+        create_external_hourly_activity_for(certification, hours: 40, period_start: month.beginning_of_month,
+                                            period_end: month.end_of_month)
+      end
 
       summary = described_class.aggregate_hours_for_certification(certification)
-      expect(summary[:hours_by_month].size).to eq 2
+      expect(summary[:hours_by_month].size).to eq certification.certification_requirements.months_that_can_be_certified.size
     end
-    
+
     it "includes member WorkActivity hours in totals alongside external hours" do
       create_external_hourly_activity_for(certification, category: "employment", hours: 40)
       create(:work_activity, activity_report_application_form_id: form.id, month: reportable_month, category: "education", hours: 12)
