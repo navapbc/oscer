@@ -52,7 +52,7 @@ class Certifications::CreationService
       # Any other hourless activity still falls through to ExternalHourlyActivityService, which rejects it.
       next if activity_data.education_enrollment? && activity_data.clock_hours.blank?
 
-      ExternalHourlyActivityService.create_entries(
+      ExternalHourlyActivityService.create_entry(
         member_id: certification.member_id,
         category: activity_data.category,
         hours: activity_data.clock_hours,
