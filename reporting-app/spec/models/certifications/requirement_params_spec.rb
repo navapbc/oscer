@@ -79,4 +79,42 @@ RSpec.describe Certifications::RequirementParams do
       expect(lookback.end).to eq expected_end
     end
   end
+
+  describe "#to_requirements certification period bounds" do
+    subject(:requirements) { params.to_requirements }
+
+    # Coverage runs Jan to Jun and the renewal is requested in May, so the period
+    # supplied is the currently active one, not the upcoming one.
+    let(:certification_date) { Date.new(2026, 5, 20) }
+    let(:params) do
+      build(
+        :certification_certification_requirement_params, :with_direct_params,
+        certification_date:,
+        **overrides
+      )
+    end
+    let(:overrides) { {} }
+
+    it "leaves both bounds nil when the request does not supply them" do
+      expect(requirements.certification_period_start).to be_nil
+      expect(requirements.certification_period_end).to be_nil
+    end
+
+    context "when the request supplies the period bounds" do
+      let(:overrides) do
+        {
+          certification_period_start: Date.new(2026, 1, 1),
+          certification_period_end: Date.new(2026, 6, 30)
+        }
+      end
+
+      it "carries the supplied start through" do
+        expect(requirements.certification_period_start).to eq Date.new(2026, 1, 1)
+      end
+
+      it "carries the supplied end through" do
+        expect(requirements.certification_period_end).to eq Date.new(2026, 6, 30)
+      end
+    end
+  end
 end

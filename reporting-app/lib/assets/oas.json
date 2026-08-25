@@ -56,6 +56,8 @@
               "case_number": "C-111",
               "certification_requirements": {
                 "certification_date": "2025-09-26",
+                "certification_period_start": "2025-04-01",
+                "certification_period_end": "2025-09-30",
                 "number_of_months_to_certify": 1,
                 "due_date": "2025-10-26",
                 "months_that_can_be_certified": [
@@ -109,6 +111,8 @@
               "case_number": "C-111",
               "certification_requirements": {
                 "certification_date": "2025-09-26",
+                "certification_period_start": "2025-04-01",
+                "certification_period_end": "2025-09-30",
                 "lookback_period": 3,
                 "number_of_months_to_certify": 1,
                 "due_period_days": 30
@@ -168,6 +172,16 @@
             "format": "date",
             "description": "The date of the certification"
           },
+          "certification_period_start": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "First day of the member's active certification period. Supplied for recertification and change in circumstance; absent for a new application, which has no prior coverage period."
+          },
+          "certification_period_end": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "Last day of the member's active certification period. Supplied for recertification and change in circumstance; absent for a new application."
+          },
           "certification_type": {
             "type": ["string", "null"],
 	    "enum": [
@@ -216,6 +230,16 @@
             "format": "date",
             "description": "The date of the certification"
           },
+          "certification_period_start": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "First day of the member's active certification period. Supplied for recertification and change in circumstance; absent for a new application, which has no prior coverage period."
+          },
+          "certification_period_end": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "Last day of the member's active certification period. Supplied for recertification and change in circumstance; absent for a new application."
+          },
           "lookback_period": {
             "type": "integer",
             "description": "The number of months before `certification_date` the Member can choose from"
@@ -242,6 +266,16 @@
             "type": "string",
             "format": "date",
             "description": "The date of the certification"
+          },
+          "certification_period_start": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "First day of the member's active certification period. Supplied for recertification and change in circumstance; absent for a new application, which has no prior coverage period."
+          },
+          "certification_period_end": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "Last day of the member's active certification period. Supplied for recertification and change in circumstance; absent for a new application."
           },
           "certification_type": {
             "type": "string",

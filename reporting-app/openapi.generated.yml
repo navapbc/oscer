@@ -48,6 +48,8 @@ components:
             case_number: C-111
             certification_requirements:
               certification_date: '2025-09-26'
+              certification_period_start: '2025-04-01'
+              certification_period_end: '2025-09-30'
               number_of_months_to_certify: 1
               due_date: '2025-10-26'
               months_that_can_be_certified:
@@ -89,6 +91,8 @@ components:
             case_number: C-111
             certification_requirements:
               certification_date: '2025-09-26'
+              certification_period_start: '2025-04-01'
+              certification_period_end: '2025-09-30'
               lookback_period: 3
               number_of_months_to_certify: 1
               due_period_days: 30
@@ -133,6 +137,21 @@ components:
           type: string
           format: date
           description: The date of the certification
+        certification_period_start:
+          type:
+          - string
+          - 'null'
+          format: date
+          description: First day of the member's active certification period. Supplied
+            for recertification and change in circumstance; absent for a new application,
+            which has no prior coverage period.
+        certification_period_end:
+          type:
+          - string
+          - 'null'
+          format: date
+          description: Last day of the member's active certification period. Supplied
+            for recertification and change in circumstance; absent for a new application.
         certification_type:
           type:
           - string
@@ -181,6 +200,21 @@ components:
           type: string
           format: date
           description: The date of the certification
+        certification_period_start:
+          type:
+          - string
+          - 'null'
+          format: date
+          description: First day of the member's active certification period. Supplied
+            for recertification and change in circumstance; absent for a new application,
+            which has no prior coverage period.
+        certification_period_end:
+          type:
+          - string
+          - 'null'
+          format: date
+          description: Last day of the member's active certification period. Supplied
+            for recertification and change in circumstance; absent for a new application.
         lookback_period:
           type: integer
           description: The number of months before `certification_date` the Member
@@ -202,6 +236,21 @@ components:
           type: string
           format: date
           description: The date of the certification
+        certification_period_start:
+          type:
+          - string
+          - 'null'
+          format: date
+          description: First day of the member's active certification period. Supplied
+            for recertification and change in circumstance; absent for a new application,
+            which has no prior coverage period.
+        certification_period_end:
+          type:
+          - string
+          - 'null'
+          format: date
+          description: Last day of the member's active certification period. Supplied
+            for recertification and change in circumstance; absent for a new application.
         certification_type:
           type: string
           enum:
@@ -795,73 +844,73 @@ components:
       required:
       - status
   responses:
-    97b7961e71e50273645f83deb9a36c61:
+    1d11eb189bf138adcc6118aa03024266:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    46a16e2accf3afd8af454e34d75b8ff5:
+    88788142f7cde6114eafcf01c1a875bf:
       description: Accepted
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
-    a0cd30798b6f58a5b8383ac34e9b046c:
+    10d5d916650c69da15f8c7681a0f7d0a:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    a83413b9d41e58b4134b113b5fbf9796:
+    866cda7ee7bb56ab7f407786d4ed0695:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    1ecceed86c18b203880874495cd64043:
+    '0009c1f2c57cfc4ccf580fb86487c5d9':
       description: Existing Certification returned for a duplicate request.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    9059d8b7005896da239ea7f4a22f0d47:
+    aaf6317dae1abac0058eb541697a5f0f:
       description: Accepted
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
-    c1dd4c539de38facb9f3e04263c9b3f3:
+    c3020d20994dbd765aea697b8f38e107:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    ff2485bd417055ab349e909c601c2708:
+    28a28e72b66b09ac7a79e7a74e51ce26:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    '080c214d3aa3c1240f1851360f3cf3db':
+    fccae5435dbe2411dd9be2a83b258dd4:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    26003162718b460a46d1682738e2c795:
+    e295118dba2900a4260c80a98ee4b19c:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    6cca329dabea9581b6ae2f0a3c893e38:
+    6da89506e463b70296e04fed15ce4b14:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    a5bd9a84fef503c6d49680f7838ee7b8:
+    0dce8d376b615135191f32270f4701ce:
       description: Response
       content:
         application/json:
@@ -893,7 +942,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    0cb88fb096fd80d410d5b2e432ff47e1:
+    b91aac4a97afee8dc32086895b8031c7:
       description: The Certification data.
       content:
         application/json:
@@ -986,11 +1035,11 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/97b7961e71e50273645f83deb9a36c61"
+          "$ref": "#/components/responses/1d11eb189bf138adcc6118aa03024266"
         '202':
-          "$ref": "#/components/responses/46a16e2accf3afd8af454e34d75b8ff5"
+          "$ref": "#/components/responses/88788142f7cde6114eafcf01c1a875bf"
         '404':
-          "$ref": "#/components/responses/a0cd30798b6f58a5b8383ac34e9b046c"
+          "$ref": "#/components/responses/10d5d916650c69da15f8c7681a0f7d0a"
       security:
       - hmac: []
       deprecated: false
@@ -1004,18 +1053,18 @@ paths:
       parameters:
       - "$ref": "#/components/parameters/4f7cce241e43c9b4680b65e2612ab599"
       requestBody:
-        "$ref": "#/components/requestBodies/0cb88fb096fd80d410d5b2e432ff47e1"
+        "$ref": "#/components/requestBodies/b91aac4a97afee8dc32086895b8031c7"
       responses:
         '201':
-          "$ref": "#/components/responses/a83413b9d41e58b4134b113b5fbf9796"
+          "$ref": "#/components/responses/866cda7ee7bb56ab7f407786d4ed0695"
         '200':
-          "$ref": "#/components/responses/1ecceed86c18b203880874495cd64043"
+          "$ref": "#/components/responses/0009c1f2c57cfc4ccf580fb86487c5d9"
         '202':
-          "$ref": "#/components/responses/9059d8b7005896da239ea7f4a22f0d47"
+          "$ref": "#/components/responses/aaf6317dae1abac0058eb541697a5f0f"
         '400':
-          "$ref": "#/components/responses/c1dd4c539de38facb9f3e04263c9b3f3"
+          "$ref": "#/components/responses/c3020d20994dbd765aea697b8f38e107"
         '422':
-          "$ref": "#/components/responses/ff2485bd417055ab349e909c601c2708"
+          "$ref": "#/components/responses/28a28e72b66b09ac7a79e7a74e51ce26"
       security:
       - hmac: []
       deprecated: false
@@ -1030,9 +1079,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/080c214d3aa3c1240f1851360f3cf3db"
+          "$ref": "#/components/responses/fccae5435dbe2411dd9be2a83b258dd4"
         '404':
-          "$ref": "#/components/responses/26003162718b460a46d1682738e2c795"
+          "$ref": "#/components/responses/e295118dba2900a4260c80a98ee4b19c"
       security:
       - hmac: []
       deprecated: false
@@ -1067,9 +1116,9 @@ paths:
       operationId: GET_api_health
       responses:
         '200':
-          "$ref": "#/components/responses/6cca329dabea9581b6ae2f0a3c893e38"
+          "$ref": "#/components/responses/6da89506e463b70296e04fed15ce4b14"
         '503':
-          "$ref": "#/components/responses/a5bd9a84fef503c6d49680f7838ee7b8"
+          "$ref": "#/components/responses/0dce8d376b615135191f32270f4701ce"
       security:
       - hmac: []
       deprecated: false
