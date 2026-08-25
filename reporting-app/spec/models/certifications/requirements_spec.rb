@@ -40,7 +40,7 @@ RSpec.describe Certifications::Requirements do
     end
   end
 
-  describe "the bounds survive the request and storage paths" do
+  describe "supplied period bounds" do
     let(:bounds) do
       {
         "certification_period_start" => "2026-01-01",
@@ -48,7 +48,7 @@ RSpec.describe Certifications::Requirements do
       }
     end
 
-    it "are carried when the request supplies full requirements as JSON" do
+    it "survives a full-requirements request" do
       input = Api::Certifications::RequirementsOrParamsInput.new(
         bounds.merge(
           "certification_date" => "2026-05-20",
@@ -60,7 +60,7 @@ RSpec.describe Certifications::Requirements do
       expect(input.certification_period_start).to eq Date.new(2026, 1, 1)
     end
 
-    it "are carried when the request supplies parameters" do
+    it "survives a parameter-shaped request" do
       input = Api::Certifications::RequirementsOrParamsInput.new(
         bounds.merge(
           "certification_date" => "2026-05-20",
@@ -74,7 +74,7 @@ RSpec.describe Certifications::Requirements do
       expect(input.to_requirements.certification_period_start).to eq Date.new(2026, 1, 1)
     end
 
-    it "are carried when built from batch upload input" do
+    it "survives batch upload input" do
       requirements = CertificationService.new.certification_requirements_from_input(
         bounds.merge(
           "certification_date" => "2026-05-20",
@@ -85,7 +85,7 @@ RSpec.describe Certifications::Requirements do
       expect(requirements.certification_period_start).to eq Date.new(2026, 1, 1)
     end
 
-    it "round-trip through the database" do
+    it "survives a database round trip" do
       certification = create(
         :certification,
         certification_requirements: build(
