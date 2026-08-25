@@ -7,7 +7,6 @@ RSpec.describe Certifications::RequirementParams do
     subject(:months) { params.months_that_can_be_certified }
 
     let(:certification_date) { Date.new(2026, 8, 20) }
-
     let(:cert_date_start) { certification_date.beginning_of_month }
     let(:params) do
       build(

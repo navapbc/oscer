@@ -187,7 +187,6 @@ RSpec.describe ExternalHourlyActivityService do
       end
     end
 
-    # The API supplies hours as a BigDecimal, which rarely divides evenly across months.
     context "when hours do not divide evenly" do
       let(:hours) { BigDecimal("100") }
       let(:period_start) { Date.new(2026, 5, 1) }
@@ -230,8 +229,6 @@ RSpec.describe ExternalHourlyActivityService do
       end
     end
 
-    # Malformed input must still be rejected by the model rather than failing in the
-    # apportioning arithmetic.
     context "with blank hours" do
       let(:hours) { nil }
       let(:period_start) { 3.months.ago.beginning_of_month.to_date }
@@ -256,6 +253,20 @@ RSpec.describe ExternalHourlyActivityService do
       it "creates no entries" do
         expect { described_class.create_entries(**valid_params) rescue nil }
           .not_to change(ExternalHourlyActivity, :count)
+      end
+    end
+
+    context "when a month's share rounds to zero" do
+      let(:hours) { 1 }
+      let(:period_start) { Date.new(2026, 1, 31) }
+      let(:period_end) { Date.new(2026, 12, 31) }
+
+      it "skips the month rather than failing the whole period" do
+        results = described_class.create_entries(**valid_params)
+
+        expect(results.map(&:period_start)).not_to include(period_start)
+        expect(results.map(&:hours)).to all be > 0
+        expect(results.sum(&:hours)).to eq hours
       end
     end
   end
