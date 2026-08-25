@@ -184,20 +184,26 @@ RSpec.describe HoursComplianceDeterminationService do
     end
   end
 
-  describe ".compliant_for_total_hours?" do
+  describe ".compliant_for_monthly_hours?" do
     let(:target_hours) { 50 }
 
     before do
       stub_const("HoursComplianceDeterminationService::TARGET_HOURS", target_hours)
     end
 
-    context "when total is greater than or equal to target" do
-      it { expect(described_class).to be_compliant_for_total_hours(target_hours + 10) }
-      it { expect(described_class).to be_compliant_for_total_hours(target_hours) }
+    context "when monthly is greater than or equal to target" do
+      it { expect(described_class).to be_compliant_for_monthly_hours({ month: target_hours + 10 }) }
+      it { expect(described_class).to be_compliant_for_monthly_hours({ month: target_hours }) }
     end
 
-    context "when total is less than target" do
-      it { expect(described_class).not_to be_compliant_for_total_hours(target_hours - 10) }
+    context "when one of the months is greater than or equal to target" do
+      it { expect(described_class).to be_compliant_for_monthly_hours({ month_1: target_hours + 10, month_2: target_hours - 10 }) }
+      it { expect(described_class).to be_compliant_for_monthly_hours({ month_1: target_hours, month_2: target_hours - 10 }) }
+    end
+
+    context "when monthly is less than target" do
+      it { expect(described_class).not_to be_compliant_for_monthly_hours({ month: target_hours - 10 }) }
+      it { expect(described_class).not_to be_compliant_for_monthly_hours({ month_1: target_hours - 10, month_2: target_hours - 10 }) }
     end
   end
 
