@@ -78,7 +78,7 @@ RSpec.describe Certifications::Requirements do
       requirements = CertificationService.new.certification_requirements_from_input(
         bounds.merge(
           "certification_date" => "2026-05-20",
-          "certification_type" => "new_application"
+          "certification_type" => "recertification"
         )
       )
 
