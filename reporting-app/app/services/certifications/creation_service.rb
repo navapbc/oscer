@@ -52,7 +52,7 @@ class Certifications::CreationService
       # Any other hourless activity still falls through to ExternalHourlyActivityService, which rejects it.
       next if activity_data.education_enrollment? && activity_data.clock_hours.blank?
 
-      ExternalHourlyActivityService.create_entry(
+      ExternalHourlyActivityService.create_entries(
         member_id: certification.member_id,
         category: activity_data.category,
         hours: activity_data.clock_hours,
@@ -74,7 +74,7 @@ class Certifications::CreationService
     income_activities.each do |activity_data|
       next unless activity_data.verified?
 
-      ExternalIncomeActivityService.create_entry(
+      ExternalIncomeActivityService.create_entries(
         member_id: certification.member_id,
         category: activity_data.category,
         gross_income: activity_data.gross_income,
@@ -96,7 +96,7 @@ class Certifications::CreationService
       next if household_member.same_person_as?(certification.member_data)
 
       Array(household_member.gross_incomes).each do |gross_income|
-        ExternalIncomeActivityService.create_entry(
+        ExternalIncomeActivityService.create_entries(
           member_id: certification.member_id,
           category: ExternalIncomeActivity::CATEGORY_HOUSEHOLD,
           gross_income: gross_income.gross_income,

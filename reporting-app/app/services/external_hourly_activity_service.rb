@@ -7,6 +7,20 @@
 # which includes lookback period filtering required for compliance calculations.
 class ExternalHourlyActivityService
   class << self
+    include ActivityAggregator
+    # Create one hours data entry per calendar month the period touches.
+    # @return [Array<ExternalHourlyActivity>] on success
+    # @raise [ActiveRecord::RecordInvalid] on duplicate entry or validation failure
+    def create_entries(member_id:, category:, hours:, period_start:, period_end:,
+                       source_type:, source_id: nil)
+      daily_values_map(period_start, period_end, hours).map do |current_period_start, current_period_end, current_hours|
+        create_entry(member_id:, category:, hours: current_hours,
+                     period_start: current_period_start,
+                     period_end: current_period_end,
+                     source_type:, source_id:)
+      end
+    end
+
     # Create hours data entry for a member
     # @return [ExternalHourlyActivity] on success
     # @raise [ActiveRecord::RecordInvalid] on duplicate entry or validation failure

@@ -9,7 +9,33 @@
 # passes +recalculate_income_compliance: false+ so rows created before the case exists do not run this path.
 class ExternalIncomeActivityService
   include Strata::VirtualActor
+
   class << self
+    include ActivityAggregator
+
+    # Create one income data entry per calendar month the period touches.
+    # @return [Array<ExternalIncomeActivity>] on success
+    # @raise [ActiveRecord::RecordInvalid] on duplicate entry or validation failure
+    def create_entries(member_id:, category:, gross_income:, period_start:, period_end:,
+                       source_type:, source_id: nil, reported_at: Time.current, metadata: {}, employer: nil,
+                       recalculate_income_compliance: true)
+      month_values = if whole_months?(period_start, period_end)
+        monthly_values_map(period_start, period_end, gross_income)
+      else
+        daily_values_map(period_start, period_end, gross_income)
+      end
+
+      entries = month_values.map do |current_period_start, current_period_end, current_gross_income|
+        create_entry(member_id:, category:, gross_income: current_gross_income,
+                     period_start: current_period_start, period_end: current_period_end,
+                     source_type:, source_id:, reported_at:, metadata:, employer:,
+                     recalculate_income_compliance: false)
+      end
+
+      maybe_recalculate_income_compliance(member_id) if recalculate_income_compliance
+      entries
+    end
+
     # Create income data entry for a member.
     # @param recalculate_income_compliance [Boolean] when +true+ (default), after save run silent income
     #   compliance for the open case (may +close!+ when compliant); +Certifications::CreationService+ passes +false+.
@@ -58,6 +84,10 @@ class ExternalIncomeActivityService
     end
 
     private
+
+    def whole_months?(period_start, period_end)
+      period_start&.beginning_of_month == period_start && period_end&.end_of_month == period_end
+    end
 
     # Resolves the member’s open +CertificationCase+ and runs +IncomeComplianceDeterminationService.calculate+,
     # which records an income determination and closes the case when compliant (unless product later passes
