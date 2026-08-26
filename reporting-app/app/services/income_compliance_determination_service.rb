@@ -15,11 +15,9 @@ class IncomeComplianceDeterminationService
   class << self
     include ActivityAggregator
 
-    # Shared threshold check for combined CE (+CommunityEngagementCheckService+) and +#calculate+.
-    # @param total_income [Numeric]
-    # @return [Boolean]
-    def compliant_for_total_income?(total_income)
-      total_income >= TARGET_INCOME_MONTHLY
+    def compliant_for_monthly_income?(income_by_month)
+      monthly_values = income_by_month&.values || []
+      monthly_values.any? { |monthly_total| monthly_total.to_f >= TARGET_INCOME_MONTHLY }
     end
 
     # Silent recalculation (e.g. after +ExternalIncomeActivityService+ saves a row for an open
@@ -36,7 +34,7 @@ class IncomeComplianceDeterminationService
       application_form = ActivityReportApplicationForm.find_by(certification_case_id: kase.id)
 
       income_data = aggregate_income_for_certification(certification, application_form:)
-      outcome = determine_outcome(income_data[:total_income])
+      outcome = determine_outcome(income_data[:income_by_month])
 
       kase.record_income_compliance(outcome, income_data)
     end
@@ -69,7 +67,6 @@ class IncomeComplianceDeterminationService
       else
         member_income_totals_from_rows(member_income_activity_rows)
       end
-
       {
         total_income: external_income[:total] + member_income[:total],
         income_by_source: {
@@ -78,6 +75,7 @@ class IncomeComplianceDeterminationService
         },
         external_income_activity_ids: external_income[:ids],
         activity_ids: member_income[:ids],
+        income_by_month: merge_external_with_member_data(external_income[:by_month], member_income[:by_month]),
         period_start: lookback_period&.start,
         period_end: lookback_period&.end
       }
@@ -107,8 +105,8 @@ class IncomeComplianceDeterminationService
 
     private
 
-    def determine_outcome(total_income)
-      compliant_for_total_income?(total_income) ? :compliant : :not_compliant
+    def determine_outcome(income_by_month)
+      compliant_for_monthly_income?(income_by_month) ? :compliant : :not_compliant
     end
 
     # @param certification [Certification]
@@ -124,10 +122,15 @@ class IncomeComplianceDeterminationService
     # Uses +IncomeActivity#income+ (Strata +:money+), not +gross_income+ (+summarize_income+ is for +ExternalIncomeActivity+).
     def member_income_totals_from_rows(rows)
       rows = Array(rows)
+      by_month = rows.group_by do |activity|
+        activity.month
+      end.transform_values do |monthly_activities|
+        monthly_activities.sum { |activity| BigDecimal(activity.income&.dollar_amount) }
+      end
       total = rows.inject(BigDecimal("0")) do |sum, activity|
         sum + BigDecimal((activity.income&.dollar_amount || 0).to_s)
       end
-      { total: total, ids: rows.map(&:id) }
+      { total:, by_month:, ids: rows.map(&:id) }
     end
   end
 end

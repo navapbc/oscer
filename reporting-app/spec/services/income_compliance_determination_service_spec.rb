@@ -15,8 +15,8 @@ RSpec.describe IncomeComplianceDeterminationService do
   # lookback (parity with external hours helper).
   def create_income_for(certification, gross_income:, **attrs)
     lookback = certification.certification_requirements.continuous_lookback_period
-    period_start = lookback.start.to_date
-    period_end = lookback.start.to_date.end_of_month
+    period_start = attrs[:period_start] || lookback.start.to_date
+    period_end = attrs[:period_end] || lookback.start.to_date.end_of_month
 
     create(:external_income_activity, member_id: certification.member_id,
            period_start: period_start, period_end: period_end, gross_income: gross_income, **attrs)
@@ -28,14 +28,26 @@ RSpec.describe IncomeComplianceDeterminationService do
     end
   end
 
-  describe ".compliant_for_total_income?" do
-    it "is true at or above the monthly threshold" do
-      expect(described_class.compliant_for_total_income?(described_class::TARGET_INCOME_MONTHLY)).to be true
-      expect(described_class.compliant_for_total_income?(described_class::TARGET_INCOME_MONTHLY + 1)).to be true
+  describe ".compliant_for_monthly_income?" do
+    let(:target_income) { BigDecimal("580") }
+
+    before do
+      stub_const("#{described_class}::TARGET_INCOME_MONTHLY", target_income)
     end
 
-    it "is false below the monthly threshold" do
-      expect(described_class.compliant_for_total_income?(described_class::TARGET_INCOME_MONTHLY - 1)).to be false
+    context "when monthly is greater than or equal to target" do
+      it { expect(described_class).to be_compliant_for_monthly_income({ month: target_income + 10 }) }
+      it { expect(described_class).to be_compliant_for_monthly_income({ month: target_income }) }
+    end
+
+    context "when one of the months is greater than or equal to target" do
+      it { expect(described_class).to be_compliant_for_monthly_income({ month_1: target_income + 10, month_2: target_income - 10 }) }
+      it { expect(described_class).to be_compliant_for_monthly_income({ month_1: target_income, month_2: target_income - 10 }) }
+    end
+
+    context "when monthly is less than target" do
+      it { expect(described_class).not_to be_compliant_for_monthly_income({ month: target_income - 10 }) }
+      it { expect(described_class).not_to be_compliant_for_monthly_income({ month_1: target_income - 10, month_2: target_income - 10 }) }
     end
   end
 
@@ -270,6 +282,16 @@ RSpec.describe IncomeComplianceDeterminationService do
 
       expect(agg[:external_income_activity_ids].length).to eq(1)
       expect(agg[:activity_ids].length).to eq(0)
+    end
+
+    it "splits income by month" do
+      certification.certification_requirements.months_that_can_be_certified.each do |month|
+        create_income_for(certification, gross_income: 100, period_start: month.beginning_of_month,
+                                            period_end: month.end_of_month)
+      end
+
+      summary = described_class.aggregate_income_for_certification(certification)
+      expect(summary[:income_by_month].size).to eq certification.certification_requirements.months_that_can_be_certified.size
     end
   end
 end

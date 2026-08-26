@@ -52,12 +52,12 @@ class HoursComplianceDeterminationService
 
       {
         total_hours: external_hours[:total] + member_hours[:total],
-        hours_by_category: merge_category_hours(external_hours[:by_category], member_hours[:by_category]),
+        hours_by_category: merge_external_with_member_data(external_hours[:by_category], member_hours[:by_category]),
         hours_by_source: {
           external: external_hours[:total],
           activity: member_hours[:total]
         },
-        hours_by_month: merge_category_hours(external_hours[:by_month], member_hours[:by_month]),
+        hours_by_month: merge_external_with_member_data(external_hours[:by_month], member_hours[:by_month]),
         external_hourly_activity_ids: external_hours[:ids],
         activity_ids: member_hours[:ids],
         enrollment_status: best_enrollment_status(certification)
@@ -120,12 +120,6 @@ class HoursComplianceDeterminationService
 
     def determine_outcome(hours_by_month)
       compliant_for_monthly_hours?(hours_by_month) ? :compliant : :not_compliant
-    end
-
-    def merge_category_hours(external, member)
-      (external.keys | member.keys).each_with_object({}) do |category, result|
-        result[category] = (external[category] || 0.0) + (member[category] || 0.0)
-      end
     end
 
     def member_hours_from_activities(certification, application_form: nil)

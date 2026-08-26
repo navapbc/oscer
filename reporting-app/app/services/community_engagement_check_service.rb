@@ -59,7 +59,7 @@ class CommunityEngagementCheckService
         # hours track instead of standing up a third one the determination payload has no shape for.
         hours_ok: HoursComplianceDeterminationService.compliant_for_monthly_hours?(hours_data[:hours_by_month]) ||
           HoursComplianceDeterminationService.education_enrollment_compliant?(certification),
-        income_ok: IncomeComplianceDeterminationService.compliant_for_total_income?(income_data[:total_income])
+        income_ok: IncomeComplianceDeterminationService.compliant_for_monthly_income?(income_data[:income_by_month])
       )
     end
   end

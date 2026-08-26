@@ -79,17 +79,31 @@ module ActivityAggregator
   # Expects +ExternalIncomeActivity+ rows (+gross_income+). Do not pass +IncomeActivity+ / +activities+ here;
   # member self-report totals use +IncomeComplianceDeterminationService#member_income_totals_from_rows+.
   def summarize_income(activities)
+    by_month = activities.group_by do |activity|
+      activity.month
+    end.transform_values do |monthly_activities|
+      monthly_activities.sum { |activity| activity.gross_income }
+    end
     if activities.is_a?(ActiveRecord::Relation)
       {
         total: BigDecimal(activities.sum(:gross_income).to_s),
+        by_month:,
         ids: activities.pluck(:id)
       }
     else
       rows = Array(activities)
       {
         total: rows.sum { |row| BigDecimal(row.gross_income.to_s) },
+        by_month:,
         ids: rows.map(&:id)
       }
+    end
+  end
+
+  def merge_external_with_member_data(external, member)
+    return [] unless external && member
+    (external.keys | member.keys).each_with_object({}) do |category, result|
+      result[category] = (external[category] || 0.0) + (member[category] || 0.0)
     end
   end
 
