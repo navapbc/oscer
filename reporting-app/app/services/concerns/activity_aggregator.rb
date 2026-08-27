@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 module ActivityAggregator
+  # Matches the scale of external_hourly_activities.hours and external_income_activities.gross_income
+  VALUE_SCALE = 2
+
   def fetch_external_hourly_activities(certification)
     return ExternalHourlyActivity.none unless certification&.member_id
 
@@ -100,6 +103,7 @@ module ActivityAggregator
     end
   end
 
+
   def merge_external_with_member_data(external, member)
     return [] unless external && member
     (external.keys | member.keys).each_with_object({}) do |category, result|
@@ -107,7 +111,71 @@ module ActivityAggregator
     end
   end
 
+  # Each pair is clamped to the period, so the first and last months cover only their
+  # reported days. Empty when the period is blank or reversed.
+  def month_periods(period_start, period_end)
+    return [] if period_start.blank? || period_end.blank?
+
+    month_start = period_start.beginning_of_month
+    periods = []
+
+    while month_start <= period_end
+      periods << [ [ period_start, month_start ].max,
+                   [ period_end, month_start.end_of_month ].min ]
+      month_start += 1.month
+    end
+
+    periods
+  end
+
+  # Both maps below split +value+ across the calendar months the period touches and return
+  # [start, end, value] triples; they differ only in how the value is apportioned.
+
+  # Apportions by the number of days each month covers.
+  def daily_values_map(period_start, period_end, value)
+    apportioned_values_map(period_start, period_end, value) do |months|
+      months.map { |month_start, month_end| month_end - month_start + 1 }
+    end
+  end
+
+  # Apportions evenly.
+  def monthly_values_map(period_start, period_end, value)
+    apportioned_values_map(period_start, period_end, value) do |months|
+      Array.new(months.size, 1)
+    end
+  end
+
   private
+
+  # The block supplies the per-month weights to apportion by.
+  def apportioned_values_map(period_start, period_end, value)
+    whole_period = [ [ period_start, period_end, value ] ]
+    months = month_periods(period_start, period_end)
+
+    # Malformed input (blank value or dates, reversed period) goes to the model as-is
+    # so it raises RecordInvalid rather than failing in the arithmetic below.
+    return whole_period if value.blank? || months.size <= 1
+
+    weights = yield(months)
+    total_weight = weights.sum # number of months or number of days
+    covered_weight = 0
+    allocated = 0
+    entries = months.zip(weights).map do |(current_period_start, current_period_end), weight|
+      # Apportion against the running total rather than per month, so rounding cannot
+      # drift and the entries always sum back to +value+.
+      covered_weight += weight
+      cumulative_value = (covered_weight * value / total_weight).round(VALUE_SCALE)
+      current_value = cumulative_value - allocated
+      allocated = cumulative_value
+
+      [ current_period_start, current_period_end, current_value ]
+    end
+
+    # A share too small to survive rounding would fail the models' greater-than-zero
+    # validations; drop it and let the running total roll it into the next month.
+    entries.reject { |_, _, current_value| current_value.zero? }.presence || whole_period
+  end
+
 
   def allocate_activity_to_months(activity, result)
     start_date = activity.period_start
