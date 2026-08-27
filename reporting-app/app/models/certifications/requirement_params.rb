@@ -2,6 +2,8 @@
 
 class Certifications::RequirementParams < Certifications::RequirementTypeParams
   attribute :certification_date, :date
+  attribute :certification_period_start, :date
+  attribute :certification_period_end, :date
   attribute :certification_type, :string, default: nil
 
   attribute :due_date, :date
@@ -31,6 +33,8 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
   def to_requirements
     Certifications::Requirements.new({
       "certification_date": certification_date,
+      "certification_period_start": certification_period_start,
+      "certification_period_end": certification_period_end,
       "certification_type": certification_type,
       "months_that_can_be_certified": months_that_can_be_certified,
       "number_of_months_to_certify": number_of_months_to_certify,
