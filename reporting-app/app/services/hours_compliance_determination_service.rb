@@ -78,7 +78,7 @@ class HoursComplianceDeterminationService
     end
 
     # Shared threshold check for combined CE (+CommunityEngagementCheckService+) and +#calculate+.
-    # One month at or above the threshold is enough; the months are never totalled.
+    # One month at or above the threshold is enough.
     # @param hours_by_month [Hash{Date => Numeric}]
     # @return [Boolean]
     def compliant_for_monthly_hours?(hours_by_month)

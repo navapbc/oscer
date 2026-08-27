@@ -16,7 +16,7 @@ class IncomeComplianceDeterminationService
     include ActivityAggregator
 
     # Shared threshold check for combined CE (+CommunityEngagementCheckService+) and +#calculate+.
-    # One month at or above the threshold is enough; the months are never totalled.
+    # One month at or above the threshold is enough.
     # @param income_by_month [Hash{Date => Numeric}]
     # @return [Boolean]
     def compliant_for_monthly_income?(income_by_month)

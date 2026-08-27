@@ -55,8 +55,7 @@ module ActivityAggregator
     result
   end
 
-  # Both summaries load the rows once and total them in memory: +by_month+ needs every row anyway,
-  # so SQL aggregates would only add round trips. A relation is accepted as well as an array.
+  # A relation is accepted as well as an array.
   def summarize_hours(activities)
     rows = activities.to_a
 
