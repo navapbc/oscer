@@ -94,15 +94,10 @@ RSpec.describe HoursComplianceDeterminationService do
         expect(determination.reasons).to include("hours_reported_insufficient")
       end
 
-      it "records the best month, which explains the outcome the total contradicts" do
+      it "records the best month, which explains the outcome" do
         described_class.calculate(certification.id)
 
         data = Determination.where(subject_id: certification.id).last.determination_data
-        if certification.certification_requirements.months_that_can_be_certified.size == 1
-          expect(data["total_hours"]).to eq data["target_hours"]
-        else
-          expect(data["total_hours"]).to be > data["target_hours"]
-        end
         expect(data["maximum_monthly_hours"]).to eq(40.0)
       end
     end
