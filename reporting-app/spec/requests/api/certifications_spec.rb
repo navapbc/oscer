@@ -224,6 +224,62 @@ RSpec.describe "/api/certifications", type: :request do
       end
     end
 
+    context "with certification period bounds supplied" do
+      it "stores the bounds the request supplied" do
+        # The period supplied is the currently active, expiring one, so it precedes
+        # the request rather than starting after it.
+        requirement_params = build(
+          :certification_certification_requirement_params, :with_direct_params,
+          certification_date: Date.new(2026, 5, 20),
+          certification_period_start: Date.new(2026, 1, 1),
+          certification_period_end: Date.new(2026, 6, 30)
+        )
+        params = valid_json_request_attributes.merge({
+          certification_requirements: requirement_params.as_json
+        })
+
+        expect {
+          post api_certifications_url,
+              params: params,
+              headers: auth_headers(params),
+              as: :json
+        }.to change(Certification, :count).by(1)
+
+        expect(response).to have_http_status(:created)
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+
+        requirements = Certification.find(response.parsed_body[:id]).certification_requirements
+        expect(requirements.certification_period_start).to eq Date.new(2026, 1, 1)
+        expect(requirements.certification_period_end).to eq Date.new(2026, 6, 30)
+      end
+    end
+
+    context "without certification period bounds" do
+      it "stores no bounds, since OSCER never derives them" do
+        requirement_params = build(
+          :certification_certification_requirement_params, :with_direct_params,
+          certification_date: Date.new(2026, 8, 20)
+        )
+        params = valid_json_request_attributes.merge({
+          certification_requirements: requirement_params.as_json
+        })
+
+        expect {
+          post api_certifications_url,
+              params: params,
+              headers: auth_headers(params),
+              as: :json
+        }.to change(Certification, :count).by(1)
+
+        expect(response).to have_http_status(:created)
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+
+        requirements = Certification.find(response.parsed_body[:id]).certification_requirements
+        expect(requirements.certification_period_start).to be_nil
+        expect(requirements.certification_period_end).to be_nil
+      end
+    end
+
     context "with member data" do
       it "creates a new Certification and renders response" do
         member_data = build(:certification_member_data,
