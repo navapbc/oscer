@@ -98,7 +98,11 @@ RSpec.describe HoursComplianceDeterminationService do
         described_class.calculate(certification.id)
 
         data = Determination.where(subject_id: certification.id).last.determination_data
-        expect(data["total_hours"]).to be > data["target_hours"]
+        if certification.certification_requirements.months_that_can_be_certified.size == 1
+          expect(data["total_hours"]).to eq data["target_hours"]
+        else
+          expect(data["total_hours"]).to be > data["target_hours"]
+        end
         expect(data["maximum_monthly_hours"]).to eq(40.0)
       end
     end
