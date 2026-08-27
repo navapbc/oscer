@@ -77,6 +77,10 @@ class HoursComplianceDeterminationService
       application_form.activities.where.not(hours: nil).order(:month, :created_at)
     end
 
+    # Shared threshold check for combined CE (+CommunityEngagementCheckService+) and +#calculate+.
+    # One month at or above the threshold is enough; the months are never totalled.
+    # @param hours_by_month [Hash{Date => Numeric}]
+    # @return [Boolean]
     def compliant_for_monthly_hours?(hours_by_month)
       monthly_values = hours_by_month&.values || []
       monthly_values.any? { |monthly_total| monthly_total.to_f >= TARGET_HOURS }
@@ -123,11 +127,7 @@ class HoursComplianceDeterminationService
     end
 
     def member_hours_from_activities(certification, application_form: nil)
-      # +member_hour_activities_for_certification+ orders by month / created_at for the staff UI table.
-      # +summarize_hours+ adds +GROUP BY :category+, which Postgres rejects unless those ORDER BY columns
-      # are in the GROUP BY. Strip the ORDER BY before aggregating.
-      rel = member_hour_activities_for_certification(certification, application_form:).reorder(nil)
-      summarize_hours(rel)
+      summarize_hours(member_hour_activities_for_certification(certification, application_form:))
     end
   end
 end

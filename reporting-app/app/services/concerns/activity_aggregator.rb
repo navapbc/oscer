@@ -55,59 +55,34 @@ module ActivityAggregator
     result
   end
 
+  # Both summaries load the rows once and total them in memory: +by_month+ needs every row anyway,
+  # so SQL aggregates would only add round trips. A relation is accepted as well as an array.
   def summarize_hours(activities)
-    by_month = activities.group_by do |activity|
-      activity.month
-    end.transform_values do |monthly_activities|
-      monthly_activities.sum { |activity| activity.hours }
-    end
-    if activities.is_a?(ActiveRecord::Relation)
-      {
-        total: activities.sum(:hours).to_f,
-        by_category: activities.group(:category).sum(:hours).transform_values(&:to_f),
-        by_month:,
-        ids: activities.pluck(:id)
-      }
-    else
-      rows = Array(activities)
-      {
-        total: rows.sum { |row| row.hours.to_f },
-        by_category: rows.group_by(&:category).transform_values { |group| group.sum { |row| row.hours.to_f } },
-        by_month:,
-        ids: rows.map(&:id)
-      }
-    end
+    rows = activities.to_a
+
+    {
+      total: decimal_sum(rows, :hours).to_f,
+      by_category: rows.group_by(&:category).transform_values { |group| decimal_sum(group, :hours).to_f },
+      by_month: rows.group_by(&:month).transform_values { |group| decimal_sum(group, :hours) },
+      ids: rows.map(&:id)
+    }
   end
 
   # Expects +ExternalIncomeActivity+ rows (+gross_income+). Do not pass +IncomeActivity+ / +activities+ here;
   # member self-report totals use +IncomeComplianceDeterminationService#member_income_totals_from_rows+.
   def summarize_income(activities)
-    by_month = activities.group_by do |activity|
-      activity.month
-    end.transform_values do |monthly_activities|
-      monthly_activities.sum { |activity| activity.gross_income }
-    end
-    if activities.is_a?(ActiveRecord::Relation)
-      {
-        total: BigDecimal(activities.sum(:gross_income).to_s),
-        by_month:,
-        ids: activities.pluck(:id)
-      }
-    else
-      rows = Array(activities)
-      {
-        total: rows.sum { |row| BigDecimal(row.gross_income.to_s) },
-        by_month:,
-        ids: rows.map(&:id)
-      }
-    end
+    rows = activities.to_a
+
+    {
+      total: decimal_sum(rows, :gross_income),
+      by_month: rows.group_by(&:month).transform_values { |group| decimal_sum(group, :gross_income) },
+      ids: rows.map(&:id)
+    }
   end
 
-
   def merge_external_with_member_data(external, member)
-    return [] unless external && member
-    (external.keys | member.keys).each_with_object({}) do |category, result|
-      result[category] = (external[category] || 0.0) + (member[category] || 0.0)
+    (external.keys | member.keys).each_with_object({}) do |key, result|
+      result[key] = (external[key] || 0.0) + (member[key] || 0.0)
     end
   end
 
@@ -146,6 +121,12 @@ module ActivityAggregator
   end
 
   private
+
+  # +hours+ and +gross_income+ are decimal columns: sum them as BigDecimal so repeated additions
+  # cannot drift, and let callers cast to Float for display.
+  def decimal_sum(rows, attribute)
+    rows.sum(BigDecimal("0")) { |row| BigDecimal((row.public_send(attribute) || 0).to_s) }
+  end
 
   # The block supplies the per-month weights to apportion by.
   def apportioned_values_map(period_start, period_end, value)

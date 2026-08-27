@@ -15,6 +15,10 @@ class IncomeComplianceDeterminationService
   class << self
     include ActivityAggregator
 
+    # Shared threshold check for combined CE (+CommunityEngagementCheckService+) and +#calculate+.
+    # One month at or above the threshold is enough; the months are never totalled.
+    # @param income_by_month [Hash{Date => Numeric}]
+    # @return [Boolean]
     def compliant_for_monthly_income?(income_by_month)
       monthly_values = income_by_month&.values || []
       monthly_values.any? { |monthly_total| monthly_total.to_f >= TARGET_INCOME_MONTHLY }
@@ -111,26 +115,24 @@ class IncomeComplianceDeterminationService
 
     # @param certification [Certification]
     # @param application_form [ActivityReportApplicationForm, nil]
-    # @return [Hash] :total (+BigDecimal+), :ids (+Array+ of activity UUIDs)
+    # @return [Hash] :total (+BigDecimal+), :by_month (+BigDecimal+ per month), :ids (+Array+ of activity UUIDs)
     def member_income_from_activities(certification, application_form:)
       rows = member_income_activities_for_certification(certification, application_form:).to_a
       member_income_totals_from_rows(rows)
     end
 
     # @param rows [Array<IncomeActivity>]
-    # @return [Hash] :total (+BigDecimal+), :ids (+Array+ of activity UUIDs)
+    # @return [Hash] :total (+BigDecimal+), :by_month (+BigDecimal+ per month), :ids (+Array+ of activity UUIDs)
     # Uses +IncomeActivity#income+ (Strata +:money+), not +gross_income+ (+summarize_income+ is for +ExternalIncomeActivity+).
     def member_income_totals_from_rows(rows)
       rows = Array(rows)
-      by_month = rows.group_by do |activity|
-        activity.month
-      end.transform_values do |monthly_activities|
-        monthly_activities.sum { |activity| BigDecimal(activity.income&.dollar_amount) }
-      end
-      total = rows.inject(BigDecimal("0")) do |sum, activity|
-        sum + BigDecimal((activity.income&.dollar_amount || 0).to_s)
-      end
-      { total:, by_month:, ids: rows.map(&:id) }
+      by_month = rows.group_by(&:month).transform_values { |monthly_activities| income_dollars(monthly_activities) }
+
+      { total: income_dollars(rows), by_month:, ids: rows.map(&:id) }
+    end
+
+    def income_dollars(rows)
+      rows.sum(BigDecimal("0")) { |activity| BigDecimal((activity.income&.dollar_amount || 0).to_s) }
     end
   end
 end

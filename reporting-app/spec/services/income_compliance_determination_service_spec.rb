@@ -85,7 +85,7 @@ RSpec.describe IncomeComplianceDeterminationService do
       end
     end
 
-    context "when income is below target" do
+    context "when total income is below target" do
       before do
         create_income_for(certification, gross_income: 100)
       end
@@ -101,6 +101,32 @@ RSpec.describe IncomeComplianceDeterminationService do
         expect(determination.reasons).to include("income_reported_insufficient")
         expect_no_ce_workflow_events_published
         expect(kase.reload).to be_open
+      end
+    end
+
+    # Every month short of the target even though the months together clear it.
+    context "when monthly income is below target" do
+      before do
+        certification.certification_requirements.months_that_can_be_certified.each do |month|
+          create_income_for(certification, gross_income: 300, period_start: month.beginning_of_month,
+                            period_end: month.end_of_month)
+        end
+      end
+
+      it "creates a not_compliant determination" do
+        described_class.calculate(certification.id)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.outcome).to eq("not_compliant")
+        expect(determination.reasons).to include("income_reported_insufficient")
+      end
+
+      it "records the best month, which explains the outcome the total contradicts" do
+        described_class.calculate(certification.id)
+
+        data = Determination.where(subject_id: certification.id).last.determination_data
+        expect(data["total_income"]).to be > data["target_income"]
+        expect(data["maximum_monthly_income"]).to eq(300.0)
       end
     end
   end
@@ -287,7 +313,7 @@ RSpec.describe IncomeComplianceDeterminationService do
     it "splits income by month" do
       certification.certification_requirements.months_that_can_be_certified.each do |month|
         create_income_for(certification, gross_income: 100, period_start: month.beginning_of_month,
-                                            period_end: month.end_of_month)
+                          period_end: month.end_of_month)
       end
 
       summary = described_class.aggregate_income_for_certification(certification)

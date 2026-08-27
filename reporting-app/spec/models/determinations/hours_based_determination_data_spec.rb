@@ -12,6 +12,7 @@ RSpec.describe Determinations::HoursBasedDeterminationData do
   it "serializes a stable hours_based payload" do
     hours_data = {
       total_hours: 85,
+      hours_by_month: { Date.new(2026, 1, 1) => 40.0, Date.new(2026, 2, 1) => 45.0 },
       hours_by_category: { "employment" => 40.0, "education" => 45.0 },
       hours_by_source: { external: 85.0, activity: 0.0 },
       external_hourly_activity_ids: [ "11111111-1111-4111-8111-111111111111" ],
@@ -22,6 +23,7 @@ RSpec.describe Determinations::HoursBasedDeterminationData do
       {
         "calculation_type" => Determination::CALCULATION_TYPE_HOURS_BASED,
         "total_hours" => 85.0,
+        "maximum_monthly_hours" => 45.0,
         "target_hours" => HoursComplianceDeterminationService::TARGET_HOURS,
         "hours_by_category" => { "employment" => 40.0, "education" => 45.0 },
         "hours_by_source" => { "external" => 85.0, "activity" => 0.0 },
@@ -31,6 +33,31 @@ RSpec.describe Determinations::HoursBasedDeterminationData do
         "calculated_at" => expected_calculated_at
       }
     )
+  end
+
+  it "records zero as the best month when the member reported none" do
+    hours_data = {
+      total_hours: 0,
+      hours_by_month: {},
+      hours_by_category: {},
+      hours_by_source: { external: 0.0, activity: 0.0 },
+      external_hourly_activity_ids: [],
+      activity_ids: []
+    }
+
+    expect(described_class.from_aggregate(hours_data).to_h["maximum_monthly_hours"]).to eq(0.0)
+  end
+
+  it "leaves the best month nil when the aggregate omits the monthly map" do
+    hours_data = {
+      total_hours: 85,
+      hours_by_category: {},
+      hours_by_source: { external: 85.0, activity: 0.0 },
+      external_hourly_activity_ids: [],
+      activity_ids: []
+    }
+
+    expect(described_class.from_aggregate(hours_data).to_h["maximum_monthly_hours"]).to be_nil
   end
 
   it "carries the reported enrollment status through to the payload" do

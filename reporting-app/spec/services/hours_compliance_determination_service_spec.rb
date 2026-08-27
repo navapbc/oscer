@@ -78,11 +78,12 @@ RSpec.describe HoursComplianceDeterminationService do
       end
     end
 
+    # Every month short of the target even though the months together clear it.
     context "when monthly hours are below target" do
       before do
         certification.certification_requirements.months_that_can_be_certified.each do |month|
-        create_external_hourly_activity_for(certification, hours: 40, period_start: month.beginning_of_month,
-                                            period_end: month.end_of_month)
+          create_external_hourly_activity_for(certification, hours: 40, period_start: month.beginning_of_month,
+                                              period_end: month.end_of_month)
         end
       end
 
@@ -91,6 +92,14 @@ RSpec.describe HoursComplianceDeterminationService do
         determination = Determination.where(subject_id: certification.id).last
         expect(determination.outcome).to eq("not_compliant")
         expect(determination.reasons).to include("hours_reported_insufficient")
+      end
+
+      it "records the best month, which explains the outcome the total contradicts" do
+        described_class.calculate(certification.id)
+
+        data = Determination.where(subject_id: certification.id).last.determination_data
+        expect(data["total_hours"]).to be > data["target_hours"]
+        expect(data["maximum_monthly_hours"]).to eq(40.0)
       end
     end
 
