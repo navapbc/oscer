@@ -58,6 +58,7 @@ RSpec.describe CertificationCase, type: :model do
       allow(Strata::EventManager).to receive(:publish)
       allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
         total_hours: 85,
+        hours_by_month: { Date.current.beginning_of_month => 85 },
         hours_by_category: { "education" => 50, "employment" => 35 },
         hours_by_source: { external: 40, activity: 45 },
         external_hourly_activity_ids: [ "ex-1" ],
@@ -118,6 +119,7 @@ RSpec.describe CertificationCase, type: :model do
       allow(Strata::EventManager).to receive(:publish)
       allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification).and_return({
         total_hours: 40,
+        hours_by_month: { Date.current.beginning_of_month => 40 },
         hours_by_category: { "education" => 40 },
         hours_by_source: { external: 30, activity: 10 },
         external_hourly_activity_ids: [ "ex-1" ],
@@ -562,6 +564,7 @@ RSpec.describe CertificationCase, type: :model do
     let(:hours_data) do
       {
         total_hours: 50,
+        hours_by_month: { Date.current.beginning_of_month => 50 },
         hours_by_category: {},
         hours_by_source: { external: 40.0, activity: 10.0 },
         external_hourly_activity_ids: [],
@@ -571,6 +574,7 @@ RSpec.describe CertificationCase, type: :model do
     let(:income_data) do
       {
         total_income: BigDecimal("400"),
+        income_by_month: { Date.current.beginning_of_month => BigDecimal("400") },
         income_by_source: { external: BigDecimal("400"), activity: BigDecimal("0") },
         external_income_activity_ids: [],
         activity_ids: [],

@@ -6,8 +6,8 @@ RSpec.describe HoursComplianceDeterminationService do
   # Helper to create external_hourly_activity with periods matching the certification's lookback
   def create_external_hourly_activity_for(certification, **attrs)
     lookback = certification.certification_requirements.continuous_lookback_period
-    period_start = lookback.start.to_date
-    period_end = lookback.start.to_date.end_of_month
+    period_start = attrs[:period_start] || lookback.start.to_date
+    period_end = attrs[:period_end] || lookback.start.to_date.end_of_month
 
     create(:external_hourly_activity, member_id: certification.member_id,
            period_start: period_start, period_end: period_end, **attrs)
@@ -58,14 +58,13 @@ RSpec.describe HoursComplianceDeterminationService do
       end
     end
 
-    context "when hours are below target" do
+    context "when total hours are below target" do
       before do
         create_external_hourly_activity_for(certification, hours: 40)
       end
 
       it "creates a not_compliant determination" do
         described_class.calculate(certification.id)
-
         determination = Determination.where(subject_id: certification.id).last
         expect(determination.outcome).to eq("not_compliant")
         expect(determination.reasons).to include("hours_reported_insufficient")
@@ -76,6 +75,30 @@ RSpec.describe HoursComplianceDeterminationService do
         kase = CertificationCase.find_by!(certification_id: certification.id)
 
         expect(kase).to be_open
+      end
+    end
+
+    # Every month short of the target even though the months together clear it.
+    context "when monthly hours are below target" do
+      before do
+        certification.certification_requirements.months_that_can_be_certified.each do |month|
+          create_external_hourly_activity_for(certification, hours: 40, period_start: month.beginning_of_month,
+                                              period_end: month.end_of_month)
+        end
+      end
+
+      it "creates a not_compliant determination" do
+        described_class.calculate(certification.id)
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.outcome).to eq("not_compliant")
+        expect(determination.reasons).to include("hours_reported_insufficient")
+      end
+
+      it "records the best month, which explains the outcome" do
+        described_class.calculate(certification.id)
+
+        data = Determination.where(subject_id: certification.id).last.determination_data
+        expect(data["maximum_monthly_hours"]).to eq(40.0)
       end
     end
 
@@ -169,20 +192,26 @@ RSpec.describe HoursComplianceDeterminationService do
     end
   end
 
-  describe ".compliant_for_total_hours?" do
+  describe ".compliant_for_monthly_hours?" do
     let(:target_hours) { 50 }
 
     before do
       stub_const("HoursComplianceDeterminationService::TARGET_HOURS", target_hours)
     end
 
-    context "when total is greater than or equal to target" do
-      it { expect(described_class).to be_compliant_for_total_hours(target_hours + 10) }
-      it { expect(described_class).to be_compliant_for_total_hours(target_hours) }
+    context "when monthly is greater than or equal to target" do
+      it { expect(described_class).to be_compliant_for_monthly_hours({ month: target_hours + 10 }) }
+      it { expect(described_class).to be_compliant_for_monthly_hours({ month: target_hours }) }
     end
 
-    context "when total is less than target" do
-      it { expect(described_class).not_to be_compliant_for_total_hours(target_hours - 10) }
+    context "when one of the months is greater than or equal to target" do
+      it { expect(described_class).to be_compliant_for_monthly_hours({ month_1: target_hours + 10, month_2: target_hours - 10 }) }
+      it { expect(described_class).to be_compliant_for_monthly_hours({ month_1: target_hours, month_2: target_hours - 10 }) }
+    end
+
+    context "when monthly is less than target" do
+      it { expect(described_class).not_to be_compliant_for_monthly_hours({ month: target_hours - 10 }) }
+      it { expect(described_class).not_to be_compliant_for_monthly_hours({ month_1: target_hours - 10, month_2: target_hours - 10 }) }
     end
   end
 
@@ -287,6 +316,7 @@ RSpec.describe HoursComplianceDeterminationService do
         expect(summary).to eq({
           total: 0.0,
           by_category: {},
+          by_month: {},
           ids: []
         })
       end
@@ -357,6 +387,16 @@ RSpec.describe HoursComplianceDeterminationService do
     let(:certification_case) { create(:certification_case, certification_id: certification.id) }
     let(:form) { create(:activity_report_application_form, certification_case_id: certification_case.id) }
     let(:reportable_month) { certification.certification_requirements.continuous_lookback_period.start.to_date }
+
+    it "splits hours by month" do
+      certification.certification_requirements.months_that_can_be_certified.each do |month|
+        create_external_hourly_activity_for(certification, hours: 40, period_start: month.beginning_of_month,
+                                            period_end: month.end_of_month)
+      end
+
+      summary = described_class.aggregate_hours_for_certification(certification)
+      expect(summary[:hours_by_month].size).to eq certification.certification_requirements.months_that_can_be_certified.size
+    end
 
     it "includes member WorkActivity hours in totals alongside external hours" do
       create_external_hourly_activity_for(certification, category: "employment", hours: 40)
