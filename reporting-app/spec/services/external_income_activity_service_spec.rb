@@ -44,6 +44,12 @@ RSpec.describe ExternalIncomeActivityService do
         expect(result.metadata).to eq({ "note" => "x", "employer" => "Acme Corp" })
       end
 
+      it "stores the origin_hash it is given" do
+        result = described_class.create_entry(**valid_params, origin_hash: "abc123")
+
+        expect(result.origin_hash).to eq("abc123")
+      end
+
       it "defaults reported_at when omitted" do
         freeze_time do
           result = described_class.create_entry(**valid_params)
@@ -124,7 +130,7 @@ RSpec.describe ExternalIncomeActivityService do
       end
     end
 
-    context "with duplicate entry" do
+    context "with an existing identical entry" do
       before do
         create(:external_income_activity,
                member_id: valid_params[:member_id],
@@ -134,17 +140,9 @@ RSpec.describe ExternalIncomeActivityService do
                period_end: valid_params[:period_end])
       end
 
-      it "returns conflict error" do
-        expect { described_class.create_entry(**valid_params) }.to raise_error(/Duplicate/)
-      end
-
-      it "does not create a new entry" do
-        expect {
-          begin
-            described_class.create_entry(**valid_params)
-          rescue
-          end
-        }.not_to change(ExternalIncomeActivity, :count)
+      it "creates the entry, since duplicates are rejected by create_entries" do
+        expect { described_class.create_entry(**valid_params) }
+          .to change(ExternalIncomeActivity, :count).by(1)
       end
     end
 
@@ -172,122 +170,30 @@ RSpec.describe ExternalIncomeActivityService do
   end
 
   describe "duplicate_entry? (private)" do
-    let(:existing_entry) { create(:external_income_activity, :employment) }
+    let(:existing_entry) { create(:external_income_activity, :employment, origin_hash: "abc123") }
 
-    def duplicate_entry?(**)
-      described_class.send(:duplicate_entry?, **)
+    def duplicate_entry?(origin_hash)
+      described_class.send(:duplicate_entry?, origin_hash)
     end
 
-    context "with exact match" do
-      it "returns true" do
-        result = duplicate_entry?(
-          member_id: existing_entry.member_id,
-          category: existing_entry.category,
-          gross_income: existing_entry.gross_income,
-          period_start: existing_entry.period_start,
-          period_end: existing_entry.period_end
-        )
-
-        expect(result).to be true
-      end
+    it "returns true when an entry with the origin hash exists" do
+      expect(duplicate_entry?(existing_entry.origin_hash)).to be true
     end
 
-    context "with different member_id" do
-      it "returns false" do
-        result = duplicate_entry?(
-          member_id: "different-member",
-          category: existing_entry.category,
-          gross_income: existing_entry.gross_income,
-          period_start: existing_entry.period_start,
-          period_end: existing_entry.period_end
-        )
+    it "returns false for an origin hash that has not been seen" do
+      existing_entry
 
-        expect(result).to be false
-      end
+      expect(duplicate_entry?("def456")).to be false
     end
 
-    context "with different category" do
-      it "returns false" do
-        result = duplicate_entry?(
-          member_id: existing_entry.member_id,
-          category: "education",
-          gross_income: existing_entry.gross_income,
-          period_start: existing_entry.period_start,
-          period_end: existing_entry.period_end
-        )
-
-        expect(result).to be false
-      end
+    it "returns false with no existing entries" do
+      expect(duplicate_entry?("abc123")).to be false
     end
 
-    context "with different gross_income" do
-      it "returns false" do
-        result = duplicate_entry?(
-          member_id: existing_entry.member_id,
-          category: existing_entry.category,
-          gross_income: existing_entry.gross_income + 1,
-          period_start: existing_entry.period_start,
-          period_end: existing_entry.period_end
-        )
+    it "returns false for a blank origin hash, so unfingerprinted entries never match" do
+      create(:external_income_activity, :employment, origin_hash: nil)
 
-        expect(result).to be false
-      end
-    end
-
-    context "with different period" do
-      it "returns false for different start date" do
-        result = duplicate_entry?(
-          member_id: existing_entry.member_id,
-          category: existing_entry.category,
-          gross_income: existing_entry.gross_income,
-          period_start: existing_entry.period_start + 1.day,
-          period_end: existing_entry.period_end
-        )
-
-        expect(result).to be false
-      end
-
-      it "returns false for different end date" do
-        result = duplicate_entry?(
-          member_id: existing_entry.member_id,
-          category: existing_entry.category,
-          gross_income: existing_entry.gross_income,
-          period_start: existing_entry.period_start,
-          period_end: existing_entry.period_end - 1.day
-        )
-
-        expect(result).to be false
-      end
-    end
-
-    context "with no existing entries" do
-      it "returns false" do
-        result = duplicate_entry?(
-          member_id: "new-member",
-          category: "employment",
-          gross_income: 100.0,
-          period_start: Date.current,
-          period_end: Date.current.end_of_month
-        )
-
-        expect(result).to be false
-      end
-    end
-
-    context "when both are household" do
-      let(:existing_entry) { create(:external_income_activity, category: :household) }
-
-      it "returns falsey" do
-        result = duplicate_entry?(
-          member_id: existing_entry.member_id,
-          category: existing_entry.category,
-          gross_income: existing_entry.gross_income,
-          period_start: existing_entry.period_start,
-          period_end: existing_entry.period_end
-        )
-
-        expect(result).to be_falsey
-      end
+      expect(duplicate_entry?(nil)).to be false
     end
   end
 
@@ -514,6 +420,75 @@ RSpec.describe ExternalIncomeActivityService do
         )
 
         expect(IncomeComplianceDeterminationService).not_to have_received(:calculate)
+      end
+    end
+
+    context "with an origin_hash" do
+      let(:gross_income) { 300 }
+      let(:period_start) { 3.months.ago.beginning_of_month.to_date }
+      let(:period_end) { 1.month.ago.end_of_month.to_date }
+
+      it "stamps the same hash on every entry of the submission" do
+        results = described_class.create_entries(**valid_params, employer: "Acme Corp")
+
+        expect(results.size).to eq 3
+        expect(results.map(&:origin_hash).uniq.size).to eq 1
+        expect(results.first.origin_hash).to be_present
+      end
+
+      it "differs when the employer differs" do
+        first = described_class.create_entries(**valid_params, employer: "Acme Corp")
+        second = described_class.create_entries(**valid_params, employer: "Other Corp")
+
+        expect(second.first.origin_hash).not_to eq first.first.origin_hash
+      end
+    end
+
+    context "with a duplicate submission" do
+      let(:gross_income) { 300 }
+      let(:period_start) { 3.months.ago.beginning_of_month.to_date }
+      let(:period_end) { 1.month.ago.end_of_month.to_date }
+
+      before { described_class.create_entries(**valid_params, employer: "Acme Corp") }
+
+      it "raises a validation error" do
+        expect { described_class.create_entries(**valid_params, employer: "Acme Corp") }
+          .to raise_error(ActiveRecord::RecordInvalid, /Duplicate entry/)
+      end
+
+      it "creates no entries" do
+        expect { described_class.create_entries(**valid_params, employer: "Acme Corp") rescue nil }
+          .not_to change(ExternalIncomeActivity, :count)
+      end
+
+      it "accepts the same income reported for a different employer" do
+        expect { described_class.create_entries(**valid_params, employer: "Other Corp") }
+          .to change(ExternalIncomeActivity, :count).by(3)
+      end
+
+      it "accepts the same income for a different member" do
+        expect { described_class.create_entries(**valid_params.merge(member_id: "987654321"), employer: "Acme Corp") }
+          .to change(ExternalIncomeActivity, :count).by(3)
+      end
+    end
+
+    context "with a duplicate household submission" do
+      let(:gross_income) { 300 }
+      let(:period_start) { 3.months.ago.beginning_of_month.to_date }
+      let(:period_end) { 1.month.ago.end_of_month.to_date }
+      let(:household_params) { valid_params.merge(category: ExternalIncomeActivity::CATEGORY_HOUSEHOLD) }
+
+      before { described_class.create_entries(**household_params) }
+
+      it "creates the entries, since two household members can report the same income" do
+        expect { described_class.create_entries(**household_params) }
+          .to change(ExternalIncomeActivity, :count).by(3)
+      end
+
+      it "leaves household entries unfingerprinted" do
+        results = described_class.create_entries(**household_params)
+
+        expect(results.map(&:origin_hash)).to all be_nil
       end
     end
   end

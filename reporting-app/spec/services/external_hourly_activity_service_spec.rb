@@ -37,9 +37,15 @@ RSpec.describe ExternalHourlyActivityService do
 
         expect(result.source_id).to eq("batch-123")
       end
+
+      it "stores the origin_hash it is given" do
+        result = described_class.create_entry(**valid_params, origin_hash: "abc123")
+
+        expect(result.origin_hash).to eq("abc123")
+      end
     end
 
-    context "with duplicate entry" do
+    context "with an existing identical entry" do
       before do
         create(:external_hourly_activity,
                member_id: valid_params[:member_id],
@@ -49,17 +55,9 @@ RSpec.describe ExternalHourlyActivityService do
                period_end: valid_params[:period_end])
       end
 
-      it "returns conflict error" do
-        expect { described_class.create_entry(**valid_params) }.to raise_error(/Duplicate entry/)
-      end
-
-      it "does not create a new entry" do
-        expect {
-          begin
-            described_class.create_entry(**valid_params)
-          rescue
-          end
-        }.not_to change(ExternalHourlyActivity, :count)
+      it "creates the entry, since duplicates are rejected by create_entries" do
+        expect { described_class.create_entry(**valid_params) }
+          .to change(ExternalHourlyActivity, :count).by(1)
       end
     end
 
@@ -269,105 +267,95 @@ RSpec.describe ExternalHourlyActivityService do
         expect(results.sum(&:hours)).to eq hours
       end
     end
+
+    context "with an origin_hash" do
+      let(:period_start) { 3.months.ago.beginning_of_month.to_date }
+      let(:period_end) { 1.month.ago.end_of_month.to_date }
+
+      it "stamps the same hash on every entry of the submission" do
+        results = described_class.create_entries(**valid_params, name: "Acme Corp")
+
+        expect(results.size).to eq 3
+        expect(results.map(&:origin_hash).uniq.size).to eq 1
+        expect(results.first.origin_hash).to be_present
+      end
+
+      it "differs when the name differs" do
+        first = described_class.create_entries(**valid_params, name: "Acme Corp")
+        second = described_class.create_entries(**valid_params, name: "Other Corp")
+
+        expect(second.first.origin_hash).not_to eq first.first.origin_hash
+      end
+    end
+
+    context "with a duplicate submission" do
+      let(:period_start) { 3.months.ago.beginning_of_month.to_date }
+      let(:period_end) { 1.month.ago.end_of_month.to_date }
+
+      before { described_class.create_entries(**valid_params, name: "Acme Corp") }
+
+      it "raises a validation error" do
+        expect { described_class.create_entries(**valid_params, name: "Acme Corp") }
+          .to raise_error(ActiveRecord::RecordInvalid, /Duplicate entry/)
+      end
+
+      it "creates no entries" do
+        expect { described_class.create_entries(**valid_params, name: "Acme Corp") rescue nil }
+          .not_to change(ExternalHourlyActivity, :count)
+      end
+
+      it "ignores name casing and surrounding whitespace" do
+        expect { described_class.create_entries(**valid_params, name: " acme corp ") }
+          .to raise_error(ActiveRecord::RecordInvalid, /Duplicate entry/)
+      end
+
+      # The API sends a plain integer; the specs above derive hours from a date range, which is a Rational.
+      it "ignores how the hours value is typed or scaled" do
+        [ hours.to_i, hours.to_f, BigDecimal("#{hours.to_i}.00") ].each do |equivalent_hours|
+          expect { described_class.create_entries(**valid_params.merge(hours: equivalent_hours), name: "Acme Corp") }
+            .to raise_error(ActiveRecord::RecordInvalid, /Duplicate entry/)
+        end
+      end
+
+      it "accepts the same activity reported under a different name" do
+        expect { described_class.create_entries(**valid_params, name: "Other Corp") }
+          .to change(ExternalHourlyActivity, :count).by(3)
+      end
+
+      it "accepts the same activity for a different member" do
+        expect { described_class.create_entries(**valid_params.merge(member_id: "987654321"), name: "Acme Corp") }
+          .to change(ExternalHourlyActivity, :count).by(3)
+      end
+    end
+
+    context "with an unnamed duplicate submission" do
+      let(:period_start) { 3.months.ago.beginning_of_month.to_date }
+      let(:period_end) { 1.month.ago.end_of_month.to_date }
+
+      before { described_class.create_entries(**valid_params) }
+
+      it "raises a validation error" do
+        expect { described_class.create_entries(**valid_params) }
+          .to raise_error(ActiveRecord::RecordInvalid, /Duplicate entry/)
+      end
+    end
   end
 
   describe ".duplicate_entry?" do
-    let(:existing_entry) { create(:external_hourly_activity, :employment) }
+    let(:existing_entry) { create(:external_hourly_activity, :employment, origin_hash: "abc123") }
 
-    context "with exact match" do
-      it "returns true" do
-        result = described_class.duplicate_entry?(
-          member_id: existing_entry.member_id,
-          category: existing_entry.category,
-          hours: existing_entry.hours,
-          period_start: existing_entry.period_start,
-          period_end: existing_entry.period_end
-        )
-
-        expect(result).to be true
-      end
+    it "returns true when an entry with the origin hash exists" do
+      expect(described_class.duplicate_entry?(existing_entry.origin_hash)).to be true
     end
 
-    context "with different member_id" do
-      it "returns false" do
-        result = described_class.duplicate_entry?(
-          member_id: "different-member",
-          category: existing_entry.category,
-          hours: existing_entry.hours,
-          period_start: existing_entry.period_start,
-          period_end: existing_entry.period_end
-        )
+    it "returns false for an origin hash that has not been seen" do
+      existing_entry
 
-        expect(result).to be false
-      end
+      expect(described_class.duplicate_entry?("def456")).to be false
     end
 
-    context "with different category" do
-      it "returns false" do
-        result = described_class.duplicate_entry?(
-          member_id: existing_entry.member_id,
-          category: "education",
-          hours: existing_entry.hours,
-          period_start: existing_entry.period_start,
-          period_end: existing_entry.period_end
-        )
-
-        expect(result).to be false
-      end
-    end
-
-    context "with different hours" do
-      it "returns false" do
-        result = described_class.duplicate_entry?(
-          member_id: existing_entry.member_id,
-          category: existing_entry.category,
-          hours: existing_entry.hours + 10,
-          period_start: existing_entry.period_start,
-          period_end: existing_entry.period_end
-        )
-
-        expect(result).to be false
-      end
-    end
-
-    context "with different period" do
-      it "returns false for different start date" do
-        result = described_class.duplicate_entry?(
-          member_id: existing_entry.member_id,
-          category: existing_entry.category,
-          hours: existing_entry.hours,
-          period_start: existing_entry.period_start + 1.day,
-          period_end: existing_entry.period_end
-        )
-
-        expect(result).to be false
-      end
-
-      it "returns false for different end date" do
-        result = described_class.duplicate_entry?(
-          member_id: existing_entry.member_id,
-          category: existing_entry.category,
-          hours: existing_entry.hours,
-          period_start: existing_entry.period_start,
-          period_end: existing_entry.period_end - 1.day
-        )
-
-        expect(result).to be false
-      end
-    end
-
-    context "with no existing entries" do
-      it "returns false" do
-        result = described_class.duplicate_entry?(
-          member_id: "new-member",
-          category: "employment",
-          hours: 40.0,
-          period_start: Date.current,
-          period_end: Date.current.end_of_month
-        )
-
-        expect(result).to be false
-      end
+    it "returns false with no existing entries" do
+      expect(described_class.duplicate_entry?("abc123")).to be false
     end
   end
 end

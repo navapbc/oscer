@@ -59,7 +59,8 @@ class Certifications::CreationService
         period_start: activity_data.period_start,
         period_end: activity_data.period_end,
         source_type: ExternalHourlyActivity::SOURCE_TYPES[:api],
-        source_id: nil
+        source_id: nil,
+        name: activity_data.name
       )
     end
   end

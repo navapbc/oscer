@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_29_133636) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_28_155145) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -179,7 +179,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_29_133636) do
     t.string "source_id", comment: "Source record ID (e.g., batch upload ID)"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "origin_hash"
     t.index ["member_id"], name: "index_external_hourly_activities_on_member_id", comment: "Lookup entries by member"
+    t.index ["origin_hash"], name: "index_external_hourly_activities_on_origin_hash"
     t.index ["period_start", "period_end"], name: "index_external_hourly_activities_on_period", comment: "Date range queries"
     t.index ["source_type", "source_id"], name: "index_external_hourly_activities_on_source", comment: "Source tracking (batch upload lookups)"
   end
@@ -196,7 +198,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_29_133636) do
     t.jsonb "metadata", default: {}, null: false, comment: "Additional structured fields (e.g., employer name)"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "origin_hash"
     t.index ["member_id"], name: "index_external_income_activities_on_member_id", comment: "Lookup entries by member"
+    t.index ["origin_hash"], name: "index_external_income_activities_on_origin_hash"
     t.index ["period_start", "period_end"], name: "index_external_income_activities_on_period", comment: "Date range queries"
     t.index ["source_type", "source_id"], name: "index_external_income_activities_on_source", comment: "Source tracking (batch upload lookups)"
   end

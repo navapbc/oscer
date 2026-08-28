@@ -210,6 +210,72 @@ RSpec.describe Certifications::CreationService, type: :service do
       end
     end
 
+    context "with hourly activities that differ only by name" do
+      let(:member_data) do
+        build(:certification_member_data,
+          :with_full_name,
+          :with_account_email,
+          activities: [
+            {
+              "type" => "hourly",
+              "category" => "employment",
+              "hours" => 40,
+              "period_start" => latest_certifiable_month.beginning_of_month,
+              "period_end" => latest_certifiable_month.end_of_month,
+              "name" => "Acme Corp",
+              "verification_status" => "verified"
+            },
+            {
+              "type" => "hourly",
+              "category" => "employment",
+              "hours" => 40,
+              "period_start" => latest_certifiable_month.beginning_of_month,
+              "period_end" => latest_certifiable_month.end_of_month,
+              "name" => "Other Corp",
+              "verification_status" => "verified"
+            }
+          ]
+        )
+      end
+
+      it "treats them as separate activities" do
+        expect {
+          service.call
+        }.to change(ExternalHourlyActivity, :count).from(0).to(2)
+
+        expect(ExternalHourlyActivity.pluck(:origin_hash).uniq.size).to eq(2)
+      end
+    end
+
+    context "when ExternalHourlyActivityService fails (duplicate hours in same request)" do
+      let(:hourly_activity) do
+        {
+          "type" => "hourly",
+          "category" => "employment",
+          "hours" => 40,
+          "period_start" => latest_certifiable_month.beginning_of_month,
+          "period_end" => latest_certifiable_month.end_of_month,
+          "name" => "Acme Corp",
+          "verification_status" => "verified"
+        }
+      end
+      let(:member_data) do
+        build(:certification_member_data,
+          :with_full_name,
+          :with_account_email,
+          activities: [ hourly_activity, hourly_activity ]
+        )
+      end
+
+      it "raises ActiveRecord::RecordInvalid and rolls back certification and partial hours" do
+        expect { service.call }.to raise_error(ActiveRecord::RecordInvalid, /Duplicate entry/)
+
+        expect(Certification.count).to eq(0)
+        expect(ExternalHourlyActivity.count).to eq(0)
+        expect(CertificationOrigin.count).to eq(0)
+      end
+    end
+
     context "with income activities" do
       let(:verification_status) { "verified" }
       let(:member_data) do
