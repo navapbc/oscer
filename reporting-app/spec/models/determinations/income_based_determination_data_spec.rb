@@ -12,6 +12,7 @@ RSpec.describe Determinations::IncomeBasedDeterminationData do
   it "serializes a stable income_based payload" do
     income_data = {
       total_income: BigDecimal("580.25"),
+      income_by_month: { Date.new(2026, 1, 1) => BigDecimal("300"), Date.new(2026, 2, 1) => BigDecimal("280.25") },
       income_by_source: { external: BigDecimal("500"), activity: BigDecimal("80.25") },
       period_start: Date.new(2026, 1, 1),
       period_end: Date.new(2026, 1, 31),
@@ -23,6 +24,7 @@ RSpec.describe Determinations::IncomeBasedDeterminationData do
       {
         "calculation_type" => Determination::CALCULATION_TYPE_INCOME_BASED,
         "total_income" => 580.25,
+        "maximum_monthly_income" => 300.0,
         "target_income" => IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY.to_f,
         "income_by_source" => { "external" => 500.0, "activity" => 80.25 },
         "period_start" => "2026-01-01",
@@ -33,6 +35,33 @@ RSpec.describe Determinations::IncomeBasedDeterminationData do
         "calculated_at" => expected_calculated_at
       }
     )
+  end
+
+  it "records zero as the best month when the member reported none" do
+    income_data = {
+      total_income: BigDecimal("0"),
+      income_by_month: {},
+      income_by_source: { external: BigDecimal("0"), activity: BigDecimal("0") },
+      period_start: Date.new(2026, 1, 1),
+      period_end: Date.new(2026, 1, 31),
+      external_income_activity_ids: [],
+      activity_ids: []
+    }
+
+    expect(described_class.from_aggregate(income_data).to_h["maximum_monthly_income"]).to eq(0.0)
+  end
+
+  it "leaves the best month nil when the aggregate omits the monthly map" do
+    income_data = {
+      total_income: BigDecimal("580.25"),
+      income_by_source: { external: BigDecimal("580.25"), activity: BigDecimal("0") },
+      period_start: Date.new(2026, 1, 1),
+      period_end: Date.new(2026, 1, 31),
+      external_income_activity_ids: [],
+      activity_ids: []
+    }
+
+    expect(described_class.from_aggregate(income_data).to_h["maximum_monthly_income"]).to be_nil
   end
 
   it "includes compliant in the hash when provided for combined CE nesting" do

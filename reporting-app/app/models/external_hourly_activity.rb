@@ -51,4 +51,8 @@ class ExternalHourlyActivity < ApplicationRecord
 
     where("period_start >= ? AND period_end <= ?", start_date, end_date)
   }
+
+  def month
+    period_start.beginning_of_month
+  end
 end

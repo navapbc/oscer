@@ -20,7 +20,7 @@ class HoursComplianceDeterminationService
       # TODO: the logic behind which forms are updated tbd
       application_form = ActivityReportApplicationForm.where(certification_case_id: kase.id).first
       hours_data = aggregate_hours_for_certification(certification, application_form:)
-      outcome = determine_outcome(hours_data[:total_hours])
+      outcome = determine_outcome(hours_data[:hours_by_month])
 
       kase.record_hours_compliance(outcome, hours_data)
     end
@@ -52,11 +52,12 @@ class HoursComplianceDeterminationService
 
       {
         total_hours: external_hours[:total] + member_hours[:total],
-        hours_by_category: merge_category_hours(external_hours[:by_category], member_hours[:by_category]),
+        hours_by_category: merge_external_with_member_data(external_hours[:by_category], member_hours[:by_category]),
         hours_by_source: {
           external: external_hours[:total],
           activity: member_hours[:total]
         },
+        hours_by_month: merge_external_with_member_data(external_hours[:by_month], member_hours[:by_month]),
         external_hourly_activity_ids: external_hours[:ids],
         activity_ids: member_hours[:ids],
         enrollment_status: best_enrollment_status(certification)
@@ -76,11 +77,13 @@ class HoursComplianceDeterminationService
       application_form.activities.where.not(hours: nil).order(:month, :created_at)
     end
 
-    # Check if total hours meet the compliance threshold
-    # @param total_hours [Float]
+    # Shared threshold check for combined CE (+CommunityEngagementCheckService+) and +#calculate+.
+    # One month at or above the threshold is enough.
+    # @param hours_by_month [Hash{Date => Numeric}]
     # @return [Boolean]
-    def compliant_for_total_hours?(total_hours)
-      total_hours.to_f >= TARGET_HOURS
+    def compliant_for_monthly_hours?(hours_by_month)
+      monthly_values = hours_by_month&.values || []
+      monthly_values.any? { |monthly_total| monthly_total.to_f >= TARGET_HOURS }
     end
 
     # Whether a verified education enrollment satisfies the hours requirement on its own.
@@ -119,22 +122,12 @@ class HoursComplianceDeterminationService
       activity.period_start <= lookback.end.to_date.end_of_month && activity.period_end >= lookback.start.to_date
     end
 
-    def determine_outcome(total_hours)
-      compliant_for_total_hours?(total_hours) ? :compliant : :not_compliant
-    end
-
-    def merge_category_hours(external, member)
-      (external.keys | member.keys).each_with_object({}) do |category, result|
-        result[category] = (external[category] || 0.0) + (member[category] || 0.0)
-      end
+    def determine_outcome(hours_by_month)
+      compliant_for_monthly_hours?(hours_by_month) ? :compliant : :not_compliant
     end
 
     def member_hours_from_activities(certification, application_form: nil)
-      # +member_hour_activities_for_certification+ orders by month / created_at for the staff UI table.
-      # +summarize_hours+ adds +GROUP BY :category+, which Postgres rejects unless those ORDER BY columns
-      # are in the GROUP BY. Strip the ORDER BY before aggregating.
-      rel = member_hour_activities_for_certification(certification, application_form:).reorder(nil)
-      summarize_hours(rel)
+      summarize_hours(member_hour_activities_for_certification(certification, application_form:))
     end
   end
 end
