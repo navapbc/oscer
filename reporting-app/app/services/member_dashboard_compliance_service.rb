@@ -19,9 +19,8 @@ class MemberDashboardComplianceService
       show_income = income_summary_visible?(latest, member_status) && lookback.present?
 
       external_hourly_rel = lookback.present? ? aggregator.fetch_external_hourly_activities(certification) : ExternalHourlyActivity.none
-      # Pass only the external relation: +HoursComplianceDeterminationService+ will fetch and
-      # +.reorder(nil)+ member rows internally so its +GROUP BY :category+ aggregation hits
-      # the Postgres SUM path instead of erroring on the +ORDER BY+ on +member_hour_activities_for_certification+.
+      # Pass only the external relation, which the dashboard tables need anyway;
+      # +HoursComplianceDeterminationService+ fetches the member rows itself.
       hours_summary = HoursComplianceDeterminationService.aggregate_hours_for_certification(
         certification,
         application_form: activity_report_application_form,

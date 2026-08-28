@@ -10,6 +10,7 @@ module Determinations
   # validation here — invalid shapes should be rejected at the aggregate layer or via future stricter VO checks.
   class HoursBasedDeterminationData < ValueObject
     attribute :total_hours
+    attribute :maximum_monthly_hours
     attribute :hours_by_category, default: -> { {} }
     attribute :hours_by_source, default: -> { {} }
     attribute :external_hourly_activity_ids, default: -> { [] }
@@ -21,10 +22,11 @@ module Determinations
 
     validates :calculated_at, presence: true
     validates :total_hours, presence: true, numericality: true
+    validates :maximum_monthly_hours, numericality: true, allow_nil: true
     validate :hours_by_category_is_hash
     validate :hours_by_source_is_hash
 
-    # @param hours_data [Hash] +:total_hours+, +:hours_by_category+, +:hours_by_source+,
+    # @param hours_data [Hash] +:total_hours+, +:hours_by_month+, +:hours_by_category+, +:hours_by_source+,
     #   +:external_hourly_activity_ids+, +:activity_ids+, +:enrollment_status+ (see aggregate service). Keys may be
     #   strings or symbols (+with_indifferent_access+ is applied internally).
     # @param compliant [Boolean, nil] omit for standalone hours CE; set for combined nested +hours+
@@ -33,6 +35,7 @@ module Determinations
       hours_data = hours_data.with_indifferent_access
       new(
         total_hours: hours_data[:total_hours],
+        maximum_monthly_hours: best_month(hours_data[:hours_by_month]),
         hours_by_category: hours_data[:hours_by_category] || {},
         hours_by_source: hours_data[:hours_by_source] || {},
         external_hourly_activity_ids: Array(hours_data[:external_hourly_activity_ids]),
@@ -43,6 +46,15 @@ module Determinations
       ).tap(&:validate!)
     end
 
+    # Zero when the member reported no months; nil when the aggregate omits the map, so an
+    # omission is never mistaken for a real zero.
+    def self.best_month(hours_by_month)
+      return nil if hours_by_month.nil?
+
+      hours_by_month.values.max || 0
+    end
+    private_class_method :best_month
+
     # @return [Hash{String => Object}] JSONB-safe keys and values for +Determination#determination_data+
     # @note Category and source values are coerced with +to_f+; see class-level contract above.
     def to_h
@@ -51,6 +63,7 @@ module Determinations
       {
         "calculation_type" => Determination::CALCULATION_TYPE_HOURS_BASED,
         "total_hours" => total_hours.to_f,
+        "maximum_monthly_hours" => maximum_monthly_hours&.to_f,
         "target_hours" => HoursComplianceDeterminationService::TARGET_HOURS,
         "hours_by_category" => by_category,
         "hours_by_source" => by_source,

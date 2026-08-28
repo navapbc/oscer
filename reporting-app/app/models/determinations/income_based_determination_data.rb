@@ -6,6 +6,7 @@ module Determinations
   # {IncomeComplianceDeterminationService.aggregate_income_for_certification} output.
   class IncomeBasedDeterminationData < ValueObject
     attribute :total_income
+    attribute :maximum_monthly_income
     attribute :income_by_source, default: -> { {} }
     attribute :period_start
     attribute :period_end
@@ -16,13 +17,14 @@ module Determinations
 
     validates :calculated_at, presence: true
     validates :total_income, presence: true, numericality: true
+    validates :maximum_monthly_income, numericality: true, allow_nil: true
     validate :income_by_source_is_hash
     validate :income_by_source_keys_allowed
 
     ALLOWED_INCOME_BY_SOURCE_KEYS = %w[external activity].freeze
 
-    # @param income_data [Hash] +:total_income+, +:income_by_source+ (only +:external+ and +:activity+ totals),
-    #   +:period_start+, +:period_end+, +:external_income_activity_ids+, +:activity_ids+. Keys may be
+    # @param income_data [Hash] +:total_income+, +:income_by_month+, +:income_by_source+ (only +:external+ and
+    #   +:activity+ totals), +:period_start+, +:period_end+, +:external_income_activity_ids+, +:activity_ids+. Keys may be
     #   strings or symbols (+with_indifferent_access+ is applied internally). Unknown keys on +income_by_source+ fail validation.
     # @param compliant [Boolean, nil] omit for income-only CE; set for combined nested +income+
     # @return [self]
@@ -30,6 +32,7 @@ module Determinations
       income_data = income_data.with_indifferent_access
       new(
         total_income: income_data[:total_income],
+        maximum_monthly_income: best_month(income_data[:income_by_month]),
         income_by_source: income_data[:income_by_source] || {},
         period_start: income_data[:period_start],
         period_end: income_data[:period_end],
@@ -40,12 +43,22 @@ module Determinations
       ).tap(&:validate!)
     end
 
+    # Zero when the member reported no months; nil when the aggregate omits the map, so an
+    # omission is never mistaken for a real zero.
+    def self.best_month(income_by_month)
+      return nil if income_by_month.nil?
+
+      income_by_month.values.max || 0
+    end
+    private_class_method :best_month
+
     # @return [Hash{String => Object}] JSONB-safe keys and values for +Determination#determination_data+
     def to_h
       income_by = (income_by_source || {}).with_indifferent_access
       {
         "calculation_type" => Determination::CALCULATION_TYPE_INCOME_BASED,
         "total_income" => total_income.to_f,
+        "maximum_monthly_income" => maximum_monthly_income&.to_f,
         "target_income" => IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY.to_f,
         "income_by_source" => {
           "external" => income_by[:external].to_f,
