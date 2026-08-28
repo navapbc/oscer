@@ -65,6 +65,8 @@ RSpec.describe CertificationCase, type: :model do
       })
     end
 
+    around { |example| freeze_time { example.run } }
+
     it 'sets approval status and closes case' do
       certification_case.accept_activity_report(user, application_form)
       certification_case.reload
@@ -82,7 +84,7 @@ RSpec.describe CertificationCase, type: :model do
       expect(determination.decision_method).to eq("manual")
       expect(determination.reasons).to include("hours_reported_compliant")
       expect(determination.outcome).to eq("compliant")
-      expect(determination.determined_at).to be_present
+      expect(determination.determined_at).to eq(Time.current)
       expect(determination.determination_data["total_hours"]).to eq(85)
     end
 
@@ -123,6 +125,8 @@ RSpec.describe CertificationCase, type: :model do
       })
     end
 
+    around { |example| freeze_time { example.run } }
+
     it 'sets denial status' do
       certification_case.deny_activity_report(user, application_form)
       certification_case.reload
@@ -160,7 +164,7 @@ RSpec.describe CertificationCase, type: :model do
       expect(determination.decision_method).to eq("manual")
       expect(determination.reasons).to include("hours_reported_insufficient")
       expect(determination.outcome).to eq("not_compliant")
-      expect(determination.determined_at).to be_present
+      expect(determination.determined_at).to eq(Time.current)
       expect(determination.determination_data["total_hours"]).to eq(40)
     end
 
@@ -226,6 +230,8 @@ RSpec.describe CertificationCase, type: :model do
 
     before { allow(Strata::EventManager).to receive(:publish) }
 
+    around { |example| freeze_time { example.run } }
+
     it 'sets approval status and closes case' do
       certification_case.accept_exemption_request(user, application_form)
       certification_case.reload
@@ -239,7 +245,7 @@ RSpec.describe CertificationCase, type: :model do
       expect(determination.decision_method).to eq("manual")
       expect(determination.reasons).to include("exemption_request_compliant")
       expect(determination.outcome).to eq("exempt")
-      expect(determination.determined_at).to be_present
+      expect(determination.determined_at).to eq(Time.current)
       expect(determination.determination_data).to eq({ "exemption_type" => "short_term_hardship" })
     end
 
@@ -301,6 +307,8 @@ RSpec.describe CertificationCase, type: :model do
 
     before { allow(Strata::EventManager).to receive(:publish) }
 
+    around { |example| freeze_time { example.run } }
+
     it 'sets approval status and closes case' do
       certification_case.accept_denial_response(user, application_form)
       certification_case.reload
@@ -318,7 +326,7 @@ RSpec.describe CertificationCase, type: :model do
       expect(determination.decision_method).to eq("manual")
       expect(determination.reasons).to include("denial_response_convincing")
       expect(determination.outcome).to eq("compliant")
-      expect(determination.determined_at).to be_present
+      expect(determination.determined_at).to eq(Time.current)
       expect(determination.determination_data).to eq({ "denial_response_application_form_id" => application_form.id })
     end
 
@@ -344,6 +352,8 @@ RSpec.describe CertificationCase, type: :model do
 
     before { allow(Strata::EventManager).to receive(:publish) }
 
+    around { |example| freeze_time { example.run } }
+
     it 'sets denial status' do
       certification_case.deny_denial_response(user, application_form)
       certification_case.reload
@@ -360,7 +370,7 @@ RSpec.describe CertificationCase, type: :model do
       expect(determination.decision_method).to eq("manual")
       expect(determination.reasons).to include("denial_response_not_convincing")
       expect(determination.outcome).to eq("not_compliant")
-      expect(determination.determined_at).to be_present
+      expect(determination.determined_at).to eq(Time.current)
       expect(determination.determination_data).to eq({ "denial_response_application_form_id" => application_form.id })
     end
 
@@ -419,6 +429,8 @@ RSpec.describe CertificationCase, type: :model do
     # highest-priority exclusion and owns the conditional logic and events.
     before { stub_const("MockSubmitter", Class.new { include Strata::VirtualActor }) }
 
+    around { |example| freeze_time { example.run } }
+
     it 'sets approval status and closes case' do
       certification_case.record_exclusion_determination([ "pregnancy_excluded" ], MockSubmitter, "api")
       certification_case.reload
@@ -443,7 +455,7 @@ RSpec.describe CertificationCase, type: :model do
       expect(determination.decision_method).to eq("automated")
       expect(determination.reasons).to eq([ "pregnancy_excluded" ])
       expect(determination.outcome).to eq("excluded")
-      expect(determination.determined_at).to be_present
+      expect(determination.determined_at).to eq(Time.current)
       # determination_data is a jsonb column and must be stored as a Hash, never a JSON
       # String (writing reasons.to_json double-encodes it into a String — see #680). For
       # automated exclusions it records the granting reason codes.
