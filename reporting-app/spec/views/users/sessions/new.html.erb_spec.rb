@@ -23,7 +23,7 @@ RSpec.describe "users/sessions/new", type: :view do
       )
     end
 
-    it "displays the member OIDC login button" do
+    it "displays the member OIDC sign-in button" do
       render
 
       expect(rendered).to have_link(
@@ -57,7 +57,7 @@ RSpec.describe "users/sessions/new", type: :view do
       allow(view).to receive(:member_oidc_enabled?).and_return(false)
     end
 
-    it "does not display the member OIDC login button" do
+    it "does not display the member OIDC sign-in button" do
       render
 
       expect(rendered).not_to have_link(I18n.t("auth.member_oidc.sign_in_button"))
