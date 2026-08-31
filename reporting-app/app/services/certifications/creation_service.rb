@@ -84,6 +84,7 @@ class Certifications::CreationService
         source_type: activity_data.source,
         source_id: nil,
         reported_at: activity_data.reported_at || Time.current,
+        name: activity_data.name,
         employer: activity_data.employer || activity_data.name,
         recalculate_income_compliance: false
       )
@@ -106,9 +107,16 @@ class Certifications::CreationService
           source_type: ExternalIncomeActivity::SOURCE_TYPES[:api],
           source_id: nil,
           reported_at: Time.current,
+          name: household_member_name(household_member),
+          identity: [ household_member.ssn, household_member.date_of_birth ],
           recalculate_income_compliance: false
         )
       end
     end
+  end
+
+  # Strata::Name#full_name keeps blank middle names and suffixes as extra spaces.
+  def household_member_name(household_member)
+    household_member.name&.full_name&.squish.presence
   end
 end

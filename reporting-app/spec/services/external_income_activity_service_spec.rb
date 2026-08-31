@@ -50,6 +50,13 @@ RSpec.describe ExternalIncomeActivityService do
         expect(result.origin_hash).to eq("abc123")
       end
 
+      it "stores the reported name alongside the employer metadata" do
+        result = described_class.create_entry(**valid_params, name: "Acme Corp", employer: "Acme Payroll")
+
+        expect(result.name).to eq("Acme Corp")
+        expect(result.metadata).to eq({ "employer" => "Acme Payroll" })
+      end
+
       it "defaults reported_at when omitted" do
         freeze_time do
           result = described_class.create_entry(**valid_params)
@@ -423,22 +430,35 @@ RSpec.describe ExternalIncomeActivityService do
       end
     end
 
+    context "with a name" do
+      let(:gross_income) { 300 }
+      let(:period_start) { 3.months.ago.beginning_of_month.to_date }
+      let(:period_end) { 1.month.ago.end_of_month.to_date }
+
+      it "stores it on every entry of the submission" do
+        results = described_class.create_entries(**valid_params, name: "Acme Corp")
+
+        expect(results.size).to eq 3
+        expect(results.map(&:name)).to all eq "Acme Corp"
+      end
+    end
+
     context "with an origin_hash" do
       let(:gross_income) { 300 }
       let(:period_start) { 3.months.ago.beginning_of_month.to_date }
       let(:period_end) { 1.month.ago.end_of_month.to_date }
 
       it "stamps the same hash on every entry of the submission" do
-        results = described_class.create_entries(**valid_params, employer: "Acme Corp")
+        results = described_class.create_entries(**valid_params, name: "Acme Corp")
 
         expect(results.size).to eq 3
         expect(results.map(&:origin_hash).uniq.size).to eq 1
         expect(results.first.origin_hash).to be_present
       end
 
-      it "differs when the employer differs" do
-        first = described_class.create_entries(**valid_params, employer: "Acme Corp")
-        second = described_class.create_entries(**valid_params, employer: "Other Corp")
+      it "differs when the name differs" do
+        first = described_class.create_entries(**valid_params, name: "Acme Corp")
+        second = described_class.create_entries(**valid_params, name: "Other Corp")
 
         expect(second.first.origin_hash).not_to eq first.first.origin_hash
       end
@@ -449,26 +469,69 @@ RSpec.describe ExternalIncomeActivityService do
       let(:period_start) { 3.months.ago.beginning_of_month.to_date }
       let(:period_end) { 1.month.ago.end_of_month.to_date }
 
-      before { described_class.create_entries(**valid_params, employer: "Acme Corp") }
-
-      it "raises a validation error" do
-        expect { described_class.create_entries(**valid_params, employer: "Acme Corp") }
-          .to raise_error(ActiveRecord::RecordInvalid, /Duplicate entry/)
+      before do
+        allow(Rails.logger).to receive(:warn)
+        described_class.create_entries(**valid_params, name: "Acme Corp", employer: "Acme Payroll")
       end
 
       it "creates no entries" do
-        expect { described_class.create_entries(**valid_params, employer: "Acme Corp") rescue nil }
+        expect { described_class.create_entries(**valid_params, name: "Acme Corp") }
           .not_to change(ExternalIncomeActivity, :count)
       end
 
-      it "accepts the same income reported for a different employer" do
-        expect { described_class.create_entries(**valid_params, employer: "Other Corp") }
+      it "returns no entries" do
+        expect(described_class.create_entries(**valid_params, name: "Acme Corp")).to eq []
+      end
+
+      it "logs the duplicate" do
+        described_class.create_entries(**valid_params, name: "Acme Corp")
+
+        expect(Rails.logger).to have_received(:warn).with(/skipped duplicate submission/)
+      end
+
+      it "ignores the employer, which is metadata rather than identity" do
+        expect { described_class.create_entries(**valid_params, name: "Acme Corp", employer: "Other Payroll") }
+          .not_to change(ExternalIncomeActivity, :count)
+      end
+
+      it "accepts the same income reported under a different name" do
+        expect { described_class.create_entries(**valid_params, name: "Other Corp") }
           .to change(ExternalIncomeActivity, :count).by(3)
       end
 
       it "accepts the same income for a different member" do
-        expect { described_class.create_entries(**valid_params.merge(member_id: "987654321"), employer: "Acme Corp") }
+        expect { described_class.create_entries(**valid_params.merge(member_id: "987654321"), name: "Acme Corp") }
           .to change(ExternalIncomeActivity, :count).by(3)
+      end
+
+      it "recalculates compliance only for the submission that created entries" do
+        certification = create(:certification)
+        create(:certification_case, certification: certification)
+        allow(IncomeComplianceDeterminationService).to receive(:calculate)
+        member_params = valid_params.merge(member_id: certification.member_id, name: "Acme Corp")
+        described_class.create_entries(**member_params)
+
+        described_class.create_entries(**member_params)
+
+        expect(IncomeComplianceDeterminationService).to have_received(:calculate).once
+      end
+    end
+
+    context "with an unnamed duplicate submission" do
+      let(:gross_income) { 300 }
+      let(:period_start) { 3.months.ago.beginning_of_month.to_date }
+      let(:period_end) { 1.month.ago.end_of_month.to_date }
+
+      before { described_class.create_entries(**valid_params) }
+
+      it "creates no entries" do
+        expect { described_class.create_entries(**valid_params) }
+          .not_to change(ExternalIncomeActivity, :count)
+      end
+
+      it "treats a blank name as no name" do
+        expect { described_class.create_entries(**valid_params, name: "  ") }
+          .not_to change(ExternalIncomeActivity, :count)
       end
     end
 
@@ -476,19 +539,50 @@ RSpec.describe ExternalIncomeActivityService do
       let(:gross_income) { 300 }
       let(:period_start) { 3.months.ago.beginning_of_month.to_date }
       let(:period_end) { 1.month.ago.end_of_month.to_date }
-      let(:household_params) { valid_params.merge(category: ExternalIncomeActivity::CATEGORY_HOUSEHOLD) }
+      let(:household_params) do
+        valid_params.merge(
+          category: ExternalIncomeActivity::CATEGORY_HOUSEHOLD,
+          name: "Elizabeth Doe",
+          identity: [ "000000002", Date.new(1979, 9, 1) ]
+        )
+      end
 
-      before { described_class.create_entries(**household_params) }
+      before do
+        allow(Rails.logger).to receive(:warn)
+        described_class.create_entries(**household_params)
+      end
 
-      it "creates the entries, since two household members can report the same income" do
+      it "creates no entries for the same household member" do
         expect { described_class.create_entries(**household_params) }
+          .not_to change(ExternalIncomeActivity, :count)
+      end
+
+      it "accepts the same income from another household member" do
+        expect {
+          described_class.create_entries(
+            **household_params.merge(name: "Richard Doe", identity: [ "000000003", Date.new(1983, 10, 2) ])
+          )
+        }.to change(ExternalIncomeActivity, :count).by(3)
+      end
+
+      it "tells household members who share a name apart by tax ID and date of birth" do
+        expect {
+          described_class.create_entries(**household_params.merge(identity: [ "000000003", Date.new(1983, 10, 2) ]))
+        }.to change(ExternalIncomeActivity, :count).by(3)
+      end
+
+      it "accepts a different income from the same household member" do
+        expect { described_class.create_entries(**household_params.merge(gross_income: 450)) }
           .to change(ExternalIncomeActivity, :count).by(3)
       end
 
-      it "leaves household entries unfingerprinted" do
-        results = described_class.create_entries(**household_params)
-
-        expect(results.map(&:origin_hash)).to all be_nil
+      it "accepts income for a different period from the same household member" do
+        expect {
+          described_class.create_entries(
+            **household_params.merge(period_start: 6.months.ago.beginning_of_month.to_date,
+                                     period_end: 4.months.ago.end_of_month.to_date)
+          )
+        }.to change(ExternalIncomeActivity, :count).by(3)
       end
     end
   end

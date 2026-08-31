@@ -243,11 +243,12 @@ RSpec.describe Certifications::CreationService, type: :service do
           service.call
         }.to change(ExternalHourlyActivity, :count).from(0).to(2)
 
+        expect(ExternalHourlyActivity.pluck(:name)).to contain_exactly("Acme Corp", "Other Corp")
         expect(ExternalHourlyActivity.pluck(:origin_hash).uniq.size).to eq(2)
       end
     end
 
-    context "when ExternalHourlyActivityService fails (duplicate hours in same request)" do
+    context "with duplicate hourly activities in the same request" do
       let(:hourly_activity) do
         {
           "type" => "hourly",
@@ -267,12 +268,14 @@ RSpec.describe Certifications::CreationService, type: :service do
         )
       end
 
-      it "raises ActiveRecord::RecordInvalid and rolls back certification and partial hours" do
-        expect { service.call }.to raise_error(ActiveRecord::RecordInvalid, /Duplicate entry/)
+      it "skips the duplicate and still creates the certification" do
+        allow(Rails.logger).to receive(:warn)
 
-        expect(Certification.count).to eq(0)
-        expect(ExternalHourlyActivity.count).to eq(0)
-        expect(CertificationOrigin.count).to eq(0)
+        expect { service.call }.to change(Certification, :count).from(0).to(1)
+
+        expect(ExternalHourlyActivity.count).to eq(1)
+        expect(CertificationOrigin.count).to eq(1)
+        expect(Rails.logger).to have_received(:warn).with(/skipped duplicate submission/)
       end
     end
 
@@ -313,6 +316,7 @@ RSpec.describe Certifications::CreationService, type: :service do
             [ member_id, "employment", 620, "api", latest_certifiable_month.beginning_of_month, latest_certifiable_month.end_of_month ]
           ]
         )
+        expect(ExternalIncomeActivity.pick(:name)).to eq("Acme Corp")
         expect(ExternalIncomeActivity.pick(:metadata)).to include("employer" => "Acme Corp")
       end
 
@@ -411,6 +415,45 @@ RSpec.describe Certifications::CreationService, type: :service do
         }.to change(ExternalIncomeActivity, :count).from(0).to(3)
 
         expect(ExternalIncomeActivity.pluck(:gross_income)).to contain_exactly(250, 350, 450)
+      end
+
+      it "attributes each entry to the household member who reported it" do
+        service.call
+
+        expect(ExternalIncomeActivity.pluck(:name))
+          .to contain_exactly("Elizabeth Frances Doe", "Richard Marcus Doe", "Richard Marcus Doe")
+      end
+
+      context "when a household member's income is reported twice" do
+        before do
+          allow(Rails.logger).to receive(:warn)
+          household_data[:members].first[:gross_incomes] <<
+            household_data[:members].first[:gross_incomes].first.dup
+        end
+
+        it "keeps one entry per household member and period" do
+          expect {
+            service.call
+          }.to change(ExternalIncomeActivity, :count).from(0).to(3)
+
+          expect(ExternalIncomeActivity.pluck(:gross_income)).to contain_exactly(250, 350, 450)
+          expect(Rails.logger).to have_received(:warn).with(/skipped duplicate submission/)
+        end
+      end
+
+      context "when two household members share a name" do
+        before do
+          household_data[:members].last[:name] = household_data[:members].first[:name]
+          household_data[:members].last[:gross_incomes] = household_data[:members].first[:gross_incomes]
+        end
+
+        it "keeps both, since they differ by tax ID and date of birth" do
+          expect {
+            service.call
+          }.to change(ExternalIncomeActivity, :count).from(0).to(2)
+
+          expect(ExternalIncomeActivity.pluck(:gross_income)).to contain_exactly(250, 250)
+        end
       end
 
       shared_examples "skips the applicant" do
@@ -556,7 +599,7 @@ RSpec.describe Certifications::CreationService, type: :service do
       end
     end
 
-    context "when ExternalIncomeActivityService fails (duplicate income in same request)" do
+    context "with duplicate income activities in the same request" do
       let(:member_data) do
         build(:certification_member_data,
           :with_full_name,
@@ -584,12 +627,14 @@ RSpec.describe Certifications::CreationService, type: :service do
         )
       end
 
-      it "raises ActiveRecord::RecordInvalid and rolls back certification and partial income" do
-        expect { service.call }.to raise_error(ActiveRecord::RecordInvalid)
+      it "skips the duplicate and still creates the certification" do
+        allow(Rails.logger).to receive(:warn)
 
-        expect(Certification.count).to eq(0)
-        expect(ExternalIncomeActivity.count).to eq(0)
-        expect(CertificationOrigin.count).to eq(0)
+        expect { service.call }.to change(Certification, :count).from(0).to(1)
+
+        expect(ExternalIncomeActivity.count).to eq(1)
+        expect(CertificationOrigin.count).to eq(1)
+        expect(Rails.logger).to have_received(:warn).with(/skipped duplicate submission/)
       end
     end
   end

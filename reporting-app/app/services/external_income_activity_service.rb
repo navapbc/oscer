@@ -15,17 +15,20 @@ class ExternalIncomeActivityService
     include OriginHash
 
     # Create one income data entry per calendar month the period touches.
-    # @return [Array<ExternalIncomeActivity>] on success
-    # @raise [ActiveRecord::RecordInvalid] on duplicate entry or validation failure
+    # A submission already on file is logged and skipped, leaving the caller's other work intact.
+    # @param identity [Array] values beyond the name identifying whose income this is, folded into
+    #   the fingerprint (household income passes the member's tax ID and date of birth).
+    # @return [Array<ExternalIncomeActivity>] the entries created, empty for a duplicate
+    # @raise [ActiveRecord::RecordInvalid] on validation failure
     def create_entries(member_id:, category:, gross_income:, period_start:, period_end:,
-                       source_type:, source_id: nil, reported_at: Time.current, metadata: {}, employer: nil,
+                       source_type:, source_id: nil, reported_at: Time.current, metadata: {},
+                       name: nil, identity: [], employer: nil,
                        recalculate_income_compliance: true)
-      origin_hash = submission_origin_hash(member_id, category, gross_income, period_start, period_end, employer)
+      origin_hash = origin_hash_for(member_id, category, gross_income, period_start, period_end, name, *identity)
 
       if duplicate_entry?(origin_hash)
-        entry = ExternalIncomeActivity.new
-        entry.errors.add(:base, "Duplicate entry")
-        raise ActiveRecord::RecordInvalid.new(entry)
+        log_duplicate_submission(origin_hash, member_id:, category:, period_start:, period_end:)
+        return []
       end
 
       month_values = if whole_months?(period_start, period_end)
@@ -37,7 +40,7 @@ class ExternalIncomeActivityService
       entries = month_values.map do |current_period_start, current_period_end, current_gross_income|
         create_entry(member_id:, category:, gross_income: current_gross_income,
                      period_start: current_period_start, period_end: current_period_end,
-                     source_type:, source_id:, reported_at:, metadata:, employer:, origin_hash:,
+                     source_type:, source_id:, reported_at:, metadata:, name:, employer:, origin_hash:,
                      recalculate_income_compliance: false)
       end
 
@@ -45,14 +48,14 @@ class ExternalIncomeActivityService
       entries
     end
 
-    # Create income data entry for a member. Duplicate detection belongs to +create_entries+.
+    # Duplicate detection belongs to +create_entries+.
     # @param recalculate_income_compliance [Boolean] when +true+ (default), after save run silent income
     #   compliance for the open case (may +close!+ when compliant); +Certifications::CreationService+ passes +false+.
     # @return [ExternalIncomeActivity] on success
     # @raise [ActiveRecord::RecordInvalid] on validation failure
     def create_entry(member_id:, category:, gross_income:, period_start:, period_end:,
-                     source_type:, source_id: nil, reported_at: Time.current, metadata: {}, employer: nil,
-                     origin_hash: nil, recalculate_income_compliance: true)
+                     source_type:, source_id: nil, reported_at: Time.current, metadata: {},
+                     name: nil, employer: nil, origin_hash: nil, recalculate_income_compliance: true)
       entry = ExternalIncomeActivity.new()
 
       Strata::AuditLog.record do |log|
@@ -65,6 +68,7 @@ class ExternalIncomeActivityService
           source_type: source_type,
           source_id: source_id,
           reported_at: reported_at,
+          name: name,
           origin_hash: origin_hash,
           metadata: (metadata || {}).merge(employer.present? ? { "employer" => employer } : {})
         )
@@ -101,14 +105,6 @@ class ExternalIncomeActivityService
         "(case or certification missing) for member_id=#{member_id} " \
         "certification_id=#{certification_id}"
       )
-    end
-
-    # Household income repeats legitimately (two household members can report the same amount),
-    # so those submissions are left unfingerprinted and never duplicate-checked.
-    def submission_origin_hash(member_id, category, gross_income, period_start, period_end, employer)
-      return if category == ExternalIncomeActivity::CATEGORY_HOUSEHOLD
-
-      origin_hash_for(member_id, category, gross_income, period_start, period_end, employer)
     end
 
     def duplicate_entry?(origin_hash)

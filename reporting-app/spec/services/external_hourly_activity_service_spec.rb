@@ -43,6 +43,12 @@ RSpec.describe ExternalHourlyActivityService do
 
         expect(result.origin_hash).to eq("abc123")
       end
+
+      it "stores the reported name" do
+        result = described_class.create_entry(**valid_params, name: "Acme Corp")
+
+        expect(result.name).to eq("Acme Corp")
+      end
     end
 
     context "with an existing identical entry" do
@@ -268,6 +274,18 @@ RSpec.describe ExternalHourlyActivityService do
       end
     end
 
+    context "with a name" do
+      let(:period_start) { 3.months.ago.beginning_of_month.to_date }
+      let(:period_end) { 1.month.ago.end_of_month.to_date }
+
+      it "stores it on every entry of the submission" do
+        results = described_class.create_entries(**valid_params, name: "Acme Corp")
+
+        expect(results.size).to eq 3
+        expect(results.map(&:name)).to all eq "Acme Corp"
+      end
+    end
+
     context "with an origin_hash" do
       let(:period_start) { 3.months.ago.beginning_of_month.to_date }
       let(:period_end) { 1.month.ago.end_of_month.to_date }
@@ -292,28 +310,35 @@ RSpec.describe ExternalHourlyActivityService do
       let(:period_start) { 3.months.ago.beginning_of_month.to_date }
       let(:period_end) { 1.month.ago.end_of_month.to_date }
 
-      before { described_class.create_entries(**valid_params, name: "Acme Corp") }
-
-      it "raises a validation error" do
-        expect { described_class.create_entries(**valid_params, name: "Acme Corp") }
-          .to raise_error(ActiveRecord::RecordInvalid, /Duplicate entry/)
+      before do
+        allow(Rails.logger).to receive(:warn)
+        described_class.create_entries(**valid_params, name: "Acme Corp")
       end
 
       it "creates no entries" do
-        expect { described_class.create_entries(**valid_params, name: "Acme Corp") rescue nil }
+        expect { described_class.create_entries(**valid_params, name: "Acme Corp") }
           .not_to change(ExternalHourlyActivity, :count)
+      end
+
+      it "returns no entries" do
+        expect(described_class.create_entries(**valid_params, name: "Acme Corp")).to eq []
+      end
+
+      it "logs the duplicate" do
+        described_class.create_entries(**valid_params, name: "Acme Corp")
+
+        expect(Rails.logger).to have_received(:warn).with(/skipped duplicate submission/)
       end
 
       it "ignores name casing and surrounding whitespace" do
         expect { described_class.create_entries(**valid_params, name: " acme corp ") }
-          .to raise_error(ActiveRecord::RecordInvalid, /Duplicate entry/)
+          .not_to change(ExternalHourlyActivity, :count)
       end
 
-      # The API sends a plain integer; the specs above derive hours from a date range, which is a Rational.
       it "ignores how the hours value is typed or scaled" do
         [ hours.to_i, hours.to_f, BigDecimal("#{hours.to_i}.00") ].each do |equivalent_hours|
           expect { described_class.create_entries(**valid_params.merge(hours: equivalent_hours), name: "Acme Corp") }
-            .to raise_error(ActiveRecord::RecordInvalid, /Duplicate entry/)
+            .not_to change(ExternalHourlyActivity, :count)
         end
       end
 
@@ -334,9 +359,14 @@ RSpec.describe ExternalHourlyActivityService do
 
       before { described_class.create_entries(**valid_params) }
 
-      it "raises a validation error" do
+      it "creates no entries" do
         expect { described_class.create_entries(**valid_params) }
-          .to raise_error(ActiveRecord::RecordInvalid, /Duplicate entry/)
+          .not_to change(ExternalHourlyActivity, :count)
+      end
+
+      it "treats a blank name as no name" do
+        expect { described_class.create_entries(**valid_params, name: "  ") }
+          .not_to change(ExternalHourlyActivity, :count)
       end
     end
   end
