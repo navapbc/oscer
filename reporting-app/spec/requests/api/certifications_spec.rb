@@ -280,6 +280,90 @@ RSpec.describe "/api/certifications", type: :request do
       end
     end
 
+    context "with a due date supplied" do
+      around { |example| freeze_time { example.run } }
+
+      it "stores the supplied due date instead of deriving one" do
+        requirement_params = build(
+          :certification_certification_requirement_params,
+          certification_date: Date.new(2026, 11, 20),
+          certification_type: "recertification",
+          due_date: Date.new(2026, 12, 15)
+        )
+        params = valid_json_request_attributes.merge({
+          certification_requirements: requirement_params.as_json
+        })
+
+        expect {
+          post api_certifications_url,
+              params: params,
+              headers: auth_headers(params),
+              as: :json
+        }.to change(Certification, :count).by(1)
+
+        expect(response).to have_http_status(:created)
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+
+        requirements = Certification.find(response.parsed_body[:id]).certification_requirements
+        expect(requirements.due_date).to eq Date.new(2026, 12, 15)
+      end
+    end
+
+    context "without a due date" do
+      around { |example| freeze_time { example.run } }
+
+      it "derives one from the day OSCER processed the request" do
+        requirement_params = build(
+          :certification_certification_requirement_params,
+          certification_date: Date.new(2026, 11, 20),
+          certification_type: "recertification"
+        )
+        params = valid_json_request_attributes.merge({
+          certification_requirements: requirement_params.as_json
+        })
+
+        expect {
+          post api_certifications_url,
+              params: params,
+              headers: auth_headers(params),
+              as: :json
+        }.to change(Certification, :count).by(1)
+
+        expect(response).to have_http_status(:created)
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+
+        requirements = Certification.find(response.parsed_body[:id]).certification_requirements
+        expect(requirements.due_date).to eq Date.current + 30.days
+      end
+    end
+
+    context "with an explicit null due period and no due date" do
+      around { |example| freeze_time { example.run } }
+
+      it "still derives a due date rather than storing none" do
+        params = valid_json_request_attributes.merge({
+          certification_requirements: {
+            certification_date: "2026-11-20",
+            lookback_period: 6,
+            number_of_months_to_certify: 3,
+            due_period_days: nil
+          }
+        })
+
+        expect {
+          post api_certifications_url,
+              params: params,
+              headers: auth_headers(params),
+              as: :json
+        }.to change(Certification, :count).by(1)
+
+        expect(response).to have_http_status(:created)
+
+        requirements = Certification.find(response.parsed_body[:id]).certification_requirements
+        expect(requirements.due_date).to eq Date.current + 30.days
+      end
+    end
+
     context "with member data" do
       it "creates a new Certification and renders response" do
         member_data = build(:certification_member_data,

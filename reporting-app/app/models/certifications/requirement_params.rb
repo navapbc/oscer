@@ -13,12 +13,10 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
   validates :certification_date, presence: true
   validates :lookback_period, presence: true
   validates :number_of_months_to_certify, presence: true
-  # one or the other
-  validates :due_period_days, presence: true, if: Proc.new { |params| params.due_date.blank? }
-  validates :due_date, presence: true, if: Proc.new { |params| params.due_period_days.blank? }
-  after_validation :set_due_date_from_period
+  validates :due_date, presence: true
 
   before_validation :set_type_params
+  before_validation :set_due_date_from_period
 
   def set_type_params
     if certification_type.blank? || !Certifications::Requirements::CERTIFICATION_TYPE_OPTIONS.include?(certification_type)
@@ -26,8 +24,6 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
     end
 
     set_params_for_type(certification_type)
-    # unset any existing explicit due_date
-    self.due_date = nil
   end
 
   def to_requirements
@@ -52,8 +48,6 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
   private
 
   def set_due_date_from_period
-    if due_period_days
-      self.due_date ||= certification_date + due_period_days.days
-    end
+    self.due_date ||= Date.current + (due_period_days || DEFAULT_DUE_PERIOD_DAYS).days
   end
 end
