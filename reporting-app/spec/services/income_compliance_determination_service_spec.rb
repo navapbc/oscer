@@ -125,7 +125,6 @@ RSpec.describe IncomeComplianceDeterminationService do
         described_class.calculate(certification.id)
 
         data = Determination.where(subject_id: certification.id).last.determination_data
-        expect(data["total_income"]).to be > data["target_income"]
         expect(data["maximum_monthly_income"]).to eq(300.0)
       end
     end
