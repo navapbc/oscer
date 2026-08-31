@@ -67,7 +67,7 @@ class CertificationCase < Strata::Case
         reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_compliant] ],
         outcome: :compliant,
         determination_data: Determinations::HoursBasedDeterminationData.from_aggregate(hours_data).to_h,
-        determined_at: certification.certification_requirements.certification_date,
+        determined_at: Time.current,
         actor: user
       )
     end
@@ -89,7 +89,7 @@ class CertificationCase < Strata::Case
         reasons: [ Determination::REASON_CODE_MAPPING[:hours_reported_insufficient] ],
         outcome: :not_compliant,
         determination_data: Determinations::HoursBasedDeterminationData.from_aggregate(hours_data).to_h,
-        determined_at: certification.certification_requirements.certification_date,
+        determined_at: Time.current,
         actor: user
       )
     end
@@ -111,7 +111,7 @@ class CertificationCase < Strata::Case
         decision_method: :manual,
         reasons: [ Determination::REASON_CODE_MAPPING[:exemption_request_compliant] ],
         outcome: :exempt,
-        determined_at: certification.certification_requirements.certification_date,
+        determined_at: Time.current,
         determination_data: {
           exemption_type: application_form.exemption_type
         },
@@ -151,7 +151,7 @@ class CertificationCase < Strata::Case
         reasons: [ Determination::REASON_CODE_MAPPING[:denial_response_convincing] ],
         outcome: :compliant,
         determination_data: { denial_response_application_form_id: application_form.id },
-        determined_at: certification.certification_requirements.certification_date,
+        determined_at: Time.current,
         actor: user
       )
     end
@@ -172,7 +172,7 @@ class CertificationCase < Strata::Case
         reasons: [ Determination::REASON_CODE_MAPPING[:denial_response_not_convincing] ],
         outcome: :not_compliant,
         determination_data: { denial_response_application_form_id: application_form.id },
-        determined_at: certification.certification_requirements.certification_date,
+        determined_at: Time.current,
         actor: user
       )
     end
@@ -210,7 +210,7 @@ class CertificationCase < Strata::Case
         reasons: reason_codes,
         outcome: :excluded,
         determination_data: determination_data,
-        determined_at: certification.certification_requirements.certification_date,
+        determined_at: Time.current,
         actor:
       )
     end
@@ -239,7 +239,7 @@ class CertificationCase < Strata::Case
         reasons: reason_codes,
         outcome: :excepted,
         determination_data: determination_data,
-        determined_at: certification.certification_requirements.certification_date,
+        determined_at: Time.current,
         actor:
       )
     end
@@ -370,7 +370,7 @@ class CertificationCase < Strata::Case
         reasons: reasons,
         outcome: outcome,
         determination_data: determination_data,
-        determined_at: certification.certification_requirements.certification_date,
+        determined_at: Time.current,
         actor:
       )
     end

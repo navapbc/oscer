@@ -186,7 +186,7 @@ module Dev
         reasons: [ Determination::REASON_CODE_MAPPING.fetch(:exemption_request_compliant) ],
         outcome: :exempt,
         determination_data: { "exemption_type" => exemption_form.exemption_type },
-        determined_at: certification.certification_requirements.certification_date
+        determined_at: Time.current
       )
     end
 
@@ -206,7 +206,7 @@ module Dev
           "calculation_type" => Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED,
           "satisfied_by" => Determination::SATISFIED_BY_BOTH
         },
-        determined_at: certification.certification_requirements.certification_date
+        determined_at: Time.current
       )
     end
 
@@ -216,7 +216,7 @@ module Dev
         reasons: [ "hours_reported_compliant" ],
         outcome: MemberStatus::NOT_COMPLIANT,
         determination_data: { "calculation_type" => Determination::CALCULATION_TYPE_HOURS_BASED },
-        determined_at: certification.certification_requirements.certification_date
+        determined_at: Time.current
       )
     end
 
