@@ -208,6 +208,31 @@ RSpec.describe Certifications::RequirementParams do
       end
     end
 
+    context "when the request supplies a due date that is not a date" do
+      subject(:validity) { params.valid? }
+
+      [
+        [ "an array", [ "2026-12-15" ] ],
+        [ "an integer", 12_345 ],
+        [ "a boolean", true ]
+      ].each do |label, value|
+        context "when it is #{label}" do
+          let(:params) do
+            described_class.new_filtered(
+              "certification_date" => certification_date,
+              "certification_type" => "recertification",
+              "due_date" => value
+            )
+          end
+
+          it "rejects the request" do
+            expect(validity).to be false
+            expect(params.errors).to include(:due_date)
+          end
+        end
+      end
+    end
+
     context "when the request supplies neither a due date nor a due period" do
       let(:params) do
         build(

@@ -14,6 +14,7 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
   validates :lookback_period, presence: true
   validates :number_of_months_to_certify, presence: true
   validates :due_date, presence: true
+  validate :due_date_must_be_a_date
 
   before_validation :set_type_params
   before_validation :set_due_date_from_period
@@ -49,5 +50,13 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
 
   def set_due_date_from_period
     self.due_date ||= Date.current + (due_period_days || DEFAULT_DUE_PERIOD_DAYS).days
+  end
+
+  # ActiveModel's date cast passes non-String values through untouched, so an
+  # array or integer would otherwise persist and crash every reader of the field.
+  def due_date_must_be_a_date
+    return if due_date.nil? || due_date.is_a?(Date)
+
+    errors.add(:due_date, :invalid)
   end
 end

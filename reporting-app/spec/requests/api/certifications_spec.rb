@@ -337,6 +337,27 @@ RSpec.describe "/api/certifications", type: :request do
       end
     end
 
+    context "with a due date that is not a date" do
+      it "rejects the request instead of persisting an unusable deadline" do
+        params = valid_json_request_attributes.merge({
+          certification_requirements: {
+            certification_date: "2026-11-20",
+            certification_type: "recertification",
+            due_date: [ "2026-12-15" ]
+          }
+        })
+
+        expect {
+          post api_certifications_url,
+              params: params,
+              headers: auth_headers(params),
+              as: :json
+        }.not_to change(Certification, :count)
+
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+    end
+
     context "with an explicit null due period and no due date" do
       around { |example| freeze_time { example.run } }
 
