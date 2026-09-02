@@ -700,7 +700,7 @@ RSpec.describe "/api/certifications", type: :request do
         expect(CertificationOrigin.count).to eq(0)
       end
 
-      it "rolls back certification when duplicate income activities fail" do
+      it "skips duplicate income activities and still creates the certification" do
         member_data = build(:certification_member_data,
           :with_full_name,
           :with_account_email,
@@ -735,11 +735,11 @@ RSpec.describe "/api/certifications", type: :request do
             params: params,
             headers: auth_headers(params),
             as: :json
-        }.not_to change(Certification, :count)
+        }.to change(Certification, :count).from(0).to(1)
 
-        expect(response).to have_http_status(:unprocessable_content)
-        expect(ExternalIncomeActivity.count).to eq(0)
-        expect(CertificationOrigin.count).to eq(0)
+        expect(response).to have_http_status(:created)
+        expect(ExternalIncomeActivity.count).to eq(1)
+        expect(CertificationOrigin.count).to eq(1)
       end
 
       it "creates multiple ExternalHourlyActivity records for multiple hourly activities" do
