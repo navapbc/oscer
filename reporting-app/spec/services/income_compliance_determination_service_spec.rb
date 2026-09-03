@@ -11,14 +11,14 @@ RSpec.describe IncomeComplianceDeterminationService do
     expect(Strata::EventManager).not_to have_received(:publish).with("DeterminedCommunityEngagementActionRequired", anything)
   end
 
-  # ExternalIncomeActivity rows aligned with the certification's continuous
+  # Income-bearing ExternalActivity rows aligned with the certification's continuous
   # lookback (parity with external hours helper).
   def create_income_for(certification, gross_income:, **attrs)
     lookback = certification.certification_requirements.continuous_lookback_period
     period_start = attrs[:period_start] || lookback.start.to_date
     period_end = attrs[:period_end] || lookback.start.to_date.end_of_month
 
-    create(:external_income_activity, member_id: certification.member_id,
+    create(:external_activity, :with_income, member_id: certification.member_id,
            period_start: period_start, period_end: period_end, gross_income: gross_income, **attrs)
   end
 
@@ -139,7 +139,7 @@ RSpec.describe IncomeComplianceDeterminationService do
 
     let(:certification) { create(:certification) }
 
-    context "with multiple ExternalIncomeActivity rows in lookback" do
+    context "with multiple income-bearing rows in lookback" do
       before do
         create_income_for(certification, gross_income: 300.0, category: "employment")
         create_income_for(certification, gross_income: 280.25, category: "education")
@@ -197,7 +197,7 @@ RSpec.describe IncomeComplianceDeterminationService do
       before do
         create_income_for(certification, gross_income: 300)
 
-        create(:external_income_activity,
+        create(:external_activity, :with_income,
                member_id: certification.member_id,
                gross_income: 10_000,
                period_start: 2.years.ago.to_date,
@@ -266,7 +266,7 @@ RSpec.describe IncomeComplianceDeterminationService do
         income: 2_000
       )
       ext_row = create_income_for(certification, gross_income: 50)
-      ext_scope = ExternalIncomeActivity.where(id: ext_row.id)
+      ext_scope = ExternalActivity.with_income.where(id: ext_row.id)
       rows = described_class.member_income_activities_for_certification(
         certification,
         application_form: form

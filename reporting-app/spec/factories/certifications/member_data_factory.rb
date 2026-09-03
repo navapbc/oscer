@@ -45,7 +45,6 @@ FactoryBot.define do
       activities {
         [
           {
-            "type": "hourly",
             "category": "employment",
             "hours": 10,
             "period_start": latest_certifiable_month,
@@ -62,7 +61,6 @@ FactoryBot.define do
       activities {
         num_months.times.map { |i|
           {
-            "type": "hourly",
             "category": "employment",
             "hours": 80,
             "period_start": latest_certifiable_month << i,
@@ -79,7 +77,6 @@ FactoryBot.define do
       activities {
         [
           {
-            "type": "hourly",
             "category": "education",
             "enrollment_status": "half_time",
             "period_start": latest_certifiable_month,
@@ -96,7 +93,6 @@ FactoryBot.define do
       activities {
         [
           {
-            "type": "hourly",
             "category": "education",
             "enrollment_status": "less_than_half_time",
             "period_start": latest_certifiable_month,
@@ -118,7 +114,6 @@ FactoryBot.define do
       activities {
         [
           {
-            "type": "income",
             "category": "employment",
             "gross_income": IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY / 2.0,
             "period_start": latest_certifiable_month,
@@ -136,7 +131,6 @@ FactoryBot.define do
       activities {
         [
           {
-            "type": "income",
             "category": "employment",
             "gross_income": IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY,
             "period_start": latest_certifiable_month,
@@ -153,7 +147,6 @@ FactoryBot.define do
       activities {
         [
           {
-            "type": "hourly",
             "category": "community_service",
             "hours": 20,
             "period_start": latest_certifiable_month,
@@ -170,7 +163,6 @@ FactoryBot.define do
       activities {
         [
           {
-            "type": "income",
             "category": "employment",
             "gross_income": 620.0,
             "period_start": latest_certifiable_month,

@@ -49,19 +49,19 @@ RSpec.describe "/staff/certification_cases", type: :request do
         period_start = lookback_period.start
         period_end = lookback_period.start.end_of_month
 
-        create(:external_hourly_activity,
+        create(:external_activity, :with_hours,
                member_id: member_id,
                category: "employment",
                hours: 20,
                period_start: period_start,
                period_end: period_end)
-        create(:external_hourly_activity,
+        create(:external_activity, :with_hours,
                member_id: member_id,
                category: "community_service",
                hours: 15,
                period_start: period_start,
                period_end: period_end)
-        create(:external_hourly_activity,
+        create(:external_activity, :with_hours,
                member_id: member_id,
                category: "community_service",
                hours: 15,
@@ -199,7 +199,7 @@ RSpec.describe "/staff/certification_cases", type: :request do
       before do
         period_start = lookback_period.start
         period_end = lookback_period.start.end_of_month
-        create(:external_hourly_activity,
+        create(:external_activity, :with_hours,
                :employment,
                member_id: member_id,
                hours: 80,
@@ -237,12 +237,12 @@ RSpec.describe "/staff/certification_cases", type: :request do
         period_start = lookback_period.start.to_date
         period_end = lookback_period.start.to_date.end_of_month
 
-        create(:external_income_activity, :employment,
+        create(:external_activity, :with_income, :employment,
                member_id: member_id,
                gross_income: 1_234.56,
                period_start: period_start,
                period_end: period_end,
-               source_type: ExternalIncomeActivity::SOURCE_TYPES[:api],
+               source_type: ExternalActivity::SOURCE_TYPES[:api],
                metadata: { "employer" => "Acme Corp" })
       end
 
