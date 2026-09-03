@@ -107,16 +107,44 @@ module ActivityAggregator
 
   # Apportions by the number of days each month covers.
   def daily_values_map(period_start, period_end, value)
-    apportioned_values_map(period_start, period_end, value) do |months|
-      months.map { |month_start, month_end| month_end - month_start + 1 }
-    end
+    apportioned_values_map(period_start, period_end, value, weight: :daily)
   end
 
   # Apportions evenly.
   def monthly_values_map(period_start, period_end, value)
-    apportioned_values_map(period_start, period_end, value) do |months|
-      Array.new(months.size, 1)
+    apportioned_values_map(period_start, period_end, value, weight: :monthly)
+  end
+
+  # Apportions several named values across one set of month periods using the same weights, so a
+  # submission carrying both hours and gross_income divides both along the same month boundaries.
+  # Returns [start, end, {name => share}] triples.
+  #
+  # Apportioning each value separately and zipping the results would not do: the single-value map
+  # drops a month whose share rounds away, so a small value can lose a month a larger one keeps
+  # and the two lists fall out of step. Here a month survives when *any* value has a non-zero
+  # share, and a value whose own share rounded away is left nil for that month, rolled into a
+  # later one by the running total.
+  #
+  # @param weight [Symbol] :daily (by days each month covers) or :monthly (evenly)
+  # @return [Array<Array(Date, Date, Hash)>]
+  def apportioned_multi_values_map(period_start, period_end, weight:, **values)
+    whole_period = [ [ period_start, period_end, values ] ]
+    months = month_periods(period_start, period_end)
+
+    # Malformed input (blank values or dates, reversed period) goes to the model as-is so it
+    # raises RecordInvalid rather than failing in the arithmetic below.
+    return whole_period if values.values.all?(&:blank?) || months.size <= 1
+
+    weights = month_weights(months, weight)
+    shares = values.transform_values do |value|
+      value.blank? ? Array.new(months.size) : apportioned_shares(value, weights)
     end
+
+    entries = months.each_with_index.map do |(current_period_start, current_period_end), index|
+      [ current_period_start, current_period_end, month_shares(shares, index) ]
+    end
+
+    entries.reject { |_, _, month_values| month_values.values.all?(&:nil?) }.presence || whole_period
   end
 
   private
@@ -127,8 +155,7 @@ module ActivityAggregator
     rows.sum(BigDecimal("0")) { |row| BigDecimal((row.public_send(attribute) || 0).to_s) }
   end
 
-  # The block supplies the per-month weights to apportion by.
-  def apportioned_values_map(period_start, period_end, value)
+  def apportioned_values_map(period_start, period_end, value, weight:)
     whole_period = [ [ period_start, period_end, value ] ]
     months = month_periods(period_start, period_end)
 
@@ -136,24 +163,48 @@ module ActivityAggregator
     # so it raises RecordInvalid rather than failing in the arithmetic below.
     return whole_period if value.blank? || months.size <= 1
 
-    weights = yield(months)
-    total_weight = weights.sum # number of months or number of days
-    covered_weight = 0
-    allocated = 0
-    entries = months.zip(weights).map do |(current_period_start, current_period_end), weight|
-      # Apportion against the running total rather than per month, so rounding cannot
-      # drift and the entries always sum back to +value+.
-      covered_weight += weight
-      cumulative_value = (covered_weight * value / total_weight).round(VALUE_SCALE)
-      current_value = cumulative_value - allocated
-      allocated = cumulative_value
-
-      [ current_period_start, current_period_end, current_value ]
+    shares = apportioned_shares(value, month_weights(months, weight))
+    entries = months.zip(shares).map do |(current_period_start, current_period_end), share|
+      [ current_period_start, current_period_end, share ]
     end
 
     # A share too small to survive rounding would fail the models' greater-than-zero
     # validations; drop it and let the running total roll it into the next month.
-    entries.reject { |_, _, current_value| current_value.zero? }.presence || whole_period
+    entries.reject { |_, _, share| share.zero? }.presence || whole_period
+  end
+
+  def month_weights(months, weight)
+    case weight
+    when :daily then months.map { |month_start, month_end| month_end - month_start + 1 }
+    when :monthly then Array.new(months.size, 1)
+    else raise ArgumentError, "unknown apportionment weight #{weight.inspect}"
+    end
+  end
+
+  # Apportions +value+ against a running total rather than per month, so rounding cannot drift
+  # and the shares always sum back to +value+.
+  def apportioned_shares(value, weights)
+    total_weight = weights.sum # number of months or number of days
+    covered_weight = 0
+    allocated = 0
+
+    weights.map do |weight|
+      covered_weight += weight
+      cumulative_value = (covered_weight * value / total_weight).round(VALUE_SCALE)
+      share = cumulative_value - allocated
+      allocated = cumulative_value
+
+      share
+    end
+  end
+
+  # One month's slice across every value, with a share that rounded away left nil so it fails no
+  # greater-than-zero validation and does not keep the month alive on its own.
+  def month_shares(shares, index)
+    shares.transform_values do |value_shares|
+      share = value_shares[index]
+      share unless share.nil? || share.zero?
+    end
   end
 
 
