@@ -24,15 +24,19 @@ class Certifications::MemberData < ValueObject
     validates :period_end, presence: true
   end
 
+  # One activity may report hours, gross income, or both — a state reports hours and earnings for
+  # the same job over the same period, and both land on one ExternalActivity row per month. There
+  # is no +type+ discriminator: which values are present decides what is stored.
   class Activity < ValueObject
     include ActiveModel::AsJsonAttributeType
 
-    TYPE_HOURLY = "hourly"
-    TYPE_INCOME = "income"
-    ACTIVITY_TYPES = [ TYPE_HOURLY, TYPE_INCOME ].freeze
     CATEGORY_EDUCATION = "education"
     VERIFIED = "verified"
     VERIFICATION_STATUSES = [ VERIFIED, "self_attested", "pending" ].freeze
+
+    # Deliberately narrower than +ExternalActivity::ALLOWED_SOURCE_TYPES+: the model's union
+    # includes +batch_upload+, which must not become an accepted value for an API submission.
+    ALLOWED_SOURCES = [ ExternalActivity::SOURCE_TYPES[:api] ].freeze
 
     ENROLLMENT_FULL_TIME = "full_time"
     ENROLLMENT_HALF_TIME = "half_time"
@@ -44,7 +48,6 @@ class Certifications::MemberData < ValueObject
     # per the Federal Register.
     CREDIT_HOURS_MULTIPLIER = BigDecimal("12.99")
 
-    attribute :type, :string
     attribute :category, :string
     attribute :hours, :decimal
     attribute :credit_hours, :decimal
@@ -58,24 +61,18 @@ class Certifications::MemberData < ValueObject
     attribute :verification_status, :string
     attribute :enrollment_status, :string
 
-    validates :type, presence: true, inclusion: { in: ACTIVITY_TYPES }
     validates :category, presence: true, inclusion: { in: ::Activity::ALLOWED_CATEGORIES }
-    validates :hours, presence: true,
-                      if: -> { type == TYPE_HOURLY && !education_credit_hours? && !education_enrollment? }
+    validate :reports_hours_or_income
     validates :credit_hours, numericality: { greater_than: 0 }, allow_nil: true
-    validates :credit_hours, absence: true, unless: -> { type == TYPE_HOURLY && category == CATEGORY_EDUCATION }
-    validates :gross_income, presence: true,
-                             numericality: { greater_than: 0 },
-                             if: -> { type == TYPE_INCOME }
-    validates :source,
-              presence: true,
-              inclusion: { in: ExternalIncomeActivity::SOURCE_TYPES.values },
-              if: -> { type == TYPE_INCOME }
+    validates :credit_hours, absence: true, unless: -> { category == CATEGORY_EDUCATION }
+    validates :gross_income, numericality: { greater_than: 0 }, allow_nil: true
+    validates :source, presence: true, if: -> { gross_income.present? }
+    validates :source, inclusion: { in: ALLOWED_SOURCES }, allow_nil: true
     validates :period_start, presence: true
     validates :period_end, presence: true
     validates :verification_status, presence: true, inclusion: { in: VERIFICATION_STATUSES }
     validates :enrollment_status, inclusion: { in: ENROLLMENT_STATUSES }, allow_nil: true
-    validates :enrollment_status, absence: true, unless: -> { type == TYPE_HOURLY && category == CATEGORY_EDUCATION }
+    validates :enrollment_status, absence: true, unless: -> { category == CATEGORY_EDUCATION }
 
     # Only verified activities count toward a certification.
     def verified?
@@ -101,6 +98,18 @@ class Certifications::MemberData < ValueObject
       return hours if hours.present?
 
       credit_hours * CREDIT_HOURS_MULTIPLIER if education_credit_hours?
+    end
+
+    private
+
+    # Replaces the old "hourly activities must report hours" rule. An enrollment-only education
+    # activity counts as reporting something: it stores no row, but satisfies the hours
+    # requirement through HoursComplianceDeterminationService#education_enrollment_compliant?.
+    def reports_hours_or_income
+      return if hours.present? || credit_hours.present? ||
+                enrollment_status.present? || gross_income.present?
+
+      errors.add(:base, :hours_or_gross_income_required)
     end
   end
 

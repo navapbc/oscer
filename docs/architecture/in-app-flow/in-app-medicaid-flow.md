@@ -263,7 +263,7 @@ Returns compliance status and redirect URL if action needed.
 - **Stateless when compliant/exempt** - No database writes, pure calculation
 - **Creates records when action required** - When `action_required: true`, creates:
   1. **Certification** - Contains member demographic data (first_name, last_name, date_of_birth, state_member_id, email, phone) and certification requirements
-  2. **ExternalHourlyActivity** records - One record per activity in the `activities` array, linked via `member_id` (consistent with existing batch flow)
+  2. **ExternalActivity** records - One record per activity in the `activities` array, linked via `member_id` (consistent with existing batch flow)
   3. **CertificationOrigin** - Marks source as API with `in_app_flow: true` to suppress notifications
   4. **InAppSession** - Links to Certification for redirect flow and status tracking
   5. **CertificationCase** - Created automatically when `CertificationCreated` event triggers the business process
@@ -1404,7 +1404,7 @@ components:
           type: string
         activities:
           type: array
-          description: External activities to be persisted as ExternalHourlyActivity records
+          description: External activities to be persisted as ExternalActivity records
           items:
             type: object
             required: [type, category, hours, period_start, period_end]

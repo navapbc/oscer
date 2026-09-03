@@ -14,7 +14,7 @@ RSpec.describe MemberDashboardComplianceService do
     period_start = lookback.start.to_date
     period_end = lookback.start.to_date.end_of_month
 
-    create(:external_income_activity, member_id: certification.member_id,
+    create(:external_activity, :with_income, member_id: certification.member_id,
            period_start: period_start, period_end: period_end, gross_income: gross_income, **attrs)
   end
 
@@ -62,19 +62,18 @@ RSpec.describe MemberDashboardComplianceService do
         expect(read_model.certification_date).to eq(certification.certification_requirements.certification_date)
       end
 
+      # ExternalActivity.for_member no longer distinguishes the tracks (hours reads it too), so
+      # the income aggregate is the signal for whether income work happened.
       it "defers income aggregation until an income field is read (lazy)" do
-        allow(ExternalIncomeActivity).to receive(:for_member).and_call_original
         allow(IncomeComplianceDeterminationService).to receive(:aggregate_income_for_certification).and_call_original
 
         rm = read_model
 
         # +build+ alone must not touch income — show_income_summary is true here so this proves laziness.
-        expect(ExternalIncomeActivity).not_to have_received(:for_member)
         expect(IncomeComplianceDeterminationService).not_to have_received(:aggregate_income_for_certification)
 
         rm.total_income
 
-        expect(ExternalIncomeActivity).to have_received(:for_member)
         expect(IncomeComplianceDeterminationService).to have_received(:aggregate_income_for_certification)
       end
 
@@ -169,14 +168,12 @@ RSpec.describe MemberDashboardComplianceService do
         expect(read_model.period_end_on).to be_nil
       end
 
-      it "does not query ExternalIncomeActivity when income is hidden" do
-        allow(ExternalIncomeActivity).to receive(:for_member).and_call_original
+      it "does not aggregate income when income is hidden" do
         allow(IncomeComplianceDeterminationService).to receive(:member_income_activities_for_certification).and_call_original
         allow(IncomeComplianceDeterminationService).to receive(:aggregate_income_for_certification).and_call_original
 
         read_model
 
-        expect(ExternalIncomeActivity).not_to have_received(:for_member)
         expect(IncomeComplianceDeterminationService).not_to have_received(:member_income_activities_for_certification)
         expect(IncomeComplianceDeterminationService).not_to have_received(:aggregate_income_for_certification)
       end
@@ -216,12 +213,12 @@ RSpec.describe MemberDashboardComplianceService do
         expect(read_model.exemption_history.first.status_token).to eq(MemberDashboardCompliance::EXEMPTION_APPROVED)
       end
 
-      it "does not query ExternalIncomeActivity when income is hidden" do
-        allow(ExternalIncomeActivity).to receive(:for_member).and_call_original
+      it "does not aggregate income when income is hidden" do
+        allow(IncomeComplianceDeterminationService).to receive(:aggregate_income_for_certification).and_call_original
 
         read_model
 
-        expect(ExternalIncomeActivity).not_to have_received(:for_member)
+        expect(IncomeComplianceDeterminationService).not_to have_received(:aggregate_income_for_certification)
       end
     end
 
@@ -230,21 +227,21 @@ RSpec.describe MemberDashboardComplianceService do
         allow(certification.certification_requirements)
           .to receive(:continuous_lookback_period).and_return(nil)
         create(
-          :external_hourly_activity,
+          :external_activity, :with_hours,
           member_id: certification.member_id,
           hours: 500,
-          period_start: 10.years.ago.to_date,
-          period_end: 10.years.ago.to_date.end_of_month
+          period_start: 10.years.ago.beginning_of_month.to_date,
+          period_end: 10.years.ago.end_of_month.to_date
         )
       end
 
       it "skips income aggregation and surfaces nil income scalars" do
-        allow(ExternalIncomeActivity).to receive(:for_member).and_call_original
+        allow(IncomeComplianceDeterminationService).to receive(:aggregate_income_for_certification).and_call_original
 
         expect(read_model.show_income_summary).to be false
         expect(read_model.total_income).to be_nil
         expect(read_model.income_summary).to be_nil
-        expect(ExternalIncomeActivity).not_to have_received(:for_member)
+        expect(IncomeComplianceDeterminationService).not_to have_received(:aggregate_income_for_certification)
       end
 
       it "does not count external hourly rows outside a lookback window" do

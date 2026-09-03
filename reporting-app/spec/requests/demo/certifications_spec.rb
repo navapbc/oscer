@@ -165,7 +165,7 @@ RSpec.describe "/demo/certifications", type: :request do
           post demo_certifications_url,
               params: { demo_certifications_create_form: create_attrs }
         }.to change(Certification, :count).by(1)
-          .and change(ExternalHourlyActivity, :count).by(1)
+          .and change(ExternalActivity.with_hours, :count).by(1)
 
         cert = Certification.order(created_at: :desc).last
         expect(cert.case_number).to eq(create_attrs[:case_number])
@@ -179,7 +179,7 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(cert.member_data.activities.length).to eq(1)
         expect(cert.member_data.activities.first.hours).to eq(10)
 
-        activity = ExternalHourlyActivity.last
+        activity = ExternalActivity.with_hours.sole
         expect(activity.member_id).to eq(cert.member_id)
         expect(activity.category).to eq("employment")
         expect(activity.hours).to eq(10)
@@ -197,7 +197,7 @@ RSpec.describe "/demo/certifications", type: :request do
           post demo_certifications_url,
               params: { demo_certifications_create_form: create_attrs }
         }.to change(Certification, :count).by(1)
-          .and change(ExternalHourlyActivity, :count).by(1)
+          .and change(ExternalActivity.with_hours, :count).by(1)
 
         cert = Certification.order(created_at: :desc).last
         expect(cert.case_number).to eq(create_attrs[:case_number])
@@ -210,7 +210,7 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(cert.member_data.activities).not_to be_nil
         expect(cert.member_data.activities.sum(&:hours)).to eq(80)
 
-        activity = ExternalHourlyActivity.last
+        activity = ExternalActivity.with_hours.sole
         expect(activity.member_id).to eq(cert.member_id)
         expect(activity.category).to eq("employment")
         expect(activity.hours).to eq(80)
@@ -246,7 +246,7 @@ RSpec.describe "/demo/certifications", type: :request do
           post demo_certifications_url,
               params: { demo_certifications_create_form: create_attrs }
         }.to change(Certification, :count).by(1)
-          .and change(ExternalIncomeActivity, :count).by(1)
+          .and change(ExternalActivity.with_income, :count).by(1)
 
         cert = Certification.order(created_at: :desc).last
         expect(cert.case_number).to eq(create_attrs[:case_number])
@@ -259,7 +259,7 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(cert.member_data.activities).not_to be_nil
         expect(cert.member_data.activities.sum(&:gross_income)).to eq(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY / 2.0)
 
-        activity = ExternalIncomeActivity.last
+        activity = ExternalActivity.with_income.sole
         expect(activity.member_id).to eq(cert.member_id)
         expect(activity.category).to eq("employment")
         expect(activity.gross_income).to eq(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY / 2.0)
@@ -277,7 +277,7 @@ RSpec.describe "/demo/certifications", type: :request do
           post demo_certifications_url,
               params: { demo_certifications_create_form: create_attrs }
         }.to change(Certification, :count).by(1)
-          .and change(ExternalIncomeActivity, :count).by(1)
+          .and change(ExternalActivity.with_income, :count).by(1)
 
         cert = Certification.order(created_at: :desc).last
         expect(cert.case_number).to eq(create_attrs[:case_number])
@@ -290,7 +290,7 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(cert.member_data.activities).not_to be_nil
         expect(cert.member_data.activities.sum(&:gross_income)).to eq(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY)
 
-        activity = ExternalIncomeActivity.last
+        activity = ExternalActivity.with_income.sole
         expect(activity.member_id).to eq(cert.member_id)
         expect(activity.category).to eq("employment")
         expect(activity.gross_income).to eq(IncomeComplianceDeterminationService::TARGET_INCOME_MONTHLY)
@@ -302,7 +302,7 @@ RSpec.describe "/demo/certifications", type: :request do
       end
 
       # Enrollment reports no hours, so unlike every hours scenario above it imports no
-      # ExternalHourlyActivity; compliance reads the enrollment off member_data instead.
+      # ExternalActivity; compliance reads the enrollment off member_data instead.
       it "creates Certification with 'Half-time education enrollment'" do
         create_attrs = valid_request_attributes.merge({ external_scenario: "Half-time education enrollment" })
 
@@ -311,7 +311,7 @@ RSpec.describe "/demo/certifications", type: :request do
               params: { demo_certifications_create_form: create_attrs }
         }.to change(Certification, :count).by(1)
 
-        expect(ExternalHourlyActivity.count).to be_zero
+        expect(ExternalActivity.with_hours.count).to be_zero
 
         cert = Certification.order(created_at: :desc).last
         expect(cert.member_data.activities.length).to eq(1)
@@ -333,7 +333,7 @@ RSpec.describe "/demo/certifications", type: :request do
               params: { demo_certifications_create_form: create_attrs }
         }.to change(Certification, :count).by(1)
 
-        expect(ExternalHourlyActivity.count).to be_zero
+        expect(ExternalActivity.with_hours.count).to be_zero
 
         cert = Certification.order(created_at: :desc).last
         expect(cert.member_data.activities.length).to eq(1)

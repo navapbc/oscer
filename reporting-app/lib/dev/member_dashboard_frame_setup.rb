@@ -13,6 +13,7 @@ module Dev
       "reporting_hours" => "Frame 6 — Reporting in progress (hours table)",
       "reporting_income" => "Frame 7 — Reporting in progress (income table)",
       "reporting_both" => "Frame 8 — Reporting in progress (hours + income tables)",
+      "reporting_combined" => "Frame 8b — Reporting in progress (one row carrying hours and income)",
       "reporting_submitted" => "Frame 9 — Activity report submitted (tables + under review)",
       "reporting_multiple" => "Frame 10 — Multiple activity reports (older denied + newer submitted line items)"
     }.freeze
@@ -69,6 +70,10 @@ module Dev
         create_in_progress_activity_report!(certification_case)
         create_external_hourly!(certification)
         create_external_income!(certification)
+      when "reporting_combined"
+        ensure_income_determination!(certification)
+        create_in_progress_activity_report!(certification_case)
+        create_external_hourly_and_income!(certification)
       when "reporting_submitted"
         ensure_income_determination!(certification)
         create_submitted_activity_report!(certification_case)
@@ -128,7 +133,10 @@ module Dev
       Determination.where(subject: certification).delete_all
     end
 
+    # delete_all bypasses the readonly stubs, so the superseded tables are cleared too and a
+    # reset frame cannot show rows from before the consolidation.
     def reset_external_activities!(certification)
+      ExternalActivity.for_member(certification.member_id).delete_all
       ExternalHourlyActivity.for_member(certification.member_id).delete_all
       ExternalIncomeActivity.for_member(certification.member_id).delete_all
     end
@@ -256,7 +264,7 @@ module Dev
 
     def create_external_hourly!(certification)
       lookback = certification.certification_requirements.continuous_lookback_period
-      FactoryBot.create(:external_hourly_activity,
+      FactoryBot.create(:external_activity, :with_hours,
                         member_id: certification.member_id,
                         category: "employment",
                         hours: 40,
@@ -266,9 +274,22 @@ module Dev
 
     def create_external_income!(certification)
       lookback = certification.certification_requirements.continuous_lookback_period
-      FactoryBot.create(:external_income_activity,
+      FactoryBot.create(:external_activity, :with_income,
                         member_id: certification.member_id,
                         category: "employment",
+                        gross_income: 300,
+                        period_start: lookback.start.to_date,
+                        period_end: lookback.start.to_date.end_of_month)
+    end
+
+    # One row carrying both values, which the consolidated model allows and the two superseded
+    # tables could not express.
+    def create_external_hourly_and_income!(certification)
+      lookback = certification.certification_requirements.continuous_lookback_period
+      FactoryBot.create(:external_activity, :with_hours_and_income,
+                        member_id: certification.member_id,
+                        category: "employment",
+                        hours: 40,
                         gross_income: 300,
                         period_start: lookback.start.to_date,
                         period_end: lookback.start.to_date.end_of_month)
