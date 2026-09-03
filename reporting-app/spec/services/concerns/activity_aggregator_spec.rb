@@ -127,4 +127,79 @@ RSpec.describe ActivityAggregator, type: :concern do
       end
     end
   end
+
+  describe ".apportioned_multi_values_map" do
+    def shares(period_start, period_end, weight:, **values)
+      service.apportioned_multi_values_map(period_start, period_end, weight:, **values)
+    end
+
+    context "with :daily weights" do
+      # Jan 20-31 is 12 days and Feb 1-10 is 10 days, so a 22-unit total splits 12/10.
+      it "apportions each value by the days its month covers" do
+        result = shares(Date.new(2026, 1, 20), Date.new(2026, 2, 10), weight: :daily,
+                        hours: 22, gross_income: 220)
+
+        expect(result.map { |month_start, _, _| month_start })
+          .to eq([ Date.new(2026, 1, 20), Date.new(2026, 2, 1) ])
+        expect(result.map { |_, _, values| values[:hours] }).to eq([ 12, 10 ])
+        expect(result.map { |_, _, values| values[:gross_income] }).to eq([ 120, 100 ])
+      end
+    end
+
+    context "with :monthly weights" do
+      it "apportions each value evenly across the months" do
+        result = shares(Date.new(2026, 1, 1), Date.new(2026, 3, 31), weight: :monthly, gross_income: 300)
+
+        expect(result.map { |_, _, values| values[:gross_income] }).to eq([ 100, 100, 100 ])
+      end
+    end
+
+    it "sums each value back to its total without rounding drift" do
+      result = shares(Date.new(2026, 5, 1), Date.new(2026, 7, 31), weight: :daily,
+                      hours: BigDecimal("100"), gross_income: BigDecimal("1000"))
+
+      expect(result.sum { |_, _, values| values[:hours] }).to eq(BigDecimal("100"))
+      expect(result.sum { |_, _, values| values[:gross_income] }).to eq(BigDecimal("1000"))
+    end
+
+    # Apportioning the values independently and zipping the results would drop a month for one
+    # value but not the other, misaligning the two lists.
+    it "keeps months aligned when one value's share rounds to zero" do
+      result = shares(Date.new(2026, 1, 31), Date.new(2026, 3, 31), weight: :daily,
+                      hours: 300, gross_income: BigDecimal("0.02"))
+
+      expect(result.size).to eq(3)
+      expect(result.map { |_, _, values| values[:hours] }).to all be > 0
+      expect(result.map { |_, _, values| values[:gross_income] }).to include(nil)
+      expect(result.sum { |_, _, values| values[:gross_income] || 0 }).to eq(BigDecimal("0.02"))
+    end
+
+    it "drops a month only when every value's share rounds to zero" do
+      result = shares(Date.new(2026, 1, 31), Date.new(2026, 12, 31), weight: :daily,
+                      hours: 1, gross_income: BigDecimal("0.05"))
+
+      expect(result.map { |month_start, _, _| month_start }).not_to include(Date.new(2026, 1, 31))
+    end
+
+    it "returns the whole period unsplit when it falls inside one month" do
+      result = shares(Date.new(2026, 1, 5), Date.new(2026, 1, 20), weight: :daily, hours: 40)
+
+      expect(result).to eq([ [ Date.new(2026, 1, 5), Date.new(2026, 1, 20), { hours: 40 } ] ])
+    end
+
+    # Malformed input goes to the model as-is so it raises RecordInvalid rather than failing here.
+    it "returns the whole period when every value is blank" do
+      result = shares(Date.new(2026, 1, 1), Date.new(2026, 3, 31), weight: :daily,
+                      hours: nil, gross_income: nil)
+
+      expect(result.size).to eq(1)
+      expect(result.first.last).to eq({ hours: nil, gross_income: nil })
+    end
+
+    it "returns the whole period when the period is reversed" do
+      result = shares(Date.new(2026, 3, 31), Date.new(2026, 1, 1), weight: :daily, hours: 40)
+
+      expect(result).to eq([ [ Date.new(2026, 3, 31), Date.new(2026, 1, 1), { hours: 40 } ] ])
+    end
+  end
 end
