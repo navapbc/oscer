@@ -37,7 +37,7 @@ module Demo
       # TODO: add validation you can't set both certification_type and the other params?
       attribute :certification_type, :enum, options: ::Certifications::Requirements::CERTIFICATION_TYPE_OPTIONS
 
-      strata_attribute :certification_date, :us_date
+      strata_attribute :application_date, :us_date
 
       # TODO: would maybe prefer to use ISO8601 duration values here instead of integers of months
       attribute :lookback_period, :integer, default: LOOKBACK_PERIOD_OPTIONS[0]
@@ -47,7 +47,7 @@ module Demo
 
       attribute :region, :string
 
-      validates :certification_date, presence: true
+      validates :application_date, presence: true
       validates :region, inclusion: { in: proc { User.regions }, message: "is not a valid option" }, allow_blank: true
 
       # Name validations

@@ -99,6 +99,42 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
       end
     end
 
+    context 'with several valid members in the chunk' do
+      let(:second_valid_record) do
+        {
+          "member_id" => "M900",
+          "case_number" => "C-900",
+          "member_email" => "test9@example.com",
+          "first_name" => "Test",
+          "last_name" => "Nine",
+          "certification_date" => "2025-06-20",
+          "certification_type" => "new_application"
+        }
+      end
+      let(:records) { [ valid_record, second_valid_record ] }
+      let(:record_count) { 2 }
+
+      before do
+        allow(csv_reader).to receive(:read_chunk).and_return(records)
+      end
+
+      it 'records an application date on every certification it creates' do
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte, record_count)
+
+        created = Certification.where(member_id: %w[M600 M900])
+
+        expect(created.count).to eq(2)
+        expect(created.map(&:application_date)).to all(be_present)
+      end
+
+      it "records each row's own date rather than the first row's" do
+        described_class.perform_now(batch_upload.id, 1, headers, start_byte, end_byte, record_count)
+
+        expect(Certification.find_by!(member_id: "M600").application_date).to eq(Date.new(2025, 4, 10))
+        expect(Certification.find_by!(member_id: "M900").application_date).to eq(Date.new(2025, 6, 20))
+      end
+    end
+
     context 'with mixed valid and invalid records' do
       let(:records) { [ valid_record, invalid_record, duplicate_record ] }
 

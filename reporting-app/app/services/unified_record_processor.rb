@@ -109,6 +109,10 @@ class UnifiedRecordProcessor
     Certification.new(
       member_id: record["member_id"],
       case_number: record["case_number"],
+      # The file carries one date, so it is recorded as the application date. Exact for
+      # new_application rows and an approximation for recertification rows, which the
+      # published template cannot yet distinguish.
+      application_date: Date.parse(record["certification_date"]),
       member_data: build_member_data(record),
       certification_requirements: build_certification_requirements(record)
     )
