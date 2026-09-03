@@ -3,9 +3,12 @@
 class Certifications::RequirementTypeParams < ValueObject
   include ActiveModel::AsJsonAttributeType
 
+  # Days a member gets to report when the request carries no due date.
+  DEFAULT_DUE_PERIOD_DAYS = 30
+
   attribute :lookback_period, :integer
   attribute :number_of_months_to_certify, :integer
-  attribute :due_period_days, :integer
+  attribute :due_period_days, :integer, default: DEFAULT_DUE_PERIOD_DAYS
 
   def set_params_for_type(certification_type)
     type_params = self.class.cert_type_params_for(certification_type)
@@ -26,20 +29,17 @@ class Certifications::RequirementTypeParams < ValueObject
     when "new_application"
       new({
         lookback_period: 1,
-        number_of_months_to_certify: 1,
-        due_period_days: 30
+        number_of_months_to_certify: 1
       })
     when "recertification"
       new({
         lookback_period: 6,
-        number_of_months_to_certify: 3,
-        due_period_days: 30
+        number_of_months_to_certify: 3
       })
     when "change_in_circumstance"
       new({
         lookback_period: 6,
-        number_of_months_to_certify: 3,
-        due_period_days: 30
+        number_of_months_to_certify: 3
       })
     else
       nil

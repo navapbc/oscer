@@ -117,4 +117,139 @@ RSpec.describe Certifications::RequirementParams do
       end
     end
   end
+
+  describe "due date" do
+    # The API reaches these callbacks through UnionObject.new, which calls valid?
+    # as its type dispatch. Validating here is what production actually does.
+    subject(:requirements) do
+      params.valid?
+      params.to_requirements
+    end
+
+    # Sits well away from today, so anchoring on the certification date is
+    # distinguishable from anchoring on the day the request is processed.
+    let(:certification_date) { Date.new(2026, 11, 20) }
+
+    around { |example| freeze_time { example.run } }
+
+    context "when the request supplies a due date" do
+      let(:params) do
+        build(
+          :certification_certification_requirement_params,
+          certification_date:,
+          certification_type: "recertification",
+          due_date: Date.new(2026, 12, 15)
+        )
+      end
+
+      it "keeps the supplied due date" do
+        expect(requirements.due_date).to eq Date.new(2026, 12, 15)
+      end
+    end
+
+    context "when the request supplies no due date" do
+      let(:params) do
+        build(
+          :certification_certification_requirement_params,
+          certification_date:,
+          certification_type: "recertification"
+        )
+      end
+
+      it "sets the due date the configured number of days from the processing date" do
+        expect(requirements.due_date).to eq Date.current + 30.days
+      end
+    end
+
+    context "when the due period comes from the batch or demo path instead of a type" do
+      let(:params) do
+        build(
+          :certification_certification_requirement_params, :with_direct_params,
+          certification_date:,
+          due_period_days: 45
+        )
+      end
+
+      it "offsets by the configured due period from the processing date" do
+        expect(requirements.due_date).to eq Date.current + 45.days
+      end
+    end
+
+    context "when the request supplies an explicit null due period" do
+      let(:params) do
+        build(
+          :certification_certification_requirement_params,
+          certification_date:,
+          lookback_period: 6,
+          number_of_months_to_certify: 3,
+          due_period_days: nil
+        )
+      end
+
+      # An explicit null beats the attribute default, so the fallback has to
+      # carry the default itself rather than rely on the attribute.
+      it "still offsets by the default due period" do
+        expect(requirements.due_date).to eq Date.current + 30.days
+      end
+    end
+
+    context "when the request supplies a certification type and its own due period" do
+      let(:params) do
+        build(
+          :certification_certification_requirement_params,
+          certification_date:,
+          certification_type: "recertification",
+          due_period_days: 45
+        )
+      end
+
+      it "discards the supplied due period in favor of the default" do
+        expect(requirements.due_date).to eq Date.current + 30.days
+      end
+    end
+
+    context "when the request supplies a due date that is not a date" do
+      subject(:validity) { params.valid? }
+
+      [
+        [ "an array", [ "2026-12-15" ] ],
+        [ "an integer", 12_345 ],
+        [ "a boolean", true ]
+      ].each do |label, value|
+        context "when it is #{label}" do
+          let(:params) do
+            described_class.new_filtered(
+              "certification_date" => certification_date,
+              "certification_type" => "recertification",
+              "due_date" => value
+            )
+          end
+
+          it "rejects the request" do
+            expect(validity).to be false
+            expect(params.errors).to include(:due_date)
+          end
+        end
+      end
+    end
+
+    context "when the request supplies neither a due date nor a due period" do
+      let(:params) do
+        build(
+          :certification_certification_requirement_params,
+          certification_date:,
+          lookback_period: 6,
+          number_of_months_to_certify: 3
+        )
+      end
+
+      it "accepts the request and offsets by the default due period" do
+        expect(requirements.due_date).to eq Date.current + 30.days
+      end
+
+      it "no longer rejects the request for having neither field" do
+        expect(params).to be_valid
+      end
+    end
+  end
 end

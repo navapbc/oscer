@@ -289,8 +289,8 @@ class MemberDashboardCompliance
   end
 
   # Mirrors the staff hours table: external (state-provided) rows first, then member
-  # self-reported activity rows. +ExternalHourlyActivity+ has no employer metadata, so the
-  # organization name falls back to "<Category> Activity".
+  # self-reported activity rows. External rows show "<Category> Activity" rather than the
+  # +name+ they now carry, matching the staff table until both are changed together.
   def build_hour_table_rows
     external_rows = external_hourly_activities
     member_rows = HoursComplianceDeterminationService

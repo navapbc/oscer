@@ -250,13 +250,17 @@
           },
           "due_period_days": {
             "type": "integer"
+          },
+          "due_date": {
+            "type": [ "string", "null" ],
+            "format": "date",
+            "description": "Date by which the Member must have submitted their evidence"
           }
         },
         "required": [
           "certification_date",
           "lookback_period",
-          "number_of_months_to_certify",
-          "due_period_days"
+          "number_of_months_to_certify"
         ]
       },
       "CertificationRequirementTypeParameters": {
