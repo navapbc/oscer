@@ -37,6 +37,14 @@ RSpec.describe UnifiedRecordProcessor do
         expect(result.case_number).to eq("C-001")
       end
 
+      it "records the record's certification date as the application date" do
+        allow(Strata::EventManager).to receive(:publish)
+
+        certification = processor.process(record)
+
+        expect(certification.application_date).to eq(Date.new(2025, 1, 15))
+      end
+
       it "builds member_data from record fields" do
         allow(Strata::EventManager).to receive(:publish)
 

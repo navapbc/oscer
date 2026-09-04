@@ -13,7 +13,7 @@ RSpec.describe "/demo/certifications", type: :request do
       member_name_first: "Jane",
       member_name_last: "Doe",
       case_number: "C-123",
-      certification_date: "09/25/2025",
+      application_date: "09/25/2025",
       date_of_birth: "01/15/1990"
     }
   }
@@ -78,6 +78,14 @@ RSpec.describe "/demo/certifications", type: :request do
       expect(response).to be_successful
     end
 
+    it "asks for the application date and not the certification date" do
+      get new_demo_certification_url
+
+      page = Capybara.string(response.body)
+      expect(page).to have_css("label", text: "Application date")
+      expect(page).not_to have_css("label", text: "Certification date")
+    end
+
     it "renders New Application form" do
       get new_demo_certification_url, params: { certification_type: "new_application" }
       expect(response).to be_successful
@@ -103,6 +111,7 @@ RSpec.describe "/demo/certifications", type: :request do
       cert = Certification.order(created_at: :desc).last
       expect(cert.case_number).to eq(create_attrs[:case_number])
       expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+      expect(cert.application_date).to eq(Date.new(2025, 9, 25))
       expect(cert.certification_requirements.due_date).not_to be_nil
       expect(cert.member_name).to eq(Strata::Name.new({
         "first": create_attrs[:member_name_first],
@@ -523,11 +532,11 @@ RSpec.describe "/demo/certifications", type: :request do
     end
 
     context "with validation errors" do
-      it "renders form with errors when certification_date is missing" do
+      it "renders form with errors when application_date is missing" do
         post demo_certifications_url,
              params: {
                demo_certifications_create_form:
-                 valid_request_attributes.except(:certification_date).merge(
+                 valid_request_attributes.except(:application_date).merge(
                    member_name_first: "Jane",
                    member_name_last: "Doe"
                  )
@@ -540,7 +549,7 @@ RSpec.describe "/demo/certifications", type: :request do
              params: {
                demo_certifications_create_form:
                  valid_request_attributes.except(:member_name_first).merge(
-                   certification_date: "09/25/2025"
+                   application_date: "09/25/2025"
                  )
              }
         expect(response).to have_http_status(:unprocessable_content)
@@ -551,7 +560,7 @@ RSpec.describe "/demo/certifications", type: :request do
              params: {
                demo_certifications_create_form:
                  valid_request_attributes.except(:member_name_last).merge(
-                   certification_date: "09/25/2025"
+                   application_date: "09/25/2025"
                  )
              }
         expect(response).to have_http_status(:unprocessable_content)
