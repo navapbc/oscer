@@ -61,7 +61,7 @@ RSpec.describe ActivityReportStatisticsService do
 
     context 'with only external hourly activities' do
       before do
-        create(:external_hourly_activity,
+        create(:external_activity, :with_hours,
                member_id: member_id,
                category: "employment",
                hours: 50,
@@ -93,7 +93,7 @@ RSpec.describe ActivityReportStatisticsService do
                month: Date.new(2025, 10, 1),
                hours: 30,
                name: "Self Employment")
-        create(:external_hourly_activity,
+        create(:external_activity, :with_hours,
                member_id: member_id,
                category: "employment",
                hours: 50,
@@ -134,7 +134,7 @@ RSpec.describe ActivityReportStatisticsService do
 
       before do
         # Activity spans October and November (61 days total)
-        create(:external_hourly_activity,
+        create(:external_activity, :with_hours,
                member_id: member_id,
                category: "employment",
                hours: 61, # 1 hour per day for easy calculation
@@ -202,7 +202,7 @@ RSpec.describe ActivityReportStatisticsService do
   describe '.fetch_external_hourly_activities' do
     context 'with activities within lookback period' do
       before do
-        create(:external_hourly_activity,
+        create(:external_activity, :with_hours,
                member_id: member_id,
                category: "employment",
                hours: 40,
@@ -220,7 +220,7 @@ RSpec.describe ActivityReportStatisticsService do
 
     context 'with activities outside lookback period' do
       before do
-        create(:external_hourly_activity,
+        create(:external_activity, :with_hours,
                member_id: member_id,
                category: "employment",
                hours: 40,

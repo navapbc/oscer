@@ -7,7 +7,6 @@ RSpec.describe Certifications::MemberData do
     describe "credit_hours validation" do
       subject(:activity) do
         described_class.new(
-          type: "hourly",
           category: category,
           hours: 40,
           credit_hours: 9,
@@ -38,7 +37,6 @@ RSpec.describe Certifications::MemberData do
     describe "#clock_hours" do
       subject(:activity) do
         described_class.new(
-          type: "hourly",
           category: category,
           hours: hours,
           credit_hours: credit_hours
@@ -94,7 +92,6 @@ RSpec.describe Certifications::MemberData do
     describe "enrollment_status validation" do
       subject(:activity) do
         described_class.new(
-          type: type,
           category: category,
           hours: hours,
           enrollment_status: enrollment_status,
@@ -104,7 +101,6 @@ RSpec.describe Certifications::MemberData do
         )
       end
 
-      let(:type) { "hourly" }
       let(:category) { "education" }
       let(:hours) { 40 }
       let(:enrollment_status) { "full_time" }
@@ -112,7 +108,7 @@ RSpec.describe Certifications::MemberData do
       it "is valid for each enrollment status" do
         described_class::ENROLLMENT_STATUSES.each do |status|
           expect(described_class.new(
-            type:, category:, hours:, enrollment_status: status,
+            category:, hours:, enrollment_status: status,
             period_start: Date.new(2025, 12, 1), period_end: Date.new(2025, 12, 31),
             verification_status: "verified"
           )).to be_valid
@@ -137,13 +133,24 @@ RSpec.describe Certifications::MemberData do
         end
       end
 
-      context "when the activity is an income activity" do
-        let(:type) { "income" }
-        let(:hours) { nil }
+      # Dropping the type discriminator means "education" alone permits enrollment_status, so an
+      # education activity reporting income may report it too. Previously the activity had to
+      # declare itself hourly, and an income activity carrying enrollment was rejected.
+      context "when an education activity reports income alongside enrollment" do
+        subject(:activity) do
+          described_class.new(
+            category: "education",
+            gross_income: 500,
+            source: "api",
+            enrollment_status: "full_time",
+            period_start: Date.new(2025, 12, 1),
+            period_end: Date.new(2025, 12, 31),
+            verification_status: "verified"
+          )
+        end
 
-        it "is invalid" do
-          expect(activity).not_to be_valid
-          expect(activity.errors).to be_of_kind(:enrollment_status, :present)
+        it "is valid" do
+          expect(activity).to be_valid
         end
       end
 
@@ -171,14 +178,14 @@ RSpec.describe Certifications::MemberData do
 
         it "is invalid" do
           expect(activity).not_to be_valid
-          expect(activity.errors).to be_of_kind(:hours, :blank)
+          expect(activity.errors).to be_of_kind(:base, :hours_or_gross_income_required)
         end
       end
     end
 
     describe "#qualifying_enrollment?" do
       subject(:activity) do
-        described_class.new(type: "hourly", category: "education", enrollment_status: enrollment_status)
+        described_class.new(category: "education", enrollment_status: enrollment_status)
       end
 
       %w[full_time half_time].each do |status|
