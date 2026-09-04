@@ -216,7 +216,7 @@ RSpec.describe ActivitiesHelper, type: :helper do
     end
 
     context "when IncomeActivity has unchanged AI values" do
-      let(:activity) { build(:income_activity, :ai_assisted, month: month, income: 150_000) }
+      let(:activity) { build(:income_activity, :ai_assisted, month: month, income: 150_000, name: nil) }
       let(:staged_document) do
         build(:staged_document, :validated, extracted_fields: {
           "payperiodstartdate" => { "value" => "2026-02-01", "confidence" => 0.9 },
@@ -231,17 +231,56 @@ RSpec.describe ActivitiesHelper, type: :helper do
         expect(result[:income]).to eq(ActivityAttributions::AI_ASSISTED)
       end
 
-      it "returns self_reported for non-AI fields" do
+      it "returns ai_assisted for name when DocAI did not extract a company name and activity name is blank" do
+        result = helper.field_attributions(activity, staged_document)
+
+        expect(result[:name]).to eq(ActivityAttributions::AI_ASSISTED)
+      end
+
+      it "returns self_reported for category and reporting_method" do
         result = helper.field_attributions(activity, staged_document)
 
         expect(result[:category]).to eq(ActivityAttributions::SELF_REPORTED)
         expect(result[:reporting_method]).to eq(ActivityAttributions::SELF_REPORTED)
-        expect(result[:name]).to eq(ActivityAttributions::SELF_REPORTED)
+      end
+    end
+
+    context "when IncomeActivity matches extracted company name" do
+      let(:activity) { build(:income_activity, :ai_assisted, month: month, income: 150_000, name: "Acme Corp") }
+      let(:staged_document) do
+        build(:staged_document, :validated, extracted_fields: {
+          "payperiodstartdate" => { "value" => "2026-02-01", "confidence" => 0.9 },
+          "currentgrosspay" => { "value" => 1500.0, "confidence" => 0.9 },
+          "companyname" => { "value" => "Acme Corp", "confidence" => 0.92 }
+        })
+      end
+
+      it "returns ai_assisted for name" do
+        result = helper.field_attributions(activity, staged_document)
+
+        expect(result[:name]).to eq(ActivityAttributions::AI_ASSISTED)
+      end
+    end
+
+    context "when IncomeActivity has a member-edited company name" do
+      let(:activity) { build(:income_activity, :ai_assisted, month: month, income: 150_000, name: "Other LLC") }
+      let(:staged_document) do
+        build(:staged_document, :validated, extracted_fields: {
+          "payperiodstartdate" => { "value" => "2026-02-01", "confidence" => 0.9 },
+          "currentgrosspay" => { "value" => 1500.0, "confidence" => 0.9 },
+          "companyname" => { "value" => "Acme Corp", "confidence" => 0.92 }
+        })
+      end
+
+      it "returns ai_assisted_with_member_edits for name" do
+        result = helper.field_attributions(activity, staged_document)
+
+        expect(result[:name]).to eq(ActivityAttributions::AI_ASSISTED_WITH_MEMBER_EDITS)
       end
     end
 
     context "when IncomeActivity has member-edited income but unchanged month" do
-      let(:activity) { build(:income_activity, :ai_assisted, month: month, income: 200_000) }
+      let(:activity) { build(:income_activity, :ai_assisted, month: month, income: 200_000, name: nil) }
       let(:staged_document) do
         build(:staged_document, :validated, extracted_fields: {
           "payperiodstartdate" => { "value" => "2026-02-01", "confidence" => 0.9 },
@@ -263,7 +302,7 @@ RSpec.describe ActivitiesHelper, type: :helper do
     end
 
     context "when IncomeActivity has member-edited month but unchanged income" do
-      let(:activity) { build(:income_activity, :ai_assisted, month: Date.new(2026, 3, 1), income: 150_000) }
+      let(:activity) { build(:income_activity, :ai_assisted, month: Date.new(2026, 3, 1), income: 150_000, name: nil) }
       let(:staged_document) do
         build(:staged_document, :validated, extracted_fields: {
           "payperiodstartdate" => { "value" => "2026-02-15", "confidence" => 0.9 },
