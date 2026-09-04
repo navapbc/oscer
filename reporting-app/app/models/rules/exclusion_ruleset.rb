@@ -12,71 +12,71 @@ module Rules
     # Incarceration excludes through this many months after the incarceration month
     INMATE_BUFFER_MONTHS = 3
 
-    def is_pregnant(pregnancy, postpartum, certification_date)
-      meets_end_condition(pregnancy, certification_date) || meets_end_condition(postpartum, certification_date)
+    def is_pregnant(pregnancy, postpartum, evaluated_month)
+      meets_end_condition(pregnancy, evaluated_month) || meets_end_condition(postpartum, evaluated_month)
     end
 
     def is_american_indian_or_alaska_native(american_indian_or_alaska_native)
       american_indian_or_alaska_native.present?
     end
 
-    def is_veteran_with_disability(veteran_disability, certification_date)
-      meets_end_condition(veteran_disability, certification_date)
+    def is_veteran_with_disability(veteran_disability, evaluated_month)
+      meets_end_condition(veteran_disability, evaluated_month)
     end
 
-    # Former foster youth are excluded until age FORMER_FOSTER_CARE_AGE_CAP, evaluated against the
-    # certification date at month granularity (consistent with pregnancy).
-    def former_foster_care(was_in_foster_care, date_of_birth, certification_date)
+    # Former foster youth are excluded until age FORMER_FOSTER_CARE_AGE_CAP, evaluated at month
+    # granularity (consistent with pregnancy).
+    def former_foster_care(was_in_foster_care, date_of_birth, evaluated_month)
       return if was_in_foster_care.nil?
-      return if date_of_birth.nil? || certification_date.nil?
+      return if date_of_birth.nil? || evaluated_month.nil?
 
-      certification_date.beginning_of_month < date_of_birth + FORMER_FOSTER_CARE_AGE_CAP.years
+      evaluated_month.beginning_of_month < date_of_birth + FORMER_FOSTER_CARE_AGE_CAP.years
     end
 
     # Members determined currently medically frail are excluded.
-    def medically_frail(medical_condition, certification_date)
-      meets_end_condition(medical_condition, certification_date)
+    def medically_frail(medical_condition, evaluated_month)
+      meets_end_condition(medical_condition, evaluated_month)
     end
 
-    # Caretakers are excluded if they are caretaking an infirm person during the certification month,
+    # Caretakers are excluded if they are caretaking an infirm person during the evaluated month,
     # or caring for a dependent child under CARETAKER_CHILD_AGE_THRESHOLD. Both windows are evaluated
-    # against the certification date at month granularity (consistent with the other date-based checks).
+    # at month granularity (consistent with the other date-based checks).
     # A caregiver_child period starts on the child's date of birth, one period per child.
-    def caretaker(caregiver_disability, caregiver_child, certification_date)
-      return if certification_date.nil?
+    def caretaker(caregiver_disability, caregiver_child, evaluated_month)
+      return if evaluated_month.nil?
 
-      cert_month = certification_date.beginning_of_month
+      month = evaluated_month.beginning_of_month
       caring_for_child = Array(caregiver_child&.periods).any? do |period|
         next unless period.period_start
 
-        period.period_start.beginning_of_month <= cert_month &&
-          cert_month < period.period_start + CARETAKER_CHILD_AGE_THRESHOLD.years
+        period.period_start.beginning_of_month <= month &&
+          month < period.period_start + CARETAKER_CHILD_AGE_THRESHOLD.years
       end
 
-      caring_for_child || meets_end_condition(caregiver_disability, certification_date)
+      caring_for_child || meets_end_condition(caregiver_disability, evaluated_month)
     end
 
     # Members already meeting SNAP/TANF work requirements are excluded.
-    def tanf_snap_work(meeting_tanf_or_snap_work, certification_date)
-      meets_end_condition(meeting_tanf_or_snap_work, certification_date)
+    def tanf_snap_work(meeting_tanf_or_snap_work, evaluated_month)
+      meets_end_condition(meeting_tanf_or_snap_work, evaluated_month)
     end
 
-    # Members participating in a drug/alcohol treatment program during the certification month are
+    # Members participating in a drug/alcohol treatment program during the evaluated month are
     # excluded (month granularity, consistent with the other date-based checks).
-    def drug_treatment(substance_treatment, certification_date)
-      meets_end_condition(substance_treatment, certification_date)
+    def drug_treatment(substance_treatment, evaluated_month)
+      meets_end_condition(substance_treatment, evaluated_month)
     end
 
     # Incarcerated members are excluded while incarcerated and for INMATE_BUFFER_MONTHS afterward,
-    # evaluated against the certification date at month granularity.
-    def inmate(incarceration, certification_date)
-      return if certification_date.nil?
+    # evaluated at month granularity.
+    def inmate(incarceration, evaluated_month)
+      return if evaluated_month.nil?
       return if incarceration.nil?
 
-      cert_month = certification_date.beginning_of_month
+      month = evaluated_month.beginning_of_month
       Array(incarceration.periods).any? do |period|
         next unless period.period_start && period.period_end
-        period.period_start.beginning_of_month <= cert_month && cert_month <= period.period_end.end_of_month + INMATE_BUFFER_MONTHS.months
+        period.period_start.beginning_of_month <= month && month <= period.period_end.end_of_month + INMATE_BUFFER_MONTHS.months
       end
     end
 
@@ -89,14 +89,14 @@ module Rules
 
     private
 
-    def meets_end_condition(member_data_exemption, certification_date)
-      return if certification_date.nil?
+    def meets_end_condition(member_data_exemption, evaluated_month)
+      return if evaluated_month.nil?
       return if member_data_exemption.nil?
 
-      cert_month = certification_date.beginning_of_month
+      month = evaluated_month.beginning_of_month
       Array(member_data_exemption.periods).any? do |period|
         next unless period.period_start && period.period_end
-        period.period_start.beginning_of_month <= cert_month && cert_month <= period.period_end.end_of_month
+        period.period_start.beginning_of_month <= month && month <= period.period_end.end_of_month
       end
     end
   end
