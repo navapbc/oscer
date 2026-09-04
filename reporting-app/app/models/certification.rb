@@ -91,4 +91,11 @@ class Certification < ApplicationRecord
   def region
     certification_requirements&.region
   end
+
+  # The month a member's exclusion status is evaluated for. Bound into the rules
+  # engine as the `evaluated_month` fact, which resolves by matching the ruleset's
+  # parameter name -- renaming one side without the other fails silently.
+  def evaluated_month
+    application_date&.beginning_of_month
+  end
 end
