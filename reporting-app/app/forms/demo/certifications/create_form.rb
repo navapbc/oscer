@@ -29,8 +29,7 @@ module Demo
       end
 
       def to_certification
-        # RequirementParams slices to its own attribute names and still validates
-        # certification_date; supply it until that field is removed from the model.
+        # TODO: drop this merge when certification_date leaves the model, still validated present until all readers have been repointed.
         certification_requirement_params = ::Certifications::RequirementParams.new_filtered(
           attributes.with_indifferent_access.merge(certification_date: application_date)
         )
@@ -47,11 +46,6 @@ module Demo
           return false
         end
 
-        # Generated member data is anchored on the application date. That is correct only for a
-        # new application, where the evaluated month is the application month. Recertification
-        # and change in circumstance evaluate a month derived from the certification period,
-        # which this form does not collect, so their generated data stops lining up once the
-        # exclusion repoint makes the evaluated month type-dependent.
         member_data = {}
 
         case external_scenario

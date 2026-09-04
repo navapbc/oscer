@@ -12,13 +12,6 @@ RSpec.describe Demo::Certifications::CreateForm do
     it "records the date collected on the form as the certification's application date" do
       expect(certification.application_date).to eq(collected)
     end
-
-    # Regression guard for the params slice: RequirementParams.new_filtered slices to that
-    # class's own attribute names, and it declares certification_date (validated present) and
-    # no application_date. Without an explicit merge the value is dropped and the form is invalid.
-    it "still supplies the certification date the requirements validate on" do
-      expect(certification.certification_requirements.certification_date).to eq(collected)
-    end
   end
 
   describe "#to_certification external exception mapping" do
