@@ -24,7 +24,7 @@
 
   <%= f.select :region, @regions, {  prompt: t(".select_region") } %>
 
-  <%= f.date_picker :certification_date %>
+  <%= f.date_picker :application_date %>
 
   <%= f.select :lookback_period, Demo::Certifications::CreateForm::LOOKBACK_PERIOD_OPTIONS.map { |i| [ t("certifications.demo_create.lookback_period_options.#{i}"), i ] }, {}, disabled: @form.locked_type_params? %>
   <%= f.select :number_of_months_to_certify, Demo::Certifications::CreateForm::NUMBER_OF_MONTHS_TO_CERTIFY_OPTIONS.map { |i| [ t("certifications.demo_create.number_of_months_to_certify_options.#{i}"), i ] }, {}, disabled: @form.locked_type_params? %>

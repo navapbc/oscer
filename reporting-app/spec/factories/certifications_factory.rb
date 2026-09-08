@@ -5,6 +5,7 @@ FactoryBot.define do
     id { SecureRandom.uuid }
     member_id { Faker::NationalHealthService.british_number }
     case_number { "C-%d" % Faker::Number.within(range: 1..10000) }
+    application_date { Date.current }
     certification_requirements { build(:certification_certification_requirements) }
     member_data { build(:certification_member_data) }
 

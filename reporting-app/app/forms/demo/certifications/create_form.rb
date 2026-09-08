@@ -29,7 +29,10 @@ module Demo
       end
 
       def to_certification
-        certification_requirement_params = ::Certifications::RequirementParams.new_filtered(attributes.with_indifferent_access)
+        # TODO: drop this merge when certification_date leaves the model, still validated present until all readers have been repointed.
+        certification_requirement_params = ::Certifications::RequirementParams.new_filtered(
+          attributes.with_indifferent_access.merge(certification_date: application_date)
+        )
         # shouldn't be possible, but we need to ensure the params are valid in
         # order to construct the requirements next
         if certification_requirement_params.invalid?
@@ -49,72 +52,72 @@ module Demo
         when "Partially met work hours requirement"
           member_data.merge!(
             FactoryBot.build(
-              :certification_member_data, :partially_met_work_hours_requirement, cert_date: certification_date
+              :certification_member_data, :partially_met_work_hours_requirement, cert_date: application_date
             ).attributes.compact
           )
         when "Fully met work hours requirement"
           member_data.merge!(
             FactoryBot.build(
-              :certification_member_data, :fully_met_work_hours_requirement, cert_date: certification_date, num_months: number_of_months_to_certify
+              :certification_member_data, :fully_met_work_hours_requirement, cert_date: application_date, num_months: number_of_months_to_certify
             ).attributes.compact)
         when "Meets age-based exemption requirement"
           member_data.merge!(
             FactoryBot.build(
-              :certification_member_data, :meets_age_based_exemption_requirement, cert_date: certification_date
+              :certification_member_data, :meets_age_based_exemption_requirement, cert_date: application_date
             ).attributes.compact
           )
         when "Partially met income requirement"
           member_data.merge!(
             FactoryBot.build(
-              :certification_member_data, :partially_met_income_requirement, cert_date: certification_date
+              :certification_member_data, :partially_met_income_requirement, cert_date: application_date
             ).attributes.compact
           )
         when "Fully met income requirement"
           member_data.merge!(
             FactoryBot.build(
-              :certification_member_data, :fully_met_income_requirement, cert_date: certification_date
+              :certification_member_data, :fully_met_income_requirement, cert_date: application_date
             ).attributes.compact
           )
         when "Half-time education enrollment"
           member_data.merge!(
             FactoryBot.build(
-              :certification_member_data, :half_time_education_enrollment, cert_date: certification_date
+              :certification_member_data, :half_time_education_enrollment, cert_date: application_date
             ).attributes.compact
           )
         when "Less than half-time education enrollment"
           member_data.merge!(
             FactoryBot.build(
-              :certification_member_data, :less_than_half_time_education_enrollment, cert_date: certification_date
+              :certification_member_data, :less_than_half_time_education_enrollment, cert_date: application_date
             ).attributes.compact
           )
         end
 
         exemptions = []
 
-        exemptions << end_exemption(:pregnancy, certification_date) if pregnancy_status
-        exemptions << end_exemption(:former_foster_care, certification_date) if was_in_foster_care
-        exemptions << end_exemption(:medical_condition, certification_date) if currently_medically_frail
-        exemptions << end_exemption(:veteran_disability, certification_date) if veteran_with_disability
-        exemptions << end_exemption(:caregiver_disability, certification_date) if caretaker
-        exemptions << end_exemption(:meeting_tanf_or_snap_work, certification_date) if tanf_snap_work
-        exemptions << end_exemption(:substance_treatment, certification_date) if drug_treatment
-        exemptions << end_exemption(:incarceration, certification_date) if inmate
+        exemptions << end_exemption(:pregnancy, application_date) if pregnancy_status
+        exemptions << end_exemption(:former_foster_care, application_date) if was_in_foster_care
+        exemptions << end_exemption(:medical_condition, application_date) if currently_medically_frail
+        exemptions << end_exemption(:veteran_disability, application_date) if veteran_with_disability
+        exemptions << end_exemption(:caregiver_disability, application_date) if caretaker
+        exemptions << end_exemption(:meeting_tanf_or_snap_work, application_date) if tanf_snap_work
+        exemptions << end_exemption(:substance_treatment, application_date) if drug_treatment
+        exemptions << end_exemption(:incarceration, application_date) if inmate
         if race_ethnicity == "american_indian_or_alaska_native"
-          exemptions << end_exemption(:american_indian_or_alaska_native, certification_date)
+          exemptions << end_exemption(:american_indian_or_alaska_native, application_date)
         end
 
         member_data[:exemptions] = exemptions
         member_data = ::Certifications::MemberData.new(member_data).tap do |md|
           md.name = member_name if member_name.present?
           md.date_of_birth = date_of_birth if date_of_birth.present?
-          md.pregnancy_due_or_parturition_date = certification_date if pregnancy_status
+          md.pregnancy_due_or_parturition_date = application_date if pregnancy_status
           md.was_in_foster_care = was_in_foster_care
           md.currently_medically_frail = currently_medically_frail
           md.veteran_with_disability = veteran_with_disability
-          md.dates_caretaking_infirm = [ certification_date ] if caretaker
+          md.dates_caretaking_infirm = [ application_date ] if caretaker
           md.meeting_tanf_or_snap_work = tanf_snap_work
-          md.dates_in_drug_treatment = [ certification_date ] if drug_treatment
-          md.dates_incarcerated = [ certification_date ] if inmate
+          md.dates_in_drug_treatment = [ application_date ] if drug_treatment
+          md.dates_incarcerated = [ application_date ] if inmate
           md.race_ethnicity = race_ethnicity if race_ethnicity.present?
           md.va_icn = va_icn if va_icn.present?
           apply_external_exception(md, certification_requirements.months_that_can_be_certified)
@@ -125,6 +128,7 @@ module Demo
           :connected_to_email,
           email: member_email,
           case_number: case_number,
+          application_date: application_date,
           certification_requirements: certification_requirements,
           member_data: member_data,
         )
@@ -152,15 +156,15 @@ module Demo
         ]
       end
 
-      def end_exemption(exemption_type, cert_date)
+      def end_exemption(exemption_type, application_date)
         {
           type: exemption_type,
           value: true,
           verification_status: :verified,
           periods: [
             {
-              period_start: cert_date - 4.months,
-              period_end: cert_date
+              period_start: application_date - 4.months,
+              period_end: application_date
             }
           ]
         }
