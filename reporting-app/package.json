@@ -8,9 +8,9 @@
   },
   "dependencies": {
     "@uswds/uswds": "^3.14.0",
-    "pdfjs-dist": "^6.2.108"
+    "pdfjs-dist": "^6.3.289"
   },
   "devDependencies": {
-    "sass": "^1.103.1"
+    "sass": "^1.104.0"
   }
 }
