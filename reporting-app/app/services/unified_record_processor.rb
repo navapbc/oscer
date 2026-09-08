@@ -109,6 +109,8 @@ class UnifiedRecordProcessor
     Certification.new(
       member_id: record["member_id"],
       case_number: record["case_number"],
+      # TODO: read directly from the application_date field once batch uploads accept it in place of certification_date.
+      application_date: record["certification_date"],
       member_data: build_member_data(record),
       certification_requirements: build_certification_requirements(record)
     )
