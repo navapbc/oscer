@@ -11,6 +11,6 @@
     "pdfjs-dist": "^6.3.289"
   },
   "devDependencies": {
-    "sass": "^1.103.1"
+    "sass": "^1.104.0"
   }
 }
