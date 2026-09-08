@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_28_155145) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_03_145559) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -167,6 +167,28 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_28_155145) do
     t.datetime "updated_at", null: false
     t.uuid "certification_case_id"
     t.index ["certification_case_id"], name: "index_exemption_application_forms_on_certification_case_id"
+  end
+
+  create_table "external_activities", id: :uuid, default: -> { "gen_random_uuid()" }, comment: "Hours and/or gross income data from external sources (API/batch) for compliance calculation", force: :cascade do |t|
+    t.string "member_id", null: false, comment: "Member reference - always required (no certification FK; the member's active certification is implicit)"
+    t.string "category", null: false, comment: "Activity category: employment, community_service, education, unearned, or household (household income only)"
+    t.string "name", comment: "Reported name of the school, organization, or person"
+    t.decimal "hours", precision: 8, scale: 2, comment: "Hours worked/volunteered for the period; null when the row reports income only"
+    t.decimal "gross_income", precision: 10, scale: 2, comment: "Gross income for the period; null when the row reports hours only"
+    t.date "period_start", null: false, comment: "Activity period start date"
+    t.date "period_end", null: false, comment: "Activity period end date"
+    t.string "source_type", null: false, comment: "Source type: 'api' or 'batch_upload'"
+    t.string "source_id", comment: "Source record ID (e.g., batch upload ID)"
+    t.datetime "reported_at", null: false, comment: "When the external source reported this data"
+    t.jsonb "metadata", default: {}, null: false, comment: "Additional structured fields (e.g., employer name)"
+    t.string "origin_hash", comment: "Fingerprint of the submission this row was split from; shared by every monthly row of one submission (not unique)"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["member_id"], name: "index_external_activities_on_member_id", comment: "Lookup entries by member"
+    t.index ["origin_hash"], name: "index_external_activities_on_origin_hash"
+    t.index ["period_start", "period_end"], name: "index_external_activities_on_period", comment: "Date range queries"
+    t.index ["source_type", "source_id"], name: "index_external_activities_on_source", comment: "Source tracking (batch upload lookups)"
+    t.check_constraint "hours IS NOT NULL OR gross_income IS NOT NULL", name: "external_activities_hours_or_income"
   end
 
   create_table "external_hourly_activities", id: :uuid, default: -> { "gen_random_uuid()" }, comment: "Hours data from external sources (API/batch) for compliance calculation", force: :cascade do |t|
