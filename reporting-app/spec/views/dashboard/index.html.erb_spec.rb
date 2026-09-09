@@ -270,12 +270,12 @@ RSpec.describe "dashboard/index", type: :view do
     let(:income_table) { ".member-dashboard-compliance__table--income" }
 
     def create_external_hourly(hours: 30)
-      create(:external_hourly_activity, member_id: certification.member_id, category: "employment",
+      create(:external_activity, :with_hours, member_id: certification.member_id, category: "employment",
              hours: hours, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
     end
 
     def create_external_income(gross_income: 300)
-      create(:external_income_activity, member_id: certification.member_id, category: "employment",
+      create(:external_activity, :with_income, member_id: certification.member_id, category: "employment",
              gross_income: gross_income, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
     end
 
@@ -336,7 +336,7 @@ RSpec.describe "dashboard/index", type: :view do
       end
 
       before do
-        create(:external_hourly_activity, member_id: certification.member_id, category: "employment",
+        create(:external_activity, :with_hours, member_id: certification.member_id, category: "employment",
                hours: 30, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
         assign(:activity_report_application_form, activity_report_application_form)
         reassign_compliance_read_model
@@ -810,12 +810,12 @@ RSpec.describe "dashboard/index", type: :view do
     let(:income_table) { ".member-dashboard-compliance__table--income" }
 
     def create_external_hourly(hours: 30)
-      create(:external_hourly_activity, member_id: certification.member_id, category: "employment",
+      create(:external_activity, :with_hours, member_id: certification.member_id, category: "employment",
              hours: hours, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
     end
 
     def create_external_income(gross_income: 300)
-      create(:external_income_activity, member_id: certification.member_id, category: "employment",
+      create(:external_activity, :with_income, member_id: certification.member_id, category: "employment",
              gross_income: gross_income, period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month)
     end
 

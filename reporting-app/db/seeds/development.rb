@@ -23,14 +23,15 @@ user = User.first || FactoryBot.create(:user, :as_admin, region: "Southeast", em
 
     # Add 2-4 external hourly activities per case
     rand(2..4).times do
-      ExternalHourlyActivity.create!(
+      ExternalActivity.create!(
         member_id: certification.member_id,
         category: ActivityCategories::ALL.sample,
         hours: rand(5..25),
         period_start: period_start,
         period_end: period_end,
-        source_type: ExternalHourlyActivity::SOURCE_TYPES[:batch],
-        source_id: "seed-#{SecureRandom.hex(4)}"
+        source_type: ExternalActivity::SOURCE_TYPES[:batch],
+        source_id: "seed-#{SecureRandom.hex(4)}",
+        reported_at: Time.current
       )
     end
   end

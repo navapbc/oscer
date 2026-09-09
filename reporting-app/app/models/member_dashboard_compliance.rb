@@ -258,9 +258,10 @@ class MemberDashboardCompliance
   end
 
   def build_income_data
-    external_income_rows = ExternalIncomeActivity
+    external_income_rows = ExternalActivity
       .for_member(@certification.member_id)
       .within_period(@lookback)
+      .with_income
       .order(:period_start, :reported_at).to_a
     member_income_activity_rows = IncomeComplianceDeterminationService
                                     .member_income_activities_for_certification(@certification,
@@ -348,9 +349,10 @@ class MemberDashboardCompliance
   def external_hourly_activities
     return [] if @lookback.blank?
 
-    ExternalHourlyActivity
+    ExternalActivity
       .for_member(@certification.member_id)
       .within_period(@lookback)
+      .with_hours
       .order(:period_start, :created_at)
       .to_a
   end
@@ -358,9 +360,10 @@ class MemberDashboardCompliance
   def external_income_activities
     return [] if @lookback.blank?
 
-    ExternalIncomeActivity
+    ExternalActivity
       .for_member(@certification.member_id)
       .within_period(@lookback)
+      .with_income
       .order(:period_start, :reported_at)
       .to_a
   end

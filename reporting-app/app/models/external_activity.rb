@@ -84,17 +84,17 @@ class ExternalActivity < ApplicationRecord
   private
 
   def hours_or_gross_income_present
-    return if hours.present? || gross_income.present?
+    return if hours? || income?
 
     errors.add(:base, :hours_or_gross_income_required)
   end
 
-  # Hours cannot exceed the wall-clock hours the reported period contains, which catches
-  # implausible figures a flat annual ceiling would let through. Dates are inclusive, matching
-  # how ActivityAggregator#month_periods treats them. A reversed period is left to the
+  # Catches implausible figures a flat annual ceiling would let through. Dates are inclusive,
+  # matching how ActivityAggregator#month_periods treats them. A reversed period is left to the
   # strata_attribute range validator rather than reported twice.
   def hours_within_period
-    return if hours.blank? || period_start.blank? || period_end.blank? || period_end < period_start
+    return unless hours?
+    return if period_start.blank? || period_end.blank? || period_end < period_start
 
     maximum = ((period_end - period_start).to_i + 1) * HOURS_PER_DAY
     return if hours <= maximum

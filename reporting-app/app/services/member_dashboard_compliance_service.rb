@@ -18,7 +18,7 @@ class MemberDashboardComplianceService
       lookback = certification.certification_requirements.continuous_lookback_period
       show_income = income_summary_visible?(latest, member_status) && lookback.present?
 
-      external_hourly_rel = lookback.present? ? aggregator.fetch_external_hourly_activities(certification) : ExternalHourlyActivity.none
+      external_hourly_rel = lookback.present? ? aggregator.fetch_external_hourly_activities(certification) : ExternalActivity.none
       # Pass only the external relation, which the dashboard tables need anyway;
       # +HoursComplianceDeterminationService+ fetches the member rows itself.
       hours_summary = HoursComplianceDeterminationService.aggregate_hours_for_certification(

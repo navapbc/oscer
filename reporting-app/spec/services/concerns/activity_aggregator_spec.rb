@@ -19,7 +19,7 @@ RSpec.describe ActivityAggregator, type: :concern do
     context "with member_id" do
       before do
         lookback = certification.certification_requirements.continuous_lookback_period
-        create(:external_income_activity,
+        create(:external_activity, :with_income,
                member_id: certification.member_id,
                gross_income: 100,
                period_start: lookback.start.to_date,
@@ -108,10 +108,10 @@ RSpec.describe ActivityAggregator, type: :concern do
     context "with activities" do
       let(:num_activities) { 2 }
       let(:gross_income) { 100 }
-      let(:activities) { create_list(:external_income_activity, num_activities, gross_income: gross_income) }
+      let(:activities) { create_list(:external_activity, num_activities, :with_income, gross_income: gross_income) }
 
       it "returns total and ids" do
-        summary = service.summarize_income(ExternalIncomeActivity.where(id: activities.map(&:id)))
+        summary = service.summarize_income(ExternalActivity.with_income.where(id: activities.map(&:id)))
 
         expect(summary[:total]).to eq(BigDecimal(gross_income * num_activities))
         expect(summary[:ids].length).to eq(num_activities)
@@ -120,7 +120,7 @@ RSpec.describe ActivityAggregator, type: :concern do
 
     context "with no activities" do
       it "returns zeroed values" do
-        summary = service.summarize_income(ExternalIncomeActivity.none)
+        summary = service.summarize_income(ExternalActivity.none)
 
         expect(summary[:total]).to eq(BigDecimal(0))
         expect(summary[:ids].length).to eq(0)

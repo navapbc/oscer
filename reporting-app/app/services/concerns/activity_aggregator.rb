@@ -1,20 +1,24 @@
 # frozen_string_literal: true
 
 module ActivityAggregator
-  # Matches the scale of external_hourly_activities.hours and external_income_activities.gross_income
+  # Matches the scale of external_activities.hours and external_activities.gross_income
   VALUE_SCALE = 2
 
+  # Both fetches read the one +ExternalActivity+ table; +with_hours+ / +with_income+ do the
+  # separating. The scope is not cosmetic: an unscoped relation would give +summarize_hours+ a
+  # zero-valued category bucket for income-only rows and credit ids that contributed nothing.
+  # A row carrying both values is returned by both, since it feeds both compliance tracks.
   def fetch_external_hourly_activities(certification)
-    return ExternalHourlyActivity.none unless certification&.member_id
+    return ExternalActivity.none unless certification&.member_id
 
     lookback_period = certification.certification_requirements.continuous_lookback_period
-    ExternalHourlyActivity.for_member(certification.member_id).within_period(lookback_period)
+    ExternalActivity.for_member(certification.member_id).within_period(lookback_period).with_hours
   end
 
   def fetch_external_income_activities(certification, lookback_period)
-    return ExternalIncomeActivity.none unless certification&.member_id
+    return ExternalActivity.none unless certification&.member_id
 
-    ExternalIncomeActivity.for_member(certification.member_id).within_period(lookback_period)
+    ExternalActivity.for_member(certification.member_id).within_period(lookback_period).with_income
   end
 
   def fetch_member_activities(form)
@@ -50,12 +54,17 @@ module ActivityAggregator
   def allocate_external_hourly_activities_by_month(activities)
     result = Hash.new { |h, k| h[k] = [] }
     activities.each do |activity|
+      # The allocation below multiplies +hours+; an income-only row would raise. Callers should
+      # pass a +with_hours+-scoped relation, but this method is public on the concern.
+      next unless activity.hours?
+
       allocate_activity_to_months(activity, result)
     end
     result
   end
 
-  # A relation is accepted as well as an array.
+  # A relation is accepted as well as an array. Expects rows carrying +hours+ — pass a
+  # +with_hours+-scoped relation, or income-only rows would land in +by_category+ as zeroes.
   def summarize_hours(activities)
     rows = activities.to_a
 
@@ -67,7 +76,8 @@ module ActivityAggregator
     }
   end
 
-  # Expects +ExternalIncomeActivity+ rows (+gross_income+). Do not pass +IncomeActivity+ / +activities+ here;
+  # Expects rows carrying +gross_income+ — pass a +with_income+-scoped relation, or an income-only
+  # month map would gain zero-valued entries. Do not pass +IncomeActivity+ / +activities+ here;
   # member self-report totals use +IncomeComplianceDeterminationService#member_income_totals_from_rows+.
   def summarize_income(activities)
     rows = activities.to_a
@@ -100,19 +110,6 @@ module ActivityAggregator
     end
 
     periods
-  end
-
-  # Both maps below split +value+ across the calendar months the period touches and return
-  # [start, end, value] triples; they differ only in how the value is apportioned.
-
-  # Apportions by the number of days each month covers.
-  def daily_values_map(period_start, period_end, value)
-    apportioned_values_map(period_start, period_end, value, weight: :daily)
-  end
-
-  # Apportions evenly.
-  def monthly_values_map(period_start, period_end, value)
-    apportioned_values_map(period_start, period_end, value, weight: :monthly)
   end
 
   # Apportions several named values across one set of month periods using the same weights, so a
@@ -153,24 +150,6 @@ module ActivityAggregator
   # cannot drift, and let callers cast to Float for display.
   def decimal_sum(rows, attribute)
     rows.sum(BigDecimal("0")) { |row| BigDecimal((row.public_send(attribute) || 0).to_s) }
-  end
-
-  def apportioned_values_map(period_start, period_end, value, weight:)
-    whole_period = [ [ period_start, period_end, value ] ]
-    months = month_periods(period_start, period_end)
-
-    # Malformed input (blank value or dates, reversed period) goes to the model as-is
-    # so it raises RecordInvalid rather than failing in the arithmetic below.
-    return whole_period if value.blank? || months.size <= 1
-
-    shares = apportioned_shares(value, month_weights(months, weight))
-    entries = months.zip(shares).map do |(current_period_start, current_period_end), share|
-      [ current_period_start, current_period_end, share ]
-    end
-
-    # A share too small to survive rounding would fail the models' greater-than-zero
-    # validations; drop it and let the running total roll it into the next month.
-    entries.reject { |_, _, share| share.zero? }.presence || whole_period
   end
 
   def month_weights(months, weight)

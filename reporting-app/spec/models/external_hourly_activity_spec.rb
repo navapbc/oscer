@@ -2,150 +2,37 @@
 
 require 'rails_helper'
 
+# ExternalHourlyActivity is a read-only stub over a retained table; ExternalActivity supersedes it.
 RSpec.describe ExternalHourlyActivity, type: :model do
-  describe 'factory' do
-    it 'creates a valid record' do
-      activity = build(:external_hourly_activity)
-      expect(activity).to be_valid
-    end
-
-    it 'creates a valid record from batch' do
-      activity = build(:external_hourly_activity, :from_batch)
-      expect(activity).to be_valid
-      expect(activity.source_type).to eq('batch_upload')
-      expect(activity.source_id).to be_present
-    end
+  # insert_all bypasses ActiveRecord write protection, which is the only way to seed a readonly
+  # model — and the shape the backfill will use.
+  def insert_row(member_id: 'M12345')
+    described_class.insert_all!([
+      { member_id: member_id, category: 'employment', hours: 40,
+        period_start: Date.new(2026, 1, 1), period_end: Date.new(2026, 1, 31),
+        source_type: 'api', created_at: Time.current, updated_at: Time.current }
+    ])
   end
 
-  describe 'validations' do
-    subject(:activity) { build(:external_hourly_activity) }
-
-    describe 'member_id' do
-      it 'is required' do
-        activity.member_id = nil
-        expect(activity).not_to be_valid
-        expect(activity.errors[:member_id]).to include("can't be blank")
-      end
-    end
-
-    describe 'category' do
-      it 'is required' do
-        activity.category = nil
-        expect(activity).not_to be_valid
-        expect(activity.errors[:category]).to include("can't be blank")
-      end
-
-      it 'accepts valid categories' do
-        ExternalHourlyActivity::ALLOWED_CATEGORIES.each do |category|
-          activity.category = category
-          expect(activity).to be_valid
-        end
-      end
-
-      it 'rejects invalid categories' do
-        activity.category = 'invalid_category'
-        expect(activity).not_to be_valid
-        expect(activity.errors[:category]).to include('is not included in the list')
-      end
-    end
-
-    describe 'hours' do
-      it 'is required' do
-        activity.hours = nil
-        expect(activity).not_to be_valid
-        expect(activity.errors[:hours]).to include("can't be blank")
-      end
-
-      it 'must be greater than 0' do
-        activity.hours = 0
-        expect(activity).not_to be_valid
-        expect(activity.errors[:hours]).to include('must be greater than 0')
-      end
-
-      it 'must be less than or equal to MAX_HOURS_PER_YEAR' do
-        activity.hours = ExternalHourlyActivity::MAX_HOURS_PER_YEAR + 1
-        expect(activity).not_to be_valid
-      end
-
-      it 'accepts valid hours' do
-        activity.hours = 40.5
-        expect(activity).to be_valid
-      end
-    end
-
-    describe 'period dates' do
-      it 'requires period_start' do
-        activity.period_start = nil
-        expect(activity).not_to be_valid
-      end
-
-      it 'requires period_end' do
-        activity.period_end = nil
-        expect(activity).not_to be_valid
-      end
-
-      it 'rejects period_end before period_start' do
-        activity.period = Strata::DateRange.new(
-          start: Strata::USDate.new(2025, 1, 15),
-          end: Strata::USDate.new(2025, 1, 1)
-        )
-        expect(activity).not_to be_valid
-        expect(activity.errors[:period]).to include('start date cannot be after end date')
-      end
-
-      it 'accepts period_end equal to period_start' do
-        activity.period = Strata::DateRange.new(
-          start: Strata::USDate.new(2025, 1, 15),
-          end: Strata::USDate.new(2025, 1, 15)
-        )
-        expect(activity).to be_valid
-      end
-    end
-
-    describe 'source_type' do
-      it 'is required' do
-        activity.source_type = nil
-        expect(activity).not_to be_valid
-      end
-
-      it 'accepts valid source types' do
-        ExternalHourlyActivity::ALLOWED_SOURCE_TYPES.each do |source|
-          activity.source_type = source
-          expect(activity).to be_valid
-        end
-      end
-
-      it 'rejects invalid source types' do
-        activity.source_type = 'invalid'
-        expect(activity).not_to be_valid
-      end
-    end
+  it 'refuses to create rows' do
+    expect {
+      described_class.create!(member_id: 'M12345', category: 'employment', hours: 40,
+                              period_start: Date.new(2026, 1, 1), period_end: Date.new(2026, 1, 31),
+                              source_type: 'api')
+    }.to raise_error(ActiveRecord::ReadOnlyRecord)
   end
 
-  describe 'scopes' do
-    describe '.for_member' do
-      it 'returns entries for the given member' do
-        member_id = 'M12345'
-        entry = create(:external_hourly_activity, member_id: member_id)
-        create(:external_hourly_activity, member_id: 'OTHER')
+  it 'refuses to update existing rows' do
+    insert_row
+    row = described_class.for_member('M12345').first
 
-        expect(described_class.for_member(member_id)).to eq([ entry ])
-      end
-    end
+    expect { row.update!(hours: 10) }.to raise_error(ActiveRecord::ReadOnlyRecord)
   end
 
-  describe 'constants' do
-    it 'defines ALLOWED_CATEGORIES' do
-      expect(ExternalHourlyActivity::ALLOWED_CATEGORIES).to eq(%w[employment community_service education unearned])
-    end
+  it 'still reads retained rows by member' do
+    insert_row
+    insert_row(member_id: 'OTHER')
 
-    it 'defines source type constants' do
-      expect(ExternalHourlyActivity::SOURCE_TYPES[:api]).to eq('api')
-      expect(ExternalHourlyActivity::SOURCE_TYPES[:batch]).to eq('batch_upload')
-    end
-
-    it 'defines MAX_HOURS_PER_YEAR' do
-      expect(ExternalHourlyActivity::MAX_HOURS_PER_YEAR).to eq(8760)
-    end
+    expect(described_class.for_member('M12345').map(&:hours)).to eq([ 40 ])
   end
 end

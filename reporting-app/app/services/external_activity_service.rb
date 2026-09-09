@@ -6,8 +6,13 @@
 #
 # After a successful save, optional compliance recalculation (+recalculate_compliance+, default
 # +true+) records exactly one determination for the member's open case — hours first, falling
-# through to income only when hours fall short. Certification intake passes
-# +recalculate_compliance: false+ so rows created before the case exists do not run this path.
+# through to income only when hours fall short.
+#
+# That path is dormant: the only caller, +Certifications::CreationService+, passes
+# +recalculate_compliance: false+ because the case does not exist yet at intake. Wiring up a
+# caller that takes the default would start closing cases on a compliant outcome — note that
+# +CertificationCase#record_hours_compliance+ has no +close_on_compliant+ opt-out the way
+# +record_income_compliance+ does.
 class ExternalActivityService
   include Strata::VirtualActor
 
@@ -145,9 +150,8 @@ class ExternalActivityService
     # would write two rows. The pieces they build on are public, so the branch is decided here and
     # only the winning track is recorded.
     #
-    # Hours compliance is judged on monthly hours alone, matching
-    # +HoursComplianceDeterminationService#calculate+: the education-enrollment track belongs to
-    # +CommunityEngagementCheckService+, so consulting it here would widen this outcome.
+    # Judged on monthly hours alone, matching +HoursComplianceDeterminationService#calculate+:
+    # the education-enrollment track is deliberately not consulted here.
     def record_one_determination(kase, certification, hours:, gross_income:)
       application_form = ActivityReportApplicationForm.find_by(certification_case_id: kase.id)
 

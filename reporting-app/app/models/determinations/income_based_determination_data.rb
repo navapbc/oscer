@@ -4,6 +4,11 @@ module Determinations
   # Canonical serialized shape for automated CE determinations with
   # {Determination::CALCULATION_TYPE_INCOME_BASED}. Built from
   # {IncomeComplianceDeterminationService.aggregate_income_for_certification} output.
+  #
+  # +external_income_activity_ids+ kept its name across the external-activity consolidation, so ids
+  # written before it point at +external_income_activities+ and later ones at +external_activities+.
+  # They are audit breadcrumbs that nothing dereferences; the earlier ones dangle once the
+  # superseded table is dropped.
   class IncomeBasedDeterminationData < ValueObject
     attribute :total_income
     attribute :maximum_monthly_income

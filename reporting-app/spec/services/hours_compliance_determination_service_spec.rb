@@ -9,7 +9,7 @@ RSpec.describe HoursComplianceDeterminationService do
     period_start = attrs[:period_start] || lookback.start.to_date
     period_end = attrs[:period_end] || lookback.start.to_date.end_of_month
 
-    create(:external_hourly_activity, member_id: certification.member_id,
+    create(:external_activity, :with_hours, member_id: certification.member_id,
            period_start: period_start, period_end: period_end, **attrs)
   end
 
@@ -173,11 +173,11 @@ RSpec.describe HoursComplianceDeterminationService do
         create_external_hourly_activity_for(certification, hours: 50)
 
         # Create activity outside lookback period (far in the past)
-        create(:external_hourly_activity,
+        create(:external_activity, :with_hours,
                member_id: certification.member_id,
                hours: 100,
-               period_start: 2.years.ago.to_date,
-               period_end: 2.years.ago.to_date.end_of_month)
+               period_start: 2.years.ago.beginning_of_month.to_date,
+               period_end: 2.years.ago.end_of_month.to_date)
       end
 
       it "only counts hours within the lookback period" do
@@ -234,7 +234,6 @@ RSpec.describe HoursComplianceDeterminationService do
     # supplied as strings by the API.
     let(:activity) do
       {
-        type: "hourly",
         category: "education",
         enrollment_status: enrollment_status,
         period_start: period_start,
@@ -311,7 +310,7 @@ RSpec.describe HoursComplianceDeterminationService do
   describe ".summarize_hours" do
     context "when activities are blank" do
       it "returns a summary with zeroed values" do
-        summary = described_class.summarize_hours(ExternalHourlyActivity.none)
+        summary = described_class.summarize_hours(ExternalActivity.none)
 
         expect(summary).to eq({
           total: 0.0,
@@ -457,7 +456,6 @@ RSpec.describe HoursComplianceDeterminationService do
 
       def enrollment(status, verification_status: "verified", period_start: nil, period_end: nil)
         {
-          type: "hourly",
           category: "education",
           enrollment_status: status,
           period_start: period_start || lookback.start.to_date,
@@ -515,7 +513,7 @@ RSpec.describe HoursComplianceDeterminationService do
 
       context "when the member reported hours but no enrollment" do
         let(:activities) do
-          [ { type: "hourly", category: "education", hours: 40,
+          [ { category: "education", hours: 40,
               period_start: lookback.start.to_date, period_end: lookback.start.to_date.end_of_month,
               verification_status: "verified" } ]
         end

@@ -34,7 +34,7 @@ class CertificationCase < Strata::Case
   VERIFICATION_WINDOW_DURATION_DAYS = 30
 
   # Latest open case for a member (by certification created_at). Used when persisting new
-  # ExternalIncomeActivity rows to run income compliance recalculation for the active certification.
+  # ExternalActivity rows to run compliance recalculation for the active certification.
   # @param member_id [String]
   # @return [UUID, nil] certification_id
   def self.open_certification_id_for_member(member_id)
@@ -262,7 +262,7 @@ class CertificationCase < Strata::Case
   end
 
   # Called by IncomeComplianceDeterminationService#calculate (e.g. after
-  # +ExternalIncomeActivityService+ persists new income for an open case) to record income-only CE
+  # +ExternalActivityService+ persists new income for an open case) to record income-only CE
   # (+CALCULATION_TYPE_INCOME_BASED+; not used by the combined external CE business process step).
   #
   # Default +close_on_compliant: true+ matches +record_hours_compliance+: compliant outcomes +close!+

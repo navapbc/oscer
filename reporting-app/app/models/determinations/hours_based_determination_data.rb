@@ -8,6 +8,11 @@ module Determinations
   # {#to_h} treats +hours_by_category+ and +hours_by_source+ **values** as numeric totals from that
   # aggregate path (+to_f+ is for JSON consistency). Callers must not pass non-numeric values expecting
   # validation here — invalid shapes should be rejected at the aggregate layer or via future stricter VO checks.
+  #
+  # +external_hourly_activity_ids+ kept its name across the external-activity consolidation, so ids
+  # written before it point at +external_hourly_activities+ and later ones at +external_activities+.
+  # They are audit breadcrumbs that nothing dereferences; the earlier ones dangle once the
+  # superseded table is dropped.
   class HoursBasedDeterminationData < ValueObject
     attribute :total_hours
     attribute :maximum_monthly_hours
