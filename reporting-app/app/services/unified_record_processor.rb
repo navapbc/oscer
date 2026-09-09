@@ -152,7 +152,13 @@ class UnifiedRecordProcessor
       "region" => record["region"]
     }.compact_blank
 
-    @certification_service.certification_requirements_from_input(requirement_input)
+    # Cast because the CSV holds dates as strings and the anchor is a plain argument now. Same cast
+    # the certification_date attribute applies, so an unparseable value becomes nil and fails
+    # RequirementParams' presence validation.
+    @certification_service.certification_requirements_from_input(
+      requirement_input,
+      application_date: ActiveModel::Type::Date.new.cast(record["certification_date"])
+    )
   end
 
   # Accepted (case-insensitive) spellings of a truthy pregnancy_status flag in an uploaded CSV.

@@ -10,6 +10,9 @@ class Api::Certifications::CreateRequest < ValueObject
   attribute :household_data, Certifications::HouseholdData.to_type
 
   validates :certification_requirements, presence: true
+  # Not on RequirementParams: it is a union member whose valid? decides type dispatch, and this
+  # field is not in the nested requirements hash. See RequirementParams#to_requirements.
+  validates :application_date, presence: true
 
   def self.from_request_params(params)
     new_filtered(params)
@@ -21,7 +24,7 @@ class Api::Certifications::CreateRequest < ValueObject
       # we are good to go
       certification_requirements = self.certification_requirements
     when Certifications::RequirementParams
-      certification_requirements = self.certification_requirements.to_requirements
+      certification_requirements = self.certification_requirements.to_requirements(application_date:)
     else
       # this should never be reached, something in the code is wrong
       raise TypeError

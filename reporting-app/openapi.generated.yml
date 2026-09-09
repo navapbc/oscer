@@ -20,11 +20,10 @@ components:
           - 'null'
           description: An identifier for the case associated with the certification
         application_date:
-          type:
-          - string
-          - 'null'
+          type: string
           format: date
-          description: The date of the application
+          description: The date of the application. The reportable months are counted back from
+            it.
         certification_requirements:
           oneOf:
           - "$ref": "#/components/schemas/CertificationRequirements"
@@ -40,12 +39,14 @@ components:
           - type: 'null'
       required:
       - member_id
+      - application_date
       - certification_requirements
       examples:
         fully_specified_certification_requirements:
           value:
             member_id: '123'
             case_number: C-111
+            application_date: '2025-09-26'
             certification_requirements:
               certification_date: '2025-09-26'
               certification_period_start: '2025-04-01'
@@ -87,6 +88,7 @@ components:
           value:
             member_id: '123'
             case_number: C-111
+            application_date: '2025-09-26'
             certification_requirements:
               certification_date: '2025-09-26'
               certification_period_start: '2025-04-01'
@@ -111,6 +113,7 @@ components:
           value:
             member_id: '123'
             case_number: C-111
+            application_date: '2025-09-26'
             certification_requirements:
               certification_date: '2025-09-26'
               certification_type: new_application

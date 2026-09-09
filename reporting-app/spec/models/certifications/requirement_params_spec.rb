@@ -4,10 +4,12 @@ require "rails_helper"
 
 RSpec.describe Certifications::RequirementParams do
   describe "#months_that_can_be_certified" do
-    subject(:months) { params.months_that_can_be_certified }
+    subject(:months) { params.months_that_can_be_certified(application_date) }
 
-    let(:certification_date) { Date.new(2026, 8, 20) }
-    let(:cert_date_start) { certification_date.beginning_of_month }
+    let(:application_date) { Date.new(2026, 8, 20) }
+    let(:application_month) { application_date.beginning_of_month }
+    # Different month from the anchor, so these examples prove the months follow the argument.
+    let(:certification_date) { Date.new(2026, 2, 3) }
     let(:params) do
       build(
         :certification_certification_requirement_params,
@@ -21,41 +23,63 @@ RSpec.describe Certifications::RequirementParams do
     context "with a multi-month lookback" do
       let(:lookback_period) { 3 }
 
-      it "returns the lookback_period months ending the month before the certification month" do
+      it "returns the lookback_period months ending the month before the application month" do
         expect(months).to eq [ Date.new(2026, 7, 1), Date.new(2026, 6, 1), Date.new(2026, 5, 1) ]
       end
 
-      it "excludes the certification month" do
-        expect(months).not_to include cert_date_start
+      it "ends the month before the application month" do
+        expect(months.max).to eq application_month << 1
       end
     end
 
     context "with a single-month lookback" do
       let(:lookback_period) { 1 }
 
-      it "returns only the month before the certification month" do
-        expect(months).to eq [ cert_date_start << 1 ]
+      it "returns only the month before the application month" do
+        expect(months).to eq [ application_month << 1 ]
       end
     end
 
     context "when the window crosses a year boundary" do
       let(:lookback_period) { 2 }
 
-      let(:certification_date) { Date.new(2026, 1, 15) }
+      let(:application_date) { Date.new(2026, 1, 15) }
 
       it "walks back into the previous year" do
         expect(months).to eq [ Date.new(2025, 12, 1), Date.new(2025, 11, 1) ]
       end
     end
+
+    context "when the application date and the certification date disagree" do
+      let(:lookback_period) { 2 }
+
+      it "counts from the application date" do
+        expect(months).to eq [ Date.new(2026, 7, 1), Date.new(2026, 6, 1) ]
+      end
+
+      it "returns the same months whatever the certification date carries" do
+        moved = build(
+          :certification_certification_requirement_params,
+          certification_date: Date.new(2020, 12, 25),
+          lookback_period: lookback_period,
+          number_of_months_to_certify: 1,
+          due_period_days: 30
+        )
+
+        expect(moved.months_that_can_be_certified(application_date)).to eq months
+      end
+    end
   end
 
   describe "#to_requirements" do
-    subject(:requirements) { params.to_requirements }
+    subject(:requirements) { params.to_requirements(application_date:) }
 
     let(:lookback_period) { 6 }
-    let(:certification_date) { Date.new(2026, 8, 20) }
-    let(:expected_start) { certification_date.beginning_of_month << lookback_period }
-    let(:expected_end) { certification_date.beginning_of_month << 1 }
+    let(:application_date) { Date.new(2026, 8, 20) }
+    # Different month from the anchor, so the carried months cannot have come from this field.
+    let(:certification_date) { Date.new(2026, 2, 3) }
+    let(:expected_start) { application_date.beginning_of_month << lookback_period }
+    let(:expected_end) { application_date.beginning_of_month << 1 }
 
     let(:params) do
       build(
@@ -72,7 +96,7 @@ RSpec.describe Certifications::RequirementParams do
       expect(requirements.months_that_can_be_certified.max).to eq expected_end
     end
 
-    it "produces a continuous lookback period ending the month before the certification month" do
+    it "produces a continuous lookback period ending the month before the application month" do
       lookback = requirements.continuous_lookback_period
 
       expect(lookback.start).to eq expected_start
@@ -81,11 +105,12 @@ RSpec.describe Certifications::RequirementParams do
   end
 
   describe "#to_requirements certification period bounds" do
-    subject(:requirements) { params.to_requirements }
+    subject(:requirements) { params.to_requirements(application_date:) }
 
     # Coverage runs Jan to Jun and the renewal is requested in May, so the period
     # supplied is the currently active one, not the upcoming one.
-    let(:certification_date) { Date.new(2026, 5, 20) }
+    let(:application_date) { Date.new(2026, 5, 20) }
+    let(:certification_date) { Date.new(2026, 2, 3) }
     let(:params) do
       build(
         :certification_certification_requirement_params, :with_direct_params,
@@ -123,12 +148,13 @@ RSpec.describe Certifications::RequirementParams do
     # as its type dispatch. Validating here is what production actually does.
     subject(:requirements) do
       params.valid?
-      params.to_requirements
+      params.to_requirements(application_date:)
     end
 
-    # Sits well away from today, so anchoring on the certification date is
-    # distinguishable from anchoring on the day the request is processed.
-    let(:certification_date) { Date.new(2026, 11, 20) }
+    # Both sit well away from today, so a due date anchored on either is distinguishable from one
+    # anchored on the processing date.
+    let(:application_date) { Date.new(2026, 11, 20) }
+    let(:certification_date) { Date.new(2026, 2, 3) }
 
     around { |example| freeze_time { example.run } }
 

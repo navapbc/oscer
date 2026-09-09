@@ -27,13 +27,16 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
     set_params_for_type(certification_type)
   end
 
-  def to_requirements
+  # Keep the anchor an argument. RequirementParams is a union member whose valid? is type dispatch
+  # (UnionObject#new), and the application date is not in the nested requirements hash, so
+  # validating it here would match neither member. CreateRequest validates it.
+  def to_requirements(application_date:)
     Certifications::Requirements.new({
       "certification_date": certification_date,
       "certification_period_start": certification_period_start,
       "certification_period_end": certification_period_end,
       "certification_type": certification_type,
-      "months_that_can_be_certified": months_that_can_be_certified,
+      "months_that_can_be_certified": months_that_can_be_certified(application_date),
       "number_of_months_to_certify": number_of_months_to_certify,
       "due_date": due_date,
       "region": region,
@@ -41,9 +44,11 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
     })
   end
 
-  # Excludes the certification month, which is still in progress.
-  def months_that_can_be_certified
-    lookback_period.times.map { |i| certification_date.beginning_of_month << (i + 1) }
+  # Excludes the application month, which is still in progress.
+  # TODO: recertifications should count forward from certification_period_start rather than back
+  # from here. Deferred until the certification period contract is defined.
+  def months_that_can_be_certified(application_date)
+    lookback_period.times.map { |i| application_date.beginning_of_month << (i + 1) }
   end
 
   private

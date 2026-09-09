@@ -41,6 +41,8 @@ RSpec.describe Certifications::Requirements do
   end
 
   describe "supplied period bounds" do
+    # Different month from the "2026-05-20" the examples send, so a wrong anchor would show.
+    let(:application_date) { Date.new(2026, 8, 20) }
     let(:bounds) do
       {
         "certification_period_start" => "2026-01-01",
@@ -60,7 +62,9 @@ RSpec.describe Certifications::Requirements do
       expect(input.certification_period_start).to eq Date.new(2026, 1, 1)
     end
 
-    it "survives a parameter-shaped request" do
+    # Load-bearing: this hash carries no application date, and UnionObject#new dispatches on
+    # valid?, so presence-validating application_date on RequirementParams would break it.
+    it "survives a parameter-shaped request, which carries no application date" do
       input = Api::Certifications::RequirementsOrParamsInput.new(
         bounds.merge(
           "certification_date" => "2026-05-20",
@@ -71,7 +75,25 @@ RSpec.describe Certifications::Requirements do
       )
 
       expect(input).to be_a(Certifications::RequirementParams)
-      expect(input.to_requirements.certification_period_start).to eq Date.new(2026, 1, 1)
+      expect(input.to_requirements(application_date:).certification_period_start).to eq Date.new(2026, 1, 1)
+    end
+
+    # A nested application date is dropped by new_filtered; the anchor comes from the top level.
+    # Guards against promoting it to an attribute, which would put it into the union dispatch.
+    it "ignores an application date nested inside the requirements hash" do
+      input = Api::Certifications::RequirementsOrParamsInput.new(
+        bounds.merge(
+          "certification_date" => "2026-05-20",
+          "application_date" => "2020-01-01",
+          "lookback_period" => 6,
+          "number_of_months_to_certify" => 3,
+          "due_period_days" => 30
+        )
+      )
+
+      expect(input).to be_a(Certifications::RequirementParams)
+      expect(input.to_requirements(application_date:).months_that_can_be_certified.max)
+        .to eq(application_date.beginning_of_month << 1)
     end
 
     it "survives batch upload input" do
@@ -79,7 +101,8 @@ RSpec.describe Certifications::Requirements do
         bounds.merge(
           "certification_date" => "2026-05-20",
           "certification_type" => "recertification"
-        )
+        ),
+        application_date: application_date
       )
 
       expect(requirements.certification_period_start).to eq Date.new(2026, 1, 1)
