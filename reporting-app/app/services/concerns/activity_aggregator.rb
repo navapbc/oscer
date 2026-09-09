@@ -112,19 +112,6 @@ module ActivityAggregator
     periods
   end
 
-  # Both maps below split +value+ across the calendar months the period touches and return
-  # [start, end, value] triples; they differ only in how the value is apportioned.
-
-  # Apportions by the number of days each month covers.
-  def daily_values_map(period_start, period_end, value)
-    apportioned_values_map(period_start, period_end, value, weight: :daily)
-  end
-
-  # Apportions evenly.
-  def monthly_values_map(period_start, period_end, value)
-    apportioned_values_map(period_start, period_end, value, weight: :monthly)
-  end
-
   # Apportions several named values across one set of month periods using the same weights, so a
   # submission carrying both hours and gross_income divides both along the same month boundaries.
   # Returns [start, end, {name => share}] triples.
@@ -163,24 +150,6 @@ module ActivityAggregator
   # cannot drift, and let callers cast to Float for display.
   def decimal_sum(rows, attribute)
     rows.sum(BigDecimal("0")) { |row| BigDecimal((row.public_send(attribute) || 0).to_s) }
-  end
-
-  def apportioned_values_map(period_start, period_end, value, weight:)
-    whole_period = [ [ period_start, period_end, value ] ]
-    months = month_periods(period_start, period_end)
-
-    # Malformed input (blank value or dates, reversed period) goes to the model as-is
-    # so it raises RecordInvalid rather than failing in the arithmetic below.
-    return whole_period if value.blank? || months.size <= 1
-
-    shares = apportioned_shares(value, month_weights(months, weight))
-    entries = months.zip(shares).map do |(current_period_start, current_period_end), share|
-      [ current_period_start, current_period_end, share ]
-    end
-
-    # A share too small to survive rounding would fail the models' greater-than-zero
-    # validations; drop it and let the running total roll it into the next month.
-    entries.reject { |_, _, share| share.zero? }.presence || whole_period
   end
 
   def month_weights(months, weight)
