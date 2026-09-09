@@ -431,23 +431,22 @@ RSpec.describe "/api/certifications", type: :request do
         cert = Certification.find(response.parsed_body[:id])
         expect(cert.member_data).to eq(member_data)
         expect(cert.member_data.activities).not_to be_nil
-        expect(cert.member_data.activities.first.type).to eq("hourly")
         expect(cert.member_data.activities.first.category).to eq("community_service")
         expect(cert.member_data.activities.first.hours).to eq(20)
+        expect(cert.member_data.activities.first.gross_income).to be_nil
       end
     end
 
-    context "with activities that create ExternalHourlyActivity records" do
+    context "with activities that create ExternalActivity records" do
       let(:member_id) { "member-789" }
       let(:latest_certifiable_month) { Date.new(2025, 12, 25) }
 
-      it "creates ExternalHourlyActivity records for hourly activities" do
+      it "creates hours-bearing ExternalActivity records for hourly activities" do
         member_data = build(:certification_member_data,
           :with_full_name,
           :with_account_email,
           activities: [
             {
-              "type" => "hourly",
               "category" => "employment",
               "hours" => 40,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -467,12 +466,12 @@ RSpec.describe "/api/certifications", type: :request do
             params: params,
             headers: auth_headers(params),
             as: :json
-        }.to change(ExternalHourlyActivity, :count).from(0).to(1)
+        }.to change(ExternalActivity.with_hours, :count).from(0).to(1)
           .and change(Certification, :count).from(0).to(1)
 
         expect(response).to have_http_status(:created)
 
-        activity = ExternalHourlyActivity.last
+        activity = ExternalActivity.with_hours.sole
         expect(activity.member_id).to eq(member_id)
         expect(activity.category).to eq("employment")
         expect(activity.hours).to eq(40)
@@ -480,13 +479,12 @@ RSpec.describe "/api/certifications", type: :request do
         expect(activity.source_id).to be_nil
       end
 
-      it "creates ExternalHourlyActivity records for education activities reporting credit hours" do
+      it "creates hours-bearing ExternalActivity records for education activities reporting credit hours" do
         member_data = build(:certification_member_data,
           :with_full_name,
           :with_account_email,
           activities: [
             {
-              "type" => "hourly",
               "category" => "education",
               "credit_hours" => 9,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -505,11 +503,11 @@ RSpec.describe "/api/certifications", type: :request do
             params: params,
             headers: auth_headers(params),
             as: :json
-        }.to change(ExternalHourlyActivity, :count).from(0).to(1)
+        }.to change(ExternalActivity.with_hours, :count).from(0).to(1)
 
         expect(response).to have_http_status(:created)
 
-        activity = ExternalHourlyActivity.last
+        activity = ExternalActivity.with_hours.sole
         expect(activity.category).to eq("education")
         expect(activity.hours).to eq(9 * Certifications::MemberData::Activity::CREDIT_HOURS_MULTIPLIER)
       end
@@ -520,7 +518,6 @@ RSpec.describe "/api/certifications", type: :request do
           :with_account_email,
           activities: [
             {
-              "type" => "hourly",
               "category" => "education",
               "enrollment_status" => "full_time",
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -542,19 +539,18 @@ RSpec.describe "/api/certifications", type: :request do
         }.to change(Certification, :count).from(0).to(1)
 
         expect(response).to have_http_status(:created)
-        expect(ExternalHourlyActivity.count).to be_zero
+        expect(ExternalActivity.with_hours.count).to be_zero
 
         activity = Certification.find(response.parsed_body[:id]).member_data.activities.first
         expect(activity.enrollment_status).to eq("full_time")
       end
 
-      it "creates ExternalIncomeActivity records for income activities and not ExternalHourlyActivity" do
+      it "creates an income-only ExternalActivity for an income activity" do
         member_data = build(:certification_member_data,
           :with_full_name,
           :with_account_email,
           activities: [
             {
-              "type" => "income",
               "category" => "employment",
               "gross_income" => 620,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -575,27 +571,26 @@ RSpec.describe "/api/certifications", type: :request do
             params: params,
             headers: auth_headers(params),
             as: :json
-        }.to change(ExternalIncomeActivity, :count).from(0).to(1)
+        }.to change(ExternalActivity.with_income, :count).from(0).to(1)
           .and(change(Certification, :count).from(0).to(1))
 
         expect(response).to have_http_status(:created)
-        expect(ExternalHourlyActivity.where(member_id: member_id)).to be_empty
+        expect(ExternalActivity.with_hours.where(member_id: member_id)).to be_empty
 
-        expect(ExternalIncomeActivity.pluck(:member_id, :category, :gross_income, :source_type, :period_start, :period_end)).to eq(
+        expect(ExternalActivity.with_income.pluck(:member_id, :category, :gross_income, :source_type, :period_start, :period_end)).to eq(
           [
             [ member_id, "employment", 620, "api", latest_certifiable_month.beginning_of_month, latest_certifiable_month.end_of_month ]
           ]
         )
-        expect(ExternalIncomeActivity.pick(:metadata)).to include("employer" => "Acme Corp")
+        expect(ExternalActivity.with_income.pick(:metadata)).to include("employer" => "Acme Corp")
       end
 
-      it "creates ExternalHourlyActivity for hourly and ExternalIncomeActivity for income in mixed types" do
+      it "creates one hours-only and one income-only row for two separate activities" do
         member_data = build(:certification_member_data,
           :with_full_name,
           :with_account_email,
           activities: [
             {
-              "type" => "hourly",
               "category" => "employment",
               "hours" => 40,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -603,7 +598,6 @@ RSpec.describe "/api/certifications", type: :request do
               "verification_status" => "verified"
             },
             {
-              "type" => "income",
               "category" => "employment",
               "gross_income" => 580,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -623,14 +617,56 @@ RSpec.describe "/api/certifications", type: :request do
             params: params,
             headers: auth_headers(params),
             as: :json
-        }.to change(ExternalHourlyActivity, :count).from(0).to(1)
-          .and change(ExternalIncomeActivity, :count).from(0).to(1)
+        }.to change(ExternalActivity.with_hours, :count).from(0).to(1)
+          .and change(ExternalActivity.with_income, :count).from(0).to(1)
 
         expect(response).to have_http_status(:created)
 
-        activity = ExternalHourlyActivity.last
+        activity = ExternalActivity.with_hours.sole
         expect(activity.hours).to eq(40)
-        expect(ExternalIncomeActivity.last.gross_income).to eq(580)
+        expect(ExternalActivity.with_income.sole.gross_income).to eq(580)
+      end
+
+      # The point of the consolidation: a state reporting hours and earnings for one job over one
+      # period gets a single record, not a pair that nothing links together.
+      it "creates one record carrying both values for an activity reporting hours and income" do
+        member_data = build(:certification_member_data,
+          :with_full_name,
+          :with_account_email,
+          activities: [
+            {
+              "category" => "employment",
+              "hours" => 40,
+              "gross_income" => 580,
+              "period_start" => latest_certifiable_month.beginning_of_month,
+              "period_end" => latest_certifiable_month.end_of_month,
+              "source" => "api",
+              "employer" => "Acme Corp",
+              "verification_status" => "verified"
+            }
+          ]
+        )
+        params = valid_json_request_attributes.merge({
+          member_id: member_id,
+          member_data: member_data.as_json
+        })
+
+        expect {
+          post api_certifications_url,
+            params: params,
+            headers: auth_headers(params),
+            as: :json
+        }.to change(ExternalActivity, :count).from(0).to(1)
+
+        expect(response).to have_http_status(:created)
+
+        activity = ExternalActivity.sole
+        expect(activity.hours).to eq(40)
+        expect(activity.gross_income).to eq(580)
+        expect(activity.metadata).to include("employer" => "Acme Corp")
+        # One row, counted by both tracks.
+        expect(ExternalActivity.with_hours.count).to eq(1)
+        expect(ExternalActivity.with_income.count).to eq(1)
       end
 
       it "creates CertificationOrigin record with api source_type" do
@@ -639,7 +675,6 @@ RSpec.describe "/api/certifications", type: :request do
           :with_account_email,
           activities: [
             {
-              "type" => "hourly",
               "category" => "employment",
               "hours" => 40,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -667,13 +702,12 @@ RSpec.describe "/api/certifications", type: :request do
         expect(origin.source_id).to be_nil
       end
 
-      it "rolls back certification when ExternalHourlyActivity validation fails" do
+      it "rolls back certification when ExternalActivity validation fails" do
         member_data = build(:certification_member_data,
           :with_full_name,
           :with_account_email,
           activities: [
             {
-              "type" => "hourly",
               "category" => "employment",
               "hours" => -10, # Invalid: negative hours
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -695,8 +729,8 @@ RSpec.describe "/api/certifications", type: :request do
         }.not_to change(Certification, :count)
 
         expect(response).to have_http_status(:unprocessable_content)
-        expect(ExternalHourlyActivity.count).to eq(0)
-        expect(ExternalIncomeActivity.count).to eq(0)
+        expect(ExternalActivity.with_hours.count).to eq(0)
+        expect(ExternalActivity.with_income.count).to eq(0)
         expect(CertificationOrigin.count).to eq(0)
       end
 
@@ -706,7 +740,6 @@ RSpec.describe "/api/certifications", type: :request do
           :with_account_email,
           activities: [
             {
-              "type" => "income",
               "category" => "employment",
               "gross_income" => 500,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -715,7 +748,6 @@ RSpec.describe "/api/certifications", type: :request do
               "verification_status" => "verified"
             },
             {
-              "type" => "income",
               "category" => "employment",
               "gross_income" => 500,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -738,17 +770,16 @@ RSpec.describe "/api/certifications", type: :request do
         }.to change(Certification, :count).from(0).to(1)
 
         expect(response).to have_http_status(:created)
-        expect(ExternalIncomeActivity.count).to eq(1)
+        expect(ExternalActivity.with_income.count).to eq(1)
         expect(CertificationOrigin.count).to eq(1)
       end
 
-      it "creates multiple ExternalHourlyActivity records for multiple hourly activities" do
+      it "creates multiple hours-bearing ExternalActivity records for multiple hourly activities" do
         member_data = build(:certification_member_data,
           :with_full_name,
           :with_account_email,
           activities: [
             {
-              "type" => "hourly",
               "category" => "employment",
               "hours" => 40,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -756,7 +787,6 @@ RSpec.describe "/api/certifications", type: :request do
               "verification_status" => "verified"
             },
             {
-              "type" => "hourly",
               "category" => "community_service",
               "hours" => 10,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -775,22 +805,22 @@ RSpec.describe "/api/certifications", type: :request do
             params: params,
             headers: auth_headers(params),
             as: :json
-        }.to change(ExternalHourlyActivity, :count).from(0).to(2)
+        }.to change(ExternalActivity.with_hours, :count).from(0).to(2)
 
         expect(response).to have_http_status(:created)
 
-        activities = ExternalHourlyActivity.where(member_id: member_id).order(:category)
+        activities = ExternalActivity.with_hours.where(member_id: member_id).order(:category)
         expect(activities.count).to eq(2)
         expect(activities.first.category).to eq("community_service")
         expect(activities.last.category).to eq("employment")
       end
     end
 
-    context "with household data that creates ExternalIncomeActivity records" do
+    context "with household data that creates ExternalActivity records" do
       let(:member_id) { "member-789" }
       let(:latest_certifiable_month) { Date.new(2025, 12, 25) }
 
-      it "creates ExternalIncomeActivity records for household income and not ExternalHourlyActivity" do
+      it "creates an income-only ExternalActivity for household income" do
         member_data = build(:certification_member_data,
           :with_full_name,
           :with_account_email
@@ -827,13 +857,13 @@ RSpec.describe "/api/certifications", type: :request do
             params: params,
             headers: auth_headers(params),
             as: :json
-        }.to change(ExternalIncomeActivity, :count).from(0).to(1)
+        }.to change(ExternalActivity.with_income, :count).from(0).to(1)
           .and(change(Certification, :count).from(0).to(1))
 
         expect(response).to have_http_status(:created)
-        expect(ExternalHourlyActivity.where(member_id: member_id)).to be_empty
+        expect(ExternalActivity.with_hours.where(member_id: member_id)).to be_empty
 
-        expect(ExternalIncomeActivity.pluck(:member_id, :category, :gross_income, :source_type, :period_start, :period_end)).to eq(
+        expect(ExternalActivity.with_income.pluck(:member_id, :category, :gross_income, :source_type, :period_start, :period_end)).to eq(
           [
             [ member_id, "household", 620, "api", latest_certifiable_month.beginning_of_month, latest_certifiable_month.end_of_month ]
           ]
@@ -1033,7 +1063,6 @@ RSpec.describe "/api/certifications", type: :request do
           member_data: {
             activities: [
               {
-                "type": "hourly",
                 "category": "community_service"
                 # missing required fields: hours, period_start, period_end
               }
@@ -1055,7 +1084,6 @@ RSpec.describe "/api/certifications", type: :request do
           member_data: {
             activities: [
               {
-                "type": "hourly",
                 "category": "employment",
                 "credit_hours": 9, # only education activities may report credit hours instead of hours
                 "period_start": Date.today.to_s,
@@ -1076,12 +1104,38 @@ RSpec.describe "/api/certifications", type: :request do
         expect(response).to match_openapi_doc(OPENAPI_DOC)
       end
 
+      # Replaces the old "hourly activity must report hours" rule, which needed a type to key on.
+      it "invalid activities - reports neither hours nor gross income" do
+        params = valid_json_request_attributes.merge({
+          member_data: {
+            activities: [
+              {
+                "category": "employment",
+                "period_start": Date.today.to_s,
+                "period_end": Date.today.to_s,
+                "verification_status": "verified"
+              }
+            ]
+          }
+        })
+        post api_certifications_url,
+             params: params,
+             headers: auth_headers(params),
+             as: :json
+
+        expect(response).to be_client_error
+        expect(response.parsed_body["errors"])
+          .to include(a_hash_including("field" => "member_data.activities[0]",
+                                       "error" => "hours_or_gross_income_required"))
+        expect(ExternalActivity.count).to be_zero
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
       it "invalid activities - credit hours not greater than zero" do
         params = valid_json_request_attributes.merge({
           member_data: {
             activities: [
               {
-                "type": "hourly",
                 "category": "education",
                 "credit_hours": 0,
                 "period_start": Date.today.to_s,
@@ -1106,7 +1160,6 @@ RSpec.describe "/api/certifications", type: :request do
           member_data: {
             activities: [
               {
-                type: "hourly",
                 category: "employment",
                 hours: 20,
                 enrollment_status: "full_time",
@@ -1132,7 +1185,6 @@ RSpec.describe "/api/certifications", type: :request do
           member_data: {
             activities: [
               {
-                type: "hourly",
                 category: "education",
                 enrollment_status: "part_time",
                 period_start: Date.today.to_s,
@@ -1157,7 +1209,6 @@ RSpec.describe "/api/certifications", type: :request do
           member_data: {
             activities: [
               {
-                "type": "hourly",
                 "category": "employment",
                 "hours": 20,
                 "period_start": Date.today.to_s,
@@ -1181,7 +1232,6 @@ RSpec.describe "/api/certifications", type: :request do
           member_data: {
             activities: [
               {
-                "type": "hourly",
                 "category": "community_service",
                 "hours": 20,
                 "period_start": Date.today.to_s,
@@ -1230,7 +1280,6 @@ RSpec.describe "/api/certifications", type: :request do
           member_data: {
             activities: [
               {
-                "type": "hourly",
                 "category": "invalid_category",
                 "hours": 20,
                 "period_start": Date.today.to_s,
@@ -1255,7 +1304,6 @@ RSpec.describe "/api/certifications", type: :request do
           member_data: {
             activities: [
               {
-                "type": "income",
                 "category": "employment",
                 "period_start": Date.today.to_s,
                 "period_end": Date.today.to_s,
@@ -1290,7 +1338,7 @@ RSpec.describe "/api/certifications", type: :request do
                params: params,
                headers: auth_headers(params),
                as: :json
-        }.not_to change(ExternalIncomeActivity, :count)
+        }.not_to change(ExternalActivity.with_income, :count)
 
         expect(response).to be_client_error
         expect(response.parsed_body["errors"]).to include(

@@ -17,9 +17,9 @@ Community engagement requirements (CER) under H.R. 1 require Medicaid members to
 ---
 
 ## Compliance recalculation (open cases)
-When [`ExternalIncomeActivityService#create_entry`](../../../reporting-app/app/services/external_income_activity_service.rb) persists a new `ExternalIncomeActivity` row with **`recalculate_income_compliance: true`** (the default), OSCER looks up the member’s **open** [`CertificationCase`](../../../reporting-app/app/models/certification_case.rb) and runs [`IncomeComplianceDeterminationService.calculate`](../../../reporting-app/app/services/income_compliance_determination_service.rb) for that case’s certification. That records an automated **income-based** determination without publishing CE workflow events; when the outcome is compliant, the case is **closed** (same as hours silent recalculation). `CertificationCase#record_income_compliance` accepts **`close_on_compliant`** for future opt-out if product changes.
+When [`ExternalActivityService`](../../../reporting-app/app/services/external_activity_service.rb) persists a new `ExternalActivity` row with **`recalculate_compliance: true`** (the default), OSCER looks up the member’s **open** [`CertificationCase`](../../../reporting-app/app/models/certification_case.rb) and records **exactly one** automated determination for that case’s certification — hours first, falling through to income only when hours fall short. No CE workflow events are published; when the outcome is compliant, the case is **closed**. `CertificationCase#record_income_compliance` accepts **`close_on_compliant`** for future opt-out if product changes (`record_hours_compliance` has no such keyword today).
 
-During **certification creation**, [`Certifications::CreationService`](../../../reporting-app/app/services/certifications/creation_service.rb) passes **`recalculate_income_compliance: false`** so intake does not run this path before the case exists (or risk attributing rows to the wrong open case). The combined external CE step after `CertificationCreated` still uses aggregated income for the initial assessment.
+During **certification creation**, [`Certifications::CreationService`](../../../reporting-app/app/services/certifications/creation_service.rb) passes **`recalculate_compliance: false`** so intake does not run this path before the case exists (or risk attributing rows to the wrong open case). The combined external CE step after `CertificationCreated` still uses aggregated income for the initial assessment.
 
 ---
 
@@ -67,25 +67,28 @@ OSCER does not pull or query external systems. States or their systems **send** 
 flowchart TB
     subgraph Intake
         CertAPI[Api::CertificationsController]
-        IncomeService[IncomeService]
+        ExternalActivityService[ExternalActivityService]
     end
 
     subgraph Data
-        ExternalIncomeActivity[ExternalIncomeActivity]
+        ExternalActivity[ExternalActivity]
         Determination[Determination]
     end
 
     subgraph DeterminationLayer
-        IncomeComplianceService[IncomeComplianceDeterminationService]
+        HoursComplianceDeterminationService[HoursComplianceDeterminationService]
+        IncomeComplianceDeterminationService[IncomeComplianceDeterminationService]
     end
 
     subgraph Presentation
         MemberStatus[MemberStatusService]
     end
 
-    CertAPI --> ExternalIncomeActivityService
-    ExternalIncomeActivityService --> ExternalIncomeActivity
-    ExternalIncomeActivityService --> IncomeComplianceDeterminationService
+    CertAPI --> ExternalActivityService
+    ExternalActivityService --> ExternalActivity
+    ExternalActivityService --> HoursComplianceDeterminationService
+    ExternalActivityService --> IncomeComplianceDeterminationService
+    HoursComplianceDeterminationService --> Determination
     IncomeComplianceDeterminationService --> Determination
     MemberStatus --> Determination
 ```
@@ -116,6 +119,23 @@ flowchart TB
 - Determination logic can aggregate hours and income separately, then apply CER rules.
 
 **Tradeoff:** Two intake paths and aggregation logic. Mitigated by reusing controller, service, and job patterns from the hours epic.
+
+### Superseded 2026-09-03: consolidated into a single `external_activities` table
+
+**Option B was reversed in favour of Option A.** `ExternalHourlyActivity` and `ExternalIncomeActivity` are replaced by one `ExternalActivity` model over one `external_activities` table, where a row carries `hours`, `gross_income`, or **both**.
+
+**What the parallel structure could not express:** a state reports hours and earnings for **the same job over the same period**. Two tables force that single activity to be split across them with nothing linking the halves — the pairing is simply lost. The predicted cost of Option A ("nullable or overloaded columns") turned out to be cheaper than that: the two values are individually optional, "at least one" is enforced by a model validation plus a DB check constraint, and `with_hours` / `with_income` scopes keep the two compliance tracks separated at every read.
+
+The predicted tradeoff of Option B also came due in full: two near-identical tables with the same four index shapes, two models with identical scopes, two mirror-image intake services, two sets of fetch helpers, and two inline query duplications each in `CertificationCasesController` and `MemberDashboardCompliance`.
+
+**What changed:**
+
+- **Model** — `ExternalActivity`, with the union of both models' categories (including `household`) and source types (`api`, `batch_upload`). The hours ceiling became period-relative (`days × 24`) rather than a flat annual 8760, so implausible hours are caught even well under a year's worth. `reported_at` is now required for every row.
+- **Intake** — one `ExternalActivityService`. One fingerprint covers both values. The multi-month split rule depends on what the submission carries: with hours present both columns apportion **by days**; income-only keeps the existing rule (evenly across whole calendar months, by days otherwise). `ActivityAggregator#apportioned_multi_values_map` divides both values along the same month boundaries — apportioning them separately would drop a month for one value and not the other.
+- **Compliance recalculation** — each save records **exactly one** determination: hours first, falling through to income only when hours fall short. The two `.calculate` methods aggregate *and* record, so calling both would write two rows and let insertion order decide member status.
+- **API** — `member_data.activities` drops its `type` discriminator; which values are present decides what is stored. One activity reporting both produces one record per month carrying both. `source` is required whenever `gross_income` is supplied. Two rules loosened as a consequence: `credit_hours` and `enrollment_status` are now permitted on any education activity, and "declared hourly but reported no hours" becomes the weaker "must report at least one value".
+- **Old tables retained.** `external_hourly_activities` and `external_income_activities` still exist, and `ExternalHourlyActivity` / `ExternalIncomeActivity` remain as **read-only stubs** (`readonly?` returns true) so pre-consolidation rows stay queryable without anything being able to write data the calculations would never see. Backfilling them into `external_activities` and dropping them is a separate task; until it runs, rows written before the cutover do not count toward compliance.
+- **Determination payloads** keep the `external_hourly_activity_ids` / `external_income_activity_ids` keys. They are audit breadcrumbs that nothing dereferences, so renaming would mean a jsonb migration over historical rows for no gain — but their referent is time-dependent: ids written before the cutover point at the superseded tables.
 
 ---
 
@@ -214,7 +234,7 @@ end
 
 ### Aggregation
 
-1. Sum `gross_income` from all `ExternalIncomeActivity` records within certification lookback.
+1. Sum `gross_income` from all income-bearing `ExternalActivity` records within certification lookback.
 2. Include approved manual income activities (if present).
 3. Compare total to threshold.
 
@@ -255,7 +275,7 @@ Mirror hours: income is saved **before** certification creation, and the busines
 **Flow:**
 
 1. API receives `member_data.activities` with `type: "income"`.
-2. Create `ExternalIncomeActivity` records (before certification).
+2. Create `ExternalActivity` records (before certification).
 3. Create certification → triggers business process.
 4. At `EXTERNAL_COMMUNITY_ENGAGEMENT_CHECK_STEP`, `CertificationBusinessProcess` invokes `CommunityEngagementCheckService.determine(kase)`.
    - Aggregates hours via `HoursComplianceDeterminationService.aggregate_hours_for_certification` and income via `IncomeComplianceDeterminationService.aggregate_income_for_certification`.
@@ -284,7 +304,7 @@ Use `CE_INCOME_THRESHOLD_MONTHLY` (default 580) so states can adjust. Tradeoff: 
 
 ### Source attribution on every record
 
-Store `source_type` and `source_id` on each `ExternalIncomeActivity` for audit. Tradeoff: redundant source data; required for traceability.
+Store `source_type` and `source_id` on each `ExternalActivity` for audit. Tradeoff: redundant source data; required for traceability.
 
 ### Audit trail over hard immutability
 
@@ -292,7 +312,7 @@ Use an **audit trail** to satisfy the business requirement for traceable, trustw
 
 **Rationale:** Strict immutability is difficult to enforce reliably (triggers and hooks can be bypassed; raw SQL, console, or other services may change data). It also blocks legitimate cases: corrections after a bad load, transient states (e.g., pending verification), merges, backfills, or compliance-driven updates. The business need is **traceability**—who changed what, when, and why—plus **origin metadata** (source_type, source_id, reported_at). An audit log provides both and accommodates edge cases.
 
-**Approach:** Record all create/update/delete events for `ExternalIncomeActivity` in an audit store (e.g., `income_audit` or a generic audit table): old/new values, `changed_at`, `changed_by` (user or system), optional reason/context, and origin fields at time of event. Normal flows are append-only (create only); any update or delete goes through a defined process and is always audited. Optionally, model-level guards (e.g., `before_update` / `before_destroy` that raise or log) may be used as defense-in-depth; the primary guarantee is the audit log.
+**Approach:** Record all create/update/delete events for `ExternalActivity` in an audit store (e.g., `income_audit` or a generic audit table): old/new values, `changed_at`, `changed_by` (user or system), optional reason/context, and origin fields at time of event. Normal flows are append-only (create only); any update or delete goes through a defined process and is always audited. Optionally, model-level guards (e.g., `before_update` / `before_destroy` that raise or log) may be used as defense-in-depth; the primary guarantee is the audit log.
 
 **Tradeoff:** Policy-based "do not update in normal flows" instead of technical enforcement. Mitigated by audit, code review, and optional model guards.
 

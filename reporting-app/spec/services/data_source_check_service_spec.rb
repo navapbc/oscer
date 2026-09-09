@@ -61,7 +61,7 @@ RSpec.describe DataSourceCheckService do
 
   def create_external_hourly_activity_for(certification, hours:)
     lookback = certification.certification_requirements.continuous_lookback_period
-    create(:external_hourly_activity,
+    create(:external_activity, :with_hours,
       member_id: certification.member_id,
       period_start: lookback.start.to_date,
       period_end: lookback.start.to_date.end_of_month,

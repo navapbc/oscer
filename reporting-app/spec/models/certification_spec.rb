@@ -203,6 +203,20 @@ RSpec.describe Certification, type: :model do
     end
   end
 
+  describe '#evaluated_month' do
+    it 'returns the first of the month the member applied in' do
+      certification = build(:certification, application_date: Date.new(2026, 1, 15))
+
+      expect(certification.evaluated_month).to eq(Date.new(2026, 1, 1))
+    end
+
+    it 'returns nil when the certification has no application date' do
+      certification = build(:certification, application_date: nil)
+
+      expect(certification.evaluated_month).to be_nil
+    end
+  end
+
   describe 'outcome' do
     let(:certification) { create(:certification) }
 

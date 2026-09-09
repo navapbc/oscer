@@ -67,15 +67,13 @@ components:
                 last: Doe
                 suffix: Jr.
               activities:
-              - type: hourly
-                category: community_service
+              - category: community_service
                 hours: '20'
                 period_start: '2025-08-01'
                 period_end: '2025-08-31'
                 employer: Community Center
                 verification_status: verified
-              - type: hourly
-                category: education
+              - category: education
                 credit_hours: '9'
                 enrollment_status: full_time
                 period_start: '2025-08-01'
@@ -409,15 +407,12 @@ components:
       required:
       - period_start
       - period_end
-    CertificationMemberDataHourlyActivity:
+    CertificationMemberDataActivity:
       type: object
-      description: Hourly community engagement activity
+      description: 'Community engagement activity. There is no type discriminator:
+        which values are present decides what is recorded. An activity may report
+        hours, gross income, or both'
       properties:
-        type:
-          type: string
-          enum:
-          - hourly
-          description: Hourly activity
         category:
           type: string
           enum:
@@ -432,7 +427,8 @@ components:
           - 'null'
           format: decimal
           description: Number of hours for the activity; required unless the activity
-            is an education activity reporting credit_hours or enrollment_status
+            reports gross_income, or is an education activity reporting credit_hours
+            or enrollment_status
         credit_hours:
           type:
           - string
@@ -453,92 +449,35 @@ components:
           description: Enrollment status for an education activity. Permitted only
             on education activities. Enrollment of full_time or half_time meets the
             community engagement requirement on its own, whatever hours are reported
-        period_start:
-          type: string
-          format: date
-          description: Start date of the activity period
-        period_end:
-          type: string
-          format: date
-          description: End date of the activity period
-        employer:
-          type:
-          - string
-          - 'null'
-          description: Employer or organization associated with the activity
-        name:
-          type:
-          - string
-          - 'null'
-          description: Name of the school or organization associated with the activity,
-            where employer does not apply
-        verification_status:
-          type: string
-          enum:
-          - verified
-          - self_attested
-          - pending
-          description: Verification status of the activity; only verified activities
-            count toward the certification
-      required:
-      - type
-      - category
-      - period_start
-      - period_end
-      - verification_status
-      anyOf:
-      - required:
-        - hours
-      - properties:
-          category:
-            const: education
-        required:
-        - credit_hours
-      - properties:
-          category:
-            const: education
-        required:
-        - enrollment_status
-    CertificationMemberDataIncomeActivity:
-      type: object
-      description: Income-based community engagement activity
-      properties:
-        type:
-          type: string
-          enum:
-          - income
-          description: Income activity
-        category:
-          type: string
-          enum:
-          - employment
-          - community_service
-          - education
-          description: The category of activity
         gross_income:
-          type: string
+          type:
+          - string
+          - 'null'
           format: decimal
-          description: Gross income for the pay period
-        period_start:
-          type: string
-          format: date
-          description: Start date of the activity period
-        period_end:
-          type: string
-          format: date
-          description: End date of the activity period
+          description: Gross income for the period. May be reported alongside hours,
+            in which case one record per month is created carrying both values
         source:
-          type: string
+          type:
+          - string
+          - 'null'
           enum:
           - api
-          description: Income source type; certification API intake currently requires
-            api
+          -
+          description: Data source type; required when gross_income is supplied
         reported_at:
           type:
           - string
           - 'null'
           format: date-time
-          description: When the income data was reported
+          description: When the external source reported this data
+        period_start:
+          type: string
+          format: date
+          description: Start date of the activity period
+        period_end:
+          type: string
+          format: date
+          description: End date of the activity period
         employer:
           type:
           - string
@@ -560,17 +499,25 @@ components:
           description: Verification status of the activity; only verified activities
             count toward the certification
       required:
-      - type
       - category
-      - gross_income
       - period_start
       - period_end
-      - source
       - verification_status
-    CertificationMemberDataActivity:
-      oneOf:
-      - "$ref": "#/components/schemas/CertificationMemberDataHourlyActivity"
-      - "$ref": "#/components/schemas/CertificationMemberDataIncomeActivity"
+      anyOf:
+      - required:
+        - hours
+      - required:
+        - gross_income
+      - properties:
+          category:
+            const: education
+        required:
+        - credit_hours
+      - properties:
+          category:
+            const: education
+        required:
+        - enrollment_status
     CertificationMemberDataExemption:
       type: object
       description: Data point for assessing if an exemption applies
@@ -811,8 +758,7 @@ components:
             last: Doe
             suffix: Jr.
           activities:
-          - type: hourly
-            category: community_service
+          - category: community_service
             hours: '80'
             period_start: '2025-08-01'
             period_end: '2025-08-31'
@@ -849,73 +795,73 @@ components:
       required:
       - status
   responses:
-    1d11eb189bf138adcc6118aa03024266:
+    bc7c38dbb4e2916d88f9b88eb44fa22d:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    88788142f7cde6114eafcf01c1a875bf:
+    9afdb3726a33dc35e26974a0cb274780:
       description: Accepted
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
-    10d5d916650c69da15f8c7681a0f7d0a:
+    d15cbbb6d16291b24ee49dacef39672c:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    866cda7ee7bb56ab7f407786d4ed0695:
+    02fdf556205c7d87ca688358eddb1cc2:
       description: Created Certification.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    '0009c1f2c57cfc4ccf580fb86487c5d9':
+    3bbbb103b123faca7637fa1bc8b682b1:
       description: Existing Certification returned for a duplicate request.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    aaf6317dae1abac0058eb541697a5f0f:
+    502356f1b87aa203ffd31b5ed0cc8f77:
       description: Accepted
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/d41d8cd98f00b204e9800998ecf8427e"
-    c3020d20994dbd765aea697b8f38e107:
+    b8b8f820b57a6a75922e1398f6a6be9c:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    28a28e72b66b09ac7a79e7a74e51ce26:
+    978d6177e0d2ccfbd093ca1d896bf5a4:
       description: User error.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    fccae5435dbe2411dd9be2a83b258dd4:
+    13d18b977535cf849df9fadf399b7424:
       description: A Certification
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/CertificationResponseBody"
-    e295118dba2900a4260c80a98ee4b19c:
+    6da94a0dfecc83dff4623a39383d6229:
       description: Not found.
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ErrorResponseBody"
-    6da89506e463b70296e04fed15ce4b14:
+    c91c560fde58727adc71cfc80c8ab293:
       description: Response
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/ece4f2c15f241af4536e1132d15a279a"
-    0dce8d376b615135191f32270f4701ce:
+    f573b9a1be171e8a7818fba6d6ca7aed:
       description: Response
       content:
         application/json:
@@ -947,7 +893,7 @@ components:
         type: string
       style: simple
   requestBodies:
-    b91aac4a97afee8dc32086895b8031c7:
+    775e6784240822e9287ef6cd1b591b2a:
       description: The Certification data.
       content:
         application/json:
@@ -1040,11 +986,11 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/1d11eb189bf138adcc6118aa03024266"
+          "$ref": "#/components/responses/bc7c38dbb4e2916d88f9b88eb44fa22d"
         '202':
-          "$ref": "#/components/responses/88788142f7cde6114eafcf01c1a875bf"
+          "$ref": "#/components/responses/9afdb3726a33dc35e26974a0cb274780"
         '404':
-          "$ref": "#/components/responses/10d5d916650c69da15f8c7681a0f7d0a"
+          "$ref": "#/components/responses/d15cbbb6d16291b24ee49dacef39672c"
       security:
       - hmac: []
       deprecated: false
@@ -1058,18 +1004,18 @@ paths:
       parameters:
       - "$ref": "#/components/parameters/4f7cce241e43c9b4680b65e2612ab599"
       requestBody:
-        "$ref": "#/components/requestBodies/b91aac4a97afee8dc32086895b8031c7"
+        "$ref": "#/components/requestBodies/775e6784240822e9287ef6cd1b591b2a"
       responses:
         '201':
-          "$ref": "#/components/responses/866cda7ee7bb56ab7f407786d4ed0695"
+          "$ref": "#/components/responses/02fdf556205c7d87ca688358eddb1cc2"
         '200':
-          "$ref": "#/components/responses/0009c1f2c57cfc4ccf580fb86487c5d9"
+          "$ref": "#/components/responses/3bbbb103b123faca7637fa1bc8b682b1"
         '202':
-          "$ref": "#/components/responses/aaf6317dae1abac0058eb541697a5f0f"
+          "$ref": "#/components/responses/502356f1b87aa203ffd31b5ed0cc8f77"
         '400':
-          "$ref": "#/components/responses/c3020d20994dbd765aea697b8f38e107"
+          "$ref": "#/components/responses/b8b8f820b57a6a75922e1398f6a6be9c"
         '422':
-          "$ref": "#/components/responses/28a28e72b66b09ac7a79e7a74e51ce26"
+          "$ref": "#/components/responses/978d6177e0d2ccfbd093ca1d896bf5a4"
       security:
       - hmac: []
       deprecated: false
@@ -1084,9 +1030,9 @@ paths:
       - "$ref": "#/components/parameters/49e46dd8af57e26752938ebb0d0ec979"
       responses:
         '200':
-          "$ref": "#/components/responses/fccae5435dbe2411dd9be2a83b258dd4"
+          "$ref": "#/components/responses/13d18b977535cf849df9fadf399b7424"
         '404':
-          "$ref": "#/components/responses/e295118dba2900a4260c80a98ee4b19c"
+          "$ref": "#/components/responses/6da94a0dfecc83dff4623a39383d6229"
       security:
       - hmac: []
       deprecated: false
@@ -1121,9 +1067,9 @@ paths:
       operationId: GET_api_health
       responses:
         '200':
-          "$ref": "#/components/responses/6da89506e463b70296e04fed15ce4b14"
+          "$ref": "#/components/responses/c91c560fde58727adc71cfc80c8ab293"
         '503':
-          "$ref": "#/components/responses/0dce8d376b615135191f32270f4701ce"
+          "$ref": "#/components/responses/f573b9a1be171e8a7818fba6d6ca7aed"
       security:
       - hmac: []
       deprecated: false

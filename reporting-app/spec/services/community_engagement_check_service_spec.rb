@@ -18,7 +18,7 @@ RSpec.describe CommunityEngagementCheckService do
     period_start = lookback.start.to_date
     period_end = lookback.start.to_date.end_of_month
 
-    create(:external_hourly_activity, member_id: certification.member_id,
+    create(:external_activity, :with_hours, member_id: certification.member_id,
            period_start: period_start, period_end: period_end, **attrs)
   end
 
@@ -33,7 +33,6 @@ RSpec.describe CommunityEngagementCheckService do
       certification_requirements: requirements,
       member_data: build(:certification_member_data, activities: [
         {
-          type: "hourly",
           category: "education",
           enrollment_status: enrollment_status,
           period_start: lookback.start.to_date,
@@ -48,7 +47,7 @@ RSpec.describe CommunityEngagementCheckService do
     period_start = lookback.start.to_date
     period_end = lookback.start.to_date.end_of_month
 
-    create(:external_income_activity, member_id: certification.member_id,
+    create(:external_activity, :with_income, member_id: certification.member_id,
            period_start: period_start, period_end: period_end, gross_income: gross_income, **attrs)
   end
 

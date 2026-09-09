@@ -25,12 +25,13 @@ class HoursComplianceDeterminationService
       kase.record_hours_compliance(outcome, hours_data)
     end
 
-    # PUBLIC: Aggregate hours from both ExternalHourlyActivity and approved Activity records
+    # PUBLIC: Aggregate hours from both ExternalActivity and approved Activity records
     # Called by business process notification steps to get hours data for emails.
     #
     # @param certification [Certification]
     # @param application_form [ActivityReportApplicationForm, nil]
-    # @param external_hourly_activities [ActiveRecord::Relation<ExternalHourlyActivity>, Array<ExternalHourlyActivity>, nil]
+    # @param external_hourly_activities [ActiveRecord::Relation<ExternalActivity>, Array<ExternalActivity>, nil]
+    #   Rows carrying hours (a +with_hours+ scope); a row also carrying income is included.
     #   When set, skips fetching external rows again (e.g. staff +#show+ already loaded them).
     # @param member_hour_activity_rows [Array<Activity>, nil] When set, skips
     #   +member_hour_activities_for_certification+ for totals/ids (rows must match +application_form:+ when passed).
@@ -114,7 +115,7 @@ class HoursComplianceDeterminationService
         .min_by { |status| statuses.index(status) || statuses.length }
     end
 
-    # Different logic than +ExternalHourlyActivity.within_period+.
+    # Different logic than +ExternalActivity.within_period+.
     def overlaps_lookback?(activity, lookback)
       return true if lookback&.start.blank? || lookback.end.blank?
       return false if activity.period_start.blank? || activity.period_end.blank?

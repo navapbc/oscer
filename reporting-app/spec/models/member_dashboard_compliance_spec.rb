@@ -42,7 +42,7 @@ RSpec.describe MemberDashboardCompliance do
   end
 
   def create_external_hourly(hours:, category: "employment")
-    create(:external_hourly_activity,
+    create(:external_activity, :with_hours,
            member_id: certification.member_id,
            category: category,
            hours: hours,
@@ -51,7 +51,7 @@ RSpec.describe MemberDashboardCompliance do
   end
 
   def create_external_income(gross_income:, category: "employment", **attrs)
-    create(:external_income_activity,
+    create(:external_activity, :with_income,
            member_id: certification.member_id,
            category: category,
            gross_income: gross_income,

@@ -68,9 +68,10 @@ en:
       source: "Source"
       activity_type: "Activity type"
       gross_income: "Gross income"
-      # Labels for ExternalIncomeActivity#source_type (see ExternalIncomeActivity::ALLOWED_SOURCE_TYPES). Add a key when adding a type.
+      # Labels for ExternalActivity#source_type (see ExternalActivity::ALLOWED_SOURCE_TYPES). Add a key when adding a type.
       source_types:
         api: "State verification (API)"
+        batch_upload: "State verification (batch upload)"
     hours_reported_table:
       title: "Hours reported"
       organization_name: "Organization name"

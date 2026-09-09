@@ -24,7 +24,7 @@ class IncomeComplianceDeterminationService
       monthly_values.any? { |monthly_total| monthly_total.to_f >= TARGET_INCOME_MONTHLY }
     end
 
-    # Silent recalculation (e.g. after +ExternalIncomeActivityService+ saves a row for an open
+    # Silent recalculation (e.g. after +ExternalActivityService+ saves a row for an open
     # case). Same contract as +HoursComplianceDeterminationService#calculate+: no
     # +Strata::EventManager.publish+, and compliant outcomes close the case via
     # +record_income_compliance+ (default +close_on_compliant: true+).
@@ -44,11 +44,11 @@ class IncomeComplianceDeterminationService
     end
 
     # Same lookback and query shape as ActivityAggregator#fetch_external_hourly_activities /
-    # ExternalIncomeActivity.for_member(...).within_period(lookback) as used for external
+    # ExternalActivity.for_member(...).within_period(lookback).with_income as used for external
     # hours parity.
     # @param certification [Certification]
     # @param application_form [ActivityReportApplicationForm, nil]
-    # @param external_income_activities [ActiveRecord::Relation<ExternalIncomeActivity>, Array<ExternalIncomeActivity>, nil] When set, skips fetching external rows again (e.g. staff +#show+ already loaded them).
+    # @param external_income_activities [ActiveRecord::Relation<ExternalActivity>, Array<ExternalActivity>, nil] Rows carrying income (a +with_income+ scope). When set, skips fetching external rows again (e.g. staff +#show+ already loaded them).
     # @param member_income_activity_rows [Array<IncomeActivity>, nil] When set, skips +member_income_activities_for_certification+ for totals/ids (rows must match +application_form:+ when passed).
     # @return [Hash]
     def aggregate_income_for_certification(
@@ -123,7 +123,7 @@ class IncomeComplianceDeterminationService
 
     # @param rows [Array<IncomeActivity>]
     # @return [Hash] :total (+BigDecimal+), :by_month (+BigDecimal+ per month), :ids (+Array+ of activity UUIDs)
-    # Uses +IncomeActivity#income+ (Strata +:money+), not +gross_income+ (+summarize_income+ is for +ExternalIncomeActivity+).
+    # Uses +IncomeActivity#income+ (Strata +:money+), not +gross_income+ (+summarize_income+ is for +ExternalActivity+).
     def member_income_totals_from_rows(rows)
       rows = Array(rows)
       by_month = rows.group_by(&:month).transform_values { |monthly_activities| income_dollars(monthly_activities) }

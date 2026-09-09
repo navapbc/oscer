@@ -73,6 +73,12 @@ en:
     attributes:
       spam_trap:
         present: "This field should be left empty. It is intended to prevent bots from submitting spam using this form."
+      hours:
+        greater_than_period: "cannot exceed %{maximum} hours for the reported period"
+    messages:
+      # ExternalActivity and Certifications::MemberData::Activity: a row must report a value.
+      # Added on :base, so it also resolves through the nested member_data.activities[n] path.
+      hours_or_gross_income_required: "must report hours, gross income, or both"
   helpers:
     submit:
       create: "Submit"

@@ -87,13 +87,14 @@ class CertificationCasesController < StaffController
 
   def fetch_external_hourly_activities
     lookback_period = @certification.certification_requirements.continuous_lookback_period
-    ExternalHourlyActivity.for_member(@certification.member_id).within_period(lookback_period)
+    ExternalActivity.for_member(@certification.member_id).within_period(lookback_period).with_hours
   end
 
   def fetch_external_income_activities
     lookback_period = @certification.certification_requirements.continuous_lookback_period
-    ExternalIncomeActivity.for_member(@certification.member_id)
+    ExternalActivity.for_member(@certification.member_id)
       .within_period(lookback_period)
+      .with_income
       .order(:period_start, :reported_at)
   end
 end

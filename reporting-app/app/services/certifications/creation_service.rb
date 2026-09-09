@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 # Service for creating certifications
-# Handles creation of ExternalHourlyActivity and ExternalIncomeActivity records
-# (from member and household data) and CertificationOrigin tracking
+# Handles creation of ExternalActivity records (from member and household data)
+# and CertificationOrigin tracking
 class Certifications::CreationService
   attr_reader :create_request, :certification
 
@@ -16,9 +16,8 @@ class Certifications::CreationService
   def call
     ActiveRecord::Base.transaction do
       # Create external activities FIRST (before certification)
-      create_external_hourly_activities
-      create_member_income_activities
-      create_household_income_activities
+      create_member_external_activities
+      create_household_external_activities
 
       # Save certification
       unless certification.save
@@ -42,74 +41,58 @@ class Certifications::CreationService
     )
   end
 
-  def create_external_hourly_activities
+  # One pass: an activity reporting both hours and income becomes a single ExternalActivity row
+  # per month carrying both, rather than one row in each of two tables.
+  def create_member_external_activities
     return unless certification.member_data&.activities.present?
 
-    hourly_activities = certification.member_data.activities.select { |a| a.type == "hourly" }
-
-    hourly_activities.each do |activity_data|
-      next unless activity_data.verified?
-      # Any other hourless activity still falls through to ExternalHourlyActivityService, which rejects it.
-      next if activity_data.education_enrollment? && activity_data.clock_hours.blank?
-
-      ExternalHourlyActivityService.create_entries(
-        member_id: certification.member_id,
-        category: activity_data.category,
-        hours: activity_data.clock_hours,
-        period_start: activity_data.period_start,
-        period_end: activity_data.period_end,
-        source_type: ExternalHourlyActivity::SOURCE_TYPES[:api],
-        source_id: nil,
-        name: activity_data.name
-      )
-    end
-  end
-
-  # Income reaches the member through two paths, both stored as ExternalIncomeActivity rows:
-  # verified income activities in member_data, and household members' reported gross income.
-  def create_member_income_activities
-    return unless certification.member_data&.activities.present?
-
-    income_activities = certification.member_data.activities.select { |a| a.type == "income" }
-
-    income_activities.each do |activity_data|
+    certification.member_data.activities.each do |activity_data|
       next unless activity_data.verified?
 
-      ExternalIncomeActivityService.create_entries(
+      hours = activity_data.clock_hours
+      gross_income = activity_data.gross_income
+      # Only enrollment-only education activities reach here with nothing to store; they satisfy
+      # the hours requirement through HoursComplianceDeterminationService instead of a row.
+      next if hours.blank? && gross_income.blank?
+
+      ExternalActivityService.create_entries(
         member_id: certification.member_id,
         category: activity_data.category,
-        gross_income: activity_data.gross_income,
+        hours: hours,
+        gross_income: gross_income,
         period_start: activity_data.period_start,
         period_end: activity_data.period_end,
-        source_type: activity_data.source,
+        source_type: activity_data.source.presence || ExternalActivity::SOURCE_TYPES[:api],
         source_id: nil,
         reported_at: activity_data.reported_at || Time.current,
         name: activity_data.name,
         employer: activity_data.employer || activity_data.name,
-        recalculate_income_compliance: false
+        recalculate_compliance: false
       )
     end
   end
 
-  def create_household_income_activities
+  # Household members' reported gross income, the second path income reaches the member by.
+  # Kept separate because it walks household_data.members rather than member_data.activities.
+  def create_household_external_activities
     return unless certification.household_data&.members.present?
 
     certification.household_data.members.each do |household_member|
       next if household_member.same_person_as?(certification.member_data)
 
       Array(household_member.gross_incomes).each do |gross_income|
-        ExternalIncomeActivityService.create_entries(
+        ExternalActivityService.create_entries(
           member_id: certification.member_id,
-          category: ExternalIncomeActivity::CATEGORY_HOUSEHOLD,
+          category: ExternalActivity::CATEGORY_HOUSEHOLD,
           gross_income: gross_income.gross_income,
           period_start: gross_income.period_start,
           period_end: gross_income.period_end,
-          source_type: ExternalIncomeActivity::SOURCE_TYPES[:api],
+          source_type: ExternalActivity::SOURCE_TYPES[:api],
           source_id: nil,
           reported_at: Time.current,
           name: household_member_name(household_member),
           identity: [ household_member.ssn, household_member.date_of_birth ],
-          recalculate_income_compliance: false
+          recalculate_compliance: false
         )
       end
     end

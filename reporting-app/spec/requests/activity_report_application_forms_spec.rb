@@ -99,7 +99,7 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
 
       before do
         # Create external hourly activities for the member
-        create(:external_hourly_activity,
+        create(:external_activity, :with_hours,
           member_id: member_id,
           category: "employment",
           hours: 40,

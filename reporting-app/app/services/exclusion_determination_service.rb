@@ -121,7 +121,7 @@ class ExclusionDeterminationService
       engine.set_facts(
         pregnancy: extract_exemption(certification, :pregnancy),
         postpartum: extract_exemption(certification, :postpartum),
-        certification_date: certification.certification_requirements.certification_date,
+        evaluated_month: certification.evaluated_month,
         american_indian_or_alaska_native: extract_exemption(certification, :american_indian_or_alaska_native),
         veteran_disability: extract_exemption(certification, :veteran_disability),
         was_in_foster_care: extract_exemption(certification, :former_foster_care),

@@ -80,7 +80,6 @@
                 },
                 "activities": [
                   {
-                    "type": "hourly",
                     "category": "community_service",
                     "hours": "20",
                     "period_start": "2025-08-01",
@@ -89,7 +88,6 @@
                     "verification_status": "verified"
                   },
                   {
-                    "type": "hourly",
                     "category": "education",
                     "credit_hours": "9",
                     "enrollment_status": "full_time",
@@ -439,15 +437,10 @@
           "period_end"
         ]
       },
-      "CertificationMemberDataHourlyActivity": {
+      "CertificationMemberDataActivity": {
         "type": "object",
-        "description": "Hourly community engagement activity",
+        "description": "Community engagement activity. There is no type discriminator: which values are present decides what is recorded. An activity may report hours, gross income, or both",
         "properties": {
-          "type": {
-            "type": "string",
-            "enum": ["hourly"],
-            "description": "Hourly activity"
-          },
           "category": {
             "type": "string",
             "enum": ["employment", "community_service", "education", "unearned"],
@@ -456,7 +449,7 @@
           "hours": {
             "type": ["string", "null"],
             "format": "decimal",
-            "description": "Number of hours for the activity; required unless the activity is an education activity reporting credit_hours or enrollment_status"
+            "description": "Number of hours for the activity; required unless the activity reports gross_income, or is an education activity reporting credit_hours or enrollment_status"
           },
           "credit_hours": {
             "type": ["string", "null"],
@@ -468,97 +461,30 @@
             "enum": ["full_time", "half_time", "less_than_half_time", null],
             "description": "Enrollment status for an education activity. Permitted only on education activities. Enrollment of full_time or half_time meets the community engagement requirement on its own, whatever hours are reported"
           },
-          "period_start": {
-            "type": "string",
-            "format": "date",
-            "description": "Start date of the activity period"
-          },
-          "period_end": {
-            "type": "string",
-            "format": "date",
-            "description": "End date of the activity period"
-          },
-          "employer": {
-            "type": ["string", "null"],
-            "description": "Employer or organization associated with the activity"
-          },
-          "name": {
-            "type": ["string", "null"],
-            "description": "Name of the school or organization associated with the activity, where employer does not apply"
-          },
-          "verification_status": {
-            "type": "string",
-            "enum": ["verified", "self_attested", "pending"],
-            "description": "Verification status of the activity; only verified activities count toward the certification"
-          }
-        },
-        "required": [
-          "type",
-          "category",
-          "period_start",
-          "period_end",
-          "verification_status"
-        ],
-        "anyOf": [
-          {
-            "required": ["hours"]
-          },
-          {
-            "properties": {
-              "category": {
-                "const": "education"
-              }
-            },
-            "required": ["credit_hours"]
-          },
-          {
-            "properties": {
-              "category": {
-                "const": "education"
-              }
-            },
-            "required": ["enrollment_status"]
-          }
-        ]
-      },
-      "CertificationMemberDataIncomeActivity": {
-        "type": "object",
-        "description": "Income-based community engagement activity",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": ["income"],
-            "description": "Income activity"
-          },
-          "category": {
-            "type": "string",
-            "enum": ["employment", "community_service", "education"],
-            "description": "The category of activity"
-          },
           "gross_income": {
-            "type": "string",
+            "type": ["string", "null"],
             "format": "decimal",
-            "description": "Gross income for the pay period"
-          },
-          "period_start": {
-            "type": "string",
-            "format": "date",
-            "description": "Start date of the activity period"
-          },
-          "period_end": {
-            "type": "string",
-            "format": "date",
-            "description": "End date of the activity period"
+            "description": "Gross income for the period. May be reported alongside hours, in which case one record per month is created carrying both values"
           },
           "source": {
-            "type": "string",
-            "enum": ["api"],
-            "description": "Income source type; certification API intake currently requires api"
+            "type": ["string", "null"],
+            "enum": ["api", null],
+            "description": "Data source type; required when gross_income is supplied"
           },
           "reported_at": {
             "type": ["string", "null"],
             "format": "date-time",
-            "description": "When the income data was reported"
+            "description": "When the external source reported this data"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date",
+            "description": "Start date of the activity period"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date",
+            "description": "End date of the activity period"
           },
           "employer": {
             "type": ["string", "null"],
@@ -575,22 +501,33 @@
           }
         },
         "required": [
-          "type",
           "category",
-          "gross_income",
           "period_start",
           "period_end",
-          "source",
           "verification_status"
-        ]
-      },
-      "CertificationMemberDataActivity": {
-        "oneOf": [
+        ],
+        "anyOf": [
           {
-            "$ref": "#/components/schemas/CertificationMemberDataHourlyActivity"
+            "required": ["hours"]
           },
           {
-            "$ref": "#/components/schemas/CertificationMemberDataIncomeActivity"
+            "required": ["gross_income"]
+          },
+          {
+            "properties": {
+              "category": {
+                "const": "education"
+              }
+            },
+            "required": ["credit_hours"]
+          },
+          {
+            "properties": {
+              "category": {
+                "const": "education"
+              }
+            },
+            "required": ["enrollment_status"]
           }
         ]
       },
@@ -862,7 +799,6 @@
             },
             "activities": [
               {
-                "type": "hourly",
                 "category": "community_service",
                 "hours": "80",
                 "period_start": "2025-08-01",

@@ -38,7 +38,6 @@ RSpec.describe Certifications::CreationService, type: :service do
           :with_account_email,
           activities: [
             {
-              "type" => "hourly",
               "category" => category,
               "hours" => hours,
               "credit_hours" => credit_hours,
@@ -61,12 +60,12 @@ RSpec.describe Certifications::CreationService, type: :service do
         expect(service.certification.member_id).to eq(member_id)
       end
 
-      it "creates ExternalHourlyActivity records for hourly activities" do
+      it "creates hours-bearing ExternalActivity records for hourly activities" do
         expect {
           service.call
-        }.to change(ExternalHourlyActivity, :count).from(0).to(1)
+        }.to change(ExternalActivity.with_hours, :count).from(0).to(1)
 
-        activity = ExternalHourlyActivity.last
+        activity = ExternalActivity.with_hours.sole
         expect(activity.member_id).to eq(member_id)
         expect(activity.category).to eq("employment")
         expect(activity.hours).to eq(40)
@@ -87,25 +86,27 @@ RSpec.describe Certifications::CreationService, type: :service do
         expect(origin.source_id).to be_nil
       end
 
-      it "does not include employer in ExternalHourlyActivity" do
+      it "records the employer in metadata on an hours-bearing row" do
         service.call
-        activity = ExternalHourlyActivity.last
+        activity = ExternalActivity.with_hours.sole
+
         expect(activity).not_to respond_to(:employer)
+        expect(activity.metadata).to include("employer" => "Acme Corp")
       end
 
-      it "does not include verification_status in ExternalHourlyActivity" do
+      it "does not include verification_status in ExternalActivity" do
         service.call
-        activity = ExternalHourlyActivity.last
+        activity = ExternalActivity.with_hours.sole
         expect(activity).not_to respond_to(:verification_status)
       end
 
       context "when verification status is not verified" do
         let(:verification_status) { "self_attested" }
 
-        it "does not create ExternalHourlyActivity" do
+        it "does not create an ExternalActivity" do
           expect {
             service.call
-          }.not_to change(ExternalHourlyActivity, :count)
+          }.not_to change(ExternalActivity.with_hours, :count)
         end
       end
 
@@ -117,9 +118,9 @@ RSpec.describe Certifications::CreationService, type: :service do
         it "counts education hours at 13 to 1" do
           expect {
             service.call
-          }.to change(ExternalHourlyActivity, :count).from(0).to(1)
+          }.to change(ExternalActivity.with_hours, :count).from(0).to(1)
 
-          activity = ExternalHourlyActivity.last
+          activity = ExternalActivity.with_hours.sole
           expect(activity.category).to eq("education")
           expect(activity.hours).to eq(
             credit_hours * Certifications::MemberData::Activity::CREDIT_HOURS_MULTIPLIER
@@ -134,10 +135,10 @@ RSpec.describe Certifications::CreationService, type: :service do
           let(:hours) { nil }
           let(:enrollment_status) { status }
 
-          it "creates the certification without an ExternalHourlyActivity" do
+          it "creates the certification without an ExternalActivity" do
             expect { service.call }.to change(Certification, :count).from(0).to(1)
 
-            expect(ExternalHourlyActivity.count).to be_zero
+            expect(ExternalActivity.with_hours.count).to be_zero
           end
 
           it "records the enrollment status on the certification's member data" do
@@ -157,18 +158,29 @@ RSpec.describe Certifications::CreationService, type: :service do
         it "still imports the reported hours" do
           expect {
             service.call
-          }.to change(ExternalHourlyActivity, :count).from(0).to(1)
+          }.to change(ExternalActivity.with_hours, :count).from(0).to(1)
 
-          expect(ExternalHourlyActivity.last.hours).to eq(40)
+          expect(ExternalActivity.with_hours.sole.hours).to eq(40)
         end
       end
 
+      # An activity reporting no value at all is now rejected at the API boundary by
+      # Certifications::MemberData::Activity rather than by the record it would have written, so
+      # intake never sees one. Constructed directly here, it is skipped instead of raising.
       context "when employment category and nil hours" do
         let(:category) { "employment" }
         let(:hours) { nil }
 
-        it "raises ActiveRecord::RecordInvalid" do
-          expect { service.call }.to raise_error(ActiveRecord::RecordInvalid)
+        it "is rejected by the activity value object" do
+          activity = create_request.member_data.activities.first
+
+          expect(activity).not_to be_valid
+          expect(activity.errors).to be_of_kind(:base, :hours_or_gross_income_required)
+        end
+
+        it "creates no ExternalActivity and still creates the certification" do
+          expect { service.call }.not_to change(ExternalActivity, :count)
+          expect(service.certification).to be_persisted
         end
       end
     end
@@ -180,7 +192,6 @@ RSpec.describe Certifications::CreationService, type: :service do
           :with_account_email,
           activities: [
             {
-              "type" => "hourly",
               "category" => "employment",
               "hours" => 40,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -188,7 +199,6 @@ RSpec.describe Certifications::CreationService, type: :service do
               "verification_status" => "verified"
             },
             {
-              "type" => "hourly",
               "category" => "community_service",
               "hours" => 10,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -199,12 +209,12 @@ RSpec.describe Certifications::CreationService, type: :service do
         )
       end
 
-      it "creates ExternalHourlyActivity records for all hourly activities" do
+      it "creates hours-bearing ExternalActivity records for all hourly activities" do
         expect {
           service.call
-        }.to change(ExternalHourlyActivity, :count).from(0).to(2)
+        }.to change(ExternalActivity.with_hours, :count).from(0).to(2)
 
-        activities = ExternalHourlyActivity.where(member_id: member_id).order(:category)
+        activities = ExternalActivity.with_hours.where(member_id: member_id).order(:category)
         expect(activities.first.category).to eq("community_service")
         expect(activities.last.category).to eq("employment")
       end
@@ -217,7 +227,6 @@ RSpec.describe Certifications::CreationService, type: :service do
           :with_account_email,
           activities: [
             {
-              "type" => "hourly",
               "category" => "employment",
               "hours" => 40,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -226,7 +235,6 @@ RSpec.describe Certifications::CreationService, type: :service do
               "verification_status" => "verified"
             },
             {
-              "type" => "hourly",
               "category" => "employment",
               "hours" => 40,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -241,17 +249,16 @@ RSpec.describe Certifications::CreationService, type: :service do
       it "treats them as separate activities" do
         expect {
           service.call
-        }.to change(ExternalHourlyActivity, :count).from(0).to(2)
+        }.to change(ExternalActivity.with_hours, :count).from(0).to(2)
 
-        expect(ExternalHourlyActivity.pluck(:name)).to contain_exactly("Acme Corp", "Other Corp")
-        expect(ExternalHourlyActivity.pluck(:origin_hash).uniq.size).to eq(2)
+        expect(ExternalActivity.with_hours.pluck(:name)).to contain_exactly("Acme Corp", "Other Corp")
+        expect(ExternalActivity.with_hours.pluck(:origin_hash).uniq.size).to eq(2)
       end
     end
 
     context "with duplicate hourly activities in the same request" do
       let(:hourly_activity) do
         {
-          "type" => "hourly",
           "category" => "employment",
           "hours" => 40,
           "period_start" => latest_certifiable_month.beginning_of_month,
@@ -273,7 +280,7 @@ RSpec.describe Certifications::CreationService, type: :service do
 
         expect { service.call }.to change(Certification, :count).from(0).to(1)
 
-        expect(ExternalHourlyActivity.count).to eq(1)
+        expect(ExternalActivity.with_hours.count).to eq(1)
         expect(CertificationOrigin.count).to eq(1)
         expect(Rails.logger).to have_received(:warn).with(/skipped duplicate submission/)
       end
@@ -287,7 +294,6 @@ RSpec.describe Certifications::CreationService, type: :service do
           :with_account_email,
           activities: [
             {
-              "type" => "income",
               "category" => "employment",
               "gross_income" => 620,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -300,24 +306,24 @@ RSpec.describe Certifications::CreationService, type: :service do
         )
       end
 
-      it "does not create ExternalHourlyActivity records for income activities" do
+      it "does not create hours-bearing records for income activities" do
         expect {
           service.call
-        }.not_to change(ExternalHourlyActivity, :count)
+        }.not_to change(ExternalActivity.with_hours, :count)
       end
 
-      it "creates ExternalIncomeActivity records for income activities" do
+      it "creates income-bearing ExternalActivity records for income activities" do
         expect {
           service.call
-        }.to change(ExternalIncomeActivity, :count).from(0).to(1)
+        }.to change(ExternalActivity.with_income, :count).from(0).to(1)
 
-        expect(ExternalIncomeActivity.pluck(:member_id, :category, :gross_income, :source_type, :period_start, :period_end)).to eq(
+        expect(ExternalActivity.with_income.pluck(:member_id, :category, :gross_income, :source_type, :period_start, :period_end)).to eq(
           [
             [ member_id, "employment", 620, "api", latest_certifiable_month.beginning_of_month, latest_certifiable_month.end_of_month ]
           ]
         )
-        expect(ExternalIncomeActivity.pick(:name)).to eq("Acme Corp")
-        expect(ExternalIncomeActivity.pick(:metadata)).to include("employer" => "Acme Corp")
+        expect(ExternalActivity.with_income.pick(:name)).to eq("Acme Corp")
+        expect(ExternalActivity.with_income.pick(:metadata)).to include("employer" => "Acme Corp")
       end
 
       it "still creates the certification" do
@@ -329,10 +335,10 @@ RSpec.describe Certifications::CreationService, type: :service do
       context "when verification status is not verified" do
         let(:verification_status) { "pending" }
 
-        it "does not create ExternalIncomeActivity" do
+        it "does not create an income-bearing ExternalActivity" do
           expect {
             service.call
-          }.not_to change(ExternalIncomeActivity, :count)
+          }.not_to change(ExternalActivity.with_income, :count)
         end
       end
     end
@@ -409,18 +415,18 @@ RSpec.describe Certifications::CreationService, type: :service do
         }
       end
 
-      it "creates an ExternalIncomeActivity for each household member's gross income" do
+      it "creates an ExternalActivity for each household member's gross income" do
         expect {
           service.call
-        }.to change(ExternalIncomeActivity, :count).from(0).to(3)
+        }.to change(ExternalActivity.with_income, :count).from(0).to(3)
 
-        expect(ExternalIncomeActivity.pluck(:gross_income)).to contain_exactly(250, 350, 450)
+        expect(ExternalActivity.with_income.pluck(:gross_income)).to contain_exactly(250, 350, 450)
       end
 
       it "attributes each entry to the household member who reported it" do
         service.call
 
-        expect(ExternalIncomeActivity.pluck(:name))
+        expect(ExternalActivity.with_income.pluck(:name))
           .to contain_exactly("Elizabeth Frances Doe", "Richard Marcus Doe", "Richard Marcus Doe")
       end
 
@@ -434,9 +440,9 @@ RSpec.describe Certifications::CreationService, type: :service do
         it "keeps one entry per household member and period" do
           expect {
             service.call
-          }.to change(ExternalIncomeActivity, :count).from(0).to(3)
+          }.to change(ExternalActivity.with_income, :count).from(0).to(3)
 
-          expect(ExternalIncomeActivity.pluck(:gross_income)).to contain_exactly(250, 350, 450)
+          expect(ExternalActivity.with_income.pluck(:gross_income)).to contain_exactly(250, 350, 450)
           expect(Rails.logger).to have_received(:warn).with(/skipped duplicate submission/)
         end
       end
@@ -450,21 +456,21 @@ RSpec.describe Certifications::CreationService, type: :service do
         it "keeps both, since they differ by tax ID and date of birth" do
           expect {
             service.call
-          }.to change(ExternalIncomeActivity, :count).from(0).to(2)
+          }.to change(ExternalActivity.with_income, :count).from(0).to(2)
 
-          expect(ExternalIncomeActivity.pluck(:gross_income)).to contain_exactly(250, 250)
+          expect(ExternalActivity.with_income.pluck(:gross_income)).to contain_exactly(250, 250)
         end
       end
 
       shared_examples "skips the applicant" do
         before { household_data[:members] << applicant_block }
 
-        it "does not create an ExternalIncomeActivity for the applicant" do
+        it "does not create an ExternalActivity for the applicant" do
           expect {
             service.call
-          }.to change(ExternalIncomeActivity, :count).from(0).to(3)
+          }.to change(ExternalActivity.with_income, :count).from(0).to(3)
 
-          expect(ExternalIncomeActivity.pluck(:gross_income)).to contain_exactly(250, 350, 450)
+          expect(ExternalActivity.with_income.pluck(:gross_income)).to contain_exactly(250, 350, 450)
         end
       end
 
@@ -492,7 +498,6 @@ RSpec.describe Certifications::CreationService, type: :service do
           :with_account_email,
           activities: [
             {
-              "type" => "hourly",
               "category" => "employment",
               "hours" => 40,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -500,7 +505,6 @@ RSpec.describe Certifications::CreationService, type: :service do
               "verification_status" => "verified"
             },
             {
-              "type" => "income",
               "category" => "employment",
               "gross_income" => 580,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -512,16 +516,16 @@ RSpec.describe Certifications::CreationService, type: :service do
         )
       end
 
-      it "creates ExternalHourlyActivity for hourly activities and ExternalIncomeActivity for income activities" do
+      it "creates an hours-only row and an income-only row for two separate activities" do
         expect {
           service.call
-        }.to change(ExternalHourlyActivity, :count).from(0).to(1)
-          .and change(ExternalIncomeActivity, :count).from(0).to(1)
+        }.to change(ExternalActivity.with_hours, :count).from(0).to(1)
+          .and change(ExternalActivity.with_income, :count).from(0).to(1)
 
-        eha = ExternalHourlyActivity.last
+        eha = ExternalActivity.with_hours.sole
         expect(eha.hours).to eq(40)
 
-        income = ExternalIncomeActivity.last
+        income = ExternalActivity.with_income.sole
         expect(income.gross_income).to eq(580)
         expect(income.source_type).to eq("api")
       end
@@ -536,10 +540,10 @@ RSpec.describe Certifications::CreationService, type: :service do
         )
       end
 
-      it "does not create ExternalHourlyActivity records" do
+      it "does not create hours-bearing ExternalActivity records" do
         expect {
           service.call
-        }.not_to change(ExternalHourlyActivity, :count)
+        }.not_to change(ExternalActivity.with_hours, :count)
       end
 
       it "still creates the certification" do
@@ -558,10 +562,10 @@ RSpec.describe Certifications::CreationService, type: :service do
         )
       end
 
-      it "does not create ExternalHourlyActivity records" do
+      it "does not create hours-bearing ExternalActivity records" do
         expect {
           service.call
-        }.not_to change(ExternalHourlyActivity, :count)
+        }.not_to change(ExternalActivity.with_hours, :count)
       end
 
       it "still creates the certification" do
@@ -571,14 +575,13 @@ RSpec.describe Certifications::CreationService, type: :service do
       end
     end
 
-    context "when ExternalHourlyActivity validation fails" do
+    context "when ExternalActivity validation fails" do
       let(:member_data) do
         build(:certification_member_data,
           :with_full_name,
           :with_account_email,
           activities: [
             {
-              "type" => "hourly",
               "category" => "employment",
               "hours" => -10, # Invalid: negative hours
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -593,8 +596,8 @@ RSpec.describe Certifications::CreationService, type: :service do
         expect { service.call }.to raise_error(ActiveRecord::RecordInvalid)
 
         expect(Certification.count).to eq(0)
-        expect(ExternalHourlyActivity.count).to eq(0)
-        expect(ExternalIncomeActivity.count).to eq(0)
+        expect(ExternalActivity.with_hours.count).to eq(0)
+        expect(ExternalActivity.with_income.count).to eq(0)
         expect(CertificationOrigin.count).to eq(0)
       end
     end
@@ -606,7 +609,6 @@ RSpec.describe Certifications::CreationService, type: :service do
           :with_account_email,
           activities: [
             {
-              "type" => "income",
               "category" => "employment",
               "gross_income" => 500,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -615,7 +617,6 @@ RSpec.describe Certifications::CreationService, type: :service do
               "verification_status" => "verified"
             },
             {
-              "type" => "income",
               "category" => "employment",
               "gross_income" => 500,
               "period_start" => latest_certifiable_month.beginning_of_month,
@@ -632,7 +633,7 @@ RSpec.describe Certifications::CreationService, type: :service do
 
         expect { service.call }.to change(Certification, :count).from(0).to(1)
 
-        expect(ExternalIncomeActivity.count).to eq(1)
+        expect(ExternalActivity.with_income.count).to eq(1)
         expect(CertificationOrigin.count).to eq(1)
         expect(Rails.logger).to have_received(:warn).with(/skipped duplicate submission/)
       end
