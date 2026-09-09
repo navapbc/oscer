@@ -106,7 +106,7 @@ class ExternalActivityService
     # along the same month boundaries. An income-only submission keeps the income rule: evenly
     # across whole calendar months, by days otherwise.
     def month_entries(hours:, gross_income:, period_start:, period_end:)
-      if hours.present?
+      if hours &.> 0
         return apportioned_multi_values_map(period_start, period_end, weight: :daily,
                                             hours:, gross_income:)
       end

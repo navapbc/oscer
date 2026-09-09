@@ -308,6 +308,23 @@ RSpec.describe ExternalActivityService do
         end
       end
 
+      context "with hours set to zero" do
+        let(:gross_income) { 300 }
+        let(:period_start) { 3.months.ago.beginning_of_month.to_date }
+        let(:period_end) { 1.month.ago.end_of_month.to_date }
+        let(:valid_params) { base_params.merge(gross_income:, hours: 0) }
+
+        it "has three months" do
+          expect(described_class.create_entries(**valid_params).size).to eq 3
+        end
+
+        it "apportions income equally by month" do
+          described_class.create_entries(**valid_params).each do |result|
+            expect(result.gross_income).to eq 100
+          end
+        end
+      end
+
       context "with 3 full months income not divisible by 3" do
         let(:gross_income) { 301.to_f }
         let(:period_start) { 3.months.ago.beginning_of_month.to_date }
