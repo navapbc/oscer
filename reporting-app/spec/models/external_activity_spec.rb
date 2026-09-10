@@ -399,8 +399,8 @@ RSpec.describe ExternalActivity, type: :model do
     end
   end
 
-  # $72.50 is one hour short of a day at the wage implied by the two thresholds ($7.25), so each
-  # conversion below lands on a round 10 hours.
+  # $72.50 is ten hours at the $7.25/hour implied by the two thresholds, so each conversion below
+  # lands on a round number.
   describe "#converted_hours" do
     it "returns hours if hours only" do
       activity = build(:external_activity, :with_hours)

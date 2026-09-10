@@ -25,14 +25,14 @@ class ExternalActivity < ApplicationRecord
   CATEGORY_EMPLOYMENT = "employment"
   ALLOWED_CATEGORIES = (ActivityCategories::ALL + [ CATEGORY_HOUSEHOLD ]).freeze
 
-  # Categories whose income was earned by working, so the hours behind it can be imputed when the
-  # hours track alone falls short (see +#converted_hours+). Unearned income has no work behind it.
-  # +with_convertible_income+ and +#converted_hours+ must agree on this list: a row the scope
-  # selects but the method declines lands in the hours aggregate as a zero-valued category.
+  # The categories policy allows converting income to hours for (see +#converted_hours+).
+  # +with_convertible_income+ and +#converted_hours+ both read this list, so a row one of them
+  # selects can never be one the other declines.
   CONVERTIBLE_INCOME_CATEGORIES = [ CATEGORY_EMPLOYMENT, CATEGORY_HOUSEHOLD ].freeze
 
-  # Hours per dollar: the hourly wage implied by the two CE thresholds ($580/month against
-  # 80 hours/month is $7.25/hour), inverted so income multiplies into hours.
+  # Hours per dollar: the hourly wage implied by the two CE thresholds (in the default
+  # configuration, $580/month against 80 hours/month is $7.25/hour), inverted so income
+  # multiplies into hours.
   INCOME_TO_HOURS = (BigDecimal(HoursComplianceDeterminationService::TARGET_HOURS) /
     Rails.application.config.ce_compliance[:income_threshold_monthly]).freeze
 
@@ -94,9 +94,8 @@ class ExternalActivity < ApplicationRecord
     gross_income.present?
   end
 
-  # Hours the row stands for once earned income is imputed as hours. Reported hours win: a row
-  # carrying both values would otherwise count the same job twice.
-  # @return [Numeric] 0 for income the hours track cannot impute work from
+  # Reported hours win: a row carrying both values would otherwise count the same job twice.
+  # @return [Numeric] 0 for income no conversion applies to
   def converted_hours
     return hours if hours?
     return 0 unless income? && CONVERTIBLE_INCOME_CATEGORIES.include?(category)

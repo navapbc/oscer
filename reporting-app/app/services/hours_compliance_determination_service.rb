@@ -6,23 +6,29 @@ class HoursComplianceDeterminationService
   class << self
     include ActivityAggregator
 
-    # Called by CalculateComplianceJob for async recalculation of existing certifications
-    # Records determination without triggering workflow events/notifications.
+    # Silent recalculation of an existing certification: records a determination without triggering
+    # workflow events/notifications. No caller yet.
     # When compliant, +record_hours_compliance+ closes the case (+CertificationCase#record_automated_ce_compliance+);
     # +IncomeComplianceDeterminationService#calculate+ follows the same close-on-compliant rule for parity.
+    #
+    # Reported hours only — neither education enrollment nor the combined-hours last resort is
+    # consulted. Both belong to +CommunityEngagementCheckService+, which has a payload shape that
+    # keeps imputed hours apart from reported ones, and is the judge to reach for if this is ever
+    # wired up to a job.
+    #
     # @param certification_id [String]
     # @return [void]
-    def calculate(certification_id, with_income_conversion: false)
+    def calculate(certification_id)
       certification = Certification.find(certification_id)
       kase = certification_case_for_certification(certification)
       raise ActiveRecord::RecordNotFound, "Couldn't find CertificationCase for Certification #{certification_id}" unless kase
 
       # TODO: the logic behind which forms are updated tbd
       application_form = ActivityReportApplicationForm.where(certification_case_id: kase.id).first
-      hours_data = aggregate_hours_for_certification(certification, application_form:, with_income_conversion:)
+      hours_data = aggregate_hours_for_certification(certification, application_form:)
       outcome = determine_outcome(hours_data[:hours_by_month])
 
-      kase.record_hours_compliance(outcome, hours_data, with_income_conversion:)
+      kase.record_hours_compliance(outcome, hours_data)
     end
 
     # PUBLIC: Aggregate hours from both ExternalActivity and approved Activity records

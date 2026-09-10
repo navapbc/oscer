@@ -42,8 +42,7 @@ RSpec.describe CommunityEngagementCheckService do
       ]))
   end
 
-  # Category matters to the combined-hours fallback, which imputes hours from employment and
-  # household income only. The default is deliberately a category it cannot convert, so a test
+  # The default is deliberately a category the combined-hours fallback cannot convert, so a test
   # that means to exercise the fallback opts in by naming one.
   def create_income_for(certification, gross_income:, category: "unearned", **attrs)
     lookback = certification.certification_requirements.continuous_lookback_period
@@ -56,7 +55,7 @@ RSpec.describe CommunityEngagementCheckService do
   end
 
   # .assess is the derivation .determine used to inline. It is public so a second step can reuse it
-  # rather than re-deriving the same four values and risking a different verdict.
+  # rather than re-deriving the same aggregates and verdicts and risking a different one.
   describe ".assess" do
     let(:over_hours) { HoursComplianceDeterminationService::TARGET_HOURS + 5 }
     let(:under_hours) { HoursComplianceDeterminationService::TARGET_HOURS / 2 }
@@ -75,7 +74,7 @@ RSpec.describe CommunityEngagementCheckService do
       expect(assessment.met?).to be(true)
     end
 
-    # met? is hours_ok || income_ok; without this the income side is never exercised.
+    # met? ORs the tracks; without this the income side is never exercised.
     it "reports met? when only the income track passes" do
       create_external_hourly_activity_for(certification, hours: under_hours)
       create_income_for(certification, gross_income: over_income)
@@ -104,8 +103,6 @@ RSpec.describe CommunityEngagementCheckService do
       expect(assessment.met?).to be(false)
     end
 
-    # The fallback: earnings the member reported as income stand for the hours behind them, so a
-    # member short on both tracks can still clear the hours threshold on the two combined.
     # $400 converts to ~55 hours, which carries 40 reported hours over the 80-hour target.
     it "reports met? on combined hours when neither track passes on its own" do
       create_external_hourly_activity_for(certification, hours: under_hours)
@@ -129,8 +126,6 @@ RSpec.describe CommunityEngagementCheckService do
       expect(assessment.met?).to be(true)
     end
 
-    # The reported-hours aggregate is what the determination and the member dashboard report, so
-    # the imputed hours are carried alongside it rather than folded into it.
     it "keeps the combined aggregate separate from the reported-hours aggregate" do
       create_external_hourly_activity_for(certification, hours: under_hours)
       create_income_for(certification, gross_income: 400, category: "employment")
@@ -152,9 +147,8 @@ RSpec.describe CommunityEngagementCheckService do
       expect(assessment.met?).to be(false)
     end
 
-    # A last resort: imputing hours nobody reported is work the assessment does only when it
-    # changes the answer. Both fields stay unset, so an unconsulted track is distinguishable from
-    # one that was weighed and fell short.
+    # Both fields stay unset, so an unconsulted track stays distinguishable from one that was
+    # weighed and fell short.
     it "does not compute combined hours when a track already passes" do
       create_external_hourly_activity_for(certification, hours: over_hours)
       create_income_for(certification, gross_income: 400, category: "employment")

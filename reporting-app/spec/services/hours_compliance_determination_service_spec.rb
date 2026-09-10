@@ -114,40 +114,20 @@ RSpec.describe HoursComplianceDeterminationService do
       end
     end
 
-    context "with income conversion" do
-      let(:income_category) { "employment" }
-
+    # The combined-hours last resort belongs to CommunityEngagementCheckService, not here.
+    context "when the member also reported income the hours track could impute from" do
       before do
         create_external_hourly_activity_for(certification, category: "education", hours: 75)
-        create_external_hourly_activity_for(certification, category: income_category, hours: nil, gross_income: 72.5)
+        create_external_hourly_activity_for(certification, category: "employment", hours: nil, gross_income: 72.5)
       end
 
-      it "is not compliant when false" do
-        described_class.calculate(certification.id, with_income_conversion: false)
+      it "judges reported hours alone" do
+        described_class.calculate(certification.id)
 
         determination = Determination.where(subject_id: certification.id).last
         expect(determination.reasons).to include("hours_reported_insufficient")
         expect(determination.outcome).to eq("not_compliant")
-      end
-
-      it "is compliant when true" do
-        described_class.calculate(certification.id, with_income_conversion: true)
-
-        determination = Determination.where(subject_id: certification.id).last
-        expect(determination.reasons).to include("combined_hours_reported_compliant")
-        expect(determination.outcome).to eq("compliant")
-      end
-
-      context "when income category not employment" do
-        let(:income_category) { "unearned" }
-
-        it "is not compliant" do
-          described_class.calculate(certification.id, with_income_conversion: true)
-
-          determination = Determination.where(subject_id: certification.id).last
-          expect(determination.reasons).to include("hours_reported_insufficient")
-          expect(determination.outcome).to eq("not_compliant")
-        end
+        expect(determination.determination_data["total_hours"]).to eq(75.0)
       end
     end
   end

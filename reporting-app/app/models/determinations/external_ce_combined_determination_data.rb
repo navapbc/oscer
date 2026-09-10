@@ -37,8 +37,8 @@ module Determinations
     # @param income_data [Hash] aggregate from {IncomeComplianceDeterminationService.aggregate_income_for_certification}
     # @param combined_hours_data [Hash, nil] the same hours aggregate recomputed with earned income
     #   imputed as hours; nil unless the fallback was consulted
-    # @param combined_hours_ok [Boolean, nil] nil unless the fallback was consulted; the two go
-    #   together, and either alone is a validation error
+    # @param combined_hours_ok [Boolean, nil] goes with +combined_hours_data+; either alone is a
+    #   validation error
     # @return [self]
     # @raise [ActiveModel::ValidationError] outer or nested aggregate payload is invalid
     def self.build(hours_data:, income_data:, hours_ok:, income_ok:,
@@ -88,8 +88,7 @@ module Determinations
       )
     end
 
-    # Ordered by what actually carried the member: the combined track is only consulted after the
-    # other two have failed, so it can never compete with them here.
+    # The combined track is only consulted once the other two have failed, so it never competes.
     def satisfied_by
       if hours_ok && income_ok
         Determination::SATISFIED_BY_BOTH
@@ -144,9 +143,9 @@ module Determinations
       errors.add(:combined_hours_data, :invalid)
     end
 
-    # The fallback was either consulted or it was not: a verdict with no aggregate behind it would
-    # put a compliant determination on an empty payload, and an aggregate with no verdict would
-    # serialize figures nothing weighed.
+    # The fallback was either consulted or it was not: a verdict with no aggregate would put a
+    # compliant determination on an empty payload, an aggregate with no verdict would serialize
+    # figures nothing weighed.
     def combined_hours_track_is_all_or_nothing
       return if combined_hours_data.nil? == combined_hours_ok.nil?
 

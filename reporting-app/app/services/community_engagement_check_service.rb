@@ -63,15 +63,11 @@ class CommunityEngagementCheckService
         HoursComplianceDeterminationService.education_enrollment_compliant?(certification)
       income_ok = IncomeComplianceDeterminationService.compliant_for_monthly_income?(income_data[:income_by_month])
 
-      # A member already carried by one of the two tracks leaves the fallback unconsulted, and its
-      # two fields unset, rather than recorded as a track that was weighed and fell short.
       return Assessment.new(hours_data:, income_data:, hours_ok:, income_ok:) if hours_ok || income_ok
 
       # The last resort: earned income stands for the hours behind it, so a member short on both
       # tracks can still clear the hours threshold on reported and imputed hours together. It
       # imputes hours nobody reported, so it is work worth doing only where it changes the answer.
-      # The aggregate is carried beside +hours_data+ rather than replacing it, so the determination
-      # keeps reported hours distinguishable from imputed ones.
       combined_hours_data = HoursComplianceDeterminationService.aggregate_hours_for_certification(
         certification, with_income_conversion: true
       )

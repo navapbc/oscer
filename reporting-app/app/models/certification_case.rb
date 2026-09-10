@@ -252,16 +252,8 @@ class CertificationCase < Strata::Case
   # drop the case). Income silent recalculation is aligned via +record_income_compliance+.
   # @param outcome [Symbol] :compliant or :not_compliant
   # @param hours_data [Hash] aggregated hours data
-  def record_hours_compliance(outcome, hours_data, with_income_conversion: false)
-    reason_key = if outcome == :compliant
-                   if with_income_conversion
-                     :combined_hours_reported_compliant
-                   else
-                     :hours_reported_compliant
-                   end
-    else
-                   :hours_reported_insufficient
-    end
+  def record_hours_compliance(outcome, hours_data)
+    reason_key = outcome == :compliant ? :hours_reported_compliant : :hours_reported_insufficient
     record_automated_ce_compliance(
       outcome,
       Determinations::HoursBasedDeterminationData.from_aggregate(hours_data).to_h,
@@ -321,9 +313,7 @@ class CertificationCase < Strata::Case
   # @param hours_ok [Boolean]
   # @param income_ok [Boolean]
   # @param combined_hours_data [Hash, nil] hours aggregated with earned income imputed as hours
-  #   (+with_income_conversion+); nil unless the fallback was consulted
-  # @param combined_hours_ok [Boolean, nil] nil unless the fallback was consulted; goes with
-  #   +combined_hours_data+
+  # @param combined_hours_ok [Boolean, nil] both are nil unless the fallback was consulted
   def record_external_ce_combined_assessment(actor:, certification:, hours_data:, income_data:, hours_ok:, income_ok:,
                                              combined_hours_data: nil, combined_hours_ok: nil)
     outcome = (hours_ok || income_ok || combined_hours_ok) ? :compliant : :not_compliant

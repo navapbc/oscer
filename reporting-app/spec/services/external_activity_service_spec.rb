@@ -774,26 +774,33 @@ RSpec.describe ExternalActivityService do
         expect(latest_determination_for(certification.id).outcome).to eq("compliant")
       end
 
-
+      # Recorded in the combined shape, not as another hours determination.
       it "falls through to combined hours for a combined row whose hours fall short" do
         stub_thresholds(hours_ok: false, income_ok: false, combined_hours_ok: true)
 
         described_class.create_entry(**params, hours: 100, gross_income: 600)
 
         expect(determinations.count).to eq(1)
-        expect(calculation_type).to eq(Determination::CALCULATION_TYPE_HOURS_BASED)
-        expect(latest_determination_for(certification.id).reasons).to include("combined_hours_reported_compliant")
-        expect(latest_determination_for(certification.id).outcome).to eq("compliant")
+        determination = latest_determination_for(certification.id)
+        expect(calculation_type).to eq(Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED)
+        expect(determination.reasons).to eq([ "combined_hours_reported_compliant" ])
+        expect(determination.outcome).to eq("compliant")
+        expect(determination.determination_data["satisfied_by"]).to eq(Determination::SATISFIED_BY_COMBINED_HOURS)
+        expect(determination.determination_data["combined_hours"]["compliant"]).to be true
       end
 
-      it "records a not-compliant hours determination when neither track qualifies" do
+      it "records the combined not-compliant determination when no track qualifies" do
         stub_thresholds(hours_ok: false, income_ok: false, combined_hours_ok: false)
 
         described_class.create_entry(**params, hours: 100, gross_income: 600)
 
         expect(determinations.count).to eq(1)
-        expect(calculation_type).to eq(Determination::CALCULATION_TYPE_HOURS_BASED)
-        expect(latest_determination_for(certification.id).outcome).to eq("not_compliant")
+        determination = latest_determination_for(certification.id)
+        expect(calculation_type).to eq(Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED)
+        expect(determination.outcome).to eq("not_compliant")
+        expect(determination.determination_data["satisfied_by"]).to eq(Determination::SATISFIED_BY_NEITHER)
+        # The income the member did report stays in the denial payload beside the hours.
+        expect(determination.determination_data["income"]).to be_present
       end
 
       it "skips recalculation when recalculate_compliance is false" do
