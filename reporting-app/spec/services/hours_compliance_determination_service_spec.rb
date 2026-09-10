@@ -113,6 +113,43 @@ RSpec.describe HoursComplianceDeterminationService do
         expect(determination.reasons).to include("hours_reported_insufficient")
       end
     end
+
+    context "with income conversion" do
+      let(:income_category) { "employment" }
+
+      before do
+        create_external_hourly_activity_for(certification, category: "education", hours: 75)
+        create_external_hourly_activity_for(certification, category: income_category, hours: nil, gross_income: 72.5)
+      end
+
+      it "is not compliant when false" do
+        described_class.calculate(certification.id, with_income_conversion: false)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.reasons).to include("hours_reported_insufficient")
+        expect(determination.outcome).to eq("not_compliant")
+      end
+
+      it "is compliant when true" do
+        described_class.calculate(certification.id, with_income_conversion: true)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.reasons).to include("combined_hours_reported_compliant")
+        expect(determination.outcome).to eq("compliant")
+      end
+
+      context "when income category not employment" do
+        let(:income_category) { "unearned" }
+
+        it "is not compliant" do
+          described_class.calculate(certification.id, with_income_conversion: true)
+
+          determination = Determination.where(subject_id: certification.id).last
+          expect(determination.reasons).to include("hours_reported_insufficient")
+          expect(determination.outcome).to eq("not_compliant")
+        end
+      end
+    end
   end
 
   describe "hours aggregation" do
@@ -188,6 +225,26 @@ RSpec.describe HoursComplianceDeterminationService do
         # 50 hours < 80 target = not compliant
         expect(determination.outcome).to eq("not_compliant")
         expect(determination.determination_data["total_hours"]).to eq(50.0)
+      end
+    end
+
+    context "with income conversion" do
+      let (:gross_income) { 72.5 }
+
+      before do
+        create_external_hourly_activity_for(certification, category: "education", hours: 75)
+        create_external_hourly_activity_for(certification, category: "employment", hours: nil, gross_income:)
+      end
+
+
+      it "does not include conversion when false" do
+        data = described_class.aggregate_hours_for_certification(certification, with_income_conversion: false)
+        expect(data[:total_hours]).to eq 75
+      end
+
+      it "includes converted income when true" do
+        data = described_class.aggregate_hours_for_certification(certification, with_income_conversion: true)
+        expect(data[:total_hours]).to be_within(0.001).of(85)
       end
     end
   end

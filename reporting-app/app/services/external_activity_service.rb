@@ -157,7 +157,7 @@ class ExternalActivityService
 
       if hours.present?
         hours_data = HoursComplianceDeterminationService
-          .aggregate_hours_for_certification(certification, application_form:)
+          .aggregate_hours_for_certification(certification, application_form:, with_income_conversion: false)
         hours_compliant = HoursComplianceDeterminationService
           .compliant_for_monthly_hours?(hours_data[:hours_by_month])
 
@@ -171,7 +171,16 @@ class ExternalActivityService
       income_compliant = IncomeComplianceDeterminationService
         .compliant_for_monthly_income?(income_data[:income_by_month])
 
-      kase.record_income_compliance(income_compliant ? :compliant : :not_compliant, income_data)
+      if income_compliant || hours.blank?
+        return kase.record_income_compliance(income_compliant ? :compliant : :not_compliant, income_data)
+      end
+
+      combined_hours_data = HoursComplianceDeterminationService
+        .aggregate_hours_for_certification(certification, application_form:, with_income_conversion: true)
+      combined_hours_compliant = HoursComplianceDeterminationService
+        .compliant_for_monthly_hours?(combined_hours_data[:hours_by_month])
+
+      kase.record_hours_compliance(combined_hours_compliant ? :compliant : :not_compliant, combined_hours_data, with_income_conversion: true)
     end
   end
 end

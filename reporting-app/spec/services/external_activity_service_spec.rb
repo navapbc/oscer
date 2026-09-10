@@ -696,9 +696,20 @@ RSpec.describe ExternalActivityService do
       allow(NotificationService).to receive(:send_email_notification)
     end
 
-    def stub_thresholds(hours_ok:, income_ok:)
-      allow(HoursComplianceDeterminationService).to receive(:compliant_for_monthly_hours?).and_return(hours_ok)
+    def stub_thresholds(hours_ok:, income_ok:, combined_hours_ok:)
+      hours_by_month = hours_ok ? { foo: HoursComplianceDeterminationService::TARGET_HOURS } : {}
+      hours_agg = { total_hours: 0, hours_by_month: }
+      allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
+                                                      .with(anything, application_form: nil, with_income_conversion: false)
+                                                      .and_return(hours_agg)
+
       allow(IncomeComplianceDeterminationService).to receive(:compliant_for_monthly_income?).and_return(income_ok)
+
+      combined_hours_by_month = combined_hours_ok ? { foo: HoursComplianceDeterminationService::TARGET_HOURS } : {}
+      combined_hours_agg = { total_hours: 0, hours_by_month: combined_hours_by_month }
+      allow(HoursComplianceDeterminationService).to receive(:aggregate_hours_for_certification)
+                                                      .with(anything, application_form: nil, with_income_conversion: true)
+                                                      .and_return(combined_hours_agg)
     end
 
     def determinations
@@ -713,7 +724,7 @@ RSpec.describe ExternalActivityService do
       let!(:kase) { create(:certification_case, certification: certification) }
 
       it "records an hours determination for an hours-only row" do
-        stub_thresholds(hours_ok: true, income_ok: false)
+        stub_thresholds(hours_ok: true, income_ok: false, combined_hours_ok: false)
 
         expect { described_class.create_entry(**params, hours: 100) }
           .to change(determinations, :count).by(1)
@@ -724,7 +735,7 @@ RSpec.describe ExternalActivityService do
       end
 
       it "records a not-compliant hours determination when hours fall short" do
-        stub_thresholds(hours_ok: false, income_ok: false)
+        stub_thresholds(hours_ok: false, income_ok: false, combined_hours_ok: false)
 
         described_class.create_entry(**params, hours: 100)
 
@@ -734,7 +745,7 @@ RSpec.describe ExternalActivityService do
       end
 
       it "records an income determination for an income-only row" do
-        stub_thresholds(hours_ok: false, income_ok: true)
+        stub_thresholds(hours_ok: false, income_ok: true, combined_hours_ok: false)
 
         described_class.create_entry(**params, gross_income: 600)
 
@@ -745,7 +756,7 @@ RSpec.describe ExternalActivityService do
 
       # Hours take precedence, so income is not consulted at all.
       it "records only the hours determination for a combined row whose hours qualify" do
-        stub_thresholds(hours_ok: true, income_ok: true)
+        stub_thresholds(hours_ok: true, income_ok: true, combined_hours_ok: false)
 
         described_class.create_entry(**params, hours: 100, gross_income: 600)
 
@@ -754,7 +765,7 @@ RSpec.describe ExternalActivityService do
       end
 
       it "falls through to income for a combined row whose hours fall short" do
-        stub_thresholds(hours_ok: false, income_ok: true)
+        stub_thresholds(hours_ok: false, income_ok: true, combined_hours_ok: false)
 
         described_class.create_entry(**params, hours: 100, gross_income: 600)
 
@@ -763,25 +774,37 @@ RSpec.describe ExternalActivityService do
         expect(latest_determination_for(certification.id).outcome).to eq("compliant")
       end
 
-      it "records a not-compliant income determination when neither track qualifies" do
-        stub_thresholds(hours_ok: false, income_ok: false)
+
+      it "falls through to combined hours for a combined row whose hours fall short" do
+        stub_thresholds(hours_ok: false, income_ok: false, combined_hours_ok: true)
 
         described_class.create_entry(**params, hours: 100, gross_income: 600)
 
         expect(determinations.count).to eq(1)
-        expect(calculation_type).to eq(Determination::CALCULATION_TYPE_INCOME_BASED)
+        expect(calculation_type).to eq(Determination::CALCULATION_TYPE_HOURS_BASED)
+        expect(latest_determination_for(certification.id).reasons).to include("combined_hours_reported_compliant")
+        expect(latest_determination_for(certification.id).outcome).to eq("compliant")
+      end
+
+      it "records a not-compliant hours determination when neither track qualifies" do
+        stub_thresholds(hours_ok: false, income_ok: false, combined_hours_ok: false)
+
+        described_class.create_entry(**params, hours: 100, gross_income: 600)
+
+        expect(determinations.count).to eq(1)
+        expect(calculation_type).to eq(Determination::CALCULATION_TYPE_HOURS_BASED)
         expect(latest_determination_for(certification.id).outcome).to eq("not_compliant")
       end
 
       it "skips recalculation when recalculate_compliance is false" do
-        stub_thresholds(hours_ok: true, income_ok: true)
+        stub_thresholds(hours_ok: true, income_ok: true, combined_hours_ok: false)
 
         expect { described_class.create_entry(**params, hours: 100, recalculate_compliance: false) }
           .not_to change(determinations, :count)
       end
 
       it "recalculates once for the whole submission, not once per entry" do
-        stub_thresholds(hours_ok: false, income_ok: false)
+        stub_thresholds(hours_ok: false, income_ok: false, combined_hours_ok: false)
         multi_month = params.merge(period_start: period_start, period_end: (period_start + 2.months).end_of_month)
 
         expect { described_class.create_entries(**multi_month, hours: 300) }
@@ -789,7 +812,7 @@ RSpec.describe ExternalActivityService do
       end
 
       it "recalculates only for a submission that created entries" do
-        stub_thresholds(hours_ok: false, income_ok: false)
+        stub_thresholds(hours_ok: false, income_ok: false, combined_hours_ok: false)
         described_class.create_entries(**params, hours: 100, name: "Acme Corp")
 
         expect { described_class.create_entries(**params, hours: 100, name: "Acme Corp") }
@@ -799,7 +822,7 @@ RSpec.describe ExternalActivityService do
 
     context "when the member has no open certification case" do
       it "creates the row without recording a determination" do
-        stub_thresholds(hours_ok: true, income_ok: true)
+        stub_thresholds(hours_ok: true, income_ok: true, combined_hours_ok: false)
 
         expect { described_class.create_entry(**params, hours: 100) }
           .not_to change(Determination, :count)
@@ -810,7 +833,7 @@ RSpec.describe ExternalActivityService do
       before { create(:certification_case, certification: certification) }
 
       it "logs a warning rather than failing the save" do
-        stub_thresholds(hours_ok: true, income_ok: true)
+        stub_thresholds(hours_ok: true, income_ok: true, combined_hours_ok: false)
         allow(Certification).to receive(:find).and_raise(ActiveRecord::RecordNotFound)
         allow(Rails.logger).to receive(:warn)
 

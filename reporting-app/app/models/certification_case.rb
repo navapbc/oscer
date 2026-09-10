@@ -252,8 +252,16 @@ class CertificationCase < Strata::Case
   # drop the case). Income silent recalculation is aligned via +record_income_compliance+.
   # @param outcome [Symbol] :compliant or :not_compliant
   # @param hours_data [Hash] aggregated hours data
-  def record_hours_compliance(outcome, hours_data)
-    reason_key = outcome == :compliant ? :hours_reported_compliant : :hours_reported_insufficient
+  def record_hours_compliance(outcome, hours_data, with_income_conversion: false)
+    reason_key = if outcome == :compliant
+                   if with_income_conversion
+                     :combined_hours_reported_compliant
+                   else
+                     :hours_reported_compliant
+                   end
+    else
+                   :hours_reported_insufficient
+    end
     record_automated_ce_compliance(
       outcome,
       Determinations::HoursBasedDeterminationData.from_aggregate(hours_data).to_h,

@@ -41,6 +41,7 @@ RSpec.describe Determination, type: :model do
           income_reported_compliant
           income_reported_insufficient
           hours_reported_compliant
+          combined_hours_reported_compliant
           hours_reported_insufficient
           exemption_request_compliant
           veteran_disability_excluded

@@ -325,6 +325,23 @@ RSpec.describe ExternalActivity, type: :model do
     end
   end
 
+  describe ".with_convertible_income" do
+    let!(:income_only) { create(:external_activity, :with_income, :employment) }
+    let!(:household) { create(:external_activity, :household) }
+
+    before do
+      create(:external_activity, :with_hours)
+      create(:external_activity, :with_hours_and_income)
+      create(:external_activity, :with_income, :unearned)
+      household
+      income_only
+    end
+
+    it "has household and income_only hours only" do
+      expect(described_class.with_convertible_income).to contain_exactly(income_only, household)
+    end
+  end
+
   describe '#month' do
     it 'returns the first day of the period start month' do
       activity = build(:external_activity, :with_hours,
@@ -376,6 +393,28 @@ RSpec.describe ExternalActivity, type: :model do
         expect(I18n.exists?(key.to_sym, :en)).to be(true),
           "Missing locale :en key #{key.inspect} for ExternalActivity source_type #{source_type.inspect}"
       end
+    end
+  end
+
+  describe "#converted_hours" do
+    it "returns hours if hours only" do
+      activity = build(:external_activity, :with_hours)
+      expect(activity.converted_hours).to eq activity.hours
+    end
+
+    it "returns hours if hours and imcome" do
+      activity = build(:external_activity, :with_hours, category: :employment)
+      expect(activity.converted_hours).to eq activity.hours
+    end
+
+    it "returns income divided by minimum wage if income only and category employment" do
+      activity = build(:external_activity, :with_income, category: :employment, gross_income: 72.5)
+      expect(activity.converted_hours).to be_within(0.001).of(10)
+    end
+
+    it "returns 0 if income only and category not employment" do
+      activity = build(:external_activity, :with_income, category: :unearned, gross_income: 75)
+      expect(activity.converted_hours).to eq 0
     end
   end
 end

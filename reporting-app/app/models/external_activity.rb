@@ -23,6 +23,7 @@ class ExternalActivity < ApplicationRecord
   # since a member never reports another household member's income as their own activity.
   CATEGORY_HOUSEHOLD = "household"
   ALLOWED_CATEGORIES = (ActivityCategories::ALL + [ CATEGORY_HOUSEHOLD ]).freeze
+  INCOME_TO_HOURS = BigDecimal((HoursComplianceDeterminationService::TARGET_HOURS / CECompliance.fetch_income_threshold.to_f).to_s).freeze
 
   SOURCE_TYPES = {
     api: "api",
@@ -68,6 +69,7 @@ class ExternalActivity < ApplicationRecord
   # A row reporting both values belongs to both scopes: it contributes to both compliance tracks.
   scope :with_hours, -> { where.not(hours: nil) }
   scope :with_income, -> { where.not(gross_income: nil) }
+  scope :with_convertible_income, -> { where(hours: nil, category: [ :employment, :household ]) }
 
   def month
     period_start.beginning_of_month
@@ -79,6 +81,12 @@ class ExternalActivity < ApplicationRecord
 
   def income?
     gross_income.present?
+  end
+
+  def converted_hours
+    return hours if hours?
+    return gross_income * INCOME_TO_HOURS if income? && category == "employment"
+    0
   end
 
   private

@@ -112,7 +112,8 @@ class Determination < Strata::Determination
   # CALCULATION_TYPE_DATA_SOURCE_CE when a data source is what attested it.
   CE_MET_REASON_CODES = {
     hours_reported_compliant: "hours_reported_compliant",
-    income_reported_compliant: "income_reported_compliant"
+    income_reported_compliant: "income_reported_compliant",
+    combined_hours_reported_compliant: "combined_hours_reported_compliant"
   }.freeze
 
   # Neither community-engagement track reached its threshold. Recorded as +:not_compliant+.

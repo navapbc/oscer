@@ -12,17 +12,17 @@ class HoursComplianceDeterminationService
     # +IncomeComplianceDeterminationService#calculate+ follows the same close-on-compliant rule for parity.
     # @param certification_id [String]
     # @return [void]
-    def calculate(certification_id)
+    def calculate(certification_id, with_income_conversion: false)
       certification = Certification.find(certification_id)
       kase = certification_case_for_certification(certification)
       raise ActiveRecord::RecordNotFound, "Couldn't find CertificationCase for Certification #{certification_id}" unless kase
 
       # TODO: the logic behind which forms are updated tbd
       application_form = ActivityReportApplicationForm.where(certification_case_id: kase.id).first
-      hours_data = aggregate_hours_for_certification(certification, application_form:)
+      hours_data = aggregate_hours_for_certification(certification, application_form:, with_income_conversion:)
       outcome = determine_outcome(hours_data[:hours_by_month])
 
-      kase.record_hours_compliance(outcome, hours_data)
+      kase.record_hours_compliance(outcome, hours_data, with_income_conversion:)
     end
 
     # PUBLIC: Aggregate hours from both ExternalActivity and approved Activity records
@@ -40,10 +40,16 @@ class HoursComplianceDeterminationService
       certification,
       application_form: nil,
       external_hourly_activities: nil,
-      member_hour_activity_rows: nil
+      member_hour_activity_rows: nil,
+      with_income_conversion: false
     )
-      external_sources = external_hourly_activities.nil? ? fetch_external_hourly_activities(certification) : external_hourly_activities
-      external_hours = summarize_hours(external_sources)
+      external_hours = if with_income_conversion
+                        sources = fetch_external_hourly_activities(certification) + fetch_external_convertible_income_activities(certification)
+                        summarize_hours(sources, with_income_conversion:)
+      else
+                        external_sources = external_hourly_activities.nil? ? fetch_external_hourly_activities(certification) : external_hourly_activities
+                        summarize_hours(external_sources)
+      end
 
       member_hours = if member_hour_activity_rows.nil?
         member_hours_from_activities(certification, application_form:)
