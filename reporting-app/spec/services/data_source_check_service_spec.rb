@@ -68,6 +68,16 @@ RSpec.describe DataSourceCheckService do
       hours: hours)
   end
 
+  def create_external_income_activity_for(certification, gross_income:, category: "employment")
+    lookback = certification.certification_requirements.continuous_lookback_period
+    create(:external_activity, :with_income,
+      member_id: certification.member_id,
+      period_start: lookback.start.to_date,
+      period_end: lookback.start.to_date.end_of_month,
+      category: category,
+      gross_income: gross_income)
+  end
+
   def latest_determination
     latest_determination_for(certification.id)
   end
@@ -325,6 +335,19 @@ RSpec.describe DataSourceCheckService do
         described_class.determine(certification_case)
 
         expect(certification_case.reload).to be_open
+      end
+
+      # The negative records what was weighed, and the combined-hours fallback is part of that
+      # once the member has income the hours track can impute from.
+      it "carries the combined-hours track it considered into the negative payload" do
+        create_external_income_activity_for(certification, gross_income: 100)
+
+        described_class.determine(certification_case)
+
+        data = latest_determination.determination_data
+        expect(data["satisfied_by"]).to eq(Determination::SATISFIED_BY_NEITHER)
+        expect(data["combined_hours"]["compliant"]).to be false
+        expect(data["combined_hours"]["total_hours"]).to be > data["hours"]["total_hours"]
       end
     end
 

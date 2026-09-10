@@ -326,19 +326,22 @@ RSpec.describe ExternalActivity, type: :model do
   end
 
   describe ".with_convertible_income" do
-    let!(:income_only) { create(:external_activity, :with_income, :employment) }
-    let!(:household) { create(:external_activity, :household) }
+    let!(:employment_income) { create(:external_activity, :with_income, :employment) }
+    let!(:household_income) { create(:external_activity, :household) }
 
     before do
       create(:external_activity, :with_hours)
       create(:external_activity, :with_hours_and_income)
       create(:external_activity, :with_income, :unearned)
-      household
-      income_only
     end
 
-    it "has household and income_only hours only" do
-      expect(described_class.with_convertible_income).to contain_exactly(income_only, household)
+    it "returns the income-only rows whose category has work behind it" do
+      expect(described_class.with_convertible_income)
+        .to contain_exactly(employment_income, household_income)
+    end
+
+    it "matches the categories #converted_hours actually converts" do
+      expect(described_class.with_convertible_income.map(&:converted_hours)).to all(be_positive)
     end
   end
 
@@ -396,23 +399,31 @@ RSpec.describe ExternalActivity, type: :model do
     end
   end
 
+  # $72.50 is one hour short of a day at the wage implied by the two thresholds ($7.25), so each
+  # conversion below lands on a round 10 hours.
   describe "#converted_hours" do
     it "returns hours if hours only" do
       activity = build(:external_activity, :with_hours)
       expect(activity.converted_hours).to eq activity.hours
     end
 
-    it "returns hours if hours and imcome" do
-      activity = build(:external_activity, :with_hours, category: :employment)
+    # Converting the income of a row that already reports hours would count the same job twice.
+    it "returns hours if hours and income" do
+      activity = build(:external_activity, :with_hours_and_income, category: :employment)
       expect(activity.converted_hours).to eq activity.hours
     end
 
-    it "returns income divided by minimum wage if income only and category employment" do
+    it "converts employment income at the implied hourly wage" do
       activity = build(:external_activity, :with_income, category: :employment, gross_income: 72.5)
       expect(activity.converted_hours).to be_within(0.001).of(10)
     end
 
-    it "returns 0 if income only and category not employment" do
+    it "converts household income at the implied hourly wage" do
+      activity = build(:external_activity, :household, gross_income: 72.5)
+      expect(activity.converted_hours).to be_within(0.001).of(10)
+    end
+
+    it "returns 0 for income with no work behind it" do
       activity = build(:external_activity, :with_income, category: :unearned, gross_income: 75)
       expect(activity.converted_hours).to eq 0
     end

@@ -22,8 +22,19 @@ class ExternalActivity < ApplicationRecord
   # Shared with member-reported Activity via ActivityCategories; household is external-only,
   # since a member never reports another household member's income as their own activity.
   CATEGORY_HOUSEHOLD = "household"
+  CATEGORY_EMPLOYMENT = "employment"
   ALLOWED_CATEGORIES = (ActivityCategories::ALL + [ CATEGORY_HOUSEHOLD ]).freeze
-  INCOME_TO_HOURS = BigDecimal((HoursComplianceDeterminationService::TARGET_HOURS / CECompliance.fetch_income_threshold.to_f).to_s).freeze
+
+  # Categories whose income was earned by working, so the hours behind it can be imputed when the
+  # hours track alone falls short (see +#converted_hours+). Unearned income has no work behind it.
+  # +with_convertible_income+ and +#converted_hours+ must agree on this list: a row the scope
+  # selects but the method declines lands in the hours aggregate as a zero-valued category.
+  CONVERTIBLE_INCOME_CATEGORIES = [ CATEGORY_EMPLOYMENT, CATEGORY_HOUSEHOLD ].freeze
+
+  # Hours per dollar: the hourly wage implied by the two CE thresholds ($580/month against
+  # 80 hours/month is $7.25/hour), inverted so income multiplies into hours.
+  INCOME_TO_HOURS = (BigDecimal(HoursComplianceDeterminationService::TARGET_HOURS) /
+    Rails.application.config.ce_compliance[:income_threshold_monthly]).freeze
 
   SOURCE_TYPES = {
     api: "api",
@@ -69,7 +80,7 @@ class ExternalActivity < ApplicationRecord
   # A row reporting both values belongs to both scopes: it contributes to both compliance tracks.
   scope :with_hours, -> { where.not(hours: nil) }
   scope :with_income, -> { where.not(gross_income: nil) }
-  scope :with_convertible_income, -> { where(hours: nil, category: [ :employment, :household ]) }
+  scope :with_convertible_income, -> { where(hours: nil, category: CONVERTIBLE_INCOME_CATEGORIES) }
 
   def month
     period_start.beginning_of_month
@@ -83,10 +94,14 @@ class ExternalActivity < ApplicationRecord
     gross_income.present?
   end
 
+  # Hours the row stands for once earned income is imputed as hours. Reported hours win: a row
+  # carrying both values would otherwise count the same job twice.
+  # @return [Numeric] 0 for income the hours track cannot impute work from
   def converted_hours
     return hours if hours?
-    return gross_income * INCOME_TO_HOURS if income? && category == "employment"
-    0
+    return 0 unless income? && CONVERTIBLE_INCOME_CATEGORIES.include?(category)
+
+    gross_income * INCOME_TO_HOURS
   end
 
   private

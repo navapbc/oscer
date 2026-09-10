@@ -310,9 +310,9 @@ class CertificationCase < Strata::Case
     )
   end
 
-  # External CE check: one automated determination with both tracks in +determination_data+.
-  # Member is compliant if either +hours_ok+ or +income_ok+; not compliant only when both are false.
-  # Events/notifications are published by CommunityEngagementCheckService (via Strata).
+  # External CE check: every track assessed in one automated determination's +determination_data+.
+  # Member is compliant if any of +hours_ok+, +income_ok+ or +combined_hours_ok+; not compliant only
+  # when all are false. Events/notifications are published by CommunityEngagementCheckService (via Strata).
   #
   # @param actor [Strata::VirtualActor] recording the assessment
   # @param certification [Certification] aggregate root for +record_determination!+
@@ -320,14 +320,23 @@ class CertificationCase < Strata::Case
   # @param income_data [Hash] from IncomeComplianceDeterminationService.aggregate_income_for_certification
   # @param hours_ok [Boolean]
   # @param income_ok [Boolean]
-  def record_external_ce_combined_assessment(actor:, certification:, hours_data:, income_data:, hours_ok:, income_ok:)
-    outcome = (hours_ok || income_ok) ? :compliant : :not_compliant
-    reasons = external_ce_combined_reason_codes(outcome: outcome, hours_ok: hours_ok, income_ok: income_ok)
+  # @param combined_hours_data [Hash, nil] hours aggregated with earned income imputed as hours
+  #   (+with_income_conversion+); nil unless the fallback was consulted
+  # @param combined_hours_ok [Boolean, nil] nil unless the fallback was consulted; goes with
+  #   +combined_hours_data+
+  def record_external_ce_combined_assessment(actor:, certification:, hours_data:, income_data:, hours_ok:, income_ok:,
+                                             combined_hours_data: nil, combined_hours_ok: nil)
+    outcome = (hours_ok || income_ok || combined_hours_ok) ? :compliant : :not_compliant
+    reasons = external_ce_combined_reason_codes(
+      outcome: outcome, hours_ok: hours_ok, income_ok: income_ok, combined_hours_ok: combined_hours_ok
+    )
     determination_data = Determinations::ExternalCECombinedDeterminationData.build(
       hours_data: hours_data,
       income_data: income_data,
       hours_ok: hours_ok,
-      income_ok: income_ok
+      income_ok: income_ok,
+      combined_hours_data: combined_hours_data,
+      combined_hours_ok: combined_hours_ok
     ).to_h
 
     record_automated_ce_compliance(
@@ -384,11 +393,13 @@ class CertificationCase < Strata::Case
     end
   end
 
-  def external_ce_combined_reason_codes(outcome:, hours_ok:, income_ok:)
+  def external_ce_combined_reason_codes(outcome:, hours_ok:, income_ok:, combined_hours_ok: nil)
     if outcome == :compliant
       [].tap do |codes|
         codes << Determination::REASON_CODE_MAPPING[:hours_reported_compliant] if hours_ok
         codes << Determination::REASON_CODE_MAPPING[:income_reported_compliant] if income_ok
+        # Never alongside the two above: the combined track is only reached once both have failed.
+        codes << Determination::REASON_CODE_MAPPING[:combined_hours_reported_compliant] if combined_hours_ok
       end
     else
       [

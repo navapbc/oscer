@@ -62,6 +62,8 @@ class Determination < Strata::Determination
   SATISFIED_BY_BOTH = "both"
   SATISFIED_BY_HOURS = "hours"
   SATISFIED_BY_INCOME = "income"
+  # Neither track passed on its own, but reported hours plus hours imputed from earned income did.
+  SATISFIED_BY_COMBINED_HOURS = "combined_hours"
   SATISFIED_BY_NEITHER = "neither"
   CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE = "automated_income_intake"
 

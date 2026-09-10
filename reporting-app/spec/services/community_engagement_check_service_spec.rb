@@ -42,13 +42,17 @@ RSpec.describe CommunityEngagementCheckService do
       ]))
   end
 
-  def create_income_for(certification, gross_income:, **attrs)
+  # Category matters to the combined-hours fallback, which imputes hours from employment and
+  # household income only. The default is deliberately a category it cannot convert, so a test
+  # that means to exercise the fallback opts in by naming one.
+  def create_income_for(certification, gross_income:, category: "unearned", **attrs)
     lookback = certification.certification_requirements.continuous_lookback_period
     period_start = lookback.start.to_date
     period_end = lookback.start.to_date.end_of_month
 
     create(:external_activity, :with_income, member_id: certification.member_id,
-           period_start: period_start, period_end: period_end, gross_income: gross_income, **attrs)
+           period_start: period_start, period_end: period_end, gross_income: gross_income,
+           category: category, **attrs)
   end
 
   # .assess is the derivation .determine used to inline. It is public so a second step can reuse it
@@ -96,7 +100,71 @@ RSpec.describe CommunityEngagementCheckService do
       expect(assessment.income_data[:total_income]).to be_positive
       expect(assessment.hours_ok).to be(false)
       expect(assessment.income_ok).to be(false)
+      expect(assessment.combined_hours_ok).to be(false)
       expect(assessment.met?).to be(false)
+    end
+
+    # The fallback: earnings the member reported as income stand for the hours behind them, so a
+    # member short on both tracks can still clear the hours threshold on the two combined.
+    # $400 converts to ~55 hours, which carries 40 reported hours over the 80-hour target.
+    it "reports met? on combined hours when neither track passes on its own" do
+      create_external_hourly_activity_for(certification, hours: under_hours)
+      create_income_for(certification, gross_income: 400, category: "employment")
+
+      assessment = described_class.assess(certification)
+
+      expect(assessment.hours_ok).to be(false)
+      expect(assessment.income_ok).to be(false)
+      expect(assessment.combined_hours_ok).to be(true)
+      expect(assessment.met?).to be(true)
+    end
+
+    it "counts household income toward combined hours" do
+      create_external_hourly_activity_for(certification, hours: under_hours)
+      create_income_for(certification, gross_income: 400, category: "household")
+
+      assessment = described_class.assess(certification)
+
+      expect(assessment.combined_hours_ok).to be(true)
+      expect(assessment.met?).to be(true)
+    end
+
+    # The reported-hours aggregate is what the determination and the member dashboard report, so
+    # the imputed hours are carried alongside it rather than folded into it.
+    it "keeps the combined aggregate separate from the reported-hours aggregate" do
+      create_external_hourly_activity_for(certification, hours: under_hours)
+      create_income_for(certification, gross_income: 400, category: "employment")
+
+      assessment = described_class.assess(certification)
+
+      expect(assessment.hours_data[:total_hours]).to eq(under_hours)
+      expect(assessment.combined_hours_data[:total_hours]).to be > under_hours
+    end
+
+    it "reports met? false when even the combined hours fall short" do
+      create_external_hourly_activity_for(certification, hours: under_hours)
+      create_income_for(certification, gross_income: 100, category: "employment")
+
+      assessment = described_class.assess(certification)
+
+      expect(assessment.combined_hours_data[:total_hours]).to be_positive
+      expect(assessment.combined_hours_ok).to be(false)
+      expect(assessment.met?).to be(false)
+    end
+
+    # A last resort: imputing hours nobody reported is work the assessment does only when it
+    # changes the answer. Both fields stay unset, so an unconsulted track is distinguishable from
+    # one that was weighed and fell short.
+    it "does not compute combined hours when a track already passes" do
+      create_external_hourly_activity_for(certification, hours: over_hours)
+      create_income_for(certification, gross_income: 400, category: "employment")
+
+      assessment = described_class.assess(certification)
+
+      expect(assessment.combined_hours_data).to be_nil
+      expect(assessment.combined_hours_ok).to be_nil
+      expect(HoursComplianceDeterminationService).not_to have_received(:aggregate_hours_for_certification)
+        .with(certification, with_income_conversion: true)
     end
 
     # Passes on the hours track, which is why hours_ok is true against a zero total.
@@ -151,6 +219,14 @@ RSpec.describe CommunityEngagementCheckService do
         expect(data["satisfied_by"]).to eq(Determination::SATISFIED_BY_HOURS)
         expect(data["hours"]["compliant"]).to be true
         expect(data["income"]["compliant"]).to be false
+      end
+
+      # No imputed hours were needed, so the payload carries no combined track to explain.
+      it "omits the combined hours payload" do
+        described_class.determine(certification_case)
+
+        expect(latest_determination_for(certification.id).determination_data)
+          .not_to have_key("combined_hours")
       end
 
       it "publishes DeterminedCommunityEngagementMet" do
@@ -256,8 +332,54 @@ RSpec.describe CommunityEngagementCheckService do
       end
     end
 
+    context "when only the combined hours pass" do
+      before do
+        create_external_hourly_activity_for(certification, hours: 40)
+        create_income_for(certification, gross_income: 400, category: "employment")
+      end
+
+      it "records the combined determination satisfied by combined hours" do
+        described_class.determine(certification_case)
+
+        determination = latest_determination_for(certification.id)
+        expect(determination.outcome).to eq("compliant")
+        expect(determination.reasons).to eq([ "combined_hours_reported_compliant" ])
+        data = determination.determination_data
+        expect(data["calculation_type"]).to eq(Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED)
+        expect(data["satisfied_by"]).to eq(Determination::SATISFIED_BY_COMBINED_HOURS)
+        expect(data["hours"]["compliant"]).to be false
+        expect(data["income"]["compliant"]).to be false
+        expect(data["combined_hours"]["compliant"]).to be true
+      end
+
+      # Which part of the total was imputed rather than reported has to stay legible to a reviewer.
+      it "records the reported and combined hours totals side by side" do
+        described_class.determine(certification_case)
+
+        data = latest_determination_for(certification.id).determination_data
+        expect(data["hours"]["total_hours"]).to eq(40.0)
+        expect(data["combined_hours"]["total_hours"]).to be_within(0.001).of(95.172)
+      end
+
+      it "publishes DeterminedCommunityEngagementMet" do
+        described_class.determine(certification_case)
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DeterminedCommunityEngagementMet",
+          hash_including(case_id: certification_case.id)
+        )
+      end
+
+      it 'logs approved event' do
+        expect do
+          described_class.determine(certification_case)
+        end.to change { Strata::AuditLine.where(subject: certification, actor_type: described_class.name, action: 'case.activity_report.approved').count }.by(1)
+      end
+    end
+
     # Not-met defers to the trailing step (OSCER-805), which owns the negative determination and
     # the Insufficient/ActionRequired split, so this service records nothing here.
+    # The income here is unearned, so the combined-hours fallback has nothing to impute from.
     context "when neither hours nor income meet targets with some external hours" do
       before do
         create_external_hourly_activity_for(certification, hours: 40)
@@ -316,6 +438,25 @@ RSpec.describe CommunityEngagementCheckService do
       # to the trailing step, so both not-met flavors leave here as the same event.
       it "publishes DeterminedCommunityEngagementNotMet" do
         described_class.determine(certification_case)
+
+        expect(Strata::EventManager).to have_received(:publish).with(
+          "DeterminedCommunityEngagementNotMet",
+          hash_including(case_id: certification_case.id)
+        )
+      end
+    end
+
+    # The fallback ran on convertible income and still fell short, which is not-met like any other.
+    context "when the combined hours also fall short" do
+      before do
+        create_external_hourly_activity_for(certification, hours: 40)
+        create_income_for(certification, gross_income: 100, category: "employment")
+      end
+
+      it "records no determination, deferring the negative to the data-source step" do
+        expect do
+          described_class.determine(certification_case)
+        end.not_to change { Determination.unscope(:order).where(subject_id: certification.id).count }
 
         expect(Strata::EventManager).to have_received(:publish).with(
           "DeterminedCommunityEngagementNotMet",
