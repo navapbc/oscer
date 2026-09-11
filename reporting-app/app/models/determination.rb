@@ -62,6 +62,8 @@ class Determination < Strata::Determination
   SATISFIED_BY_BOTH = "both"
   SATISFIED_BY_HOURS = "hours"
   SATISFIED_BY_INCOME = "income"
+  # Neither track passed on its own, but reported hours plus hours imputed from earned income did.
+  SATISFIED_BY_COMBINED_HOURS = "combined_hours"
   SATISFIED_BY_NEITHER = "neither"
   CALCULATION_METHOD_AUTOMATED_INCOME_INTAKE = "automated_income_intake"
 
@@ -112,7 +114,8 @@ class Determination < Strata::Determination
   # CALCULATION_TYPE_DATA_SOURCE_CE when a data source is what attested it.
   CE_MET_REASON_CODES = {
     hours_reported_compliant: "hours_reported_compliant",
-    income_reported_compliant: "income_reported_compliant"
+    income_reported_compliant: "income_reported_compliant",
+    combined_hours_reported_compliant: "combined_hours_reported_compliant"
   }.freeze
 
   # Neither community-engagement track reached its threshold. Recorded as +:not_compliant+.

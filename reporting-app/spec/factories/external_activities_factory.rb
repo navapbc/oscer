@@ -45,6 +45,10 @@ FactoryBot.define do
       category { 'education' }
     end
 
+    trait :unearned do
+      category { 'unearned' }
+    end
+
     trait :from_batch do
       source_type { ExternalActivity::SOURCE_TYPES[:batch] }
       source_id { SecureRandom.uuid }

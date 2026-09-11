@@ -80,7 +80,9 @@ class DataSourceCheckService
         hours_data: assessment.hours_data,
         income_data: assessment.income_data,
         hours_ok: assessment.hours_ok,
-        income_ok: assessment.income_ok
+        income_ok: assessment.income_ok,
+        combined_hours_data: assessment.combined_hours_data,
+        combined_hours_ok: assessment.combined_hours_ok
       )
 
       # The Insufficient/ActionRequired split moved here with the negative determination, so both

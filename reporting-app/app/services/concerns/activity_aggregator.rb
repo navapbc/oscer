@@ -21,6 +21,13 @@ module ActivityAggregator
     ExternalActivity.for_member(certification.member_id).within_period(lookback_period).with_income
   end
 
+  def fetch_external_convertible_income_activities(certification)
+    return ExternalActivity.none unless certification&.member_id
+
+    lookback_period = certification.certification_requirements.continuous_lookback_period
+    ExternalActivity.for_member(certification.member_id).within_period(lookback_period).with_convertible_income
+  end
+
   def fetch_member_activities(form)
     return Activity.none unless form
 
@@ -65,13 +72,14 @@ module ActivityAggregator
 
   # A relation is accepted as well as an array. Expects rows carrying +hours+ — pass a
   # +with_hours+-scoped relation, or income-only rows would land in +by_category+ as zeroes.
-  def summarize_hours(activities)
+  def summarize_hours(activities, with_income_conversion: false)
     rows = activities.to_a
 
+    hours_method = with_income_conversion ? :converted_hours : :hours
     {
-      total: decimal_sum(rows, :hours).to_f,
-      by_category: rows.group_by(&:category).transform_values { |group| decimal_sum(group, :hours).to_f },
-      by_month: rows.group_by(&:month).transform_values { |group| decimal_sum(group, :hours) },
+      total: decimal_sum(rows, hours_method).to_f,
+      by_category: rows.group_by(&:category).transform_values { |group| decimal_sum(group, hours_method).to_f },
+      by_month: rows.group_by(&:month).transform_values { |group| decimal_sum(group, hours_method) },
       ids: rows.map(&:id)
     }
   end
