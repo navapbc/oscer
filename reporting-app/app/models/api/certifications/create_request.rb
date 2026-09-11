@@ -10,6 +10,8 @@ class Api::Certifications::CreateRequest < ValueObject
   attribute :household_data, Certifications::HouseholdData.to_type
 
   validates :certification_requirements, presence: true
+  validates :application_date, presence: true
+  validate :application_date_must_be_a_date
 
   def self.from_request_params(params)
     new_filtered(params)
@@ -21,7 +23,7 @@ class Api::Certifications::CreateRequest < ValueObject
       # we are good to go
       certification_requirements = self.certification_requirements
     when Certifications::RequirementParams
-      certification_requirements = self.certification_requirements.to_requirements
+      certification_requirements = self.certification_requirements.to_requirements(application_date:)
     else
       # this should never be reached, something in the code is wrong
       raise TypeError
@@ -29,5 +31,15 @@ class Api::Certifications::CreateRequest < ValueObject
 
     cert_attrs = attributes.merge({ certification_requirements: certification_requirements })
     Certification.new(cert_attrs)
+  end
+
+  private
+
+  # ActiveModel's date cast passes non-String values through untouched, so an
+  # integer, float, or array would otherwise reach months_that_can_be_certified and crash it.
+  def application_date_must_be_a_date
+    return if application_date.nil? || application_date.is_a?(Date)
+
+    errors.add(:application_date, :invalid)
   end
 end

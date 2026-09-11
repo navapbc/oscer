@@ -50,7 +50,9 @@ class CertificationService
     User.find_by(email: email)
   end
 
-  def certification_requirements_from_input(requirements_input)
+  # Required keyword: the batch chunk job rescues StandardError per row, so a nil anchor would
+  # persist rows with no reportable months instead of failing visibly.
+  def certification_requirements_from_input(requirements_input, application_date:)
     # if they've directly provided in a valid Certifications::Requirements, use it
     requirements = Certifications::Requirements.new_filtered(requirements_input)
     if requirements.valid?
@@ -62,7 +64,7 @@ class CertificationService
     requirement_params = Certifications::RequirementParams.new_filtered(requirements_input)
     requirement_params.validate!
 
-    requirement_params.to_requirements
+    requirement_params.to_requirements(application_date:)
   end
 
   def hydrate_cases_with_certifications!(cases)
