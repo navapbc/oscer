@@ -10,10 +10,6 @@ class Api::Certifications::CreateRequest < ValueObject
   attribute :household_data, Certifications::HouseholdData.to_type
 
   validates :certification_requirements, presence: true
-  # application_date is a Certification attribute, not a RequirementParams one: RequirementParams'
-  # valid? doubles as type dispatch (UnionObject#new), so presence-validating application_date
-  # there would make every parameter-shaped request invalid, matching neither union member. See
-  # RequirementParams#to_requirements.
   validates :application_date, presence: true
   validate :application_date_must_be_a_date
 
