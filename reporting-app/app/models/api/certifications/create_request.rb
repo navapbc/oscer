@@ -10,9 +10,12 @@ class Api::Certifications::CreateRequest < ValueObject
   attribute :household_data, Certifications::HouseholdData.to_type
 
   validates :certification_requirements, presence: true
-  # Not on RequirementParams: it is a union member whose valid? decides type dispatch, and this
-  # field is not in the nested requirements hash. See RequirementParams#to_requirements.
+  # application_date is a Certification attribute, not a RequirementParams one: RequirementParams'
+  # valid? doubles as type dispatch (UnionObject#new), so presence-validating application_date
+  # there would make every parameter-shaped request invalid, matching neither union member. See
+  # RequirementParams#to_requirements.
   validates :application_date, presence: true
+  validate :application_date_must_be_a_date
 
   def self.from_request_params(params)
     new_filtered(params)
@@ -32,5 +35,15 @@ class Api::Certifications::CreateRequest < ValueObject
 
     cert_attrs = attributes.merge({ certification_requirements: certification_requirements })
     Certification.new(cert_attrs)
+  end
+
+  private
+
+  # ActiveModel's date cast passes non-String values through untouched, so an
+  # integer, float, or array would otherwise reach months_that_can_be_certified and crash it.
+  def application_date_must_be_a_date
+    return if application_date.nil? || application_date.is_a?(Date)
+
+    errors.add(:application_date, :invalid)
   end
 end

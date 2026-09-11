@@ -4,7 +4,7 @@ require "rails_helper"
 
 RSpec.describe Certifications::RequirementParams do
   describe "#months_that_can_be_certified" do
-    subject(:months) { params.months_that_can_be_certified(application_date) }
+    subject(:months) { params.months_that_can_be_certified(application_date:) }
 
     let(:application_date) { Date.new(2026, 8, 20) }
     let(:application_month) { application_date.beginning_of_month }
@@ -66,7 +66,7 @@ RSpec.describe Certifications::RequirementParams do
           due_period_days: 30
         )
 
-        expect(moved.months_that_can_be_certified(application_date)).to eq months
+        expect(moved.months_that_can_be_certified(application_date:)).to eq months
       end
     end
   end

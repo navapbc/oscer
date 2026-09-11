@@ -995,8 +995,6 @@ RSpec.describe "/api/certifications", type: :request do
         expect(response).to match_openapi_doc(OPENAPI_DOC)
       end
 
-      # These two used to assert an undated request bypassed duplicate detection. It is rejected
-      # now; find_duplicate's blank guard is covered in spec/models/certification_spec.rb.
       it "rejects a request carrying no application_date" do
         params = valid_json_request_attributes.except(:application_date).merge(
           member_id: "no-app-date",
@@ -1027,6 +1025,25 @@ RSpec.describe "/api/certifications", type: :request do
           post api_certifications_url,
                params: undated_attributes,
                headers: auth_headers(undated_attributes),
+               as: :json
+        }.not_to change(Certification, :count)
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["errors"]).to include(a_hash_including("field" => "application_date"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "rejects a request whose application_date is not a date" do
+        params = valid_json_request_attributes.merge(
+          application_date: 12_345,
+          member_id: "bad-app-date",
+          case_number: "C-BAD"
+        )
+
+        expect {
+          post api_certifications_url,
+               params: params,
+               headers: auth_headers(params),
                as: :json
         }.not_to change(Certification, :count)
 
