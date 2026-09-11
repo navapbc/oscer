@@ -113,6 +113,23 @@ RSpec.describe HoursComplianceDeterminationService do
         expect(determination.reasons).to include("hours_reported_insufficient")
       end
     end
+
+    # The combined-hours last resort belongs to CommunityEngagementCheckService, not here.
+    context "when the member also reported income the hours track could impute from" do
+      before do
+        create_external_hourly_activity_for(certification, category: "education", hours: 75)
+        create_external_hourly_activity_for(certification, category: "employment", hours: nil, gross_income: 72.5)
+      end
+
+      it "judges reported hours alone" do
+        described_class.calculate(certification.id)
+
+        determination = Determination.where(subject_id: certification.id).last
+        expect(determination.reasons).to include("hours_reported_insufficient")
+        expect(determination.outcome).to eq("not_compliant")
+        expect(determination.determination_data["total_hours"]).to eq(75.0)
+      end
+    end
   end
 
   describe "hours aggregation" do
@@ -188,6 +205,46 @@ RSpec.describe HoursComplianceDeterminationService do
         # 50 hours < 80 target = not compliant
         expect(determination.outcome).to eq("not_compliant")
         expect(determination.determination_data["total_hours"]).to eq(50.0)
+      end
+    end
+
+    # $72.50 converts to 10 hours at the wage implied by the two thresholds.
+    context "with income conversion" do
+      let(:gross_income) { 72.5 }
+
+      before do
+        create_external_hourly_activity_for(certification, category: "education", hours: 75)
+        create_external_hourly_activity_for(certification, category: "employment", hours: nil, gross_income:)
+      end
+
+      it "does not include conversion when false" do
+        data = described_class.aggregate_hours_for_certification(certification, with_income_conversion: false)
+        expect(data[:total_hours]).to eq 75
+      end
+
+      it "includes converted employment income when true" do
+        data = described_class.aggregate_hours_for_certification(certification, with_income_conversion: true)
+
+        expect(data[:total_hours]).to be_within(0.001).of(85)
+        expect(data[:hours_by_category]["employment"]).to be_within(0.001).of(10)
+      end
+
+      it "includes converted household income when true" do
+        create_external_hourly_activity_for(certification, category: "household", hours: nil, gross_income:)
+
+        data = described_class.aggregate_hours_for_certification(certification, with_income_conversion: true)
+
+        expect(data[:total_hours]).to be_within(0.001).of(95)
+        expect(data[:hours_by_category]["household"]).to be_within(0.001).of(10)
+      end
+
+      it "leaves income the hours track cannot impute work from out of the aggregate" do
+        create_external_hourly_activity_for(certification, category: "unearned", hours: nil, gross_income: 1_000)
+
+        data = described_class.aggregate_hours_for_certification(certification, with_income_conversion: true)
+
+        expect(data[:total_hours]).to be_within(0.001).of(85)
+        expect(data[:hours_by_category]).not_to have_key("unearned")
       end
     end
   end

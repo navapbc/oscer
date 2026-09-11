@@ -583,6 +583,52 @@ RSpec.describe CertificationCase, type: :model do
       }
     end
 
+    let(:combined_hours_data) do
+      {
+        total_hours: 95,
+        hours_by_month: { Date.current.beginning_of_month => 95 },
+        hours_by_category: {},
+        hours_by_source: { external: 95.0, activity: 0.0 },
+        external_hourly_activity_ids: [],
+        activity_ids: []
+      }
+    end
+
+    it "stores compliant with the combined-hours reason when only that track passes" do
+      certification_case.record_external_ce_combined_assessment(
+        actor: MockSubmitter,
+        certification: certification,
+        hours_data: hours_data,
+        income_data: income_data,
+        hours_ok: false,
+        income_ok: false,
+        combined_hours_data: combined_hours_data,
+        combined_hours_ok: true
+      )
+
+      determination = latest_determination_for(certification_case.certification_id)
+      expect(determination.outcome).to eq("compliant")
+      expect(determination.reasons).to contain_exactly("combined_hours_reported_compliant")
+      expect(determination.determination_data["satisfied_by"]).to eq(Determination::SATISFIED_BY_COMBINED_HOURS)
+      expect(determination.determination_data["combined_hours"]["total_hours"]).to eq(95.0)
+    end
+
+    # Compliant closes the case here as it does on the other two tracks.
+    it "closes the case when the combined track passes" do
+      certification_case.record_external_ce_combined_assessment(
+        actor: MockSubmitter,
+        certification: certification,
+        hours_data: hours_data,
+        income_data: income_data,
+        hours_ok: false,
+        income_ok: false,
+        combined_hours_data: combined_hours_data,
+        combined_hours_ok: true
+      )
+
+      expect(certification_case.reload).to be_closed
+    end
+
     it "stores not_compliant with both insufficient reasons when both tracks fail" do
       certification_case.record_external_ce_combined_assessment(
         actor: MockSubmitter,

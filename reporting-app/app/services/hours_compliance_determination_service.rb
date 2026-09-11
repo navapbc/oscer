@@ -6,10 +6,16 @@ class HoursComplianceDeterminationService
   class << self
     include ActivityAggregator
 
-    # Called by CalculateComplianceJob for async recalculation of existing certifications
-    # Records determination without triggering workflow events/notifications.
+    # Silent recalculation of an existing certification: records a determination without triggering
+    # workflow events/notifications. No caller yet.
     # When compliant, +record_hours_compliance+ closes the case (+CertificationCase#record_automated_ce_compliance+);
     # +IncomeComplianceDeterminationService#calculate+ follows the same close-on-compliant rule for parity.
+    #
+    # Reported hours only — neither education enrollment nor the combined-hours last resort is
+    # consulted. Both belong to +CommunityEngagementCheckService+, which has a payload shape that
+    # keeps imputed hours apart from reported ones, and is the judge to reach for if this is ever
+    # wired up to a job.
+    #
     # @param certification_id [String]
     # @return [void]
     def calculate(certification_id)
@@ -40,10 +46,16 @@ class HoursComplianceDeterminationService
       certification,
       application_form: nil,
       external_hourly_activities: nil,
-      member_hour_activity_rows: nil
+      member_hour_activity_rows: nil,
+      with_income_conversion: false
     )
-      external_sources = external_hourly_activities.nil? ? fetch_external_hourly_activities(certification) : external_hourly_activities
-      external_hours = summarize_hours(external_sources)
+      external_hours = if with_income_conversion
+                        sources = fetch_external_hourly_activities(certification) + fetch_external_convertible_income_activities(certification)
+                        summarize_hours(sources, with_income_conversion:)
+      else
+                        external_sources = external_hourly_activities.nil? ? fetch_external_hourly_activities(certification) : external_hourly_activities
+                        summarize_hours(external_sources)
+      end
 
       member_hours = if member_hour_activity_rows.nil?
         member_hours_from_activities(certification, application_form:)

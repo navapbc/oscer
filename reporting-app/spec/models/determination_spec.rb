@@ -41,6 +41,7 @@ RSpec.describe Determination, type: :model do
           income_reported_compliant
           income_reported_insufficient
           hours_reported_compliant
+          combined_hours_reported_compliant
           hours_reported_insufficient
           exemption_request_compliant
           veteran_disability_excluded
@@ -103,7 +104,7 @@ RSpec.describe Determination, type: :model do
         expect(determination).to be_valid
       end
 
-      it 'accepts hours_insufficient' do
+      it 'accepts hours_reported_insufficient' do
         determination = build(:determination, reasons: [ 'hours_reported_insufficient' ])
         expect(determination).to be_valid
       end
@@ -338,6 +339,18 @@ RSpec.describe Determination, type: :model do
     it 'keeps one exception reason code per ExceptionDeterminationService check' do
       expect(described_class::EXCEPTION_OUTCOME_KEYS.count)
         .to eq(ExceptionDeterminationService::EXCEPTION_CHECKS.count)
+    end
+
+    # MemberStatusService#human_readable_reason_codes falls back to the bare code, so a missing
+    # entry shows a member "combined_hours_reported_compliant" rather than failing anywhere.
+    it 'has a translation for every community-engagement reason code' do
+      codes = described_class::CE_MET_REASON_CODES.values + described_class::CE_INSUFFICIENT_REASON_CODES.values
+
+      codes.each do |code|
+        key = "services.member_status_service.reason_codes.#{code}"
+        expect(I18n.exists?(key.to_sym, :en)).to be(true),
+          "Missing locale :en key #{key.inspect} for Determination reason code #{code.inspect}"
+      end
     end
   end
 
