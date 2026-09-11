@@ -22,12 +22,16 @@ OSCER uses automated checks plus human review, and changes are only merged when 
 Compliance is a shared responsibility. OSCER provides secure patterns and documentation, but your organization’s deployment, operations, and governance determine the compliance posture of the running system.  
 **Related details:** [Does OSCER align with HIPAA regulations?](#does-oscer-align-with-hipaa-regulations)
 
+### How often does OSCER release, and how do we get security patches?
+OSCER uses calendar-based versioning and publishes versioned GitHub Releases; security fixes ship through the same channel, and we recommend running the latest release.  
+**Related details:** [How does OSCER handle releases and support?](#how-does-oscer-handle-releases-and-support)
+
 
 ---
 
 ## What does "open source" mean for your state?
 
-OSCER is open source software, which means Nava has made the core application code publicly available for any state to use without ever paying any licensing fees. When a state implements OSCER, a state will deploy it entirely within their own environment—state’s infrastructure, state private repositories, and it’s under state control. The code belongs to the state to use and customize as needed.
+OSCER is open source software, which means Nava has made the core application code publicly available for any state to use without ever paying any licensing fees. When a state implements OSCER, a state will deploy it entirely within their own environment: the state’s infrastructure, state private repositories, and it’s under state control. The code belongs to the state to use and customize as needed.
 
 ## What benefit does OSCER provide as an open source solution?
 
@@ -114,6 +118,16 @@ While OSCER accelerates initial development, states maintain operational respons
 **Audits:**
 - Documentation available to support audits
 - Nava can provide direct audit support as needed
+
+### How does OSCER handle releases and support?
+
+OSCER is versioned with calendar-based versioning (CalVer) and distributed as
+versioned GitHub Releases; security fixes are prioritized and published through
+the same release channel. We recommend running the latest release and keeping a
+deployment current by syncing upstream OSCER changes in.
+
+For the full versioning scheme, release process, supported-version guidance, and
+the vulnerability-reporting path, see the [Release & support policy](../release-and-support.md).
 
 ---
 
