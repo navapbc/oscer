@@ -47,7 +47,8 @@ RSpec.describe DocAiAdapter do
       "matchedDocumentClass" => "Payslip",
       "message"              => "Document processed successfully",
       "fields" => {
-        "currentgrosspay" => { "confidence" => 0.93, "value" => 1627.74 }
+        "currentgrosspay" => { "confidence" => 0.93, "value" => 1627.74 },
+        "companyname" => { "confidence" => 0.91, "value" => "Example Employer Inc." }
       }
     }
   end

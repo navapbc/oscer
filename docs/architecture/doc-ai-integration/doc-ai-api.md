@@ -316,6 +316,7 @@ Members can also use an "upload more" form (POST back to `document_staging`) to 
 | `federalfilingstatus` | `federal_filing_status` | String |
 | `statefilingstatus` | `state_filing_status` | String |
 | `payrollnumber` | `payroll_number` | String |
+| `companyname` | `company_name` | String |
 | `employeenumber` | `employee_number` | String |
 | `employeename.firstname` | `employee_first_name` | String |
 | `employeename.middlename` | `employee_middle_name` | String |

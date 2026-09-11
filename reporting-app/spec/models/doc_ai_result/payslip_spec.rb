@@ -36,6 +36,7 @@ RSpec.describe DocAiResult::Payslip do
         "employeeaddress.city"       => { "confidence" => 0.90, "value" => "Springfield" },
         "employeeaddress.state"      => { "confidence" => 0.92, "value" => "IL" },
         "employeeaddress.zipcode"    => { "confidence" => 0.93, "value" => "62701" },
+        "companyname"                => { "confidence" => 0.92, "value" => "Acme Payroll LLC" },
         "federaltaxes.itemdescription" => { "confidence" => 0.90, "value" => "Federal Income Tax" },
         "federaltaxes.ytd"             => { "confidence" => 0.90, "value" => 980.50 },
         "federaltaxes.period"          => { "confidence" => 0.90, "value" => 150.00 },
@@ -82,6 +83,20 @@ RSpec.describe DocAiResult::Payslip do
     it "returns nil for absent fields" do
       expect(payslip.employee_middle_name).to be_nil
     end
+
+    it "returns company_name value" do
+      expect(payslip.company_name.value).to eq("Acme Payroll LLC")
+    end
+
+    it "returns company_name_value as stripped string" do
+      expect(payslip.company_name_value).to eq("Acme Payroll LLC")
+    end
+
+    it "treats whitespace-only companyname as nil via company_name_value" do
+      fields = response["fields"].deep_dup
+      fields["companyname"] = { "confidence" => 0.5, "value" => "   " }
+      expect(described_class.build(response.merge("fields" => fields)).company_name_value).to be_nil
+    end
   end
 
   describe "boolean accessors" do
@@ -109,7 +124,8 @@ RSpec.describe DocAiResult::Payslip do
         ytd_federal_tax:       980.50,
         ytd_city_tax:          50.00,
         employee_first_name:   "John",
-        employee_last_name:    "Doe"
+        employee_last_name:    "Doe",
+        company_name:          "Acme Payroll LLC"
       )
     end
 

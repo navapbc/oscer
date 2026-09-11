@@ -35,7 +35,8 @@ module ActivitiesHelper
 
   # Returns per-field evidence source for an AI-sourced activity by comparing
   # current values to the original AI-extracted values from StagedDocument.
-  # Fields not extracted by AI (category, name, reporting_method) are always self_reported.
+  # Fields not extracted by AI (category, reporting_method) are always self_reported.
+  # For IncomeActivity, employer name is compared when DocAI supplies `companyname`.
   # Returns a hash of { field_name => evidence_source_string }.
   def field_attributions(activity, staged_document)
     base = ActivityAttributions::SELF_REPORTED
@@ -52,6 +53,10 @@ module ActivitiesHelper
     result[:month] = field_attribution_for(activity.month, original[:month])
     if activity.is_a?(IncomeActivity)
       result[:income] = field_attribution_for(activity.income&.cents, original[:income_cents])
+      result[:name] = field_attribution_for(
+        DocAiResult::Payslip.normalize_company_name_string(activity.name),
+        original[:name]
+      )
     else
       # AI (payslip extraction) never populates hours — only income and month.
       # Hours on an AI-sourced activity are always self-reported.
@@ -128,7 +133,9 @@ module ActivitiesHelper
     month = parse_ai_month(payslip.pay_period_start_date&.value)
     income_cents = payslip.current_gross_pay&.value&.then { |v| (v.to_f * 100).round }
 
-    { month: month, income_cents: income_cents, hours: nil }
+    name = payslip.is_a?(DocAiResult::Payslip) ? payslip.company_name_value : nil
+
+    { month: month, income_cents: income_cents, hours: nil, name: name }
   end
 
   def parse_ai_month(pay_period_start_date)
