@@ -5,6 +5,26 @@ require "rails_helper"
 RSpec.describe Determinations::ExternalCECombinedDeterminationData do
   let(:expected_calculated_at) { Time.zone.parse("2026-04-30 15:00:00").iso8601 }
 
+  let(:empty_hours_data) do
+    {
+      total_hours: 0,
+      hours_by_category: {},
+      hours_by_source: { external: 0.0, activity: 0.0 },
+      external_hourly_activity_ids: [],
+      activity_ids: []
+    }
+  end
+  let(:empty_income_data) do
+    {
+      total_income: BigDecimal("0"),
+      income_by_source: { external: BigDecimal("0"), activity: BigDecimal("0") },
+      period_start: nil,
+      period_end: nil,
+      external_income_activity_ids: [],
+      activity_ids: []
+    }
+  end
+
   around do |example|
     travel_to(Time.zone.parse(expected_calculated_at)) { example.run }
   end
@@ -132,6 +152,70 @@ RSpec.describe Determinations::ExternalCECombinedDeterminationData do
     expect(payload["satisfied_by"]).to eq(Determination::SATISFIED_BY_NEITHER)
     expect(payload["hours"]["compliant"]).to be false
     expect(payload["income"]["compliant"]).to be false
+  end
+
+  # No fallback aggregate was computed, so there is no third track to serialize.
+  it "omits the combined_hours payload when no combined aggregate is given" do
+    payload = described_class.build(
+      hours_data: empty_hours_data,
+      income_data: empty_income_data,
+      hours_ok: false,
+      income_ok: false
+    ).to_h
+
+    expect(payload).not_to have_key("combined_hours")
+  end
+
+  it "uses satisfied_by combined_hours when only the combined track passes" do
+    combined_hours_data = {
+      total_hours: 95,
+      hours_by_category: { "employment" => 55.0, "community_service" => 40.0 },
+      hours_by_source: { external: 95.0, activity: 0.0 },
+      external_hourly_activity_ids: [ "cccccccc-cccc-4ccc-8ccc-cccccccccccc" ],
+      activity_ids: []
+    }
+
+    payload = described_class.build(
+      hours_data: empty_hours_data,
+      income_data: empty_income_data,
+      hours_ok: false,
+      income_ok: false,
+      combined_hours_data: combined_hours_data,
+      combined_hours_ok: true
+    ).to_h
+
+    expect(payload["satisfied_by"]).to eq(Determination::SATISFIED_BY_COMBINED_HOURS)
+    expect(payload["hours"]["compliant"]).to be false
+    expect(payload["income"]["compliant"]).to be false
+    expect(payload["combined_hours"]).to eq(
+      Determinations::HoursBasedDeterminationData.from_aggregate(combined_hours_data, compliant: true).to_h
+    )
+  end
+
+  # A verdict with nothing behind it would put a compliant determination on an empty payload.
+  it "fails at build time when the combined track passes with no aggregate" do
+    expect {
+      described_class.build(
+        hours_data: empty_hours_data,
+        income_data: empty_income_data,
+        hours_ok: false,
+        income_ok: false,
+        combined_hours_ok: true
+      )
+    }.to raise_error(ActiveModel::ValidationError)
+  end
+
+  # The reverse: figures no verdict was drawn from have no business in the payload.
+  it "fails at build time when a combined aggregate arrives with no verdict" do
+    expect {
+      described_class.build(
+        hours_data: empty_hours_data,
+        income_data: empty_income_data,
+        hours_ok: false,
+        income_ok: false,
+        combined_hours_data: empty_hours_data
+      )
+    }.to raise_error(ActiveModel::ValidationError)
   end
 
   it "fails at build time when nested hours aggregate is invalid" do

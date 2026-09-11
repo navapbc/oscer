@@ -5,8 +5,8 @@
 # report hours, gross income, or both, and is split into one entry per calendar month it touches.
 #
 # After a successful save, optional compliance recalculation (+recalculate_compliance+, default
-# +true+) records exactly one determination for the member's open case — hours first, falling
-# through to income only when hours fall short.
+# +true+) records exactly one determination for the member's open case — hours first, then income
+# when hours fall short, then the two combined as a last resort.
 #
 # That path is dormant: the only caller, +Certifications::CreationService+, passes
 # +recalculate_compliance: false+ because the case does not exist yet at intake. Wiring up a
@@ -148,7 +148,7 @@ class ExternalActivityService
     #
     # The determination services' +.calculate+ methods aggregate *and* record, so calling both
     # would write two rows. The pieces they build on are public, so the branch is decided here and
-    # only the winning track is recorded.
+    # only the deciding track is recorded.
     #
     # Judged on monthly hours alone, matching +HoursComplianceDeterminationService#calculate+:
     # the education-enrollment track is deliberately not consulted here.
@@ -157,7 +157,7 @@ class ExternalActivityService
 
       if hours.present?
         hours_data = HoursComplianceDeterminationService
-          .aggregate_hours_for_certification(certification, application_form:)
+          .aggregate_hours_for_certification(certification, application_form:, with_income_conversion: false)
         hours_compliant = HoursComplianceDeterminationService
           .compliant_for_monthly_hours?(hours_data[:hours_by_month])
 
@@ -171,7 +171,27 @@ class ExternalActivityService
       income_compliant = IncomeComplianceDeterminationService
         .compliant_for_monthly_income?(income_data[:income_by_month])
 
-      kase.record_income_compliance(income_compliant ? :compliant : :not_compliant, income_data)
+      if income_compliant || hours.blank?
+        return kase.record_income_compliance(income_compliant ? :compliant : :not_compliant, income_data)
+      end
+
+      # Last resort: reported hours plus hours imputed from earned income. Recorded as the combined
+      # assessment, the shape +CommunityEngagementCheckService+ writes for this same policy, so all
+      # three tracks land in one payload rather than a second hours determination.
+      combined_hours_data = HoursComplianceDeterminationService
+        .aggregate_hours_for_certification(certification, application_form:, with_income_conversion: true)
+
+      kase.record_external_ce_combined_assessment(
+        actor: self,
+        certification: certification,
+        hours_data: hours_data,
+        income_data: income_data,
+        hours_ok: false,
+        income_ok: false,
+        combined_hours_data: combined_hours_data,
+        combined_hours_ok: HoursComplianceDeterminationService
+          .compliant_for_monthly_hours?(combined_hours_data[:hours_by_month])
+      )
     end
   end
 end
