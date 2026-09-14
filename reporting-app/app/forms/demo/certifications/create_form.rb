@@ -40,7 +40,7 @@ module Demo
           return false
         end
 
-        certification_requirements = certification_requirement_params.to_requirements
+        certification_requirements = certification_requirement_params.to_requirements(application_date:)
         if certification_requirements.invalid?
           errors.merge!(certification_requirements.errors)
           return false

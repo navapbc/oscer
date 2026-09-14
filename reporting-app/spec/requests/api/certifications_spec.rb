@@ -6,10 +6,11 @@ RSpec.describe "/api/certifications", type: :request do
   include Warden::Test::Helpers
 
   let(:member_user) { create(:user) }
+  let(:application_date) { Date.new(2025, 10, 16) }
   let(:valid_json_request_attributes) {
     {
       member_id: "foobar",
-      application_date: "2025-10-16",
+      application_date: application_date.to_s,
       member_data: {
         account_email: member_user.email,
         name: {
@@ -198,7 +199,30 @@ RSpec.describe "/api/certifications", type: :request do
 
         requirement_params.validate
         cert = Certification.find(response.parsed_body[:id])
-        expect(cert.certification_requirements).to eq(requirement_params.to_requirements)
+        expect(cert.certification_requirements).to eq(requirement_params.to_requirements(application_date:))
+      end
+    end
+
+    context "when the application date and the nested certification date differ" do
+      it "counts the reportable months from the application date" do
+        requirement_params = build(
+          :certification_certification_requirement_params, :with_direct_params,
+          certification_date: Date.new(2024, 3, 9)
+        )
+        params = valid_json_request_attributes.merge({
+          certification_requirements: requirement_params.as_json
+        })
+
+        post api_certifications_url,
+             params: params,
+             headers: auth_headers(params),
+             as: :json
+
+        expect(response).to have_http_status(:created)
+
+        cert = Certification.find(response.parsed_body[:id])
+        expect(cert.certification_requirements.months_that_can_be_certified.max)
+          .to eq(application_date.beginning_of_month << 1)
       end
     end
 
@@ -872,7 +896,6 @@ RSpec.describe "/api/certifications", type: :request do
     end
 
     context "when a duplicate request is submitted" do
-      let(:application_date) { Date.new(2025, 10, 16) }
       let(:duplicate_attributes) {
         valid_json_request_attributes.merge(
           member_id: "dup-member",
@@ -972,30 +995,25 @@ RSpec.describe "/api/certifications", type: :request do
         expect(response).to match_openapi_doc(OPENAPI_DOC)
       end
 
-      it "creates a new certification when no application_date is provided" do
+      it "rejects a request carrying no application_date" do
         params = valid_json_request_attributes.except(:application_date).merge(
           member_id: "no-app-date",
           case_number: "C-NAD"
         )
-
-        post api_certifications_url,
-             params: params,
-             headers: auth_headers(params),
-             as: :json
-        expect(response).to have_http_status(:created)
 
         expect {
           post api_certifications_url,
                params: params,
                headers: auth_headers(params),
                as: :json
-        }.to change(Certification, :count).by(1)
+        }.not_to change(Certification, :count)
 
-        expect(response).to have_http_status(:created)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["errors"]).to include(a_hash_including("field" => "application_date"))
         expect(response).to match_openapi_doc(OPENAPI_DOC)
       end
 
-      it "creates a new certification when a dated request is replayed without application_date" do
+      it "rejects a dated request replayed without its application_date" do
         post api_certifications_url,
              params: duplicate_attributes,
              headers: auth_headers(duplicate_attributes),
@@ -1008,9 +1026,29 @@ RSpec.describe "/api/certifications", type: :request do
                params: undated_attributes,
                headers: auth_headers(undated_attributes),
                as: :json
-        }.to change(Certification, :count).by(1)
+        }.not_to change(Certification, :count)
 
-        expect(response).to have_http_status(:created)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["errors"]).to include(a_hash_including("field" => "application_date"))
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+      end
+
+      it "rejects a request whose application_date is not a date" do
+        params = valid_json_request_attributes.merge(
+          application_date: 12_345,
+          member_id: "bad-app-date",
+          case_number: "C-BAD"
+        )
+
+        expect {
+          post api_certifications_url,
+               params: params,
+               headers: auth_headers(params),
+               as: :json
+        }.not_to change(Certification, :count)
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["errors"]).to include(a_hash_including("field" => "application_date"))
         expect(response).to match_openapi_doc(OPENAPI_DOC)
       end
     end

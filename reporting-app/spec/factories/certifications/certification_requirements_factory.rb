@@ -4,7 +4,9 @@ FactoryBot.define do
   factory :certification_certification_requirements, class: Certifications::Requirements do
     certification_date { Faker::Date.forward(days: 30) }
     number_of_months_to_certify { Faker::Number.within(range: 1..3) }
-    # Mirrors Certifications::RequirementParams#months_that_can_be_certified.
+    # TODO: repoint to application_date. Production anchors there, and certifications_factory
+    # defaults it to Date.current while this defaults up to 30 days ahead, so a factory-built
+    # certification's months do not match what production would derive for it.
     months_that_can_be_certified do
       Faker::Number.between(
         from: number_of_months_to_certify,

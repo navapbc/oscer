@@ -65,8 +65,9 @@ class Certification < ApplicationRecord
   # (member_id + case_number + application_date). Used to make
   # POST /api/certifications idempotent for state-system integrations.
   # Returns nil if any key component is blank so unrelated records with
-  # missing values are never treated as duplicates. application_date will
-  # be required on create in a follow-up; keep this guard until then.
+  # missing values are never treated as duplicates.
+  # TODO: drop the application_date clause. CreateRequest validates it present now, so it is
+  # unreachable from the API. member_id and case_number are still unvalidated there.
   def self.find_duplicate(member_id:, case_number:, application_date:)
     return nil if member_id.blank? || case_number.blank? || application_date.blank?
 
