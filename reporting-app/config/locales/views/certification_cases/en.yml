@@ -22,9 +22,9 @@ en:
       no_income_reported: "No income reported from external sources for this lookback."
     show:
       activity_line_items: "Activity line items"
+      application_date: "Application date:"
       assigned_to: "Assigned to:"
       caseworker: "Caseworker"
-      certification_date: "Certification date:"
       certification_details: "Certification Details"
       certification_due_date: "Certification due date:"
       last_updated: "Last updated:"

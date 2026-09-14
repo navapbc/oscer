@@ -8,6 +8,7 @@ RSpec.describe "/staff/certification_cases", type: :request do
   let(:user) { create(:user, :as_caseworker, region: "north") }
   let(:certification) { create(:certification, certification_requirements: build(:certification_certification_requirements, region: "north")) }
   let(:certification_case) { create(:certification_case, certification_id: certification.id) }
+  let(:rendered_page_text) { Capybara.string(response.body).text.squish }
 
   before do
     login_as user
@@ -29,8 +30,10 @@ RSpec.describe "/staff/certification_cases", type: :request do
 
     it "displays the certification case information" do
       get "/staff/certification_cases/#{certification_case.id}"
-      expect(response.body).to include(certification.case_number)
-      expect(response.body).to include(certification_case.status)
+      expect(rendered_page_text).to include("Case: #{certification.case_number}")
+      expect(rendered_page_text).to include("Status: #{certification_case.status}")
+      expect(rendered_page_text)
+        .to include("Application date: #{certification.application_date.strftime('%m/%d/%Y')}")
     end
 
     context "when certification case does not exist" do
