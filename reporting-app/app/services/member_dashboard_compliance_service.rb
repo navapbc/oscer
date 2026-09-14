@@ -44,7 +44,7 @@ class MemberDashboardComplianceService
         total_hours_reported: total_hours,
         target_hours: target_hours,
         hours_needed: [ target_hours - total_hours, 0 ].max,
-        certification_date: certification.certification_requirements.certification_date,
+        evaluated_month: certification.evaluated_month,
         due_date: certification.certification_requirements.due_date,
         hours_summary: hours_summary,
         exemption_flow_state: exemption_flow_state(

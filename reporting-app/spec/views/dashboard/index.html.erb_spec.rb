@@ -37,7 +37,7 @@ RSpec.describe "dashboard/index", type: :view do
     assign(:member_dashboard_compliance, member_dashboard_compliance)
 
     # Hours compliance data required by the dashboard partials
-    assign(:current_period, certification.certification_requirements.certification_date)
+    assign(:current_period, certification.evaluated_month)
     assign(:target_hours, HoursComplianceDeterminationService::TARGET_HOURS)
     assign(:period_end_date, certification.certification_requirements.due_date)
     assign(:total_hours_reported, 0)
@@ -311,7 +311,7 @@ RSpec.describe "dashboard/index", type: :view do
 
       it "renders activity tables under the month-based heading" do
         render
-        month = I18n.l(certification.certification_requirements.certification_date, format: :month_year)
+        month = I18n.l(certification.evaluated_month, format: :month_year)
         expect(rendered).to have_selector(
           "h3",
           text: I18n.t("dashboard.member_compliance.activity_report_title", period: month)
@@ -344,7 +344,7 @@ RSpec.describe "dashboard/index", type: :view do
 
       it "renders compliance summary tables, line items, and a supporting-document download link" do
         render
-        period = I18n.l(certification.certification_requirements.certification_date, format: :month_year)
+        period = I18n.l(certification.evaluated_month, format: :month_year)
         expect(rendered).to have_selector("h3", text: I18n.t("dashboard.member_compliance.activity_report_title", period: period))
         expect(rendered).to have_css(".member-dashboard-compliance__table--hours")
         expect(rendered).to have_selector("h2#member-compliance-line-items-heading",
@@ -832,7 +832,7 @@ RSpec.describe "dashboard/index", type: :view do
 
       it "renders the hours table only, under the month-based activity report heading" do
         render
-        month = I18n.l(certification.certification_requirements.certification_date, format: :month_year)
+        month = I18n.l(certification.evaluated_month, format: :month_year)
         expect(rendered).to have_selector("h3", text: "#{month} Activity Report")
         expect(rendered).to have_css(hours_table)
         expect(rendered).not_to have_css(income_table)

@@ -23,7 +23,8 @@
 # - +income_percent_of_requirement+ — +Float+ in 0.0..100.0 when +show_income_summary+, else +nil+. Lazy.
 # - +total_hours_reported+ / +target_hours+ / +hours_needed+ — +Integer+.
 # - +period_start_on+ / +period_end_on+ — +Date+ or +nil+ (nil when income is hidden). Lazy.
-# - +certification_date+ / +due_date+ — +Date+, sourced from +certification_requirements+.
+# - +evaluated_month+ — +Date+, the first of the month OSCER evaluates.
+# - +due_date+ — +Date+, sourced from +certification_requirements+.
 # - +income_summary+ — +Hash+ matching the +IncomeComplianceDeterminationService+ shape, or +nil+
 #   when income is hidden. Lazy.
 # - +hours_summary+ — +Hash+ matching the +HoursComplianceDeterminationService+ shape.
@@ -89,7 +90,7 @@ class MemberDashboardCompliance
               :total_hours_reported,
               :target_hours,
               :hours_needed,
-              :certification_date,
+              :evaluated_month,
               :due_date,
               :hours_summary,
               :exemption_flow_state
@@ -97,7 +98,7 @@ class MemberDashboardCompliance
   def initialize(certification:, certification_case:, exemption_application_form:, activity_report_application_form:,
                  lookback:, report_status_token:, latest_determination:, show_income_summary:,
                  total_hours_reported:, target_hours:, hours_needed:,
-                 certification_date:, due_date:, hours_summary:, exemption_flow_state:)
+                 evaluated_month:, due_date:, hours_summary:, exemption_flow_state:)
     @certification = certification
     @certification_case = certification_case
     @activity_report_application_form = activity_report_application_form
@@ -109,7 +110,7 @@ class MemberDashboardCompliance
     @total_hours_reported = total_hours_reported
     @target_hours = target_hours
     @hours_needed = hours_needed
-    @certification_date = certification_date
+    @evaluated_month = evaluated_month
     @due_date = due_date
     @hours_summary = hours_summary
     @exemption_flow_state = exemption_flow_state

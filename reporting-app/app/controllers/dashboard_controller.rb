@@ -68,7 +68,7 @@ class DashboardController < ApplicationController
     @total_hours_reported = @member_dashboard_compliance.total_hours_reported
     @target_hours = @member_dashboard_compliance.target_hours
     @hours_needed = @member_dashboard_compliance.hours_needed
-    @current_period = @member_dashboard_compliance.certification_date
+    @current_period = @member_dashboard_compliance.evaluated_month
     @period_end_date = @member_dashboard_compliance.due_date
   end
 end
