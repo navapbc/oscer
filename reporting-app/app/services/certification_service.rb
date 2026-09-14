@@ -3,7 +3,9 @@
 class CertificationService
   def find_cases_by_member_id(member_id)
     certifications_by_id = Certification.by_member_id(member_id).index_by(&:id)
-    certification_cases = CertificationCase.where(certification_id: certifications_by_id.keys)
+    certification_cases = CertificationCase
+      .where(certification_id: certifications_by_id.keys)
+      .order(created_at: :desc)
     certification_cases.each do |kase|
       kase.certification = certifications_by_id[kase.certification_id]
     end

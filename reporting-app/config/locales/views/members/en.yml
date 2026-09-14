@@ -3,7 +3,7 @@ en:
     show:
       certification_cases: "Certification Cases"
       case_number: "Case No."
-      certification_date: "Certification date"
+      date_created: "Date created"
       status: "Status"
     search:
       title: "Member Search"
