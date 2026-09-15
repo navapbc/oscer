@@ -14,7 +14,7 @@ RSpec.describe UnifiedRecordProcessor do
           "member_email" => "test@example.com",
           "first_name" => "Alice",
           "last_name" => "Smith",
-          "certification_date" => "2025-01-15",
+          "application_date" => "2025-01-15",
           "certification_type" => "new_application"
         }
       end
@@ -128,7 +128,7 @@ RSpec.describe UnifiedRecordProcessor do
             "member_id" => "M123",
             "case_number" => "C-001",
             "member_email" => "test@example.com",
-            "certification_date" => "2025-01-15",
+            "application_date" => "2025-01-15",
             "certification_type" => "new_application"
           }
           record.delete(field)
@@ -152,11 +152,10 @@ RSpec.describe UnifiedRecordProcessor do
 
     context "with duplicate certification" do
       let(:existing_cert) do
-        cert = create(:certification,
+        create(:certification,
           member_id: "M12345",
-          case_number: "C-001")
-        cert.update_column(:certification_requirements, { "certification_date" => "2025-01-15" })
-        cert
+          case_number: "C-001",
+          application_date: "2025-01-15")
       end
 
       let(:record) do
@@ -166,7 +165,7 @@ RSpec.describe UnifiedRecordProcessor do
           "member_email" => "test@example.com",
           "first_name" => "Alice",
           "last_name" => "Smith",
-          "certification_date" => "2025-01-15",
+          "application_date" => "2025-01-15",
           "certification_type" => "new_application"
         }
       end
@@ -207,7 +206,7 @@ RSpec.describe UnifiedRecordProcessor do
           "member_id" => "M12345",
           "case_number" => "C-001",
           "member_email" => "valid@example.com",
-          "certification_date" => "2025-01-15",
+          "application_date" => "2025-01-15",
           "certification_type" => "new_application"
         }
       end
@@ -262,13 +261,13 @@ RSpec.describe UnifiedRecordProcessor do
           "member_email" => "test@example.com",
           "first_name" => "Alice",
           "last_name" => "Smith",
-          "certification_date" => "2025-01-15",
+          "application_date" => "2025-01-15",
           "certification_type" => "new_application"
         }
       end
 
       it "raises ValidationError for invalid date format (VAL_002)" do
-        record = base_record.merge("certification_date" => "01/15/2025")
+        record = base_record.merge("application_date" => "01/15/2025")
 
         expect { processor.process(record) }
           .to raise_error(UnifiedRecordProcessor::ValidationError) do |error|

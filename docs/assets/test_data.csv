@@ -1,4 +1,4 @@
-member_id,case_number,member_email,certification_date,certification_type,first_name,middle_name,last_name,lookback_period,number_of_months_to_certify,due_period_days,address,county,zip_code,date_of_birth,pregnancy_status,race_ethnicity,work_hours,other_income_sources
+member_id,case_number,member_email,application_date,certification_type,first_name,middle_name,last_name,lookback_period,number_of_months_to_certify,due_period_days,address,county,zip_code,date_of_birth,pregnancy_status,race_ethnicity,work_hours,other_income_sources
 122,1231,test@test.com,2025-10-26,new_application,Test,Tester,Testee,2,2,30,123 Test Address,Oklahoma,73112,1970-10-17,FALSE,Caucasian,20,20
 222,4561,jane.doe@example.com,2025-11-01,recertification,Jane,Marie,Doe,1,6,60,456 Oak Avenue,Cleveland,44101,1985-05-22,FALSE,African American,35,150
 322,7891,john.smith@domain.com,2025-10-15,new_application,John,Allen,Smith,3,12,90,789 Pine Street,Los Angeles,90001,1992-03-10,FALSE,Hispanic,40,50

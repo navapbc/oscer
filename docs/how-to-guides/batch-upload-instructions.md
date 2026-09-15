@@ -23,7 +23,7 @@ Processing begins automatically when a file is uploaded — there is no manual "
 | `member_id` | Unique member identifier | Text (e.g., M12345) |
 | `case_number` | Medicaid case number (must be unique) | Text (e.g., C-001) |
 | `member_email` | Member's email address | Valid email |
-| `certification_date` | Date of certification | YYYY-MM-DD |
+| `application_date` | Date of application | YYYY-MM-DD |
 | `certification_type` | Type of certification | `new_application` or `recertification` |
 
 ### Optional Fields
@@ -53,7 +53,7 @@ Processing begins automatically when a file is uploaded — there is no manual "
 > **Note:** If you want to receive email notifications, change the emails in the sample CSV to real email addresses.
 
 ```csv
-member_id,case_number,member_email,first_name,last_name,certification_date,certification_type,date_of_birth,pregnancy_status,race_ethnicity
+member_id,case_number,member_email,first_name,last_name,application_date,certification_type,date_of_birth,pregnancy_status,race_ethnicity
 M12345,C-001,john.doe@example.com,John,Doe,2025-01-15,new_application,1990-05-15,no,white
 M12346,C-002,jane.smith@example.com,Jane,Smith,2025-01-15,recertification,1985-03-20,yes,black
 ```

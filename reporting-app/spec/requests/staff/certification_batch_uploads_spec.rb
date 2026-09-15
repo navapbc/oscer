@@ -30,7 +30,7 @@ RSpec.describe "Staff::CertificationBatchUploads", type: :request do
     context "with valid CSV file" do
       let(:csv_content) do
         <<~CSV
-          member_id,case_number,member_email,first_name,last_name,certification_date,certification_type
+          member_id,case_number,member_email,first_name,last_name,application_date,certification_type
           M127,C-007,test@example.com,Test,User,2025-01-15,new_application
         CSV
       end

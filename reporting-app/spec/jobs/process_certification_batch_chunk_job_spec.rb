@@ -15,7 +15,7 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
       "member_email" => "test6@example.com",
       "first_name" => "Test",
       "last_name" => "Six",
-      "certification_date" => "2025-04-10",
+      "application_date" => "2025-04-10",
       "certification_type" => "new_application"
     }
   end
@@ -33,11 +33,11 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
       "member_email" => "test8@example.com",
       "first_name" => "Test",
       "last_name" => "Eight",
-      "certification_date" => "2025-04-12",
+      "application_date" => "2025-04-12",
       "certification_type" => "new_application"
     }
   end
-  let(:headers) { %w[member_id case_number member_email first_name last_name certification_date certification_type] }
+  let(:headers) { %w[member_id case_number member_email first_name last_name application_date certification_type] }
   let(:start_byte) { 0 }
   let(:end_byte) { 999 }
   let(:record_count) { 3 }
@@ -107,7 +107,7 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
           "member_email" => "test9@example.com",
           "first_name" => "Test",
           "last_name" => "Nine",
-          "certification_date" => "2025-06-20",
+          "application_date" => "2025-06-20",
           "certification_type" => "new_application"
         }
       end
@@ -144,9 +144,7 @@ RSpec.describe ProcessCertificationBatchChunkJob, type: :job do
         create(:certification,
           member_id: duplicate_record["member_id"],
           case_number: duplicate_record["case_number"],
-          certification_requirements: {
-            certification_date: duplicate_record["certification_date"]
-          }
+          application_date: duplicate_record["application_date"]
         )
       end
 

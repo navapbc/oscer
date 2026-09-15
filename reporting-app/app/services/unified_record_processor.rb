@@ -23,7 +23,7 @@ class UnifiedRecordProcessor
   class DatabaseError < ProcessingError; end
 
   # Required fields for all certification records
-  REQUIRED_FIELDS = %w[member_id case_number member_email certification_date certification_type].freeze
+  REQUIRED_FIELDS = %w[member_id case_number member_email application_date certification_type].freeze
 
   def initialize(certification_service: CertificationService.new, validator: BatchUploadRecordValidator.new)
     @certification_service = certification_service
@@ -67,17 +67,17 @@ class UnifiedRecordProcessor
 
   # Check if certification already exists (idempotency)
   def check_duplicate!(record)
-    return if record["member_id"].blank? || record["case_number"].blank? || record["certification_date"].blank?
+    return if record["member_id"].blank? || record["case_number"].blank? || record["application_date"].blank?
 
-    if Certification.exists_for?(
+    if Certification.find_duplicate(
       member_id: record["member_id"],
       case_number: record["case_number"],
-      certification_date: record["certification_date"]
+      application_date: record["application_date"]
     )
       raise DuplicateError.new(
         BatchUploadErrors::Duplicate::EXISTING_CERTIFICATION,
         "Duplicate certification for member_id #{record['member_id']}, " \
-        "case_number #{record['case_number']}, certification_date #{record['certification_date']}"
+        "case_number #{record['case_number']}, application_date #{record['application_date']}"
       )
     end
   end
@@ -109,8 +109,7 @@ class UnifiedRecordProcessor
     Certification.new(
       member_id: record["member_id"],
       case_number: record["case_number"],
-      # TODO: read directly from the application_date field once batch uploads accept it in place of certification_date.
-      application_date: record["certification_date"],
+      application_date: record["application_date"],
       member_data: build_member_data(record),
       certification_requirements: build_certification_requirements(record)
     )
@@ -118,7 +117,7 @@ class UnifiedRecordProcessor
 
   # Build member_data hash from record fields
   def build_member_data(record)
-    parturition_date = record["certification_date"] if pregnancy_flag?(record["pregnancy_status"])
+    parturition_date = record["application_date"] if pregnancy_flag?(record["pregnancy_status"])
 
     {
       "name" => {
@@ -144,7 +143,8 @@ class UnifiedRecordProcessor
   # Build certification_requirements hash from record fields
   def build_certification_requirements(record)
     requirement_input = {
-      "certification_date" => record["certification_date"],
+      # TODO: drop this key when certification_date leaves the model, still validated present in RequirementParams.
+      "certification_date" => record["application_date"],
       "certification_type" => record["certification_type"],
       "lookback_period" => record["lookback_period"]&.to_i,
       "number_of_months_to_certify" => record["number_of_months_to_certify"]&.to_i,
@@ -152,12 +152,10 @@ class UnifiedRecordProcessor
       "region" => record["region"]
     }.compact_blank
 
-    # Cast because the CSV holds dates as strings and the anchor is a plain argument now. Same cast
-    # the certification_date attribute applies, so an unparseable value becomes nil and fails
-    # RequirementParams' presence validation.
+    # Cast because the CSV holds dates as strings and the anchor is a plain argument now.
     @certification_service.certification_requirements_from_input(
       requirement_input,
-      application_date: ActiveModel::Type::Date.new.cast(record["certification_date"])
+      application_date: ActiveModel::Type::Date.new.cast(record["application_date"])
     )
   end
 

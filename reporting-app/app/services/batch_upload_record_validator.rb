@@ -27,7 +27,7 @@ class BatchUploadRecordValidator
   INTEGER_FORMAT = /\A\d+\z/
 
   # Date fields to validate
-  DATE_FIELDS = %w[certification_date].freeze
+  DATE_FIELDS = %w[application_date].freeze
   OPTIONAL_DATE_FIELDS = %w[date_of_birth].freeze
 
   # Integer fields to validate (when present)
