@@ -12,7 +12,7 @@ RSpec.describe BatchUploadRecordValidator do
           "member_id" => "M12345",
           "case_number" => "C-001",
           "member_email" => "test@example.com",
-          "certification_date" => "2025-01-15",
+          "application_date" => "2025-01-15",
           "certification_type" => "new_application",
           "first_name" => "Alice",
           "last_name" => "Smith",
@@ -82,7 +82,7 @@ RSpec.describe BatchUploadRecordValidator do
             "member_id" => "M12345",
             "case_number" => "C-001",
             "member_email" => "test@example.com",
-            "certification_date" => "2025-01-15",
+            "application_date" => "2025-01-15",
             "certification_type" => "new_application"
           }
           record.delete(field)
@@ -105,7 +105,7 @@ RSpec.describe BatchUploadRecordValidator do
         expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::MISSING_FIELDS)
         expect(result.error_messages.first).to include("case_number")
         expect(result.error_messages.first).to include("member_email")
-        expect(result.error_messages.first).to include("certification_date")
+        expect(result.error_messages.first).to include("application_date")
         expect(result.error_messages.first).to include("certification_type")
       end
 
@@ -114,7 +114,7 @@ RSpec.describe BatchUploadRecordValidator do
           "member_id" => "",
           "case_number" => "C-001",
           "member_email" => "test@example.com",
-          "certification_date" => "2025-01-15",
+          "application_date" => "2025-01-15",
           "certification_type" => "new_application"
         }
 
@@ -130,7 +130,7 @@ RSpec.describe BatchUploadRecordValidator do
           "member_id" => "",
           "case_number" => "",
           "member_email" => "",
-          "certification_date" => "2025-01-15",
+          "application_date" => "2025-01-15",
           "certification_type" => "new_application"
         }
 
@@ -150,36 +150,36 @@ RSpec.describe BatchUploadRecordValidator do
           "member_id" => "M12345",
           "case_number" => "C-001",
           "member_email" => "test@example.com",
-          "certification_date" => "2025-01-15",
+          "application_date" => "2025-01-15",
           "certification_type" => "new_application"
         }
       end
 
-      describe "certification_date validation" do
+      describe "application_date validation" do
         it "fails with wrong format (MM/DD/YYYY)" do
-          base_record["certification_date"] = "01/15/2025"
+          base_record["application_date"] = "01/15/2025"
 
           result = validator.validate(base_record)
 
           expect(result.success?).to be(false)
           expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_DATE)
-          expect(result.error_messages.first).to include("certification_date")
+          expect(result.error_messages.first).to include("application_date")
           expect(result.error_messages.first).to include("01/15/2025")
           expect(result.error_messages.first).to include("YYYY-MM-DD")
         end
 
         it "fails with wrong format (DD-MM-YYYY)" do
-          base_record["certification_date"] = "15-01-2025"
+          base_record["application_date"] = "15-01-2025"
 
           result = validator.validate(base_record)
 
           expect(result.success?).to be(false)
           expect(result.error_codes.first).to eq(BatchUploadErrors::Validation::INVALID_DATE)
-          expect(result.error_messages.first).to include("certification_date")
+          expect(result.error_messages.first).to include("application_date")
         end
 
         it "fails with unparseable date (invalid month)" do
-          base_record["certification_date"] = "2025-13-01"
+          base_record["application_date"] = "2025-13-01"
 
           result = validator.validate(base_record)
 
@@ -189,7 +189,7 @@ RSpec.describe BatchUploadRecordValidator do
         end
 
         it "fails with unparseable date (invalid day)" do
-          base_record["certification_date"] = "2025-02-30"
+          base_record["application_date"] = "2025-02-30"
 
           result = validator.validate(base_record)
 
@@ -199,7 +199,7 @@ RSpec.describe BatchUploadRecordValidator do
         end
 
         it "fails with text instead of date" do
-          base_record["certification_date"] = "January 15, 2025"
+          base_record["application_date"] = "January 15, 2025"
 
           result = validator.validate(base_record)
 
@@ -253,7 +253,7 @@ RSpec.describe BatchUploadRecordValidator do
           "member_id" => "M12345",
           "case_number" => "C-001",
           "member_email" => "test@example.com",
-          "certification_date" => "2025-01-15",
+          "application_date" => "2025-01-15",
           "certification_type" => "new_application"
         }
       end
@@ -339,7 +339,7 @@ RSpec.describe BatchUploadRecordValidator do
           "member_id" => "M12345",
           "case_number" => "C-001",
           "member_email" => "test@example.com",
-          "certification_date" => "2025-01-15",
+          "application_date" => "2025-01-15",
           "certification_type" => "new_application"
         }
       end
@@ -394,7 +394,7 @@ RSpec.describe BatchUploadRecordValidator do
           "member_id" => "M12345",
           "case_number" => "C-001",
           "member_email" => "test@example.com",
-          "certification_date" => "2025-01-15",
+          "application_date" => "2025-01-15",
           "certification_type" => "new_application"
         }
       end
@@ -531,7 +531,7 @@ RSpec.describe BatchUploadRecordValidator do
       it "collects required fields error and date format error together" do
         record = {
           "member_id" => "M12345",
-          "certification_date" => "invalid-date"
+          "application_date" => "invalid-date"
           # Missing: case_number, member_email, certification_type
         }
 
@@ -547,7 +547,7 @@ RSpec.describe BatchUploadRecordValidator do
           "member_id" => "M12345",
           "case_number" => "C-001",
           "member_email" => "invalid-email",
-          "certification_date" => "invalid-date",
+          "application_date" => "invalid-date",
           "certification_type" => "new_application"
         }
 
@@ -563,7 +563,7 @@ RSpec.describe BatchUploadRecordValidator do
           "member_id" => "M12345",
           "case_number" => "C-001",
           "member_email" => "invalid-email",
-          "certification_date" => "2025-01-15",
+          "application_date" => "2025-01-15",
           "certification_type" => "invalid-type"
         }
 
@@ -579,7 +579,7 @@ RSpec.describe BatchUploadRecordValidator do
           "member_id" => "M12345",
           "case_number" => "C-001",
           "member_email" => "test@example.com",
-          "certification_date" => "2025-01-15",
+          "application_date" => "2025-01-15",
           "certification_type" => "invalid-type",
           "lookback_period" => "invalid"
         }
@@ -596,7 +596,7 @@ RSpec.describe BatchUploadRecordValidator do
           "member_id" => "M12345",
           "case_number" => "C-001",
           "member_email" => "test@example.com",
-          "certification_date" => "2025-01-15",
+          "application_date" => "2025-01-15",
           "certification_type" => "new_application",
           "lookback_period" => "thirty",
           "number_of_months_to_certify" => "six",
@@ -619,7 +619,7 @@ RSpec.describe BatchUploadRecordValidator do
           "member_id" => "M12345",
           "case_number" => "C-001",
           "member_email" => "test@example.com",
-          "certification_date" => "2025-01-15",
+          "application_date" => "2025-01-15",
           "certification_type" => "new_application"
         }
       end
@@ -647,7 +647,7 @@ RSpec.describe BatchUploadRecordValidator do
       end
 
       it "accepts leap year date" do
-        base_record["certification_date"] = "2024-02-29"
+        base_record["application_date"] = "2024-02-29"
 
         result = validator.validate(base_record)
 
@@ -655,7 +655,7 @@ RSpec.describe BatchUploadRecordValidator do
       end
 
       it "fails with non-leap year Feb 29" do
-        base_record["certification_date"] = "2025-02-29"
+        base_record["application_date"] = "2025-02-29"
 
         result = validator.validate(base_record)
 

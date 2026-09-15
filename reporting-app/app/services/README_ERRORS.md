@@ -18,7 +18,7 @@ Error codes follow the pattern `[CATEGORY]_[NUMBER]`:
 
 ### Validation Errors (VAL_*)
 
-- **VAL_001** - Missing required fields (`member_id`, `case_number`, `member_email`, `certification_date`, `certification_type`)
+- **VAL_001** - Missing required fields (`member_id`, `case_number`, `member_email`, `application_date`, `certification_type`)
 - **VAL_002** - Invalid date format (expected YYYY-MM-DD, e.g., "2025-03-15")
 - **VAL_003** - Invalid email format (must match RFC 5322)
 - **VAL_004** - Invalid enum value (e.g., `certification_type` must be "new_application" or "recertification")
@@ -26,7 +26,7 @@ Error codes follow the pattern `[CATEGORY]_[NUMBER]`:
 
 ### Duplicate Errors (DUP_*)
 
-- **DUP_001** - Certification already exists (same `member_id`, `case_number`, `certification_date`)
+- **DUP_001** - Certification already exists (same `member_id`, `case_number`, `application_date`)
 
 ### Database Errors (DB_*)
 

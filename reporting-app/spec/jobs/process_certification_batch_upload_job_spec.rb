@@ -18,7 +18,7 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
     before do
       # Attach valid CSV content
       csv_content = <<~CSV
-        member_id,case_number,member_email,first_name,last_name,certification_date,certification_type
+        member_id,case_number,member_email,first_name,last_name,application_date,certification_type
         M200,C-200,test@example.com,Test,User,2025-01-15,new_application
         M300,C-300,test2@example.com,Aurélie,Castañeda,2025-02-20,new_application
       CSV
@@ -34,19 +34,19 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
         .and_yield(
           [
             { "member_id" => "M200", "case_number" => "C-200", "member_email" => "test@example.com",
-              "first_name" => "Test", "last_name" => "User", "certification_date" => "2025-01-15",
+              "first_name" => "Test", "last_name" => "User", "application_date" => "2025-01-15",
               "certification_type" => "new_application" }
           ],
-          %w[member_id case_number member_email first_name last_name certification_date certification_type],
+          %w[member_id case_number member_email first_name last_name application_date certification_type],
           0,
           100
         ).and_yield(
           [
             { "member_id" => "M300", "case_number" => "C-300", "member_email" => "test2@example.com",
-              "first_name" => "Aurélie", "last_name" => "Castañeda", "certification_date" => "2025-02-20",
+              "first_name" => "Aurélie", "last_name" => "Castañeda", "application_date" => "2025-02-20",
               "certification_type" => "new_application" }
           ],
-          %w[member_id case_number member_email first_name last_name certification_date certification_type],
+          %w[member_id case_number member_email first_name last_name application_date certification_type],
           101,
           200
         )
@@ -62,7 +62,7 @@ RSpec.describe ProcessCertificationBatchUploadJob, type: :job do
         j["job_class"] == "ProcessCertificationBatchChunkJob"
       end
       expected_headers = %w[
-        member_id case_number member_email first_name last_name certification_date certification_type
+        member_id case_number member_email first_name last_name application_date certification_type
       ]
       expect(enqueued[0]["arguments"]).to eq(
         [

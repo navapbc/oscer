@@ -45,7 +45,7 @@ en:
             member_id: "Unique member identifier"
             case_number: "Medicaid case number"
             member_email: "Member's email address"
-            certification_date: "Date of certification (YYYY-MM-DD)"
+            application_date: "Date of application (YYYY-MM-DD)"
             certification_type: "Type: 'new_application' or 'recertification'"
             name: "Member's name components"
             lookback_period: "Number of months to look back (integer)"
