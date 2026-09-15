@@ -9,8 +9,8 @@ class MemberMailer < ApplicationMailer
   def exempt_email
     certification = params[:certification]
     @first_name = certification.member_name.first
-    @period = certification.certification_requirements.certification_date.strftime("%B %Y")
-    @renewal_date = (certification.certification_requirements.certification_date + 30.days).strftime("%B %d, %Y")
+    @period = certification.evaluated_month.strftime("%B %Y")
+    @renewal_date = (certification.application_date + 30.days).strftime("%B %d, %Y")
 
     mail(to: certification.member_email, subject: t(".subject", period: @period))
   end
@@ -27,8 +27,8 @@ class MemberMailer < ApplicationMailer
   def compliant_email
     certification = params[:certification]
     @first_name = certification.member_name.first
-    @period = certification.certification_requirements.certification_date.strftime("%B %Y")
-    @renewal_date = (certification.certification_requirements.certification_date + 30.days).strftime("%B %d, %Y")
+    @period = certification.evaluated_month.strftime("%B %Y")
+    @renewal_date = (certification.application_date + 30.days).strftime("%B %d, %Y")
 
     mail(to: certification.member_email, subject: t(".subject", period: @period))
   end

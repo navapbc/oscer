@@ -63,4 +63,37 @@ RSpec.describe CertificationService do
       expect(result).not_to include(open_case)
     end
   end
+
+  describe '#find_cases_by_member_id' do
+    let(:member_id) { 'MEMBER-ORDER-1' }
+    let(:oldest_case) { build_case(created_at: Time.zone.local(2026, 1, 5, 9, 0, 0)) }
+    let(:middle_case) { build_case(created_at: Time.zone.local(2026, 2, 1, 9, 0, 0)) }
+    let(:newest_case) { build_case(created_at: Time.zone.local(2026, 3, 10, 12, 0, 0)) }
+    let(:expected_order) { [ newest_case.id, middle_case.id, oldest_case.id ] }
+
+    def build_case(created_at:)
+      cert = create(:certification, member_id: member_id)
+      CertificationCase.find_by!(certification_id: cert.id).tap do |kase|
+        kase.update_column(:created_at, created_at)
+      end
+    end
+
+    before do
+      middle_case
+      newest_case
+      oldest_case
+    end
+
+    it 'returns the cases newest first' do
+      result = service.find_cases_by_member_id(member_id)
+
+      expect(result.map(&:id)).to eq(expected_order)
+    end
+
+    it 'hydrates each case with its certification' do
+      result = service.find_cases_by_member_id(member_id)
+
+      expect(result.map { |kase| kase.certification.member_id }).to all(eq(member_id))
+    end
+  end
 end
