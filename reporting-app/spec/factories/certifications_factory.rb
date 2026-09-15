@@ -6,7 +6,7 @@ FactoryBot.define do
     member_id { Faker::NationalHealthService.british_number }
     case_number { "C-%d" % Faker::Number.within(range: 1..10000) }
     application_date { Date.current }
-    certification_requirements { build(:certification_certification_requirements) }
+    certification_requirements { build(:certification_certification_requirements, application_date: application_date) }
     member_data { build(:certification_member_data) }
 
     trait :connected_to_email do

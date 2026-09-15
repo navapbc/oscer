@@ -192,8 +192,6 @@ components:
           - boolean
           - 'null'
           description: Whether the member is self employed
-      required:
-      - certification_date
     CertificationRequirementParameters:
       type: object
       properties:
@@ -232,7 +230,6 @@ components:
           format: date
           description: Date by which the Member must have submitted their evidence
       required:
-      - certification_date
       - lookback_period
       - number_of_months_to_certify
     CertificationRequirementTypeParameters:
@@ -265,7 +262,6 @@ components:
           - change_in_circumstance
           description: The type of certification
       required:
-      - certification_date
       - certification_type
     CertificationMemberData:
       type: object
