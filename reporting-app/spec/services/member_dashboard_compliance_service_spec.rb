@@ -48,6 +48,21 @@ RSpec.describe MemberDashboardComplianceService do
     let(:member_status) { MemberStatusService.determine(certification) }
 
 
+    context "when the application date and the stored certification date differ" do
+      let(:certification) do
+        create(:certification,
+               application_date: Date.new(2026, 1, 15),
+               certification_requirements: build(
+                 :certification_certification_requirements,
+                 certification_date: Date.new(2025, 7, 3)
+               ))
+      end
+
+      it "reports the month the application date falls in" do
+        expect(read_model.evaluated_month).to eq(Date.new(2026, 1, 1))
+      end
+    end
+
     context "with partial income progress" do
       before do
         create_external_income_for(certification:, gross_income: 290)
@@ -59,7 +74,7 @@ RSpec.describe MemberDashboardComplianceService do
         expect(read_model.income_needed).to eq(BigDecimal("290"))
         expect(read_model.income_percent_of_requirement).to eq(50.0)
         expect(read_model.due_date).to eq(certification.certification_requirements.due_date)
-        expect(read_model.certification_date).to eq(certification.certification_requirements.certification_date)
+        expect(read_model.evaluated_month).to eq(certification.evaluated_month)
       end
 
       # ExternalActivity.for_member no longer distinguishes the tracks (hours reads it too), so

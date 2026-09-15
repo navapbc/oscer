@@ -45,7 +45,7 @@ module MemberComplianceHelper
   # Heading above the activity tables, e.g. "January 2026 Activity Report" (Figma 7203:4878),
   # sourced from the certification month. Parity with the staff case-view tables.
   def member_compliance_activity_report_title(compliance)
-    period = compliance.certification_date && I18n.l(compliance.certification_date, format: :month_year)
+    period = compliance.evaluated_month && I18n.l(compliance.evaluated_month, format: :month_year)
     t("dashboard.member_compliance.activity_report_title", period: period)
   end
 
