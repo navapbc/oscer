@@ -16,14 +16,15 @@ class MemberMailerPreview < ActionMailer::Preview
   private
 
   def mock_certification
-    certification_date = Date.new(2025, 11, 4)
-    due_date = certification_date + 7.days
+    application_date = Date.new(2025, 11, 4)
+    due_date = application_date + 7.days
 
     OpenStruct.new(
       member_email: "member@example.com",
       member_name: OpenStruct.new(first: "John"),
+      application_date:,
+      evaluated_month: application_date.beginning_of_month,
       certification_requirements: OpenStruct.new(
-        certification_date:,
         due_date:
       )
     )

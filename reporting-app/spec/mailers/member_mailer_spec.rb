@@ -10,10 +10,16 @@ RSpec.describe MemberMailer, type: :mailer do
     allow(NotificationService).to receive(:send_email_notification)
   end
 
+  let(:application_date) { Date.new(2026, 1, 15) }
   let(:certification) do
     create(
       :certification,
-      member_data: build(:certification_member_data, :with_account_email, :with_full_name)
+      application_date: application_date,
+      member_data: build(:certification_member_data, :with_account_email, :with_full_name),
+      certification_requirements: build(
+        :certification_certification_requirements,
+        certification_date: Date.new(2025, 7, 3)
+      )
     )
   end
 
@@ -25,9 +31,12 @@ RSpec.describe MemberMailer, type: :mailer do
       expect(mail.to).to eq([ certification.member_email ])
     end
 
-    it "includes certification date in subject" do
-      period = certification.certification_requirements.certification_date.strftime("%B %Y")
-      expect(mail.subject).to include(period)
+    it "includes the application month in the subject" do
+      expect(mail.subject).to include("January 2026")
+    end
+
+    it "sets the renewal date 30 days after the application date" do
+      expect(mail.body.encoded).to include("February 14, 2026")
     end
 
     it "renders the body" do
@@ -56,9 +65,12 @@ RSpec.describe MemberMailer, type: :mailer do
       expect(mail.to).to eq([ certification.member_email ])
     end
 
-    it "includes certification date in subject" do
-      period = certification.certification_requirements.certification_date.strftime("%B %Y")
-      expect(mail.subject).to include(period)
+    it "includes the application month in the subject" do
+      expect(mail.subject).to include("January 2026")
+    end
+
+    it "sets the renewal date 30 days after the application date" do
+      expect(mail.body.encoded).to include("February 14, 2026")
     end
 
     it "renders the body" do
