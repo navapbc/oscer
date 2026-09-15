@@ -72,5 +72,53 @@ RSpec.describe "Members", type: :request do
         expect(response).to have_http_status(:not_found)
       end
     end
+
+    context "with several certification cases for one member" do
+      let(:listed_member_id) { "MEMBER-CASE-LIST" }
+      let(:oldest_created_at) { Time.zone.local(2026, 1, 5, 9, 0, 0) }
+      let(:middle_created_at) { Time.zone.local(2026, 2, 1, 9, 0, 0) }
+      let(:newest_created_at) { Time.zone.local(2026, 3, 10, 12, 0, 0) }
+      let(:oldest_case) { build_case(created_at: oldest_created_at) }
+      let(:middle_case) { build_case(created_at: middle_created_at) }
+      let(:newest_case) { build_case(created_at: newest_created_at) }
+      let(:expected_case_ids) { [ newest_case.id, middle_case.id, oldest_case.id ] }
+      let(:rendered_case_ids) { response.body.scan(%r{certification_cases/([0-9a-f-]{36})}).flatten }
+      let(:rendered_page) { Capybara.string(response.body) }
+      let(:rendered_column_names) { rendered_page.all("table thead th").map(&:text) }
+      let(:rendered_created_dates) { rendered_page.all("table tbody tr td:nth-child(2)").map(&:text) }
+
+      def build_case(created_at:)
+        cert = create(:certification, member_id: listed_member_id)
+        CertificationCase.find_by!(certification_id: cert.id).tap do |kase|
+          kase.update_column(:created_at, created_at)
+        end
+      end
+
+      before do
+        middle_case
+        newest_case
+        oldest_case
+      end
+
+      it "heads the case list with the case number, creation date and status" do
+        get "/staff/members/#{listed_member_id}"
+
+        expect(rendered_column_names).to eq([ "Case No.", "Date created", "Status" ])
+      end
+
+      it "shows each case's own creation date" do
+        get "/staff/members/#{listed_member_id}"
+
+        expect(rendered_created_dates).to eq(
+          [ newest_created_at, middle_created_at, oldest_created_at ].map { |at| at.strftime("%m/%d/%Y") }
+        )
+      end
+
+      it "lists the cases newest first" do
+        get "/staff/members/#{listed_member_id}"
+
+        expect(rendered_case_ids).to eq(expected_case_ids)
+      end
+    end
   end
 end
