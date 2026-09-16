@@ -78,12 +78,11 @@ RSpec.describe "/demo/certifications", type: :request do
       expect(response).to be_successful
     end
 
-    it "asks for the application date and not the certification date" do
+    it "asks for the application date" do
       get new_demo_certification_url
 
       page = Capybara.string(response.body)
       expect(page).to have_css("label", text: "Application date")
-      expect(page).not_to have_css("label", text: "Certification date")
     end
 
     it "renders New Application form" do
@@ -110,7 +109,6 @@ RSpec.describe "/demo/certifications", type: :request do
 
       cert = Certification.order(created_at: :desc).last
       expect(cert.case_number).to eq(create_attrs[:case_number])
-      expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
       expect(cert.application_date).to eq(Date.new(2025, 9, 25))
       expect(cert.certification_requirements.due_date).not_to be_nil
       expect(cert.member_name).to eq(Strata::Name.new({
@@ -141,7 +139,7 @@ RSpec.describe "/demo/certifications", type: :request do
 
       cert = Certification.order(created_at: :desc).last
       expect(cert.case_number).to eq(create_attrs[:case_number])
-      expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+      expect(cert.application_date).to eq(Date.new(2025, 9, 25))
       expect(cert.certification_requirements.due_date).not_to be_nil
       expect(cert.certification_requirements.certification_type).to eq("new_application")
       expect(cert.member_name).to eq(Strata::Name.new({
@@ -169,7 +167,7 @@ RSpec.describe "/demo/certifications", type: :request do
 
         cert = Certification.order(created_at: :desc).last
         expect(cert.case_number).to eq(create_attrs[:case_number])
-        expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+        expect(cert.application_date).to eq(Date.new(2025, 9, 25))
         expect(cert.certification_requirements.due_date).not_to be_nil
         expect(cert.member_name).to eq(Strata::Name.new({
           "first": create_attrs[:member_name_first],
@@ -201,7 +199,7 @@ RSpec.describe "/demo/certifications", type: :request do
 
         cert = Certification.order(created_at: :desc).last
         expect(cert.case_number).to eq(create_attrs[:case_number])
-        expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+        expect(cert.application_date).to eq(Date.new(2025, 9, 25))
         expect(cert.certification_requirements.due_date).not_to be_nil
         expect(cert.member_name).to eq(Strata::Name.new({
           "first": create_attrs[:member_name_first],
@@ -228,14 +226,14 @@ RSpec.describe "/demo/certifications", type: :request do
 
         cert = Certification.order(created_at: :desc).last
         expect(cert.case_number).to eq(create_attrs[:case_number])
-        expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+        expect(cert.application_date).to eq(Date.new(2025, 9, 25))
         expect(cert.certification_requirements.due_date).not_to be_nil
         expect(cert.member_name).to eq(Strata::Name.new({
           "first": create_attrs[:member_name_first],
           "last": create_attrs[:member_name_last]
         }))
         expect(cert.member_data.date_of_birth).to be_between(
-          cert.certification_requirements.certification_date - 18.years, cert.certification_requirements.certification_date - 1.years
+          cert.application_date - 18.years, cert.application_date - 1.years
         )
       end
 
@@ -250,7 +248,7 @@ RSpec.describe "/demo/certifications", type: :request do
 
         cert = Certification.order(created_at: :desc).last
         expect(cert.case_number).to eq(create_attrs[:case_number])
-        expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+        expect(cert.application_date).to eq(Date.new(2025, 9, 25))
         expect(cert.certification_requirements.due_date).not_to be_nil
         expect(cert.member_name).to eq(Strata::Name.new({
           "first": create_attrs[:member_name_first],
@@ -281,7 +279,7 @@ RSpec.describe "/demo/certifications", type: :request do
 
         cert = Certification.order(created_at: :desc).last
         expect(cert.case_number).to eq(create_attrs[:case_number])
-        expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+        expect(cert.application_date).to eq(Date.new(2025, 9, 25))
         expect(cert.certification_requirements.due_date).not_to be_nil
         expect(cert.member_name).to eq(Strata::Name.new({
           "first": create_attrs[:member_name_first],
@@ -353,7 +351,7 @@ RSpec.describe "/demo/certifications", type: :request do
         }.to change(Certification, :count).by(1)
         cert = Certification.order(created_at: :desc).last
         expect(cert.case_number).to eq(create_attrs[:case_number])
-        expect(cert.certification_requirements.certification_date).to eq(Date.new(2025, 9, 25))
+        expect(cert.application_date).to eq(Date.new(2025, 9, 25))
         expect(cert.certification_requirements.due_date).not_to be_nil
         expect(cert.member_name).to eq(Strata::Name.new({
           "first": create_attrs[:member_name_first],
@@ -362,7 +360,7 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(cert.member_data.date_of_birth).to eq(Date.new(1990, 1, 15))
       end
 
-      it "writes the certification date to pregnancy_due_or_parturition_date when the pregnancy_status checkbox is selected" do
+      it "writes the application date to pregnancy_due_or_parturition_date when the pregnancy_status checkbox is selected" do
         create_attrs = valid_request_attributes.merge({ pregnancy_status: "1", external_scenario: "No data" })
 
         expect {
@@ -371,7 +369,7 @@ RSpec.describe "/demo/certifications", type: :request do
         }.to change(Certification, :count).by(1)
 
         cert = Certification.order(created_at: :desc).last
-        expect(cert.member_data.pregnancy_due_or_parturition_date).to eq(cert.certification_requirements.certification_date)
+        expect(cert.member_data.pregnancy_due_or_parturition_date).to eq(cert.application_date)
       end
 
       it "sets was_in_foster_care when the was_in_foster_care checkbox is selected" do
@@ -410,7 +408,7 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(cert.member_data.veteran_with_disability).to be true
       end
 
-      it "sets dates_caretaking_infirm to the certification date when the caretaker checkbox is selected" do
+      it "sets dates_caretaking_infirm to the application date when the caretaker checkbox is selected" do
         create_attrs = valid_request_attributes.merge({ caretaker: "1", external_scenario: "No data" })
 
         expect {
@@ -419,7 +417,7 @@ RSpec.describe "/demo/certifications", type: :request do
         }.to change(Certification, :count).by(1)
 
         cert = Certification.order(created_at: :desc).last
-        expect(cert.member_data.dates_caretaking_infirm).to eq([ cert.certification_requirements.certification_date ])
+        expect(cert.member_data.dates_caretaking_infirm).to eq([ cert.application_date ])
       end
 
       it "sets meeting_tanf_or_snap_work when the checkbox is selected" do
@@ -434,7 +432,7 @@ RSpec.describe "/demo/certifications", type: :request do
         expect(cert.member_data.meeting_tanf_or_snap_work).to be true
       end
 
-      it "sets dates_in_drug_treatment to the certification date when the checkbox is selected" do
+      it "sets dates_in_drug_treatment to the application date when the checkbox is selected" do
         create_attrs = valid_request_attributes.merge({ drug_treatment: "1", external_scenario: "No data" })
 
         expect {
@@ -443,10 +441,10 @@ RSpec.describe "/demo/certifications", type: :request do
         }.to change(Certification, :count).by(1)
 
         cert = Certification.order(created_at: :desc).last
-        expect(cert.member_data.dates_in_drug_treatment).to eq([ cert.certification_requirements.certification_date ])
+        expect(cert.member_data.dates_in_drug_treatment).to eq([ cert.application_date ])
       end
 
-      it "sets dates_incarcerated to the certification date when the checkbox is selected" do
+      it "sets dates_incarcerated to the application date when the checkbox is selected" do
         create_attrs = valid_request_attributes.merge({ inmate: "1", external_scenario: "No data" })
 
         expect {
@@ -455,7 +453,7 @@ RSpec.describe "/demo/certifications", type: :request do
         }.to change(Certification, :count).by(1)
 
         cert = Certification.order(created_at: :desc).last
-        expect(cert.member_data.dates_incarcerated).to eq([ cert.certification_requirements.certification_date ])
+        expect(cert.member_data.dates_incarcerated).to eq([ cert.application_date ])
       end
 
       it "creates a new Certification with an external exception selected" do

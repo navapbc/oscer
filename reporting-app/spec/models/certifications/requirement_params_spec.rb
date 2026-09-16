@@ -8,12 +8,9 @@ RSpec.describe Certifications::RequirementParams do
 
     let(:application_date) { Date.new(2026, 8, 20) }
     let(:application_month) { application_date.beginning_of_month }
-    # Different month from the anchor, so these examples prove the months follow the argument.
-    let(:certification_date) { Date.new(2026, 2, 3) }
     let(:params) do
       build(
         :certification_certification_requirement_params,
-        certification_date:,
         lookback_period: lookback_period,
         number_of_months_to_certify: 1,
         due_period_days: 30
@@ -49,26 +46,6 @@ RSpec.describe Certifications::RequirementParams do
         expect(months).to eq [ Date.new(2025, 12, 1), Date.new(2025, 11, 1) ]
       end
     end
-
-    context "when the application date and the certification date disagree" do
-      let(:lookback_period) { 2 }
-
-      it "counts from the application date" do
-        expect(months).to eq [ Date.new(2026, 7, 1), Date.new(2026, 6, 1) ]
-      end
-
-      it "returns the same months whatever the certification date carries" do
-        moved = build(
-          :certification_certification_requirement_params,
-          certification_date: Date.new(2020, 12, 25),
-          lookback_period: lookback_period,
-          number_of_months_to_certify: 1,
-          due_period_days: 30
-        )
-
-        expect(moved.months_that_can_be_certified(application_date:)).to eq months
-      end
-    end
   end
 
   describe "#to_requirements" do
@@ -76,15 +53,12 @@ RSpec.describe Certifications::RequirementParams do
 
     let(:lookback_period) { 6 }
     let(:application_date) { Date.new(2026, 8, 20) }
-    # Different month from the anchor, so the carried months cannot have come from this field.
-    let(:certification_date) { Date.new(2026, 2, 3) }
     let(:expected_start) { application_date.beginning_of_month << lookback_period }
     let(:expected_end) { application_date.beginning_of_month << 1 }
 
     let(:params) do
       build(
         :certification_certification_requirement_params,
-        certification_date:,
         lookback_period:,
         number_of_months_to_certify: 3,
         due_period_days: 30
@@ -110,11 +84,9 @@ RSpec.describe Certifications::RequirementParams do
     # Coverage runs Jan to Jun and the renewal is requested in May, so the period
     # supplied is the currently active one, not the upcoming one.
     let(:application_date) { Date.new(2026, 5, 20) }
-    let(:certification_date) { Date.new(2026, 2, 3) }
     let(:params) do
       build(
         :certification_certification_requirement_params, :with_direct_params,
-        certification_date:,
         **overrides
       )
     end
@@ -151,10 +123,9 @@ RSpec.describe Certifications::RequirementParams do
       params.to_requirements(application_date:)
     end
 
-    # Both sit well away from today, so a due date anchored on either is distinguishable from one
+    # Well away from today, so a due date anchored on it is distinguishable from one
     # anchored on the processing date.
     let(:application_date) { Date.new(2026, 11, 20) }
-    let(:certification_date) { Date.new(2026, 2, 3) }
 
     around { |example| freeze_time { example.run } }
 
@@ -162,7 +133,6 @@ RSpec.describe Certifications::RequirementParams do
       let(:params) do
         build(
           :certification_certification_requirement_params,
-          certification_date:,
           certification_type: "recertification",
           due_date: Date.new(2026, 12, 15)
         )
@@ -177,7 +147,6 @@ RSpec.describe Certifications::RequirementParams do
       let(:params) do
         build(
           :certification_certification_requirement_params,
-          certification_date:,
           certification_type: "recertification"
         )
       end
@@ -191,7 +160,6 @@ RSpec.describe Certifications::RequirementParams do
       let(:params) do
         build(
           :certification_certification_requirement_params, :with_direct_params,
-          certification_date:,
           due_period_days: 45
         )
       end
@@ -205,7 +173,6 @@ RSpec.describe Certifications::RequirementParams do
       let(:params) do
         build(
           :certification_certification_requirement_params,
-          certification_date:,
           lookback_period: 6,
           number_of_months_to_certify: 3,
           due_period_days: nil
@@ -223,7 +190,6 @@ RSpec.describe Certifications::RequirementParams do
       let(:params) do
         build(
           :certification_certification_requirement_params,
-          certification_date:,
           certification_type: "recertification",
           due_period_days: 45
         )
@@ -245,7 +211,6 @@ RSpec.describe Certifications::RequirementParams do
         context "when it is #{label}" do
           let(:params) do
             described_class.new_filtered(
-              "certification_date" => certification_date,
               "certification_type" => "recertification",
               "due_date" => value
             )
@@ -263,7 +228,6 @@ RSpec.describe Certifications::RequirementParams do
       let(:params) do
         build(
           :certification_certification_requirement_params,
-          certification_date:,
           lookback_period: 6,
           number_of_months_to_certify: 3
         )

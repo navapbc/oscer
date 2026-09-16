@@ -143,8 +143,6 @@ class UnifiedRecordProcessor
   # Build certification_requirements hash from record fields
   def build_certification_requirements(record)
     requirement_input = {
-      # TODO: drop this key when certification_date leaves the model, still validated present in RequirementParams.
-      "certification_date" => record["application_date"],
       "certification_type" => record["certification_type"],
       "lookback_period" => record["lookback_period"]&.to_i,
       "number_of_months_to_certify" => record["number_of_months_to_certify"]&.to_i,

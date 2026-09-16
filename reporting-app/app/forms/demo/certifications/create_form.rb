@@ -29,10 +29,7 @@ module Demo
       end
 
       def to_certification
-        # TODO: drop this merge when certification_date leaves the model, still validated present until all readers have been repointed.
-        certification_requirement_params = ::Certifications::RequirementParams.new_filtered(
-          attributes.with_indifferent_access.merge(certification_date: application_date)
-        )
+        certification_requirement_params = ::Certifications::RequirementParams.new_filtered(attributes)
         # shouldn't be possible, but we need to ensure the params are valid in
         # order to construct the requirements next
         if certification_requirement_params.invalid?
