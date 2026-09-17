@@ -18,6 +18,11 @@ class Certification < ApplicationRecord
   # validates :member_id, presence: true
   validates :certification_requirements, presence: true
 
+  # Scoped to :create because the column is nullable and was never backfilled: rows predating
+  # the migration that added it carry nil, and an unconditional validation would make those
+  # rows unsaveable on any later update.
+  validates :application_date, presence: true, on: :create
+
   scope :by_member_id, ->(member_id) { where(member_id:) }
   scope :by_region, ->(region) { where("certification_requirements->>'region' = ?", region) }
 

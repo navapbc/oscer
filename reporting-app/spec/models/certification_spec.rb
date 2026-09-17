@@ -3,6 +3,35 @@
 require 'rails_helper'
 
 RSpec.describe Certification, type: :model do
+  describe 'application_date validation' do
+    before { allow(Strata::EventManager).to receive(:publish) }
+
+    it 'rejects a new certification with no application date' do
+      certification = build(:certification, application_date: nil)
+
+      expect(certification.save).to be false
+      expect(certification.errors[:application_date]).to include("can't be blank")
+    end
+
+    it 'accepts a new certification with an application date' do
+      certification = build(:certification, application_date: Date.new(2026, 1, 15))
+
+      expect(certification.save).to be true
+    end
+
+    # The column is nullable and was never backfilled, so rows that already carry nil have to
+    # stay updatable. An unconditional presence validation would lock them.
+    it 'still saves an existing certification whose application date is nil' do
+      certification = build(:certification, application_date: nil)
+      certification.save(validate: false)
+
+      certification.case_number = "C-updated"
+
+      expect(certification.save).to be true
+      expect(certification.reload.case_number).to eq("C-updated")
+    end
+  end
+
   describe 'after_create_commit callback' do
     it 'publishes CertificationCreated event with certification_id' do
       allow(Strata::EventManager).to receive(:publish)
