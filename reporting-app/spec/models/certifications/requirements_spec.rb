@@ -60,6 +60,7 @@ RSpec.describe Certifications::Requirements do
 
       expect(input).to be_a(described_class)
       expect(input.certification_period_start).to eq Date.new(2026, 1, 1)
+      expect(input.months_that_can_be_certified).to eq [ Date.new(2026, 7, 1) ]
     end
 
     # Load-bearing: this hash carries no application date, and UnionObject#new dispatches on

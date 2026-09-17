@@ -219,10 +219,7 @@
 	    "type": ["boolean", "null"],
 	    "description": "Whether the member is self employed"
 	  }
-        },
-        "required": [
-          "certification_date"
-        ]
+        }
       },
       "CertificationRequirementParameters": {
         "type": "object",
@@ -260,7 +257,6 @@
           }
         },
         "required": [
-          "certification_date",
           "lookback_period",
           "number_of_months_to_certify"
         ]
@@ -294,7 +290,6 @@
           }
         },
         "required": [
-          "certification_date",
           "certification_type"
         ]
       },
