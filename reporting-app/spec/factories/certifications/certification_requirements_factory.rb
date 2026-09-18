@@ -6,7 +6,6 @@ FactoryBot.define do
       application_date { Date.current }
     end
 
-    certification_date { Faker::Date.forward(days: 30) }
     number_of_months_to_certify { Faker::Number.within(range: 1..3) }
     months_that_can_be_certified do
       # The parent passes its raw application_date, so this runs before ActiveRecord's date

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Certifications::RequirementParams < Certifications::RequirementTypeParams
-  attribute :certification_date, :date
   attribute :certification_period_start, :date
   attribute :certification_period_end, :date
   attribute :certification_type, :string, default: nil
@@ -10,7 +9,6 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
 
   attribute :region, :string
 
-  validates :certification_date, presence: true
   validates :lookback_period, presence: true
   validates :number_of_months_to_certify, presence: true
   validates :due_date, presence: true
@@ -33,7 +31,6 @@ class Certifications::RequirementParams < Certifications::RequirementTypeParams
   # neither union member. CreateRequest validates application_date instead.
   def to_requirements(application_date:)
     Certifications::Requirements.new({
-      "certification_date": certification_date,
       "certification_period_start": certification_period_start,
       "certification_period_end": certification_period_end,
       "certification_type": certification_type,

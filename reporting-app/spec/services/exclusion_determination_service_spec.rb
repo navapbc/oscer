@@ -49,7 +49,7 @@ RSpec.describe ExclusionDeterminationService do
         :certification,
         member_data: member_data,
         application_date: cert_date,
-        certification_requirements: build(:certification_certification_requirements, certification_date: cert_date)
+        certification_requirements: build(:certification_certification_requirements, application_date: cert_date)
       )
     end
     let(:kase) { create(:certification_case, certification_id: certification.id) }
@@ -578,18 +578,19 @@ RSpec.describe ExclusionDeterminationService do
       end
     end
 
-    # The two dates name different months, and only the application month falls
-    # inside the exemption period.
-    context 'when the application date and the certification date name different months' do
+    # Only the application month falls inside the exemption period.
+    context 'when the reportable months and the application date name different months' do
       let(:application_month) { Date.new(2025, 7, 1) }
       let(:certification) do
         create(
           :certification,
           member_data: member_data,
           application_date: application_month,
+          # Requirements derived around December while the member applied in July: the
+          # exclusion anchor must follow the application date, not the reportable months.
           certification_requirements: build(
             :certification_certification_requirements,
-            certification_date: Date.new(2025, 12, 1)
+            application_date: Date.new(2025, 12, 1)
           )
         )
       end
@@ -631,7 +632,7 @@ RSpec.describe ExclusionDeterminationService do
         :certification,
         member_data: member_data,
         application_date: cert_date,
-        certification_requirements: build(:certification_certification_requirements, certification_date: cert_date)
+        certification_requirements: build(:certification_certification_requirements, application_date: cert_date)
       )
     end
     let(:kase) { create(:certification_case, certification_id: certification.id) }

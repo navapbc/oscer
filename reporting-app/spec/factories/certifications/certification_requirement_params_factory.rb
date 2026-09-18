@@ -2,8 +2,6 @@
 
 FactoryBot.define do
   factory :certification_certification_requirement_params, class: Certifications::RequirementParams do
-    certification_date { Faker::Date.forward(days: 30) }
-
     trait :with_certification_type do
       certification_type { Certifications::Requirements::CERTIFICATION_TYPE_OPTIONS.sample }
     end

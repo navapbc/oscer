@@ -48,13 +48,13 @@ RSpec.describe MemberDashboardComplianceService do
     let(:member_status) { MemberStatusService.determine(certification) }
 
 
-    context "when the application date and the stored certification date differ" do
+    context "when the application date and the reportable months differ" do
       let(:certification) do
         create(:certification,
                application_date: Date.new(2026, 1, 15),
                certification_requirements: build(
                  :certification_certification_requirements,
-                 certification_date: Date.new(2025, 7, 3)
+                 application_date: Date.new(2025, 7, 3)
                ))
       end
 
@@ -448,8 +448,8 @@ RSpec.describe MemberDashboardComplianceService do
     end
 
     context "when income aggregation runs against the open case" do
-      let(:certification_date) { Date.today }
-      let(:certification) { create(:certification, certification_requirements: build(:certification_certification_requirements, certification_date:)) }
+      let(:application_date) { Date.today }
+      let(:certification) { create(:certification, certification_requirements: build(:certification_certification_requirements, application_date:)) }
       let(:activity_report_application_form) { create(:activity_report_application_form, :with_submitted_status, certification_case_id: certification_case.id) }
 
       before do

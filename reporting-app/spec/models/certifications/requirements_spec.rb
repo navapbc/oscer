@@ -3,13 +3,11 @@
 require "rails_helper"
 
 RSpec.describe Certifications::Requirements do
-  let(:certification_date) { Date.new(2026, 5, 20) }
-
   # The certification period is supplied by the caller and never derived here. On a
   # recertification it is the member's currently active, expiring period; a new
   # application has none, because the member has no prior coverage period.
   describe "certification period bounds" do
-    subject(:requirements) { build(:certification_certification_requirements, certification_date:, **overrides) }
+    subject(:requirements) { build(:certification_certification_requirements, **overrides) }
 
     let(:overrides) { {} }
 
@@ -41,7 +39,7 @@ RSpec.describe Certifications::Requirements do
   end
 
   describe "supplied period bounds" do
-    # Different month from the "2026-05-20" the examples send, so a wrong anchor would show.
+    # Differs from the nested application date below, so a wrong anchor would show.
     let(:application_date) { Date.new(2026, 8, 20) }
     let(:bounds) do
       {
@@ -53,7 +51,6 @@ RSpec.describe Certifications::Requirements do
     it "survives a full-requirements request" do
       input = Api::Certifications::RequirementsOrParamsInput.new(
         bounds.merge(
-          "certification_date" => "2026-05-20",
           "months_that_can_be_certified" => [ "2026-07-01" ]
         )
       )
@@ -68,7 +65,6 @@ RSpec.describe Certifications::Requirements do
     it "survives a parameter-shaped request, which carries no application date" do
       input = Api::Certifications::RequirementsOrParamsInput.new(
         bounds.merge(
-          "certification_date" => "2026-05-20",
           "lookback_period" => 6,
           "number_of_months_to_certify" => 3,
           "due_period_days" => 30
@@ -84,7 +80,6 @@ RSpec.describe Certifications::Requirements do
     it "ignores an application date nested inside the requirements hash" do
       input = Api::Certifications::RequirementsOrParamsInput.new(
         bounds.merge(
-          "certification_date" => "2026-05-20",
           "application_date" => "2020-01-01",
           "lookback_period" => 6,
           "number_of_months_to_certify" => 3,
@@ -100,7 +95,6 @@ RSpec.describe Certifications::Requirements do
     it "survives batch upload input" do
       requirements = CertificationService.new.certification_requirements_from_input(
         bounds.merge(
-          "certification_date" => "2026-05-20",
           "certification_type" => "recertification"
         ),
         application_date: application_date
@@ -114,7 +108,6 @@ RSpec.describe Certifications::Requirements do
         :certification,
         certification_requirements: build(
           :certification_certification_requirements,
-          certification_date:,
           certification_period_start: Date.new(2026, 1, 1),
           certification_period_end: Date.new(2026, 6, 30)
         )

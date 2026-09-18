@@ -37,7 +37,7 @@ RSpec.describe UnifiedRecordProcessor do
         expect(result.case_number).to eq("C-001")
       end
 
-      it "records the record's certification date as the application date" do
+      it "records the record's application date" do
         allow(Strata::EventManager).to receive(:publish)
 
         certification = processor.process(record)
@@ -57,13 +57,13 @@ RSpec.describe UnifiedRecordProcessor do
 
       context "with pregnancy_status" do
         [ "yes", "YES", " Yes ", "true", "TRUE" ].each do |flag|
-          it "records the certification date as the parturition date when pregnancy_status is #{flag.inspect}" do
+          it "records the application date as the parturition date when pregnancy_status is #{flag.inspect}" do
             allow(Strata::EventManager).to receive(:publish)
 
             certification = processor.process(record.merge("pregnancy_status" => flag))
 
-            cert_date = certification.certification_requirements.certification_date
-            expect(certification.member_data.pregnancy_due_or_parturition_date).to eq(cert_date)
+            expect(certification.member_data.pregnancy_due_or_parturition_date)
+              .to eq(certification.application_date)
           end
         end
 
@@ -83,7 +83,6 @@ RSpec.describe UnifiedRecordProcessor do
 
         certification = processor.process(record)
 
-        expect(certification.certification_requirements.certification_date.to_s).to eq("2025-01-15")
         expect(certification.certification_requirements.certification_type).to eq("new_application")
       end
 

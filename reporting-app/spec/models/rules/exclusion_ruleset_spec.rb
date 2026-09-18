@@ -13,7 +13,7 @@ RSpec.describe Rules::ExclusionRuleset do
       end
     end
 
-    context 'when the certification date is nil' do
+    context 'when the evaluated month is nil' do
       it 'returns nil' do
         pregnancy = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
         postpartum = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
@@ -35,14 +35,14 @@ RSpec.describe Rules::ExclusionRuleset do
       end
     end
 
-    context 'when the pregnancy ends before certification date' do
+    context 'when the pregnancy ends before the evaluated month' do
       it 'returns false' do
         pregnancy = build(:certification_member_data_exemption, :period_end_invalid, cert_date:)
         expect(ruleset.is_pregnant(pregnancy, nil, cert_date)).to be_falsey
       end
     end
 
-    context 'when the parturition date ends before certification date' do
+    context 'when the parturition date ends before the evaluated month' do
       it 'returns false' do
         postpartum = build(:certification_member_data_exemption, :period_end_invalid, cert_date:)
         expect(ruleset.is_pregnant(nil, postpartum, cert_date)).to be_falsey
@@ -95,8 +95,8 @@ RSpec.describe Rules::ExclusionRuleset do
   end
 
   describe '#former_foster_care' do
-    # Former foster youth are excluded until age 26, evaluated against the certification date at
-    # month granularity (consistent with pregnancy).
+    # Former foster youth are excluded until age 26, assessed against the evaluated month
+    # at month granularity (consistent with pregnancy).
     let(:was_in_foster_care) { 'some exemption object' }
 
     context 'when the member was not in foster care' do
@@ -111,7 +111,7 @@ RSpec.describe Rules::ExclusionRuleset do
       end
     end
 
-    context 'when the certification date is nil' do
+    context 'when the evaluated month is nil' do
       it 'returns falsey' do
         expect(ruleset.former_foster_care(was_in_foster_care, cert_date - 20.years, nil)).to be_falsey
       end
@@ -158,7 +158,7 @@ RSpec.describe Rules::ExclusionRuleset do
       end
     end
 
-    context 'when the member became medically frail after certification date' do
+    context 'when the member became medically frail after the evaluated month' do
       it 'returns falsey' do
         medicall_condition = build(:certification_member_data_exemption, :valid, cert_date:)
         period = Certifications::MemberData::Period.new(period_start: cert_date + 1.month, period_end: cert_date + 2.months)
@@ -176,9 +176,9 @@ RSpec.describe Rules::ExclusionRuleset do
   end
 
   describe '#caretaker' do
-    # Excluded when caretaking an infirm person during the certification month, or caring for a
-    # dependent child 13 or under (both evaluated against the certification date at month
-    # granularity, consistent with the other date-based checks).
+    # Excluded when caretaking an infirm person during the evaluated month, or caring for a
+    # dependent child 13 or under (both assessed at month granularity, consistent with the
+    # other date-based checks).
 
     context 'when no caretaker signals are present' do
       it 'returns falsey' do
@@ -186,7 +186,7 @@ RSpec.describe Rules::ExclusionRuleset do
       end
     end
 
-    context 'when the certification date is nil' do
+    context 'when the evaluated month is nil' do
       it 'returns falsey' do
         expect(ruleset.caretaker([ cert_date ], [ cert_date - 5.years ], nil)).to be_falsey
       end
@@ -279,7 +279,7 @@ RSpec.describe Rules::ExclusionRuleset do
       end
     end
 
-    context 'when certification date is nil' do
+    context 'when the evaluated month is nil' do
       it 'returns falsey' do
         tanf = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
         expect(ruleset.tanf_snap_work(tanf, nil)).to be_falsey
@@ -310,7 +310,7 @@ RSpec.describe Rules::ExclusionRuleset do
       end
     end
 
-    context 'when the certification date is nil' do
+    context 'when the evaluated month is nil' do
       it 'returns falsey' do
         expect(ruleset.drug_treatment([ cert_date ], nil)).to be_falsey
       end
@@ -333,7 +333,7 @@ RSpec.describe Rules::ExclusionRuleset do
 
   describe '#inmate' do
     # Excluded while incarcerated and for a 3-month buffer afterward (INMATE_BUFFER_MONTHS),
-    # evaluated against the certification date at month granularity.
+    # assessed against the evaluated month at month granularity.
 
     context 'when no incarceration dates are present' do
       it 'returns falsey' do
@@ -356,7 +356,7 @@ RSpec.describe Rules::ExclusionRuleset do
       end
     end
 
-    context 'when the certification date is nil' do
+    context 'when the evaluated month is nil' do
       it 'returns falsey' do
         incarceration = build(:certification_member_data_exemption, :period_end_valid, cert_date:)
         expect(ruleset.inmate(incarceration, nil)).to be_falsey

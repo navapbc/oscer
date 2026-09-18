@@ -48,7 +48,6 @@ components:
             case_number: C-111
             application_date: '2025-09-26'
             certification_requirements:
-              certification_date: '2025-09-26'
               certification_period_start: '2025-04-01'
               certification_period_end: '2025-09-30'
               number_of_months_to_certify: 1
@@ -90,7 +89,6 @@ components:
             case_number: C-111
             application_date: '2025-09-26'
             certification_requirements:
-              certification_date: '2025-09-26'
               certification_period_start: '2025-04-01'
               certification_period_end: '2025-09-30'
               lookback_period: 3
@@ -115,7 +113,6 @@ components:
             case_number: C-111
             application_date: '2025-09-26'
             certification_requirements:
-              certification_date: '2025-09-26'
               certification_type: new_application
             member_data:
               account_email: john@doe.com
@@ -134,10 +131,6 @@ components:
       type: object
       description: Description of certification needs
       properties:
-        certification_date:
-          type: string
-          format: date
-          description: The date of the certification
         certification_period_start:
           type:
           - string
@@ -195,10 +188,6 @@ components:
     CertificationRequirementParameters:
       type: object
       properties:
-        certification_date:
-          type: string
-          format: date
-          description: The date of the certification
         certification_period_start:
           type:
           - string
@@ -216,8 +205,8 @@ components:
             for recertification and change in circumstance; absent for a new application.
         lookback_period:
           type: integer
-          description: The number of months before `certification_date` the Member
-            can choose from
+          description: The number of months before `application_date` the Member can
+            choose from
         number_of_months_to_certify:
           type: integer
           description: The number of months the Member needs to certify
@@ -235,10 +224,6 @@ components:
     CertificationRequirementTypeParameters:
       type: object
       properties:
-        certification_date:
-          type: string
-          format: date
-          description: The date of the certification
         certification_period_start:
           type:
           - string
@@ -694,6 +679,13 @@ components:
         member_id:
           type: string
           description: An identifier for the person receiving benefits
+        application_date:
+          type:
+          - string
+          - 'null'
+          format: date
+          description: The date of the application. The reportable months are counted
+            back from it.
         case_number:
           type:
           - string
@@ -735,7 +727,6 @@ components:
         member_id: '123'
         case_number: C-111
         certification_requirements:
-          certification_date: '2025-09-26'
           months_that_can_be_certified:
           - '2025-06-01'
           - '2025-07-01'

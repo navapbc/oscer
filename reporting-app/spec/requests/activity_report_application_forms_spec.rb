@@ -22,7 +22,6 @@ RSpec.describe "/dashboard/activity_report_application_forms", type: :request do
   let(:certification_requirements) do
     build(
       :certification_certification_requirements,
-      certification_date: Date.new(2025, 10, 31),
       number_of_months_to_certify: 1,
       months_that_can_be_certified: [ "2025-10-01", "2025-09-01", "2025-08-01" ]
     )

@@ -6,8 +6,6 @@ RSpec.describe Certifications::CreationService, type: :service do
   let(:member_id) { "member-123" }
   let(:case_number) { "case-456" }
   let(:application_date) { Date.new(2025, 12, 25) }
-  # Equal by default, as both creation paths send one value, so every example below is unchanged.
-  let(:certification_date) { application_date }
   # Fixtures must be placed relative to the anchor to fall inside the lookback.
   let(:latest_certifiable_month) { application_date << 1 }
   let(:household_data) { {} }
@@ -20,8 +18,7 @@ RSpec.describe Certifications::CreationService, type: :service do
       member_data: member_data.as_json,
       household_data: household_data.as_json,
       certification_requirements: build(:certification_certification_requirement_params,
-        :with_direct_params,
-        certification_date: certification_date
+        :with_direct_params
       ).as_json
     }
   end
@@ -647,15 +644,14 @@ RSpec.describe Certifications::CreationService, type: :service do
   describe "the reportable months anchor" do
     # Reads the months off the request without calling the service, so no member data is needed.
     let(:member_data) { {} }
-    # Pinned: :with_direct_params randomises it and two examples compare separate requests.
+    # Pinned: :with_direct_params randomises it and an example asserts the exact count.
     let(:lookback_period) { 4 }
 
-    def months_for(certification_date:)
+    def months
       request = Api::Certifications::CreateRequest.new(
         **base_params.merge(
           certification_requirements: build(
             :certification_certification_requirement_params, :with_direct_params,
-            certification_date: certification_date,
             lookback_period: lookback_period
           ).as_json
         )
@@ -665,26 +661,11 @@ RSpec.describe Certifications::CreationService, type: :service do
     end
 
     it "counts the months back from the application date" do
-      expect(months_for(certification_date: application_date).max)
-        .to eq(application_date.beginning_of_month << 1)
+      expect(months.max).to eq(application_date.beginning_of_month << 1)
     end
 
-    context "when the request carries a certification date from a different month" do
-      let(:disagreeing_date) { Date.new(2024, 3, 9) }
-
-      it "still counts from the application date" do
-        expect(months_for(certification_date: disagreeing_date).max)
-          .to eq(application_date.beginning_of_month << 1)
-      end
-
-      it "records the months it would record with the two dates in agreement" do
-        expect(months_for(certification_date: disagreeing_date))
-          .to eq(months_for(certification_date: application_date))
-      end
-
-      it "records as many months as the lookback period asks for" do
-        expect(months_for(certification_date: disagreeing_date).length).to eq(lookback_period)
-      end
+    it "records as many months as the lookback period asks for" do
+      expect(months.length).to eq(lookback_period)
     end
   end
 end
