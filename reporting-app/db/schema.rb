@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_03_145559) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_17_153321) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -145,6 +145,25 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_03_145559) do
     t.jsonb "household_data"
     t.index ["case_number"], name: "index_certifications_on_case_number"
     t.index ["member_id"], name: "index_certifications_on_member_id"
+  end
+
+  create_table "declared_emergencies", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "fips_code", null: false
+    t.string "designated_area"
+    t.string "declaration_title"
+    t.date "reported_to_cms_on"
+    t.date "period_start", null: false
+    t.date "period_end"
+    t.string "origin_id"
+    t.string "origin_hash"
+    t.jsonb "origin_raw"
+    t.date "deleted_on"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["fips_code"], name: "index_declared_emergencies_on_fips_code"
+    t.index ["origin_hash"], name: "index_declared_emergencies_on_origin_hash", unique: true, where: "(deleted_on IS NULL)"
+    t.index ["origin_id"], name: "index_declared_emergencies_on_origin_id", unique: true, where: "(deleted_on IS NULL)"
+    t.index ["period_start", "period_end"], name: "index_declared_emergencies_on_period"
   end
 
   create_table "denial_response_application_forms", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
