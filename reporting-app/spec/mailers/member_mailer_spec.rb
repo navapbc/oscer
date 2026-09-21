@@ -15,11 +15,7 @@ RSpec.describe MemberMailer, type: :mailer do
     create(
       :certification,
       application_date: application_date,
-      member_data: build(:certification_member_data, :with_account_email, :with_full_name),
-      certification_requirements: build(
-        :certification_certification_requirements,
-        certification_date: Date.new(2025, 7, 3)
-      )
+      member_data: build(:certification_member_data, :with_account_email, :with_full_name)
     )
   end
 

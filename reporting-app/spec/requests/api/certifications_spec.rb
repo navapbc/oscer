@@ -203,11 +203,10 @@ RSpec.describe "/api/certifications", type: :request do
       end
     end
 
-    context "when the application date and the nested certification date differ" do
-      it "counts the reportable months from the application date" do
+    context "when deriving the reportable months" do
+      it "excludes the application month, counting back from the month before it" do
         requirement_params = build(
-          :certification_certification_requirement_params, :with_direct_params,
-          certification_date: Date.new(2024, 3, 9)
+          :certification_certification_requirement_params, :with_direct_params
         )
         params = valid_json_request_attributes.merge({
           certification_requirements: requirement_params.as_json
@@ -248,13 +247,90 @@ RSpec.describe "/api/certifications", type: :request do
       end
     end
 
+    # Three payloads the API used to reject. Each now persists, anchored solely on the
+    # top-level application_date.
+    context "with requirements carrying their own months" do
+      it "routes to the fully specified branch and keeps the client's months" do
+        months = [ Date.new(2025, 9, 1), Date.new(2025, 8, 1), Date.new(2025, 7, 1) ]
+        params = valid_json_request_attributes.merge({
+          certification_requirements: {
+            months_that_can_be_certified: months.map(&:to_s),
+            number_of_months_to_certify: 3,
+            due_date: Date.new(2025, 11, 15).to_s
+          }
+        })
+
+        expect {
+          post api_certifications_url,
+               params: params,
+               headers: auth_headers(params),
+               as: :json
+        }.to change(Certification, :count).by(1)
+
+        expect(response).to have_http_status(:created)
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+
+        requirements = Certification.find(response.parsed_body[:id]).certification_requirements
+        expect(requirements).to be_a(Certifications::Requirements)
+        # Both branches end up a Requirements instance, so only the values reveal a
+        # misrouted dispatch.
+        expect(requirements.months_that_can_be_certified).to eq(months)
+      end
+    end
+
+    context "with nothing but a certification type" do
+      it "derives every requirement from the type and the application date" do
+        params = valid_json_request_attributes.merge({
+          certification_requirements: { certification_type: "recertification" }
+        })
+
+        expect {
+          post api_certifications_url,
+               params: params,
+               headers: auth_headers(params),
+               as: :json
+        }.to change(Certification, :count).by(1)
+
+        expect(response).to have_http_status(:created)
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+
+        requirements = Certification.find(response.parsed_body[:id]).certification_requirements
+        expect(requirements.number_of_months_to_certify).to eq(3)
+        expect(requirements.months_that_can_be_certified).to eq(
+          [ Date.new(2025, 9, 1), Date.new(2025, 8, 1), Date.new(2025, 7, 1),
+            Date.new(2025, 6, 1), Date.new(2025, 5, 1), Date.new(2025, 4, 1) ]
+        )
+      end
+    end
+
+    context "with bare lookback params and no certification type" do
+      it "derives the reportable months from the lookback period alone" do
+        params = valid_json_request_attributes.merge({
+          certification_requirements: { lookback_period: 6, number_of_months_to_certify: 3 }
+        })
+
+        expect {
+          post api_certifications_url,
+               params: params,
+               headers: auth_headers(params),
+               as: :json
+        }.to change(Certification, :count).by(1)
+
+        expect(response).to have_http_status(:created)
+        expect(response).to match_openapi_doc(OPENAPI_DOC)
+
+        requirements = Certification.find(response.parsed_body[:id]).certification_requirements
+        expect(requirements.months_that_can_be_certified.length).to eq(6)
+        expect(requirements.months_that_can_be_certified).to include(Date.new(2025, 9, 1))
+      end
+    end
+
     context "with certification period bounds supplied" do
       it "stores the bounds the request supplied" do
         # The period supplied is the currently active, expiring one, so it precedes
         # the request rather than starting after it.
         requirement_params = build(
           :certification_certification_requirement_params, :with_direct_params,
-          certification_date: Date.new(2026, 5, 20),
           certification_period_start: Date.new(2026, 1, 1),
           certification_period_end: Date.new(2026, 6, 30)
         )
@@ -281,8 +357,7 @@ RSpec.describe "/api/certifications", type: :request do
     context "without certification period bounds" do
       it "stores no bounds, since OSCER never derives them" do
         requirement_params = build(
-          :certification_certification_requirement_params, :with_direct_params,
-          certification_date: Date.new(2026, 8, 20)
+          :certification_certification_requirement_params, :with_direct_params
         )
         params = valid_json_request_attributes.merge({
           certification_requirements: requirement_params.as_json
@@ -310,7 +385,6 @@ RSpec.describe "/api/certifications", type: :request do
       it "stores the supplied due date instead of deriving one" do
         requirement_params = build(
           :certification_certification_requirement_params,
-          certification_date: Date.new(2026, 11, 20),
           certification_type: "recertification",
           due_date: Date.new(2026, 12, 15)
         )
@@ -339,7 +413,6 @@ RSpec.describe "/api/certifications", type: :request do
       it "derives one from the day OSCER processed the request" do
         requirement_params = build(
           :certification_certification_requirement_params,
-          certification_date: Date.new(2026, 11, 20),
           certification_type: "recertification"
         )
         params = valid_json_request_attributes.merge({
@@ -365,7 +438,6 @@ RSpec.describe "/api/certifications", type: :request do
       it "rejects the request instead of persisting an unusable deadline" do
         params = valid_json_request_attributes.merge({
           certification_requirements: {
-            certification_date: "2026-11-20",
             certification_type: "recertification",
             due_date: [ "2026-12-15" ]
           }
@@ -382,13 +454,39 @@ RSpec.describe "/api/certifications", type: :request do
       end
     end
 
+    context "with reportable months that are not dates" do
+      # The array type casts each element, and an unparseable string casts to nil. [nil] is
+      # present?, so the presence validation alone would let this through to be persisted.
+      [ [ "an unparseable string", [ "garbage" ] ],
+        [ "an integer", [ 99 ] ],
+        [ "an object", [ { "a" => 1 } ] ] ].each do |label, value|
+        it "rejects #{label} instead of persisting months nothing can read" do
+          params = valid_json_request_attributes.merge({
+            certification_requirements: {
+              months_that_can_be_certified: value,
+              number_of_months_to_certify: 1,
+              due_date: "2025-11-15"
+            }
+          })
+
+          expect {
+            post api_certifications_url,
+                params: params,
+                headers: auth_headers(params),
+                as: :json
+          }.not_to change(Certification, :count)
+
+          expect(response).to have_http_status(:unprocessable_content)
+        end
+      end
+    end
+
     context "with an explicit null due period and no due date" do
       around { |example| freeze_time { example.run } }
 
       it "still derives a due date rather than storing none" do
         params = valid_json_request_attributes.merge({
           certification_requirements: {
-            certification_date: "2026-11-20",
             lookback_period: 6,
             number_of_months_to_certify: 3,
             due_period_days: nil

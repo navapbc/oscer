@@ -8,7 +8,6 @@ RSpec.describe ActivityReportStatisticsService do
     create(:certification,
            member_id: member_id,
            certification_requirements: build(:certification_certification_requirements,
-                                              certification_date: Date.new(2025, 10, 15),
                                               months_that_can_be_certified: [ Date.new(2025, 10, 1), Date.new(2025, 9, 1) ]))
   end
   let(:certification_case) { create(:certification_case, certification: certification) }
@@ -124,7 +123,6 @@ RSpec.describe ActivityReportStatisticsService do
         create(:certification,
                member_id: member_id,
                certification_requirements: build(:certification_certification_requirements,
-                                                  certification_date: Date.new(2025, 12, 15),
                                                   months_that_can_be_certified: [
                                                     Date.new(2025, 10, 1),
                                                     Date.new(2025, 11, 1),

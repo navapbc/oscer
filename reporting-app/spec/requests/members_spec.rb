@@ -18,7 +18,6 @@ RSpec.describe "Members", type: :request do
             }
           },
           certification_requirements: {
-            "certification_date" => Date.current,
             "number_of_months_to_certify" => 3
           })
   end

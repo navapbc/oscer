@@ -13,8 +13,8 @@ class ExceptionDeterminationService
   # first and are ungated; optional checks gate on ExternalException.enabled?.
   #
   # Every check but age_under_19 reads an API-supplied Certifications::MemberData::Exemption. Where
-  # the exclusion check asks whether an exemption covers the certification month, the exception check
-  # asks whether it covers any certifiable month (certification_date is not consulted).
+  # the exclusion check asks whether an exemption covers the evaluated month, the exception check
+  # asks whether it covers any certifiable month.
   EXCEPTION_CHECKS = %i[
     pregnancy
     veteran_disability

@@ -149,7 +149,7 @@ RSpec.describe ExceptionDeterminationService do
       create(
         :certification,
         member_data:,
-        certification_requirements: build(:certification_certification_requirements, certification_date: cert_date, months_that_can_be_certified:)
+        certification_requirements: build(:certification_certification_requirements, months_that_can_be_certified:)
       )
     end
 
