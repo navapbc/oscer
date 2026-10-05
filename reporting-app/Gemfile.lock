@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/navapbc/strata-sdk-rails.git
-  revision: 70d6869fb4f157e222b59f9234932cb02e8bc97c
+  revision: ca0d281ff67794f07fcfa58a004cd9f3d3f6cc20
   specs:
     strata (0.1.0)
       pundit (>= 2.5.0)
@@ -345,7 +345,7 @@ GEM
       net-protocol
     net-protocol (0.4.0)
       timeout
-    net-smtp (0.5.1)
+    net-smtp (0.5.2)
       net-protocol
     nio4r (2.7.5)
     nokogiri (1.19.4-aarch64-linux-gnu)
@@ -507,7 +507,7 @@ GEM
       logger
       prism (>= 1.6.0)
       tsort
-    rdoc (8.0.0)
+    rdoc (8.1.0)
       erb
       prism (>= 1.6.0)
       rbs (>= 4.0.0)
