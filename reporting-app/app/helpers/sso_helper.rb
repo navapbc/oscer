@@ -11,7 +11,7 @@ module SsoHelper
     false
   end
 
-  # Member OIDC (citizen IdP) — see docs/architecture/staff-sso/member-sso.md
+  # Public member IdP sign-in (member OIDC). See docs/architecture/staff-sso/member-sso.md
   def member_oidc_enabled?
     Rails.application.config.member_oidc[:enabled] == true
   rescue NoMethodError

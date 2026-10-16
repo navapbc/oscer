@@ -55,6 +55,7 @@ en:
       sign_in_button: "Sign in with your account"
       sign_in_description: "Use the account you use for other state services."
       login_success: "Successfully signed in"
+      logout_success: "Successfully signed out"
       authentication_failed: "Authentication failed. Please try again."
       not_enabled: "Sign in with your account is not available."
       redirecting_title: "Redirecting to Sign In..."

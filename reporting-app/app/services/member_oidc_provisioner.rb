@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Provisions member user accounts from citizen IdP OIDC claims
+# Provisions member user accounts from public member IdP OIDC claims
 #
 # Creates or updates member users based on claims extracted from OIDC ID tokens.
 # Unlike StaffUserProvisioner, this does not use RoleMapper since members do not
