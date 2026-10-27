@@ -114,7 +114,8 @@ RSpec.describe MemberDashboardComplianceService do
                reasons: [ "income_reported_compliant", "hours_reported_compliant" ],
                determination_data: {
                  "calculation_type" => Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED,
-                 "satisfied_by" => Determination::SATISFIED_BY_BOTH
+                 "satisfied_by" => Determination::SATISFIED_BY_BOTH,
+                 "combined_hours" => { "total_hours" => 95.6 }
                })
       end
 
@@ -124,6 +125,10 @@ RSpec.describe MemberDashboardComplianceService do
         expect(read_model.show_income_summary).to be true
         expect(read_model.total_income).to be_a(BigDecimal)
         expect(read_model.latest_determination.determination_data["satisfied_by"]).to eq(Determination::SATISFIED_BY_BOTH)
+      end
+
+      it "exposes rounded combined hours from the latest determination" do
+        expect(read_model.combined_hours).to eq(96)
       end
     end
 
@@ -191,6 +196,10 @@ RSpec.describe MemberDashboardComplianceService do
 
         expect(IncomeComplianceDeterminationService).not_to have_received(:member_income_activities_for_certification)
         expect(IncomeComplianceDeterminationService).not_to have_received(:aggregate_income_for_certification)
+      end
+
+      it "returns nil when the determination has no combined hours" do
+        expect(read_model.combined_hours).to be_nil
       end
     end
 
@@ -401,6 +410,9 @@ RSpec.describe MemberDashboardComplianceService do
       it "does not raise and falls back to the unknown exemption type" do
         expect { read_model.exemption_history }.not_to raise_error
         expect(read_model.exemption_history.first.exemption_type_key).to eq("exemption")
+
+        expect { read_model.combined_hours }.not_to raise_error
+        expect(read_model.combined_hours).to be_nil
       end
     end
 

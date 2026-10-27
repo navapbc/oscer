@@ -1,5 +1,6 @@
 <%# Shared partial for displaying current period compliance status %>
 <%# Required locals: current_period, target_hours, period_end_date, total_hours_reported, hours_needed %>
+<% combined_hours = local_assigns[:combined_hours] %>
 
 <%# Current Period Compliance Status Section %>
 <h2 class="font-heading-xl margin-bottom-2">
@@ -23,6 +24,21 @@
     <span class="font-body-lg text-bold"><%= t("dashboard.new_certification.current_period.hours_value", hours: total_hours_reported) %></span>
   </p>
 </div>
+
+<%# Combined Hours (including income converted to hours) %>
+<% if combined_hours.present? %>
+  <div class="margin-bottom-3">
+    <p class="margin-bottom-05 text-base">
+      <%= t("dashboard.member_compliance.combined_hours_label") %>
+    </p>
+    <p class="font-body-lg text-bold margin-top-0">
+      <%= t(
+            "dashboard.new_certification.current_period.hours_value",
+            hours: combined_hours
+          ) %>
+    </p>
+  </div>
+<% end %>
 
 <%# Additional Hours Needed %>
 <div class="margin-bottom-4">

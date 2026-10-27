@@ -1,6 +1,7 @@
 en:
   dashboard:
     member_compliance:
+      combined_hours_label: "Combined hours (including income converted to hours)"
       exemption_type_unknown: "Exemption request"
       exemption_details_heading: "Exemption details"
       exemption_request_history_heading: "Exemption request history"

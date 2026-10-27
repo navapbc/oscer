@@ -27,9 +27,9 @@
     <% if compliance.hours_has_data? || compliance.income_has_data? %>
       <div class="certification-case-compliance-tables member-dashboard-compliance__tables margin-bottom-3">
         <h3><%= member_compliance_activity_report_title(compliance) %></h3>
-        <% if compliance.hours_has_data? %>
-          <%= render "dashboard/member_compliance_hours_table", compliance: compliance %>
-        <% end %>
+            <% if compliance.hours_has_data? || compliance.combined_hours.present? %>
+              <%= render "dashboard/member_compliance_hours_table", compliance: compliance %>
+            <% end %>
         <% if compliance.income_has_data? %>
           <%= render "dashboard/member_compliance_income_table", compliance: compliance %>
         <% end %>

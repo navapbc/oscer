@@ -121,6 +121,20 @@ class MemberDashboardCompliance
     latest_determination&.ce_calculation_type
   end
 
+  # Returns the combined hours total when the fallback was evaluated.
+  # Combined hours include reported hours and hours imputed from income.
+  # @return [Integer, nil]
+  def combined_hours
+    data = latest_determination&.determination_data
+    return nil unless data.is_a?(Hash)
+
+    combined_data = data.with_indifferent_access[:combined_hours]
+    return nil unless combined_data.is_a?(Hash)
+
+    total_hours = combined_data.with_indifferent_access[:total_hours]
+    total_hours&.to_f&.round
+  end
+
   # --- Lazy income fields ---
   # All six readers return +nil+ when +show_income_summary+ is false; otherwise they share a
   # single memoized aggregation (one external + one member query, computed once).
