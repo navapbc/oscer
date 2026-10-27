@@ -12,7 +12,8 @@
            target_hours: @target_hours,
            period_end_date: @period_end_date,
            total_hours_reported: @total_hours_reported,
-           hours_needed: @hours_needed %>
+           hours_needed: @hours_needed,
+           combined_hours: @member_dashboard_compliance&.combined_hours %>
 <% if @previous_completed_certifications.present? %>
   <%= render "dashboard/previous_certifications" %>
 <% end %>

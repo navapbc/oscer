@@ -425,6 +425,26 @@ RSpec.describe "dashboard/index", type: :view do
       expect(rendered).to have_content(/You have met the requirement/)
     end
 
+    it "renders combined hours from the latest determination" do
+      create(:determination,
+             subject: certification,
+             outcome: "compliant",
+             decision_method: "automated",
+             reasons: [ "combined_hours_reported_compliant" ],
+             determination_data: {
+               "calculation_type" => Determination::CALCULATION_TYPE_EXTERNAL_CE_COMBINED,
+               "satisfied_by" => Determination::SATISFIED_BY_COMBINED_HOURS,
+               "combined_hours" => { "total_hours" => 95.6 }
+             },
+             determined_at: 1.minute.from_now)
+      reassign_compliance_read_model
+
+      render
+
+      expect(rendered).to have_text(I18n.t("dashboard.member_compliance.combined_hours_label"))
+      expect(rendered).to have_text("96")
+    end
+
     it 'has a button to view the activity report' do
       render
       expect(rendered).to have_selector('a', text: I18n.t('dashboard.activity_report_approved.view_activity_report_button'))
