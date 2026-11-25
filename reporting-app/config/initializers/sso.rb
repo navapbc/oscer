@@ -41,10 +41,10 @@ Rails.application.config.sso = {
   }
 }.freeze
 
-# Member OIDC Configuration (citizen IdP sign-in)
+# Member OIDC Configuration (public member IdP sign-in)
 #
 # Required environment variables (when MEMBER_OIDC_ENABLED=true):
-#   MEMBER_OIDC_ISSUER_URL     - Citizen IdP issuer URL
+#   MEMBER_OIDC_ISSUER_URL     - Public member IdP issuer URL
 #   MEMBER_OIDC_CLIENT_ID      - OIDC client ID
 #   MEMBER_OIDC_CLIENT_SECRET  - OIDC client secret
 #

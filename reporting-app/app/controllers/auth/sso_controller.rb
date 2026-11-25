@@ -55,8 +55,8 @@ class Auth::SsoController < ApplicationController
     redirect_to root_path, alert: e.message
   end
 
-  # GET /auth/failure (OmniAuth default; also /auth/sso/failure if routed)
-  # Handles OmniAuth authentication failures for staff SSO and delegates member_oidc to member sign-in.
+  # GET /auth/failure (OmniAuth default; route may also alias /auth/sso/failure)
+  # Staff SSO: root + auth.sso. Member OIDC: member sign-in + auth.member_oidc.
   def failure
     if params[:strategy].to_s == "member_oidc"
       message = sanitized_failure_message(params[:message])
